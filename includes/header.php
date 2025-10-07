@@ -5,6 +5,7 @@ if (session_status() === PHP_SESSION_NONE) {
     if (!ob_get_level()) ob_start();
 }
 require_once 'functions.php';
+require_once 'config/database.php';
 // Keep PHP-only operations above; presentational HTML starts below
 ?><!DOCTYPE html>
 <html lang="en">
@@ -20,8 +21,7 @@ require_once 'functions.php';
     <style>
         /* PEST-CTRL Header Overrides - Keep Original Structure */
         .site-header {
-            background: linear-gradient(180deg, rgba(19, 3, 37, 0.95), rgba(19, 3, 37, 0.9));
-            backdrop-filter: blur(6px);
+            background: #130325; /* match dropdown header color */
             box-shadow: 0 6px 20px rgba(0,0,0,0.06);
         }
         
@@ -60,12 +60,12 @@ require_once 'functions.php';
         }
         
         .brand-logo {
-            padding: 8px 16px;
+            padding: 10px 22px;
             display: flex;
             align-items: center;
             justify-content: center;
             color: #F9F9F9;
-            font-size: 16px;
+            font-size: 26px;
             font-family: 'Libre Barcode 128 Text', monospace;
             font-weight: 400;
             text-decoration: none;
@@ -138,12 +138,32 @@ require_once 'functions.php';
             color: #F9F9F9;
         }
         
-        .cart-badge {
-            background:rgb(174, 46, 46);
-            color: #130325;
-            padding: 4px 8px;
-            border-radius: 999px;
-            font-weight: 700;
+        .cart-link { position: relative; display: inline-flex; align-items: center; }
+        
+        .cart-notification {
+            position: absolute !important;
+            top: -8px !important;
+            right: -8px !important;
+            background: #FFD736 !important;
+            color: #130325 !important;
+            border-radius: 50% !important;
+            width: 20px !important;
+            height: 20px !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            font-size: 12px !important;
+            font-weight: bold !important;
+            min-width: 20px !important;
+            opacity: 0;
+            transform: scale(0);
+            transition: all 0.3s ease;
+            z-index: 1000 !important;
+        }
+        
+        .cart-notification.show {
+            opacity: 1;
+            transform: scale(1);
         }
         
         .nav-links {
@@ -151,6 +171,8 @@ require_once 'functions.php';
             gap: 12px;
             align-items: center;
         }
+        /* add a bit more space between cart and user profile */
+        .nav-links .cart-link { margin-right: 12px; }
         
         .nav-links a {
             color: #F9F9F9;
@@ -164,6 +186,32 @@ require_once 'functions.php';
             color: #FFD736;
             background: rgba(19, 3, 37, 0.8);
         }
+
+        /* Header notifications dropdown */
+        .notif-bell {
+            position: relative;
+            color: #F9F9F9;
+            cursor: pointer;
+        }
+        .notif-popper {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            width: 340px;
+            background: #1a0a2e;
+            border: 1px solid #2d1b4e;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+            display: none;
+            z-index: 1200;
+            padding: 10px;
+        }
+        .notif-popper.show { display: block; }
+        .notif-item-ui { display:flex; gap:10px; padding:10px; border-radius:8px; border:1px solid rgba(255,215,54,0.2); background: rgba(255,215,54,0.06); margin: 6px 0; color:#F9F9F9; text-decoration:none; }
+        .notif-item-ui:hover { background: rgba(255,215,54,0.12); }
+        .notif-item-ui .icon { width:28px; height:28px; display:flex; align-items:center; justify-content:center; background: rgba(255,215,54,0.2); color:#FFD736; border-radius:6px; }
+        .notif-header { display:flex; align-items:center; justify-content:space-between; color:#F9F9F9; margin-bottom:6px; }
+        .notif-empty { color:#F9F9F9; opacity:0.9; text-align:center; padding:16px 8px; }
         
         
         .cart-link {
@@ -311,6 +359,112 @@ require_once 'functions.php';
             color: #130325;
         }
         
+        /* Categories Navigation */
+        .categories-nav {
+            background: #130325;
+            border-top: 1px solid #2d1b4e;
+            border-bottom: 1px solid #2d1b4e;
+            padding: 10px 0;
+        }
+        
+        .categories-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .category-group {
+            position: relative;
+        }
+        
+        .category-dropdown {
+            position: relative;
+            display: inline-block;
+        }
+        
+        .category-btn {
+            background: none;
+            border: none;
+            color: #ffffff;
+            font-size: 14px;
+            font-weight: 500;
+            padding: 8px 12px;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .category-btn:hover {
+            background: #2d1b4e;
+            color: #FFD736;
+        }
+        
+        .category-btn i {
+            font-size: 12px;
+            transition: transform 0.3s ease;
+        }
+        
+        .category-dropdown:hover .category-btn i {
+            transform: rotate(180deg);
+        }
+        
+        .category-menu {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            background: white;
+            border: 1px solid #e9ecef;
+            border-radius: 6px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            min-width: 200px;
+            max-width: 300px;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.3s ease;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .category-dropdown:hover .category-menu {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+        
+        .category-menu a {
+            display: block;
+            padding: 10px 15px;
+            color: #130325;
+            text-decoration: none;
+            font-size: 13px;
+            border-bottom: 1px solid #f8f9fa;
+            transition: all 0.3s ease;
+        }
+        
+        .category-menu a:last-child {
+            border-bottom: none;
+        }
+        
+        .category-menu a:hover {
+            background: #130325;
+            color: #FFD736;
+            padding-left: 20px;
+        }
+        
+        /* Mobile categories */
+        @media (max-width: 768px) {
+            .categories-nav {
+                display: none;
+            }
+        }
+        
         
     </style>
 </head>
@@ -320,9 +474,7 @@ require_once 'functions.php';
             <div class="header-left">
                 <button class="hamburger" id="hamburgerBtn"><i class="fas fa-bars"></i></button>
                 <a class="brand" href="index.php">
-                    <div class="brand-logo">
-                        <i class="fas fa-bug" style="color: #F9F9F9; margin-right: 8px;"></i>PEST-CTRL
-                    </div>
+                    <div class="brand-logo">PEST-CTRL</div>
                 </a>
             </div>
 
@@ -339,7 +491,22 @@ require_once 'functions.php';
                 <div class="nav-links">
                     <a href="index.php">Home</a>
                     <a href="products.php">Products</a>
-                    <a href="cart.php" class="cart-link"><i class="fas fa-shopping-cart"></i></a>
+                    <div class="notif-bell" id="notifBell" title="Notifications">
+                        <i class="fas fa-bell"></i>
+                        <div class="notif-popper" id="notifPopper">
+                            <div class="notif-header">
+                                <strong>Notifications</strong>
+                                <a href="notifications.php" style="color:#FFD736; text-decoration:none; font-size:12px;">See all</a>
+                            </div>
+                            <div id="notifList"></div>
+                        </div>
+                    </div>
+                    <a href="cart.php" class="cart-link">
+                        <i class="fas fa-shopping-cart"></i>
+                        <?php if (isLoggedIn()): ?>
+                            <span id="cart-notification" class="cart-notification">0</span>
+                        <?php endif; ?>
+                    </a>
                 </div>
 
                 <?php if (isLoggedIn()): ?>
@@ -360,9 +527,10 @@ require_once 'functions.php';
                                              <a class="dropdown-item" href="manage-products.php">Manage Products</a>
                                               <a class="dropdown-item" href="order-confirmation.php">Order-Confirmation</a>
                                         <?php else: ?>
-                                            <a class="dropdown-item" href="user-dashboard.php">Dashboard</a>
+                                            <a class="dropdown-item" href="user-dashboard.php">My Orders</a>
+                                            <a class="dropdown-item" href="notifications.php">Notifications</a>
                                         <?php endif; ?>
-                                        <a class="dropdown-item" href="edit-profile.php">Edit Profile</a>
+                                        <a class="dropdown-item" href="edit-profile.php">My Account</a>
                                         <a class="dropdown-item" href="logout.php">Logout</a>
                                     </div>
                     </div>
@@ -374,27 +542,88 @@ require_once 'functions.php';
                 <?php endif; ?>
             </div>
         </div>
+        
+        <!-- Categories Navigation -->
+        <div class="categories-nav">
+            <div class="container">
+                <div class="categories-container">
+                    <?php
+                    // Get categories from database - same as products.php
+                    $stmt = $pdo->query('SELECT * FROM categories ORDER BY name');
+                    $categories = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                    
+                    // Get main categories (parent_id is null or 0)
+                    $mainCategories = [];
+                    $subCategories = [];
+                    
+                    foreach($categories as $category) {
+                        // Remove emojis and clean up names - same logic as products.php
+                        $cleanName = preg_replace('/^[\x{1F300}-\x{1FAFF}\x{2600}-\x{27BF}\x{FE0F}\x{200D}\s]+/u', '', (string)$category['name']);
+                        $cleanName = html_entity_decode($cleanName, ENT_QUOTES, 'UTF-8');
+                        $category['clean_name'] = trim($cleanName);
+                        
+                        if(empty($category['parent_id']) || $category['parent_id'] == 0) {
+                            $mainCategories[] = $category;
+                        } else {
+                            $subCategories[] = $category;
+                        }
+                    }
+                    
+                    // Display main categories as dropdowns
+                    foreach($mainCategories as $mainCategory) {
+                        // Get subcategories for this main category
+                        $subCats = array_filter($subCategories, function($cat) use ($mainCategory) {
+                            return $cat['parent_id'] == $mainCategory['id'];
+                        });
+                        
+                        echo '<div class="category-group">';
+                        echo '<div class="category-dropdown">';
+                        echo '<button class="category-btn">' . htmlspecialchars($mainCategory['clean_name']) . ' <i class="fas fa-caret-down"></i></button>';
+                        echo '<div class="category-menu">';
+                        
+                        // Add main category link first
+                        echo '<a href="products.php?categories[]=' . $mainCategory['id'] . '">' . htmlspecialchars($mainCategory['clean_name']) . '</a>';
+                        
+                        // Add subcategories
+                        foreach($subCats as $subCat) {
+                            echo '<a href="products.php?categories[]=' . $subCat['id'] . '">' . htmlspecialchars($subCat['clean_name']) . '</a>';
+                        }
+                        
+                        echo '</div>';
+                        echo '</div>';
+                        echo '</div>';
+                    }
+                    ?>
+                </div>
+            </div>
+        </div>
     </header>
 
     <!-- Mobile Drawer -->
     <nav class="mobile-drawer" id="mobileDrawer">
         <div style="display:flex;align-items:center;justify-content:space-between">
-            <a class="brand" href="index.php"><div class="brand-logo"><i class="fas fa-bug" style="color: #F9F9F9; margin-right: 8px;"></i>PEST-CTRL</div></a>
+            <a class="brand" href="index.php"><div class="brand-logo">PEST-CTRL</div></a>
             <button class="close-btn" id="drawerClose"><i class="fas fa-times"></i></button>
         </div>
         <div class="links">
             <a href="index.php">Home</a>
             <a href="products.php">Products</a>
-            <a href="cart.php">Cart</a>
+            <a href="cart.php" class="cart-link">
+                Cart
+                <?php if (isLoggedIn()): ?>
+                    <span id="cart-notification-mobile" class="cart-notification">0</span>
+                <?php endif; ?>
+            </a>
             <?php if (isLoggedIn()): ?>
                 <?php if (isSeller()): ?>
                     <a href="seller-dashboard.php">Seller Dashboard</a>
                 <?php elseif (isAdmin()): ?>
                     <a href="admin-dashboard.php">Admin Dashboard</a>
                 <?php else: ?>
-                    <a href="user-dashboard.php">Dashboard</a>
+                    <a href="user-dashboard.php">My Orders</a>
                 <?php endif; ?>
                 <a href="edit-profile.php">Edit Profile</a>
+                <a href="notifications.php">Notifications</a>
                 <a href="logout.php">Logout</a>
             <?php else: ?>
                 <a href="login.php">Login</a>
@@ -425,6 +654,82 @@ require_once 'functions.php';
                 });
             }
         })();
+        // Notifications header popup
+        (function(){
+            const bell = document.getElementById('notifBell');
+            const pop = document.getElementById('notifPopper');
+            const list = document.getElementById('notifList');
+            if (!bell || !pop || !list) return;
+            function closePop(e){ if (!pop.contains(e.target) && e.target !== bell && !bell.contains(e.target)) pop.classList.remove('show'); }
+            bell.addEventListener('click', function(){
+                if (pop.classList.contains('show')) { pop.classList.remove('show'); return; }
+                fetch('notifications.php?as=json', { credentials: 'same-origin' })
+                    .then(r => r.json())
+                    .then(data => {
+                        list.innerHTML = '';
+                        const items = (data && data.items) ? data.items.slice(0,6) : [];
+                        if (!items.length) {
+                            list.innerHTML = '<div class="notif-empty">No notifications yet.</div>';
+                        } else {
+                            items.forEach(it => {
+                                const url = 'user-dashboard.php#order-' + it.order_id;
+                                const item = document.createElement('a');
+                                item.href = url;
+                                item.className = 'notif-item-ui';
+                                item.innerHTML = '<div class="icon"><i class="fas fa-bell"></i></div>'+
+                                                 '<div style="flex:1;"><div style="font-weight:700; color:#F9F9F9;">Order #' + it.order_id + ' update</div>'+
+                                                 '<div style="opacity:0.9; font-size:12px; color:#F9F9F9;">Status: ' + it.status + ' • ' + it.updated_at_human + '</div></div>';
+                                list.appendChild(item);
+                            });
+                        }
+                        pop.classList.add('show');
+                        setTimeout(()=> document.addEventListener('click', closePop, { once:true }), 0);
+                    })
+                    .catch(()=>{
+                        list.innerHTML = '<div class="notif-empty">Unable to load notifications.</div>';
+                        pop.classList.add('show');
+                        setTimeout(()=> document.addEventListener('click', closePop, { once:true }), 0);
+                    });
+            });
+        })();
     </script>
 
     <main>
+    <!-- Global Confirm Modal -->
+    <div id="appConfirmModal" style="display:none; position:fixed; inset:0; z-index:100000;">
+        <div class="app-confirm-backdrop" style="position:absolute; inset:0; background:rgba(0,0,0,0.6);"></div>
+        <div class="app-confirm-content" style="position:relative; z-index:100001; max-width:420px; margin:20vh auto; background:#ffffff; color:#130325; border-radius:10px; border:2px solid #FFD736; box-shadow:0 10px 30px rgba(0,0,0,0.4); padding:18px;">
+            <div class="app-confirm-title" style="display:flex; align-items:center; gap:8px; margin-bottom:10px;">
+                <div style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;background:#FFF4CC;border-radius:8px;color:#130325;"><i class="fas fa-question"></i></div>
+                <h3 style="margin:0; font-size:16px; color:#130325;">Please Confirm</h3>
+            </div>
+            <div id="appConfirmMessage" style="font-size:14px; color:#130325; margin-bottom:16px;"></div>
+            <div style="display:flex; gap:10px; justify-content:flex-end;">
+                <button id="appConfirmCancel" style="background:#6c757d;color:#fff;border:none;border-radius:6px;padding:8px 14px;cursor:pointer;">Cancel</button>
+                <button id="appConfirmOk" style="background:#FFD736;color:#130325;border:none;border-radius:6px;padding:8px 14px;cursor:pointer;font-weight:700;">Confirm</button>
+            </div>
+        </div>
+    </div>
+    <script>
+    // Reusable confirmation modal for the whole site
+    (function(){
+        const modal = document.getElementById('appConfirmModal');
+        if (!modal) return;
+        const msg = document.getElementById('appConfirmMessage');
+        const ok = document.getElementById('appConfirmOk');
+        const cancel = document.getElementById('appConfirmCancel');
+        let cleanup = null;
+        window.openConfirm = function(message, onConfirm){
+            if (msg) msg.textContent = message || 'Are you sure?';
+            modal.style.display = 'block';
+            document.body.style.overflow = 'hidden';
+            const onCancel = ()=>{ modal.style.display='none'; document.body.style.overflow=''; detach(); };
+            const onOk = ()=>{ modal.style.display='none'; document.body.style.overflow=''; detach(); try{ onConfirm && onConfirm(); }catch(e){} };
+            function detach(){ ok && ok.removeEventListener('click', onOk); cancel && cancel.removeEventListener('click', onCancel); modal.removeEventListener('click', backdrop); }
+            function backdrop(e){ if (e.target.classList && e.target.classList.contains('app-confirm-backdrop')) onCancel(); }
+            ok && ok.addEventListener('click', onOk);
+            cancel && cancel.addEventListener('click', onCancel);
+            modal.addEventListener('click', backdrop);
+        };
+    })();
+    </script>

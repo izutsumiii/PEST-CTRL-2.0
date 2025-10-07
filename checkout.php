@@ -569,7 +569,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const productId = this.dataset.productId;
             const orderItem = this.closest('.order-item');
             
-            if (confirm('Are you sure you want to remove this item?')) {
+            openConfirm('Are you sure you want to remove this item?', ()=>{
                 // Show loading state
                 this.disabled = true;
                 this.textContent = '...';
@@ -600,7 +600,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 // Show empty cart message and hide checkout form
                                 document.getElementById('empty-cart-message').style.display = 'block';
                                 document.getElementById('checkout-form').style.display = 'none';
-                                document.getElementById('order-total').textContent = 'Total: $0.00';
+                                document.getElementById('order-total').textContent = 'Total: ₱0.00';
                             } else {
                                 // Recalculate total
                                 updateOrderTotal();
@@ -624,7 +624,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     this.disabled = false;
                     this.textContent = '×';
                 });
-            }
+            });
         });
     });
     
@@ -633,7 +633,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const itemTotals = document.querySelectorAll('.item-total');
         
         itemTotals.forEach(itemTotal => {
-            const priceText = itemTotal.textContent.replace('$', '').replace(',', '');
+            const priceText = itemTotal.textContent.replace('₱', '').replace(',', '');
             total += parseFloat(priceText) || 0;
         });
         

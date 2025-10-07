@@ -23,9 +23,9 @@ function addToCart(productId, quantity = 1) {
             // Show success notification
             showNotification(data.message, 'success');
             
-            // Update cart count if you have a cart counter in header
-            if (typeof updateCartCount === 'function') {
-                updateCartCount(data.cartCount);
+            // Update cart notification
+            if (data.cartCount !== undefined) {
+                updateCartNotification(data.cartCount);
             }
             
             // Temporarily change button text
@@ -48,34 +48,60 @@ function addToCart(productId, quantity = 1) {
         button.disabled = false;
     });
 }
-// Update cart count in header (keep existing)
-function updateCartCount(count) {
-    const cartCounter = document.querySelector('.cart-count');
-    if (cartCounter) {
-        cartCounter.textContent = count;
-        
-        // Add a little animation to draw attention
-        cartCounter.style.transform = 'scale(1.2)';
-        setTimeout(() => {
-            cartCounter.style.transform = 'scale(1)';
-        }, 200);
-    }
-}
-function loadCartCount() {
-    fetch('ajax/cart-session.php?action=get_count')
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            updateCartCount(data.count);
-        }
-    })
-    .catch(error => {
-        console.error('Error loading cart count:', error);
-    });
-}
+
+// Load cart count when page loads
 document.addEventListener('DOMContentLoaded', function() {
     loadCartCount();
 });
+
+// Also load cart count immediately if DOM is already loaded
+if (document.readyState === 'loading') {
+    // DOM is still loading, wait for DOMContentLoaded
+} else {
+    // DOM is already loaded, load cart count immediately
+    loadCartCount();
+}
+
+// Force cart notification update on page visibility change (when user returns to tab)
+document.addEventListener('visibilitychange', function() {
+    if (!document.hidden) {
+        loadCartCount();
+    }
+});
+
+// Force refresh cart notification (can be called from other scripts)
+window.refreshCartNotification = function() {
+    loadCartCount();
+};
+
+// Cart notification system
+function updateCartNotification(count) {
+    const notifications = document.querySelectorAll('.cart-notification');
+    const safeCount = parseInt(count, 10) || 0;
+    
+    notifications.forEach(notification => {
+        notification.textContent = safeCount;
+        if (safeCount > 0) {
+            notification.classList.add('show');
+        } else {
+            notification.classList.remove('show');
+        }
+    });
+}
+
+function loadCartCount() {
+    fetch('ajax/cart-handler.php?action=get_count')
+    .then(response => response.json())
+    .then(data => {
+        const count = data && data.success ? data.count : 0;
+        updateCartNotification(count);
+    })
+    .catch(error => {
+        console.error('Error loading cart count:', error);
+        updateCartNotification(0);
+    });
+}
+
 // Updated Buy now function - creates separate buy now session
 function buyNow(productId, quantity = 1) {
     // Show loading state
@@ -168,7 +194,7 @@ function updateCartQuantity(productId, quantity) {
                         updateStockMessage(productId, quantity);
                     }
                     
-                    updateCartCount();
+                    loadCartCount();
                     showNotification(response.message, 'success');
                 } else {
                     showNotification(response.message, 'error');
@@ -188,9 +214,11 @@ function updateCartQuantity(productId, quantity) {
 
 // Enhanced removeCartItem function
 function removeCartItem(productId) {
-    if (!confirm('Are you sure you want to remove this item from your cart?')) {
-        return;
-    }
+    openConfirm('Are you sure you want to remove this item from your cart?', function() {
+        // proceed with removal
+        // original caller should continue after this modal confirms
+    });
+    return;
     
     const xhr = new XMLHttpRequest();
     xhr.open('POST', 'cart-ajax.php', true);
@@ -211,7 +239,7 @@ function removeCartItem(productId) {
                         itemRow.remove();
                     }
                     
-                    updateCartCount();
+                    loadCartCount();
                     showNotification(response.message, 'success');
                     
                     // Check if cart is empty
@@ -269,13 +297,17 @@ function showNotification(message, type) {
     notification.textContent = message;
     notification.style.cssText = `
         position: fixed;
-        top: 20px;
-        right: 20px;
-        padding: 15px;
-        border-radius: 5px;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        padding: 15px 20px;
+        border-radius: 8px;
         color: white;
         z-index: 1000;
-        max-width: 300px;
+        max-width: 400px;
+        text-align: center;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        font-weight: 500;
     `;
     
     if (type === 'success') {
@@ -370,8 +402,7 @@ function initRatingFilters() {
    Document Ready Initializers
    ============================ */
 document.addEventListener('DOMContentLoaded', function() {
-    updateCartCount();
-    setupSearchAutocomplete();
+    loadCartCount();
     
     // Cart: Add to Cart buttons
     const addToCartButtons = document.querySelectorAll('.add-to-cart-btn');

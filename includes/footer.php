@@ -17,8 +17,6 @@
                 <ul>
                     <li><a href="index.php">Home</a></li>
                     <li><a href="products.php">Products</a></li>
-                    <li><a href="about.php">About Us</a></li>
-                    <li><a href="contact.php">Contact</a></li>
                 </ul>
             </div>
             
@@ -26,7 +24,7 @@
                 <h4>Contact Info</h4>
                 <p><i class="fas fa-phone"></i> +1 (555) 123-4567</p>
                 <p><i class="fas fa-envelope"></i> info@pestctrl.com</p>
-                <p><i class="fas fa-map-marker-alt"></i> 123 Pest Control St, City, State 12345</p>
+                <p><i class="fas fa-map-marker-alt"></i>Bacanaya Village, Philippines, 8000</p>
             </div>
         </div>
         

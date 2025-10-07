@@ -75,6 +75,13 @@ if (!function_exists('sanitizeInput')) {
         return htmlspecialchars(stripslashes(trim($data)));
     }
 }
+// Unified currency formatting for Philippine Peso
+if (!function_exists('formatCurrency')) {
+    function formatCurrency($amount) {
+        $num = is_numeric($amount) ? (float)$amount : 0.0;
+        return '₱' . number_format($num, 2);
+    }
+}
 // Get featured products
 function getFeaturedProducts($limit = 8) {
     global $pdo;
@@ -122,8 +129,7 @@ function getProductReviews($productId) {
 // Add to cart with stock validation
 function addToCart($productId, $quantity = 1) {
     if (!isLoggedIn()) {
-        header("Location: login.php");
-        exit();
+        return ["success" => false, "message" => "Not logged in."];
     }
     
     global $pdo;
@@ -170,6 +176,7 @@ function addToCart($productId, $quantity = 1) {
             $stmt = $pdo->prepare("INSERT INTO cart (user_id, product_id, quantity) VALUES (?, ?, ?)");
             $result = $stmt->execute([$userId, $productId, $quantity]);
             
+            
             return ["success" => $result, "message" => $result ? "Product added to cart!" : "Error adding to cart."];
         } catch (PDOException $e) {
             // Handle unique constraint violation - item was added by another process
@@ -177,6 +184,7 @@ function addToCart($productId, $quantity = 1) {
                 // Try to update the existing entry instead
                 $stmt = $pdo->prepare("UPDATE cart SET quantity = quantity + ? WHERE user_id = ? AND product_id = ?");
                 $result = $stmt->execute([$quantity, $userId, $productId]);
+                
                 
                 if ($result && $stmt->rowCount() > 0) {
                     return ["success" => true, "message" => "Product added to cart!"];
@@ -1120,46 +1128,79 @@ function getCartItemsGroupedBySeller() {
     global $pdo;
     $userId = $_SESSION['user_id'];
     
-    $stmt = $pdo->prepare("
-        SELECT 
-            c.*, 
-            p.name, 
-            p.price, 
-            p.image_url, 
-            p.stock_quantity,
-            p.seller_id,
-            u.username as seller_name,
-            u.first_name as seller_first_name,
-            u.last_name as seller_last_name
-        FROM cart c 
-        JOIN products p ON c.product_id = p.id 
-        JOIN users u ON p.seller_id = u.id
-        WHERE c.user_id = ? AND p.status = 'active'
-        ORDER BY p.seller_id, p.name
-    ");
+    // SIMPLIFIED QUERY - Just get cart items first
+    $stmt = $pdo->prepare("SELECT * FROM cart WHERE user_id = ?");
     $stmt->execute([$userId]);
     $cartItems = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
-    // Group by seller
+    // Debug: Log cart items
+    // Debug logs removed
+    
+    if (count($cartItems) === 0) {
+        // No cart items found
+        return [];
+    }
+    
+    // Now get product details for each cart item
     $groupedItems = [];
-    foreach ($cartItems as $item) {
-        $sellerId = $item['seller_id'];
+    foreach ($cartItems as $cartItem) {
+        $productId = $cartItem['product_id'];
+        
+        // Get product details (include inactive products too)
+        $stmt = $pdo->prepare("SELECT * FROM products WHERE id = ?");
+        $stmt->execute([$productId]);
+        $product = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if (!$product) {
+            // Product not found
+            continue;
+        }
+        
+        // Processing product
+        
+        // Check if seller exists
+        if (!$product['seller_id']) {
+            // Product has no seller
+            continue;
+        }
+        
+        // Get seller details
+        $stmt = $pdo->prepare("SELECT username, first_name, last_name FROM users WHERE id = ?");
+        $stmt->execute([$product['seller_id']]);
+        $seller = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if (!$seller) {
+            // Seller not found
+            continue;
+        }
+        
+        // Found seller
+        
+        $sellerId = $product['seller_id'];
         if (!isset($groupedItems[$sellerId])) {
             $groupedItems[$sellerId] = [
                 'seller_id' => $sellerId,
-                'seller_name' => $item['seller_name'],
-                'seller_display_name' => trim($item['seller_first_name'] . ' ' . $item['seller_last_name']) ?: $item['seller_name'],
+                'seller_name' => $seller['username'] ?: 'Unknown Seller',
+                'seller_display_name' => trim($seller['first_name'] . ' ' . $seller['last_name']) ?: ($seller['username'] ?: 'Unknown Seller'),
                 'items' => [],
                 'subtotal' => 0,
                 'item_count' => 0
             ];
         }
         
-        $itemTotal = $item['price'] * $item['quantity'];
+        // Combine cart and product data
+        $item = array_merge($cartItem, $product);
+        $item['seller_name'] = $seller['username'] ?: 'Unknown Seller';
+        $item['seller_first_name'] = $seller['first_name'] ?: '';
+        $item['seller_last_name'] = $seller['last_name'] ?: '';
+        
+        $itemTotal = $product['price'] * $cartItem['quantity'];
         $groupedItems[$sellerId]['items'][] = $item;
         $groupedItems[$sellerId]['subtotal'] += $itemTotal;
-        $groupedItems[$sellerId]['item_count'] += $item['quantity'];
+        $groupedItems[$sellerId]['item_count'] += $cartItem['quantity'];
     }
+    
+    // Final grouped items count: " . count($groupedItems)
     
     return $groupedItems;
 }

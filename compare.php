@@ -621,9 +621,7 @@ $allFeatureNames = array_unique($allFeatureNames);
 </div>
 
 <!-- Notifications -->
-<div id="cart-notification" class="cart-notification" style="display: none;">
-    <span id="notification-message"></span>
-</div>
+<!-- Cart notification is handled by header.php -->
 
 <div id="buy-now-notification" class="buy-now-notification" style="display: none;">
     <span id="buy-now-message"></span>

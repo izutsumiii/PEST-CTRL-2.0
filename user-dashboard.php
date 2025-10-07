@@ -3,6 +3,9 @@ date_default_timezone_set('Asia/Manila');
 require_once 'includes/header.php';
 require_once 'config/database.php';
 
+// spacer below fixed header (add ~8px more)
+echo '<div style="height:41px"></div>';
+
 requireLogin();
 // Include PHPMailer
 use PHPMailer\PHPMailer\PHPMailer;
@@ -244,6 +247,10 @@ if (isset($_POST['cancel_order'])) {
         if ($order && $order['status'] === 'pending') {
             try {
                 $pdo->beginTransaction();
+                // Ensure status history table has proper AUTO_INCREMENT primary key
+                if (function_exists('ensureAutoIncrementPrimary')) {
+                    ensureAutoIncrementPrimary('order_status_history');
+                }
                 
                 // Get order items for email
                 $stmt = $pdo->prepare("SELECT GROUP_CONCAT(CONCAT(p.name, ' (x', oi.quantity, ')') SEPARATOR ', ') as items
@@ -356,13 +363,6 @@ if (!$user) {
 }
 ?>
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Dashboard</title>
-
 <style>
 /* Dashboard Styles */
 * {
@@ -371,12 +371,19 @@ if (!$user) {
     box-sizing: border-box;
 }
 
-body {
-    font-family: var(--font-primary);
-    background-color: var(--bg-secondary);
-    color: var(--text-primary);
-    line-height: 1.6;
+/* Hover for filter tabs */
+.filter-tab:hover {
+    background: #FFD736 !important;
+    color: #130325 !important;
+    border-color: #FFD736 !important;
 }
+
+/* Dark background for user dashboard page */
+body {
+    background-color: #130325 !important;
+}
+
+/* Removed body background override to match header styling */
 
 /* Alert Styles */
 .alert {
@@ -417,20 +424,25 @@ h1 {
     text-shadow: 0 2px 4px var(--shadow-light);
 }
 
+/* My Orders title should be white on dark background */
+.page-title {
+    color: #ffffff !important;
+}
+
 /* Container for the entire dashboard */
 .dashboard-container {
-    max-width: 1200px;
+    max-width: 1400px;
     margin: 0 auto;
     padding: 20px;
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr;
     gap: 30px;
     align-items: start;
 }
 
 /* Full width container for delivered products */
 .dashboard-full-width {
-    max-width: 1200px;
+    max-width: 1400px;
     margin: 30px auto 0;
     padding: 0 20px;
 }
@@ -515,6 +527,8 @@ h1 {
 .user-orders h2 {
     font-size: 1.6rem;
     margin-bottom: 20px;
+    text-transform: uppercase;
+    color: #130325;
 }
 
 .user-orders p {
@@ -745,11 +759,12 @@ h1 {
 .status-item {
     padding: 15px 20px;
     border-bottom: 1px solid #f0f0f0;
-    transition: background-color 0.2s ease;
+    transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 .status-item:hover {
-    background-color: #f8f9fa;
+    background-color: #2d1b4e;
+    color: #FFD736;
 }
 
 .status-item:last-child {
@@ -812,19 +827,21 @@ h1 {
 
 /* Delivered Products Section */
 .delivered-products {
-    background: white;
+    background: #ffffff;
     border-radius: 10px;
     box-shadow: 0 2px 10px rgba(0,0,0,0.1);
     overflow: hidden;
+    margin: 20px 0; /* balanced spacing */
 }
 
 .delivered-products h2 {
-    padding: 20px 25px;
+    padding: 16px 20px;
     margin: 0;
-    background: #e8f5e8;
-    color: #155724;
-    border-bottom: 2px solid #c3e6cb;
+    background: #130325;
+    color: #ffffff;
+    border-bottom: 1px solid #2d1b4e; /* remove yellow border */
     font-size: 1.3rem;
+    text-transform: uppercase;
 }
 
 .delivered-products-scroll {
@@ -889,8 +906,8 @@ h1 {
 }
 
 .btn-review {
-    background: #007bff;
-    color: white;
+    background: #130325;
+    color: #FFD736;
     padding: 10px 20px;
     border: none;
     border-radius: 5px;
@@ -901,9 +918,9 @@ h1 {
 }
 
 .btn-review:hover {
-    background: #0056b3;
+    background: #2d1b4e;
     text-decoration: none;
-    color: white;
+    color: #FFD736;
 }
 
 .no-delivered-products {
@@ -1125,8 +1142,6 @@ h1 {
     animation-delay: 0.4s;
 }
 </style>
-</head>
-<body>
 
 <script>
 // Auto-dismiss alert notifications after 4 seconds
@@ -1168,21 +1183,13 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 });
-    function debugCancelForm(orderId) {
-    console.log('Cancel button clicked for order:', orderId);
-    console.log('Form data will be:', {
-        cancel_order: '1',
-        order_id: orderId
+    function confirmCancelOrder(orderId) {
+    // Minimal confirmation for production
+    openConfirm('Are you sure you want to cancel order #' + orderId + '?', function(){
+        const form = document.querySelector('form[action*="cancel_order"][data-order-id="' + orderId + '"]');
+        if (form) form.submit();
     });
-    
-    // Show confirmation
-    if (confirm('DEBUG: Are you sure you want to cancel order #' + orderId + '?')) {
-        console.log('User confirmed cancellation');
-        return true;
-    } else {
-        console.log('User cancelled the cancellation');
-        return false;
-    }
+    return false;
 }
 // Order Management JavaScript (FIXED VERSION)
 class OrderManager {
@@ -1193,45 +1200,6 @@ class OrderManager {
     init() {
         this.setupEventListeners();
     }
-// Auto-dismiss alert notifications after 4 seconds
-document.addEventListener('DOMContentLoaded', function() {
-    // Find all alert messages
-    const alerts = document.querySelectorAll('.alert, .alert-success, .alert-error, .alert-warning, .success-message, .error-message');
-    
-    alerts.forEach(function(alert) {
-        // Add fade-out animation styles if not already present
-        if (!alert.style.transition) {
-            alert.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
-        }
-        
-        // Set timer to fade out after 4 seconds
-        setTimeout(function() {
-            // Add fade-out effect
-            alert.style.opacity = '0';
-            alert.style.transform = 'translateY(-20px)';
-            
-            // Remove element from DOM after animation completes
-            setTimeout(function() {
-                alert.remove();
-            }, 500); // Wait for fade animation to complete
-        }, 4000); // 4 seconds delay
-    });
-    
-    // Optional: Add click-to-dismiss functionality
-    alerts.forEach(function(alert) {
-        alert.style.cursor = 'pointer';
-        alert.title = 'Click to dismiss';
-        
-        alert.addEventListener('click', function() {
-            this.style.opacity = '0';
-            this.style.transform = 'translateY(-20px)';
-            
-            setTimeout(() => {
-                this.remove();
-            }, 500);
-        });
-    });
-});
     setupEventListeners() {
         // Cancel order modal events - FIXED
         document.addEventListener('click', (e) => {
@@ -1250,10 +1218,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // Handle direct cancel form submissions from status grid
             if (e.target.type === 'submit' && e.target.textContent.includes('Cancel Order')) {
-                const confirmCancel = confirm('Are you sure you want to cancel this order? This action cannot be undone.');
-                if (!confirmCancel) {
-                    e.preventDefault();
-                }
+                openConfirm('Are you sure you want to cancel this order? This action cannot be undone.', function(){
+                    // proceed
+                    e.target.closest('form')?.submit();
+                });
+                e.preventDefault();
             }
         });
 
@@ -1293,7 +1262,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 </script>
 
-<h1>My Dashboard</h1>
+<h1 class="page-title">My Orders</h1>
 
 <!-- Display cancel message if exists -->
 <?php if (isset($cancelMessage)): ?>
@@ -1301,18 +1270,23 @@ document.addEventListener('DOMContentLoaded', () => {
 <?php endif; ?>
 
 <div class="dashboard-container">
-   <div class="user-info">
-    <h2>Profile Information</h2>
-    <p><strong>Name:</strong> <?php echo htmlspecialchars($user['first_name'] . ' ' . $user['last_name']); ?></p>
-    <p><strong>Email:</strong> <?php echo htmlspecialchars($user['email']); ?></p>
-    <p><strong>Username: </strong> <?php echo htmlspecialchars($user['username']); ?></p>
-    <p><strong>Address:</strong> <?php echo htmlspecialchars($user['address'] ?? 'Not provided'); ?></p>
-    <p><strong>Phone:</strong> <?php echo htmlspecialchars($user['phone'] ?? 'Not provided'); ?></p>
-    <a href="edit-profile.php" class="btn btn-primary">Edit Profile</a>
-</div>
+   <!-- Profile panel temporarily hidden; moved to Edit Profile page -->
+   <div class="user-info" style="display:none"></div>
 
    <div class="user-orders">
     <h2>Order History</h2>
+
+    <!-- Status filter tabs -->
+    <div class="order-filters" style="margin: 10px 0 20px 0; display:flex; gap:10px; flex-wrap:wrap;">
+        <?php
+        $statuses = ['all' => 'All', 'pending' => 'Pending', 'processing' => 'Processing', 'shipped' => 'Shipped', 'to receive' => 'To Receive', 'delivered' => 'Delivered', 'cancelled' => 'Cancelled'];
+        $activeStatus = isset($_GET['status']) ? strtolower($_GET['status']) : 'all';
+        foreach ($statuses as $key => $label) {
+            $isActive = ($activeStatus === $key) ? ' style="background:#FFD736;color:#130325;border:1px solid #FFD736;"' : '';
+            echo '<a href="user-dashboard.php?status=' . urlencode($key) . '" class="btn filter-tab" style="padding:6px 12px;border:1px solid #ddd;border-radius:16px;color:#130325;background:#fff;text-decoration:none;font-weight:800;text-transform:uppercase;"' . $isActive . '>' . htmlspecialchars($label) . '</a>';
+        }
+        ?>
+    </div>
     
     <?php if (empty($orders)): ?>
         <div class="no-orders">
@@ -1320,7 +1294,14 @@ document.addEventListener('DOMContentLoaded', () => {
             <a href="products.php" class="btn btn-primary">Start Shopping</a>
         </div>
     <?php else: ?>
-        <?php foreach ($orders as $order): ?>
+        <?php
+        $filter = isset($_GET['status']) ? strtolower(trim($_GET['status'])) : 'all';
+        foreach ($orders as $order):
+            $orderStatusKey = strtolower($order['status']);
+            if ($filter !== 'all' && $filter !== $orderStatusKey) {
+                continue;
+            }
+        ?>
             <div class="order-card" data-order-id="<?php echo $order['id']; ?>">
                 <div class="order-header">
                     <div class="order-number">Order #<?php echo str_pad($order['id'], 6, '0', STR_PAD_LEFT); ?></div>
@@ -1405,136 +1386,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 </div>
 
-<!-- Order Status Grid and Delivered Products -->
-<div class="dashboard-full-width">
-    <!-- Order Status Grid -->
-    <div class="order-status-grid">
-        <!-- Pending Orders -->
-        <div class="status-container pending">
-            <h3>Pending Orders</h3>
-            <div class="status-items">
-                <?php if (empty($pendingOrders)): ?>
-                    <div class="empty-status">No pending orders</div>
-                <?php else: ?>
-                    <?php foreach ($pendingOrders as $order): ?>
-                        <div class="status-item">
-                            <div class="status-item-header">
-                                <span class="order-id">Order #<?php echo str_pad($order['id'], 6, '0', STR_PAD_LEFT); ?></span>
-                                <span class="order-date"><?php echo date('M j, Y', strtotime($order['created_at'])); ?></span>
-                            </div>
-                            <div class="status-item-details">
-                                <div class="order-items"><?php echo htmlspecialchars($order['items']); ?></div>
-                                <div class="order-meta">
-                                    <span><strong>Status:</strong> Order received, awaiting confirmation</span>
-                                    <span><strong>Estimated Processing:</strong> 1-2 business days</span>
-                                </div>
-                            </div>
-                            <div class="status-item-total">Total: $<?php echo number_format((float)$order['total_amount'], 2); ?></div>
-                            <?php if (canCustomerCancelOrder($order)): ?>
-                                <form method="POST" action="" style="margin-top: 10px;" onsubmit="return confirm('Are you sure you want to cancel this order? This action cannot be undone.');">
-                                    <input type="hidden" name="order_id" value="<?php echo $order['id']; ?>">
-                                    <input type="hidden" name="cancel_order" value="1">
-                                    <button type="submit" class="btn btn-danger" style="font-size: 0.8rem; padding: 8px 15px;">Cancel Order</button>
-                                </form>
-                            <?php endif; ?>
-                        </div>
-                    <?php endforeach; ?>
-                <?php endif; ?>
-            </div>
-        </div>
-
-        <!-- Processing Orders -->
-        <div class="status-container processing">
-            <h3>Processing Orders</h3>
-            <div class="status-items">
-                <?php if (empty($processingOrders)): ?>
-                    <div class="empty-status">No processing orders</div>
-                <?php else: ?>
-                    <?php foreach ($processingOrders as $order): ?>
-                        <div class="status-item">
-                            <div class="status-item-header">
-                                <span class="order-id">Order #<?php echo str_pad($order['id'], 6, '0', STR_PAD_LEFT); ?></span>
-                                <span class="order-date"><?php echo date('M j, Y', strtotime($order['created_at'])); ?></span>
-                            </div>
-                            <div class="status-item-details">
-                                <div class="order-items"><?php echo htmlspecialchars($order['items']); ?></div>
-                                <div class="order-meta">
-                                    <span><strong>Status:</strong> Order confirmed and being prepared</span>
-                                    <span><strong>Processing Stage:</strong> Item preparation in progress</span>
-                                    <span><strong>Estimated Ship Date:</strong> <?php echo date('M j, Y', strtotime($order['created_at'] . ' +2 days')); ?></span>
-                                </div>
-                            </div>
-                            <div class="status-item-total">Total: $<?php echo number_format((float)$order['total_amount'], 2); ?></div>
-                        </div>
-                    <?php endforeach; ?>
-                <?php endif; ?>
-            </div>
-        </div>
-
-        <!-- Shipped Orders -->
-        <div class="status-container shipped">
-            <h3>Shipped Orders</h3>
-            <div class="status-items">
-                <?php if (empty($shippedOrders)): ?>
-                    <div class="empty-status">No shipped orders</div>
-                <?php else: ?>
-                    <?php foreach ($shippedOrders as $order): ?>
-                        <div class="status-item">
-                            <div class="status-item-header">
-                                <span class="order-id">Order #<?php echo str_pad($order['id'], 6, '0', STR_PAD_LEFT); ?></span>
-                                <span class="order-date"><?php echo date('M j, Y', strtotime($order['created_at'])); ?></span>
-                            </div>
-                            <div class="status-item-details">
-                                <div class="order-items"><?php echo htmlspecialchars($order['items']); ?></div>
-                                <div class="order-meta">
-                                    <span><strong>Status:</strong> Package shipped and in transit</span>
-                                    <?php if (!empty($order['tracking_number'])): ?>
-                                        <span><strong>Tracking Number:</strong> <?php echo htmlspecialchars($order['tracking_number']); ?></span>
-                                    <?php endif; ?>
-                                    <span><strong>Shipped Date:</strong> <?php echo date('M j, Y', strtotime($order['shipped_at'] ?? $order['updated_at'])); ?></span>
-                                    <span><strong>Estimated Delivery:</strong> <?php echo date('M j, Y', strtotime($order['created_at'] . ' +5 days')); ?></span>
-                                </div>
-                            </div>
-                            <div class="status-item-total">Total: $<?php echo number_format((float)$order['total_amount'], 2); ?></div>
-                        </div>
-                    <?php endforeach; ?>
-                <?php endif; ?>
-            </div>
-        </div>
-
-        <!-- Cancelled Orders -->
-        <div class="status-container cancelled">
-            <h3>Cancelled Orders</h3>
-            <div class="status-items">
-                <?php if (empty($cancelledOrders)): ?>
-                    <div class="empty-status">No cancelled orders</div>
-                <?php else: ?>
-                    <?php foreach ($cancelledOrders as $order): ?>
-                        <div class="status-item">
-                            <div class="status-item-header">
-                                <span class="order-id">Order #<?php echo str_pad($order['id'], 6, '0', STR_PAD_LEFT); ?></span>
-                                <span class="order-date"><?php echo date('M j, Y', strtotime($order['created_at'])); ?></span>
-                            </div>
-                            <div class="status-item-details">
-                                <div class="order-items"><?php echo htmlspecialchars($order['items']); ?></div>
-                                <div class="order-meta">
-                                    <span><strong>Status:</strong> Order cancelled</span>
-                                    <span><strong>Cancelled Date:</strong> <?php echo date('M j, Y', strtotime($order['cancelled_at'] ?? $order['updated_at'])); ?></span>
-                                    <?php if (!empty($order['cancellation_reason'])): ?>
-                                        <span><strong>Reason:</strong> <?php echo htmlspecialchars($order['cancellation_reason']); ?></span>
-                                    <?php endif; ?>
-                                    <span><strong>Refund Status:</strong> <?php echo !empty($order['refund_status']) ? ucfirst($order['refund_status']) : 'Processing'; ?></span>
-                                </div>
-                            </div>
-                            <div class="status-item-total">Total: $<?php echo number_format((float)$order['total_amount'], 2); ?></div>
-                        </div>
-                    <?php endforeach; ?>
-                <?php endif; ?>
-            </div>
-        </div>
-    </div>
-
-    <!-- Delivered Products - Add Reviews Section -->
+<!-- Delivered Products - Add Reviews Section -->
     <div class="delivered-products">
         <h2>Delivered Products - Add Reviews</h2>
         <div class="delivered-products-scroll">

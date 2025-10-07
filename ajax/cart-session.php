@@ -14,7 +14,28 @@ $response = ['success' => false, 'message' => ''];
 
 switch ($action) {
     case 'get_count':
-        $count = getSessionCartCount();
+        $count = 0;
+        
+        // First try session cart
+        if (function_exists('getSessionCartCount')) {
+            $count = getSessionCartCount();
+        }
+        
+        // If session cart is empty but user is logged in, pull DB cart count
+        if ($count === 0 && function_exists('isLoggedIn') && isLoggedIn() && isset($_SESSION['user_id'])) {
+            try {
+                global $pdo;
+                $stmt = $pdo->prepare("SELECT COALESCE(SUM(quantity),0) as count FROM cart WHERE user_id = ?");
+                $stmt->execute([$_SESSION['user_id']]);
+                $row = $stmt->fetch(PDO::FETCH_ASSOC);
+                if ($row && isset($row['count'])) {
+                    $count = (int)$row['count'];
+                }
+            } catch (Exception $e) {
+                error_log('Cart count DB error: ' . $e->getMessage());
+            }
+        }
+        
         echo json_encode(['success' => true, 'count' => $count]);
         break;
         

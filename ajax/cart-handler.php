@@ -4,13 +4,8 @@ require_once '../config/database.php';
 
 header('Content-Type: application/json');
 
-// Check if user is logged in for cart operations
-if (!isLoggedIn()) {
-    echo json_encode(['success' => false, 'message' => 'Not logged in']);
-    exit();
-}
-
-$userId = $_SESSION['user_id'];
+// Get user ID if logged in
+$userId = isLoggedIn() ? $_SESSION['user_id'] : null;
 
 // Handle JSON input
 $input = json_decode(file_get_contents('php://input'), true);
@@ -23,6 +18,11 @@ if (empty($action) && isset($input['product_id'])) {
 
 switch ($action) {
     case 'add_to_cart':
+        // Check if user is logged in for cart operations
+        if (!$userId) {
+            echo json_encode(['success' => false, 'message' => 'Not logged in']);
+            exit();
+        }
         // Get product ID and quantity from JSON input or POST data
         $productId = isset($input['product_id']) ? intval($input['product_id']) : (isset($_POST['product_id']) ? intval($_POST['product_id']) : 0);
         $quantity = isset($input['quantity']) ? intval($input['quantity']) : (isset($_POST['quantity']) ? intval($_POST['quantity']) : 1);
@@ -46,15 +46,31 @@ switch ($action) {
         break;
         
     case 'get_count':
-        $stmt = $pdo->prepare("SELECT SUM(quantity) as count FROM cart WHERE user_id = ?");
-        $stmt->execute([$userId]);
-        $result = $stmt->fetch(PDO::FETCH_ASSOC);
-        $count = $result['count'] ? $result['count'] : 0;
+        $count = 0;
+        
+        if ($userId) {
+            // User is logged in, get count from database
+            $stmt = $pdo->prepare("SELECT SUM(quantity) as count FROM cart WHERE user_id = ?");
+            $stmt->execute([$userId]);
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            $count = $result['count'] ? $result['count'] : 0;
+            error_log("Cart Debug - Cart count for user $userId: $count");
+        } else {
+            // User not logged in, check session cart
+            if (function_exists('getSessionCartCount')) {
+                $count = getSessionCartCount();
+            }
+        }
         
         echo json_encode(['success' => true, 'count' => $count]);
         break;
         
     case 'update_quantity':
+        // Check if user is logged in for cart operations
+        if (!$userId) {
+            echo json_encode(['success' => false, 'message' => 'Not logged in']);
+            exit();
+        }
         $productId = isset($input['product_id']) ? intval($input['product_id']) : (isset($_POST['product_id']) ? intval($_POST['product_id']) : 0);
         $quantity = isset($input['quantity']) ? intval($input['quantity']) : (isset($_POST['quantity']) ? intval($_POST['quantity']) : 1);
         

@@ -53,8 +53,77 @@ $categories = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
 
 <style>
-/* Compare Bar Styles */
+/* Products grid and card styles copied from index.php */
+.products-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 20px;
+    margin: 20px 0;
+}
+
+.product-card {
+    position: relative;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 15px;
+    text-align: center;
+    transition: transform 0.2s, box-shadow 0.2s;
+    background: #f8f9fa;
+    color: #333;
+    display: flex;
+    flex-direction: column;
+}
+
+.product-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+.product-card img {
+    width: 100%;
+    max-width: 200px;
+    height: 200px;
+    object-fit: cover;
+    margin-bottom: 10px;
+}
+
+.product-checkbox {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: rgba(255, 255, 255, 0.9);
+    padding: 6px 10px;
+    border-radius: 20px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border: 1px solid #e6e6e6;
+    z-index: 2;
+}
+
+.product-checkbox:hover { background: #ffffff; border-color: #007bff; }
+.product-checkbox input[type="checkbox"] { accent-color: #007bff; transform: scale(1.2); }
+.product-checkbox label { margin: 0; color: #130325; font-size: 12px; font-weight: 600; }
+
+.product-name { margin: 10px 0; font-size: 1.1em; font-weight: bold; color: #333; }
+.price { font-weight: bold; color: #130325; font-size: 1.2em; margin: 10px 0; }
+.rating { color: #130325; margin: 10px auto 4px auto; font-size: 1.2rem; letter-spacing: -2px; text-align: center; }
+.rating-text { color: #130325; font-size: 0.85rem; display: block; text-align: left; margin-top: 4px; }
+.product-card .stock { color: #28a745; font-size: 0.95rem; margin: 15px 0; font-weight: 600; padding: 5px 12px; background: rgba(40, 167, 69, 0.1); border-radius: 20px; display: inline-block; }
+
+.product-actions { display: flex; flex-direction: column; gap: 10px; margin-top: auto; }
+.btn { padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; transition: all 0.3s ease; text-decoration: none; display: inline-block; text-align: center; font-weight: 600; }
+.btn-details { background-color: #130325; color: #F9F9F9; }
+.btn-details:hover { background-color: rgba(19, 3, 37, 0.8); transform: translateY(-2px); text-decoration: none; }
+.btn-cart { background-color: #007bff; color: #F9F9F9; }
+.btn-cart:hover:not(:disabled) { background-color: #0056b3; transform: translateY(-2px); }
+.btn-cart:disabled { background-color: #6c757d; color: #F9F9F9; opacity: 0.6; cursor: not-allowed; }
+.btn-compare { background-color: #130325; color: #F9F9F9; font-weight: bold; }
+
+/* Compare bar - hidden by default (match index.php behavior) */
 .compare-bar {
+    display: none;
     position: fixed;
     bottom: 0;
     left: 0;
@@ -63,170 +132,17 @@ $categories = $stmt->fetchAll(PDO::FETCH_ASSOC);
     box-shadow: 0 -2px 10px var(--shadow-medium);
     z-index: 1000;
     padding: 15px;
-    border-top: 2px solid var(--accent-yellow);
+    border-top: 2px solid #FFD736;
 }
 
-.compare-content {
-    max-width: 1200px;
-    margin: 0 auto;
-    display: flex;
-    align-items: center;
-    gap: 20px;
-    flex-wrap: wrap;
-}
-
-.compare-content h4 {
-    margin: 0;
-    color: var(--primary-dark);
-    font-size: 16px;
-}
-
-#compare-items {
-    display: flex;
-    gap: 10px;
-    flex: 1;
-    flex-wrap: wrap;
-    min-width: 200px;
-}
-
-.compare-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    background: var(--bg-secondary);
-    padding: 8px 12px;
-    border-radius: 20px;
-    font-size: 14px;
-    border: 1px solid var(--border-secondary);
-}
-
-.compare-item img {
-    width: 30px;
-    height: 30px;
-    object-fit: cover;
-    border-radius: 4px;
-}
-
-.compare-item span {
-    max-width: 150px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.remove-compare {
-    background: none;
-    border: none;
-    color: #dc3545;
-    font-size: 18px;
-    cursor: pointer;
-    padding: 0;
-    width: 20px;
-    height: 20px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-    transition: background-color 0.2s;
-}
-
-.remove-compare:hover {
-    background: rgba(220, 53, 69, 0.1);
-}
-
-.compare-actions {
-    display: flex;
-    gap: 10px;
-}
-
-.btn {
-    padding: 8px 16px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    text-decoration: none;
-    display: inline-block;
-    font-size: 14px;
-    transition: all 0.2s;
-}
-
-.btn-compare {
-    background-color: #130325;
-    color: #F9F9F9;
-    font-weight: bold;
-    border: 2px solid #FFD736;
-}
-
-.btn-compare:hover:not(:disabled) {
-    background-color: rgba(19, 3, 37, 0.8);
-    border-color: #e6c230;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 15px rgba(19, 3, 37, 0.3);
-}
-
-.btn-compare:disabled {
-    background-color: #6c757d;
-    color: #F9F9F9;
-    border-color: #6c757d;
-    cursor: not-allowed;
-    opacity: 0.6;
-}
-
-.btn-clear {
-    background: #dc3545;
-    color: #F9F9F9;
-}
-
-.btn-clear:hover {
-    background: #c82333;
-}
-
-/* Product card checkbox styling */
-.product-checkbox {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    background: white;
-    padding: 5px;
-    border-radius: 4px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    font-size: 12px;
-    z-index: 10;
-}
-
-.product-card {
-    position: relative;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    padding: 15px;
-    background: white;
-    transition: all 0.2s;
-}
-
-.product-card:hover {
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-    border-color: #007bff;
-}
-
-/* Responsive design */
-@media (max-width: 768px) {
-    .compare-content {
-        flex-direction: column;
-        gap: 10px;
-        align-items: stretch;
-    }
-    
-    .compare-actions {
-        justify-content: center;
-    }
-    
-    #compare-items {
-        justify-content: center;
-    }
-}
+.compare-content { max-width: 1200px; margin: 0 auto; display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
+#compare-items { display: flex; gap: 10px; flex: 1; flex-wrap: wrap; min-width: 200px; }
+.compare-item { display: flex; align-items: center; gap: 8px; background: var(--bg-secondary); padding: 8px 12px; border-radius: 20px; font-size: 14px; border: 1px solid var(--border-secondary); }
+.compare-item img { width: 30px; height: 30px; object-fit: cover; border-radius: 4px; }
+.compare-item span { max-width: 150px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.remove-compare { background: none; border: none; color: #dc3545; font-size: 18px; cursor: pointer; padding: 0; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; border-radius: 50%; transition: background-color 0.2s; }
+.remove-compare:hover { background: rgba(220, 53, 69, 0.1); }
+.compare-actions { display: flex; gap: 10px; }
 </style>
 
 <div class="page-header">
@@ -234,7 +150,7 @@ $categories = $stmt->fetchAll(PDO::FETCH_ASSOC);
 </div>
 
 <!-- Compare Products Bar -->
-<div id="compare-bar" class="compare-bar" style="display: none;">
+<div id="compare-bar" class="compare-bar">
     <div class="compare-content">
         <h4>Compare Products (<span id="compare-count">0</span>/4)</h4>
         <div id="compare-items"></div>
@@ -273,8 +189,8 @@ $categories = $stmt->fetchAll(PDO::FETCH_ASSOC);
                     <?php foreach ($products as $product): ?>
                         <div class="product-card">
                             <div class="product-checkbox">
-                                <input type="checkbox" 
-                                       class="compare-checkbox" 
+                                <input type="checkbox"
+                                       class="compare-checkbox"
                                        data-product-id="<?php echo $product['id']; ?>"
                                        data-product-name="<?php echo htmlspecialchars($product['name']); ?>"
                                        data-product-price="<?php echo $product['price']; ?>"
@@ -296,40 +212,31 @@ $categories = $stmt->fetchAll(PDO::FETCH_ASSOC);
                             }
                             $listImg = resolveProductImageUrl($product['image_url'] ?? '');
                             ?>
-                            <img loading="lazy" src="<?php echo htmlspecialchars($listImg ?: 'assets/images/placeholder.jpg'); ?>" 
-                                 alt="<?php echo htmlspecialchars($product['name']); ?>">
-                            <h3><?php echo htmlspecialchars($product['name']); ?></h3>
-                            <div class="price">₱<?php echo number_format($product['price'], 2); ?></div>
+                            <img loading="lazy" src="<?php echo htmlspecialchars($listImg ?: 'assets/images/placeholder.jpg'); ?>" alt="<?php echo htmlspecialchars($product['name']); ?>">
+                            <h3 class="product-name"><?php echo htmlspecialchars($product['name']); ?></h3>
+                            <p class="price">₱<?php echo number_format($product['price'], 2); ?></p>
                             <div class="rating">
                                 <?php
-                                $rating = $product['rating'] ?? 0;
-                                $fullStars = floor($rating);
-                                $hasHalfStar = ($rating - $fullStars) >= 0.5;
-                                
-                                for ($i = 1; $i <= 5; $i++) {
-                                    if ($i <= $fullStars) {
-                                        echo '★';
-                                    } elseif ($i == $fullStars + 1 && $hasHalfStar) {
-                                        echo '☆';
-                                    } else {
-                                        echo '☆';
+                                    $rating = $product['rating'] ?? 0;
+                                    $fullStars = floor($rating);
+                                    $hasHalfStar = ($rating - $fullStars) >= 0.5;
+                                    for ($i = 1; $i <= 5; $i++) {
+                                        if ($i <= $fullStars) {
+                                            echo '★';
+                                        } elseif ($i == $fullStars + 1 && $hasHalfStar) {
+                                            echo '☆';
+                                        } else {
+                                            echo '☆';
+                                        }
                                     }
-                                }
                                 ?>
-                                <span class="rating-text">(<?php echo number_format($rating, 1); ?>) - <?php echo $product['review_count'] ?? 0; ?> reviews</span>
+                                <span class="rating-text">(<?php echo number_format($product['rating'] ?? 0, 1); ?>) - <?php echo $product['review_count'] ?? 0; ?> reviews</span>
                             </div>
                             <div class="stock"><?php echo $product['stock_quantity']; ?> in stock</div>
                             <div class="product-actions">
                                 <a href="product-detail.php?id=<?php echo $product['id']; ?>" class="btn btn-details">View Details</a>
-                                <button onclick="addToCart(<?php echo $product['id']; ?>, 1)" 
-                                        class="btn btn-cart" 
-                                        data-product-id="<?php echo $product['id']; ?>">
+                                <button onclick="addToCart(<?php echo $product['id']; ?>, 1)" class="btn btn-cart" data-product-id="<?php echo $product['id']; ?>">
                                     Add to Cart
-                                </button>
-                                <button onclick="buyNow(<?php echo $product['id']; ?>, 1)" 
-                                        class="btn btn-buy"
-                                        data-buy-product-id="<?php echo $product['id']; ?>">
-                                    Buy Now
                                 </button>
                             </div>
                         </div>
@@ -340,7 +247,7 @@ $categories = $stmt->fetchAll(PDO::FETCH_ASSOC);
     </div>
     
     <div class="filters">
-    <h2>Filters</h2>
+    <h2>FILTERS</h2>
     <form method="GET">
         <input type="hidden" name="search" value="<?php echo htmlspecialchars($search); ?>">
         
@@ -427,7 +334,9 @@ if (!empty($selectedCategories)) {
                     echo 'data-parent="' . $category['parent_id'] . '" ';
                 }
                 echo '>';
-                echo htmlspecialchars($category['name']);
+                $displayName = preg_replace('/^[\x{1F300}-\x{1FAFF}\x{2600}-\x{27BF}\x{FE0F}\x{200D}\s]+/u', '', (string)$category['name']);
+                $displayName = html_entity_decode($displayName, ENT_QUOTES, 'UTF-8');
+                echo htmlspecialchars($displayName);
                 echo '</label>';
                 echo '</div>';
                 
@@ -524,12 +433,10 @@ if (!empty($selectedCategories)) {
  
 
 <!-- Cart notification -->
-<div id="cart-notification" class="cart-notification" style="display: none;">
-    <span id="notification-message"></span>
-</div>
+<!-- Cart notification is handled by header.php -->
 
 <!-- Buy Now notification -->
-<div id="buy-now-notification" class="buy-now-notification" style="display: none;">
+<div id="buy-now-notification" class="buy-now-notification">
     <span id="buy-now-message"></span>
 </div>
 
@@ -645,10 +552,8 @@ p, span, div {
     gap: 8px;
 }
 
-.filters h2::before {
-    content: "🔍";
-    font-size: 1.2em;
-}
+/* removed emoji before filter title */
+.filters h2::before { content: ""; }
 
 .filter-group {
     margin-bottom: 16px;
@@ -737,11 +642,7 @@ p, span, div {
     gap: 8px;
 }
 
-.filter-group h3::before {
-    content: "▶";
-    color: var(--primary-light);
-    font-size: 0.8em;
-}
+.filter-group h3::before { content: ""; }
 
 /* Form Controls */
 .filter-group select,
@@ -1045,7 +946,7 @@ p, span, div {
     display: flex;
     flex-direction: column;
     gap: 12px;
-    margin-top: 20px;
+    margin-top: auto;
 }
 
 /* Buttons */
@@ -1088,30 +989,34 @@ p, span, div {
 }
 
 .btn-cart {
-    background-color: #FFD736;
-    color: #130325;
+    background-color: #007bff; /* blue */
+    color: #F9F9F9;
 }
 
 .btn-cart:hover:not(:disabled) {
-    background-color: #e6c230;
+    background-color: #0056b3; /* darker blue */
 }
 
 .btn-cart:disabled {
+    background-color: #6c757d;
+    color: #F9F9F9;
     opacity: 0.6;
     cursor: not-allowed;
 }
 
 .btn-buy {
-    background-color: #130325;
-    color: #F9F9F9;
+    background-color: #FFD736; /* yellow */
+    color: #130325;
     font-weight: bold;
 }
 
 .btn-buy:hover:not(:disabled) {
-    background-color: rgba(19, 3, 37, 0.8);
+    background-color: #e6c230; /* darker yellow */
 }
 
 .btn-buy:disabled {
+    background-color: #6c757d;
+    color: #F9F9F9;
     opacity: 0.6;
     cursor: not-allowed;
 }
@@ -1293,7 +1198,6 @@ p, span, div {
 }
 
 /* Notifications */
-.cart-notification,
 .buy-now-notification {
     position: fixed;
     top: 30px;
@@ -1319,14 +1223,12 @@ p, span, div {
     }
 }
 
-.cart-notification.success,
 .buy-now-notification.success {
     background: linear-gradient(45deg, #d4edda, #c3e6cb);
     color: #155724;
     border-left: 5px solid #28a745;
 }
 
-.cart-notification.error,
 .buy-now-notification.error {
     background: linear-gradient(45deg, #f8d7da, #f5c6cb);
     color: #721c24;
@@ -1465,7 +1367,6 @@ p, span, div {
         height: 200px;
     }
     
-    .cart-notification,
     .buy-now-notification {
         right: 15px;
         left: 15px;
@@ -1685,73 +1586,7 @@ document.addEventListener('DOMContentLoaded', function() {
     loadCartCount();
 });
 
-// Add to cart function (from index.php)
-function addToCart(productId, quantity = 1) {
-    // Check if user is logged in
-    <?php $isLoggedIn = isset($_SESSION['user_id']); ?>
-    var isLoggedIn = <?php echo json_encode($isLoggedIn); ?>;
-    if (!isLoggedIn) {
-        window.location.href = 'login.php';
-        return;
-    }
-    
-    // Show loading state
-    const button = document.querySelector(`button[data-product-id="${productId}"]`);
-    if (!button) return;
-    
-    const originalText = button.textContent;
-    button.textContent = 'Adding...';
-    button.disabled = true;
-    
-    // Make AJAX request to add item to cart
-    fetch('ajax/cart-handler.php', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            product_id: productId,
-            quantity: quantity
-        })
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('Network response was not ok');
-        }
-        return response.json();
-    })
-    .then(data => {
-        console.log('Cart response data:', data); // Debug log
-        if (data.success) {
-            // Show success notification
-            showNotification('Product added to cart!', 'success');
-            
-            // Update cart count if you have a cart counter in header
-            if (typeof updateCartCount === 'function' && data.cartCount) {
-                updateCartCount(data.cartCount);
-            }
-            
-            // Temporarily change button text
-            button.textContent = '✓ Added';
-            setTimeout(() => {
-                button.textContent = originalText;
-                button.disabled = false;
-            }, 2000);
-        } else {
-            // Show error notification
-            console.log('Cart error:', data.message); // Debug log
-            showNotification(data.message || 'Error adding to cart', 'error');
-            button.textContent = originalText;
-            button.disabled = false;
-        }
-    })
-    .catch(error => {
-        console.error('Cart fetch error:', error);
-        showNotification('Error adding to cart', 'error');
-        button.textContent = originalText;
-        button.disabled = false;
-    });
-}
+// Use the addToCart function from assets/script.js
 
 // Independent Buy Now function
 function buyNow(productId, quantity = 1) {
@@ -1815,25 +1650,7 @@ function buyNow(productId, quantity = 1) {
 }
 
 // Show cart notification function
-function showNotification(message, type = 'success') {
-    console.log('showNotification called:', message, type); // Debug log
-    const notification = document.getElementById('cart-notification');
-    const messageElement = document.getElementById('notification-message');
-    
-    if (!notification || !messageElement) {
-        console.error('Notification elements not found:', {notification, messageElement});
-        return;
-    }
-    
-    messageElement.textContent = message;
-    notification.className = 'cart-notification ' + type;
-    notification.style.display = 'block';
-    
-    // Hide after 3 seconds
-    setTimeout(() => {
-        notification.style.display = 'none';
-    }, 3000);
-}
+// showNotification function is handled by assets/script.js
 
 // Show buy now notification function
 function showBuyNowNotification(message, type = 'success') {
@@ -1854,38 +1671,6 @@ function showBuyNowNotification(message, type = 'success') {
     }
 }
 
-// Update cart count in header (if you have a cart counter)
-function updateCartCount(count) {
-    const cartCounter = document.querySelector('.cart-count');
-    if (cartCounter) {
-        cartCounter.textContent = count;
-        
-        // Add a little animation to draw attention
-        cartCounter.style.transform = 'scale(1.2)';
-        setTimeout(() => {
-            cartCounter.style.transform = 'scale(1)';
-        }, 200);
-    }
-}
-
-// Function to get current cart count (useful for page load)
-function loadCartCount() {
-    fetch('ajax/cart-handler.php?action=get_count')
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('Network response was not ok');
-        }
-        return response.json();
-    })
-    .then(data => {
-        if (data.success && data.count !== undefined) {
-            updateCartCount(data.count);
-        }
-    })
-    .catch(error => {
-        console.error('Error loading cart count:', error);
-    });
-}
 </script>
 
 <?php require_once 'includes/footer.php'; ?>

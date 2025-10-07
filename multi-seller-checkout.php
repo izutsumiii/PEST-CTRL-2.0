@@ -21,8 +21,35 @@ try {
 }
 
 // Get cart items grouped by seller
+// Support selected-only checkout via query param ?selected=1,2,3
+$selectedIds = [];
+if (!empty($_GET['selected'])) {
+    $selectedIds = array_values(array_filter(array_map('intval', explode(',', $_GET['selected']))));
+}
+
 $groupedItems = getCartItemsGroupedBySeller();
-$grandTotal = getMultiSellerCartTotal();
+if (!empty($selectedIds)) {
+    // Filter items to selected product IDs only, recompute subtotals and item counts
+    foreach ($groupedItems as $sid => &$sg) {
+        $sg['items'] = array_values(array_filter($sg['items'], function($it) use ($selectedIds) {
+            return in_array((int)$it['product_id'], $selectedIds, true);
+        }));
+        $sg['subtotal'] = 0;
+        $sg['item_count'] = 0;
+        foreach ($sg['items'] as $it) {
+            $sg['subtotal'] += $it['price'] * $it['quantity'];
+            $sg['item_count'] += $it['quantity'];
+        }
+        if (empty($sg['items'])) {
+            unset($groupedItems[$sid]);
+        }
+    }
+    unset($sg);
+}
+
+// Recompute grand total from filtered groups
+$grandTotal = 0;
+foreach ($groupedItems as $sg) { $grandTotal += $sg['subtotal']; }
 
 // Handle form submission
 $errors = [];
