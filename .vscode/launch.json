@@ -1,0 +1,15 @@
+{
+    // Press F5 to open the site in your default Chrome/Edge
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Open PEST-CTRL in Browser",
+            "type": "pwa-chrome",
+            "request": "launch",
+            "url": "http://localhost/GITHUB_PEST-CTRL/index.php",
+            "webRoot": "${workspaceFolder}"
+        }
+    ]
+}
+
+
