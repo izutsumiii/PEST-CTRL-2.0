@@ -1,18 +1,16 @@
 <?php
-<<<<<<< HEAD
-// PayMongo Configuration
-// Replace these with your actual PayMongo API keys
+/**
+ * PayMongo Configuration File
+ * Updated for GITHUB_PEST-CTRL project structure
+ */
 
-// Test API Keys (replace with your actual keys)
-define('PAYMONGO_SECRET_KEY', 'PAYMONGO_SECRET_KEY');
-define('PAYMONGO_PUBLIC_KEY', 'PAYMONGO_SECRET_KEY');
+// PayMongo API Configuration
+define('PAYMONGO_SECRET_KEY', 'REPLACE_WITH_YOUR_SECRET_KEY'); // Replace with your actual secret key
+define('PAYMONGO_PUBLIC_KEY', 'REPLACE_WITH_YOUR_PUBLIC_KEY'); // Replace with your actual public key
+define('PAYMONGO_BASE_URL', 'https://api.paymongo.com/v1');
 
-// Production API Keys (uncomment and replace when going live)
-// define('PAYMONGO_SECRET_KEY', 'sk_live_your_live_secret_key');
-// define('PAYMONGO_PUBLIC_KEY', 'pk_live_your_live_public_key');
-
-// Base URLs
-define('NGROK_BASE_URL', 'https://nonfragilely-marked-wilfredo.ngrok-free.dev/GITHUB_PEST-CTRL');
+// Base URLs - Updated for current project
+define('NGROK_BASE_URL', 'https://YOUR_NGROK_URL_HERE.ngrok-free.dev/GITHUB_PEST-CTRL'); // Replace with your actual ngrok URL
 define('LOCAL_BASE_URL', 'http://localhost/GITHUB_PEST-CTRL');
 
 // Success and Cancel URLs
@@ -137,5 +135,4 @@ function getPayMongoConfig() {
  * 
  * Example ngrok URL: https://abc123def456.ngrok-free.app
  */
->>>>>>> 95b31e0291c2770ca3f15ca5a1084d2d62ce5d4d
 ?>
