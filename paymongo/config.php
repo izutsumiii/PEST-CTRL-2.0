@@ -4,8 +4,8 @@
 // Replace these with your actual PayMongo API keys
 
 // Test API Keys (replace with your actual keys)
-define('PAYMONGO_SECRET_KEY', 'sk_test_PxE3JBr7SUfUP6NmAdvQsc6e');
-define('PAYMONGO_PUBLIC_KEY', 'pk_test_ZEYJppLbVBzLodtW9mK7q4TJ');
+define('PAYMONGO_SECRET_KEY', 'sk_test_');
+define('PAYMONGO_PUBLIC_KEY', 'pk_test_');
 
 // Production API Keys (uncomment and replace when going live)
 // define('PAYMONGO_SECRET_KEY', 'sk_live_your_live_secret_key');
