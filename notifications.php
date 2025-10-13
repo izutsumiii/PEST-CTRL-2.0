@@ -1,4 +1,5 @@
 <?php
+<<<<<<< HEAD
 require_once 'config/database.php';
 require_once 'includes/functions.php';
 
@@ -20,12 +21,24 @@ if (isset($_GET['as']) && $_GET['as'] === 'json') {
 }
 
 // Pull recent order status updates and notifications for this user
+=======
+require_once 'includes/header.php';
+require_once 'config/database.php';
+require_once 'includes/functions.php';
+
+requireLogin();
+
+$userId = $_SESSION['user_id'];
+
+// Pull recent order status updates for this user
+>>>>>>> 95b31e0291c2770ca3f15ca5a1084d2d62ce5d4d
 $stmt = $pdo->prepare("SELECT o.id as order_id, o.status, o.created_at, o.updated_at,
                              COALESCE(pt.payment_status, '') as payment_status
                         FROM orders o
                         LEFT JOIN payment_transactions pt ON pt.id = o.payment_transaction_id
                         WHERE o.user_id = ?
                         ORDER BY o.updated_at DESC, o.created_at DESC
+<<<<<<< HEAD
                         LIMIT 50");
 $stmt->execute([$userId]);
 $orderEvents = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -47,12 +60,18 @@ usort($allEvents, function($a, $b) {
     return $timeB - $timeA;
 });
 $events = array_slice($allEvents, 0, 100);
+=======
+                        LIMIT 100");
+$stmt->execute([$userId]);
+$events = $stmt->fetchAll(PDO::FETCH_ASSOC);
+>>>>>>> 95b31e0291c2770ca3f15ca5a1084d2d62ce5d4d
 
 // JSON mode for header popup
 if (isset($_GET['as']) && $_GET['as'] === 'json') {
     header('Content-Type: application/json');
     $items = [];
     foreach ($events as $e) {
+<<<<<<< HEAD
         if (isset($e['message'])) {
             // This is a notification
             $items[] = [
@@ -73,6 +92,15 @@ if (isset($_GET['as']) && $_GET['as'] === 'json') {
                 'updated_at_human' => date('M d, Y h:i A', strtotime($e['updated_at'] ?: $e['created_at']))
             ];
         }
+=======
+        $items[] = [
+            'order_id' => (int)$e['order_id'],
+            'status' => (string)$e['status'],
+            'payment_status' => (string)$e['payment_status'],
+            'updated_at' => $e['updated_at'] ?: $e['created_at'],
+            'updated_at_human' => date('M d, Y h:i A', strtotime($e['updated_at'] ?: $e['created_at']))
+        ];
+>>>>>>> 95b31e0291c2770ca3f15ca5a1084d2d62ce5d4d
     }
     echo json_encode(['success' => true, 'items' => $items]);
     exit;
@@ -114,6 +142,7 @@ function statusBadge($status) {
                 <i class="fas fa-bell"></i>
               </div>
               <div style="flex:1;">
+<<<<<<< HEAD
                 <?php if (isset($e['message'])): ?>
                   <!-- Custom notification -->
                   <div style="color:#F9F9F9; font-weight:700;"><?php echo htmlspecialchars($e['message']); ?></div>
@@ -130,6 +159,15 @@ function statusBadge($status) {
                     <?php endif; ?>
                   </div>
                 <?php endif; ?>
+=======
+                <div style="color:#F9F9F9; font-weight:700;">Order #<?php echo (int)$e['order_id']; ?> update</div>
+                <div style="color:#F9F9F9; opacity:0.9; font-size:0.9rem;">
+                  Status: <?php echo statusBadge($e['status']); ?>
+                  <?php if (!empty($e['payment_status'])): ?>
+                    <span style="margin-left:8px; opacity:0.9;">Payment: <?php echo htmlspecialchars($e['payment_status']); ?></span>
+                  <?php endif; ?>
+                </div>
+>>>>>>> 95b31e0291c2770ca3f15ca5a1084d2d62ce5d4d
               </div>
               <div style="color:#F9F9F9; opacity:0.8; font-size:0.85rem; white-space:nowrap;">
                 <?php echo htmlspecialchars(date('M d, Y h:i A', strtotime($e['updated_at'] ?: $e['created_at']))); ?>

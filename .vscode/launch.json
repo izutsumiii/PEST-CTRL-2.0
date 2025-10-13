@@ -6,7 +6,11 @@
             "name": "Open PEST-CTRL in Browser",
             "type": "pwa-chrome",
             "request": "launch",
+<<<<<<< HEAD
             "url": "http://localhost/GITHUB_PEST-CTRL/index.php",
+=======
+            "url": "http://localhost/PEST-CTRL-VER_1.6/PEST-CTRL-main/index.php",
+>>>>>>> 95b31e0291c2770ca3f15ca5a1084d2d62ce5d4d
             "webRoot": "${workspaceFolder}"
         }
     ]

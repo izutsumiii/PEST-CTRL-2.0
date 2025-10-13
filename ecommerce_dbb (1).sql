@@ -298,11 +298,19 @@ INSERT INTO `orders` (`id`, `user_id`, `payment_transaction_id`, `seller_id`, `t
 -- Triggers `orders`
 --
 DELIMITER $$
+<<<<<<< HEAD
 CREATE TRIGGER `order_status_change_log` AFTER UPDATE ON `orders` FOR EACH ROW BEGIN
     IF OLD.status != NEW.status THEN
         INSERT INTO order_status_history (order_id, status, notes, updated_by, created_at)
         VALUES (NEW.id, NEW.status, CONCAT('Status changed from ', OLD.status, ' to ', NEW.status), NEW.user_id, NOW());
     END IF;
+=======
+CREATE TRIGGER `order_status_change_log` AFTER UPDATE ON `orders` FOR EACH ROW BEGIN
+    IF OLD.status != NEW.status THEN
+        INSERT INTO order_status_history (order_id, status, notes, updated_by, created_at)
+        VALUES (NEW.id, NEW.status, CONCAT('Status changed from ', OLD.status, ' to ', NEW.status), NEW.user_id, NOW());
+    END IF;
+>>>>>>> 95b31e0291c2770ca3f15ca5a1084d2d62ce5d4d
 END
 $$
 DELIMITER ;
