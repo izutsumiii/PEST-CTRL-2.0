@@ -1,11 +1,7 @@
 <?php
-// Admin password hash tool (temporary). Remove this file in production.
+// Admin password hash tool (temporary). Re}move this file in production.
 // Usage:
-<<<<<<< HEAD
 //   http://localhost/GITHUB_PEST-CTRL/admin/includes/hash.php?p=NewStrongPass123!
-=======
-//   http://localhost/PEST-CTRL-VER_1.6/PEST-CTRL-main/admin/includes/hash.php?p=NewStrongPass123!
->>>>>>> 95b31e0291c2770ca3f15ca5a1084d2d62ce5d4d
 
 header('Content-Type: text/plain; charset=utf-8');
 

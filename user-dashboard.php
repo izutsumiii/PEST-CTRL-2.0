@@ -139,7 +139,6 @@ function getOrdersByStatus($status) {
                               GROUP BY o.id
                               ORDER BY o.created_at DESC");
         $stmt->execute([$userId, $status]);
-<<<<<<< HEAD
         $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
         
         // Get detailed order items with images for each order
@@ -154,9 +153,6 @@ function getOrdersByStatus($status) {
         }
         
         return $orders;
-=======
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
->>>>>>> 95b31e0291c2770ca3f15ca5a1084d2d62ce5d4d
     } catch (PDOException $e) {
         error_log("Error fetching orders by status: " . $e->getMessage());
         return [];
@@ -176,7 +172,6 @@ function getUserOrders() {
                           GROUP BY o.id
                           ORDER BY o.created_at DESC");
     $stmt->execute([$userId]);
-<<<<<<< HEAD
     $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
     // Get detailed order items with images for each order
@@ -191,9 +186,6 @@ function getUserOrders() {
     }
     
     return $orders;
-=======
-    return $stmt->fetchAll(PDO::FETCH_ASSOC);
->>>>>>> 95b31e0291c2770ca3f15ca5a1084d2d62ce5d4d
 }
 
 // Updated function to get delivered orders with delivery date
@@ -206,10 +198,7 @@ function getDeliveredOrders() {
                           oi.product_id, 
                           oi.quantity, 
                           p.name as product_name, 
-<<<<<<< HEAD
                           p.image_url,
-=======
->>>>>>> 95b31e0291c2770ca3f15ca5a1084d2d62ce5d4d
                           p.price,
                           (oi.quantity * oi.price) as item_total
                           FROM orders o
@@ -1386,7 +1375,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                     
                     <div class="order-items">
-<<<<<<< HEAD
                         <strong>Items:</strong>
                         <div class="order-items-list" style="margin-top: 10px;">
                             <?php if (!empty($order['order_items'])): ?>
@@ -1406,9 +1394,6 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <div style="color: #F9F9F9; opacity: 0.8; font-style: italic;">No items found</div>
                             <?php endif; ?>
                         </div>
-=======
-                        <strong>Items:</strong> <?php echo htmlspecialchars($order['items']); ?>
->>>>>>> 95b31e0291c2770ca3f15ca5a1084d2d62ce5d4d
                     </div>
                     
                     <?php if ($order['status'] === 'delivered' && !empty($order['delivery_date'])): ?>
@@ -1419,11 +1404,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <?php endif; ?>
                     
                     <div class="order-actions">
-<<<<<<< HEAD
-                        <a href="view-orders.php?id=<?php echo $order['id']; ?>" class="btn btn-primary">View Details</a>
-=======
                         <a href="order-confirmation.php?id=<?php echo $order['id']; ?>" class="btn btn-primary">View Details</a>
->>>>>>> 95b31e0291c2770ca3f15ca5a1084d2d62ce5d4d
                         
                         <?php if ($order['status'] === 'delivered'): ?>
                             <span class="btn" style="background: #28a745; color: white; cursor: default;">Order Delivered</span>

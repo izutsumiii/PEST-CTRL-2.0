@@ -53,7 +53,6 @@ try {
 // Now include header after all redirects are done
 require_once 'includes/header.php';
 
-
 // Get order items
 $stmt = $pdo->prepare("SELECT oi.*, p.name, p.image_url 
                       FROM order_items oi 
@@ -68,6 +67,355 @@ foreach ($orderItems as $item) {
     $calculatedTotal += $item['price'] * $item['quantity'];
 }
 ?>
+
+<style>
+/* Order Confirmation Page Styles - Matching Website Theme */
+body {
+    background: #130325 !important;
+    margin: 0;
+    padding: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+main {
+    background: #130325;
+    min-height: 100vh;
+    padding: 120px 20px 60px 20px;
+}
+
+h1 {
+    color: #FFD736;
+    text-align: center;
+    margin: 0 0 40px 0;
+    font-size: 2.5rem;
+    font-weight: 700;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.order-confirmation {
+    max-width: 1200px;
+    margin: 0 auto;
+    background: rgba(26, 10, 46, 0.95);
+    border: 2px solid #FFD736;
+    border-radius: 15px;
+    box-shadow: 0 10px 40px rgba(255, 215, 54, 0.2);
+    overflow: hidden;
+}
+
+.confirmation-header {
+    background: linear-gradient(135deg, #FFD736, #e6c230);
+    color: #130325;
+    padding: 40px;
+    text-align: center;
+}
+
+.confirmation-header h2 {
+    margin: 0 0 15px 0;
+    font-size: 2rem;
+    font-weight: 700;
+    color: #130325;
+}
+
+.confirmation-header p {
+    margin: 0;
+    font-size: 1.1rem;
+    color: #130325;
+    opacity: 0.8;
+}
+
+.order-details, .customer-details, .order-items, .order-support {
+    padding: 30px 40px;
+    border-bottom: 1px solid rgba(255, 215, 54, 0.3);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.order-details:last-child, .customer-details:last-child, .order-items:last-child, .order-support:last-child {
+    border-bottom: none;
+}
+
+.order-details h3, .customer-details h3, .order-items h3, .order-support h3 {
+    color: #FFD736;
+    margin: 0 0 25px 0;
+    font-size: 1.5rem;
+    font-weight: 600;
+    border-bottom: 2px solid #FFD736;
+    padding-bottom: 10px;
+}
+
+.order-info-grid, .customer-info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+.info-item {
+    background: rgba(255, 215, 54, 0.1);
+    border: 1px solid rgba(255, 215, 54, 0.3);
+    padding: 15px 20px;
+    border-radius: 8px;
+    border-left: 4px solid #FFD736;
+}
+
+.info-item strong {
+    color: #FFD736;
+    font-weight: 600;
+    display: block;
+    margin-bottom: 5px;
+}
+
+.info-item {
+    color: #F9F9F9;
+}
+
+.status-badge {
+    display: inline-block;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.status-pending {
+    background: rgba(255, 193, 7, 0.2);
+    color: #FFD736;
+    border: 1px solid #FFD736;
+}
+
+.status-processing {
+    background: rgba(13, 202, 240, 0.2);
+    color: #0dcaf0;
+    border: 1px solid #0dcaf0;
+}
+
+.status-shipped {
+    background: rgba(40, 167, 69, 0.2);
+    color: #28a745;
+    border: 1px solid #28a745;
+}
+
+.status-delivered {
+    background: rgba(40, 167, 69, 0.2);
+    color: #28a745;
+    border: 1px solid #28a745;
+}
+
+.status-cancelled {
+    background: rgba(220, 53, 69, 0.2);
+    color: #dc3545;
+    border: 1px solid #dc3545;
+}
+
+.order-items-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: rgba(26, 10, 46, 0.8);
+    border: 1px solid #FFD736;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 10px rgba(255, 215, 54, 0.1);
+}
+
+.order-items-table th {
+    background: #130325;
+    color: #FFD736;
+    padding: 15px;
+    text-align: left;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 2px solid #FFD736;
+}
+
+.order-items-table td {
+    padding: 15px;
+    border-bottom: 1px solid rgba(255, 215, 54, 0.2);
+    vertical-align: middle;
+    color: #F9F9F9;
+}
+
+.order-items-table tbody tr:hover {
+    background: rgba(255, 215, 54, 0.1);
+}
+
+.product-info {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.product-info img {
+    width: 60px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 2px solid #FFD736;
+}
+
+.product-info span {
+    font-weight: 600;
+    color: #F9F9F9;
+}
+
+.order-items-table tfoot {
+    background: rgba(255, 215, 54, 0.1);
+    font-weight: 600;
+}
+
+.order-items-table tfoot td {
+    border-bottom: none;
+    padding: 20px 15px;
+    color: #FFD736;
+}
+
+.order-actions {
+    padding: 30px 40px;
+    background: rgba(255, 215, 54, 0.1);
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.back-button, .print-button, .contact-button {
+    padding: 12px 24px;
+    border: 2px solid;
+    border-radius: 8px;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 1rem;
+}
+
+.back-button {
+    background: #130325;
+    color: #FFD736;
+    border-color: #FFD736;
+}
+
+.back-button:hover {
+    background: #FFD736;
+    color: #130325;
+    transform: translateY(-2px);
+}
+
+.print-button {
+    background: #130325;
+    color: #0dcaf0;
+    border-color: #0dcaf0;
+}
+
+.print-button:hover {
+    background: #0dcaf0;
+    color: #130325;
+    transform: translateY(-2px);
+}
+
+.contact-button {
+    background: #FFD736;
+    color: #130325;
+    border-color: #FFD736;
+}
+
+.contact-button:hover {
+    background: #130325;
+    color: #FFD736;
+    transform: translateY(-2px);
+}
+
+.order-support {
+    background: rgba(255, 215, 54, 0.1);
+    text-align: center;
+    border-top: 2px solid #FFD736;
+}
+
+.order-support h3 {
+    color: #FFD736;
+    border-bottom-color: #FFD736;
+}
+
+.order-support p {
+    margin: 10px 0;
+    color: #F9F9F9;
+    line-height: 1.6;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    main {
+        padding: 100px 10px 40px 10px;
+    }
+    
+    h1 {
+        font-size: 2rem;
+    }
+    
+    .order-confirmation {
+        margin: 0 10px;
+    }
+    
+    .confirmation-header, .order-details, .customer-details, .order-items, .order-support {
+        padding: 20px;
+    }
+    
+    .order-info-grid, .customer-info-grid {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+    
+    .order-actions {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .back-button, .print-button, .contact-button {
+        width: 100%;
+        max-width: 300px;
+    }
+    
+    .order-items-table {
+        font-size: 0.9rem;
+    }
+    
+    .order-items-table th,
+    .order-items-table td {
+        padding: 10px 8px;
+    }
+    
+    .product-info {
+        flex-direction: column;
+        text-align: center;
+        gap: 10px;
+    }
+    
+    .product-info img {
+        width: 50px;
+        height: 50px;
+    }
+}
+
+/* Print Styles */
+@media print {
+    body {
+        background: white !important;
+    }
+    
+    main {
+        padding: 0;
+    }
+    
+    .order-actions {
+        display: none;
+    }
+    
+    .order-confirmation {
+        box-shadow: none;
+        border: 1px solid #ddd;
+    }
+}
+</style>
 
 <h1>Order Confirmation</h1>
 
@@ -163,14 +511,14 @@ foreach ($orderItems as $item) {
         <button onclick="window.print()" class="print-button">Print Confirmation</button>
         
         <?php if ($order['status'] === 'pending' || $order['status'] === 'processing'): ?>
-            <a href="contact.php" class="contact-button">Contact Support</a>
+            <a href="https://www.facebook.com/kyaajhon1299" target="_blank" class="contact-button">Contact Support</a>
         <?php endif; ?>
     </div>
 
     <div class="order-support">
         <h3>Need Help?</h3>
         <p>If you have any questions about your order, please contact our customer support team.</p>
-        <p>Email: support@ecommerce.example.com | Phone: (555) 123-4567</p>
+        <p><a href="https://www.facebook.com/kyaajhon1299" target="_blank" style="color: #FFD736; text-decoration: none; font-weight: 600;">📘 Contact us on Facebook</a> | Email: support@ecommerce.example.com</p>
     </div>
 </div>
 

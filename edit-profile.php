@@ -16,6 +16,7 @@ $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
 // Handle form submission
 if (isset($_POST['update_profile'])) {
+    $username = sanitizeInput($_POST['username']);
     $firstName = sanitizeInput($_POST['first_name']);
     $lastName = sanitizeInput($_POST['last_name']);
     $email = sanitizeInput($_POST['email']);
@@ -27,11 +28,18 @@ if (isset($_POST['update_profile'])) {
     $stmt->execute([$email, $userId]);
     $existingUser = $stmt->fetch(PDO::FETCH_ASSOC);
     
+    // Check if username already exists (excluding current user)
+    $stmt = $pdo->prepare("SELECT * FROM users WHERE username = ? AND id != ?");
+    $stmt->execute([$username, $userId]);
+    $existingUsername = $stmt->fetch(PDO::FETCH_ASSOC);
+    
     if ($existingUser) {
         echo "<p class=\"error-message\">Error: Email already exists.</p>";
+    } elseif ($existingUsername) {
+        echo "<p class=\"error-message\">Error: Username already exists.</p>";
     } else {
-        $stmt = $pdo->prepare("UPDATE users SET first_name = ?, last_name = ?, email = ?, phone = ?, address = ? WHERE id = ?");
-        $stmt->execute([$firstName, $lastName, $email, $phone, $address, $userId]);
+        $stmt = $pdo->prepare("UPDATE users SET username = ?, first_name = ?, last_name = ?, email = ?, phone = ?, address = ? WHERE id = ?");
+        $stmt->execute([$username, $firstName, $lastName, $email, $phone, $address, $userId]);
         
         echo "<p class=\"success-message\">Profile updated successfully!</p>";
         header("Refresh:2");
@@ -361,6 +369,7 @@ h1 {
     <div class="personal-info">
         <h2>Account Details</h2>
         <div class="account-summary">
+            <div class="summary-row"><strong>Username:</strong> <span><?php echo htmlspecialchars($user['username'] ?? ''); ?></span></div>
             <div class="summary-row"><strong>Name:</strong> <span><?php echo htmlspecialchars(trim(($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? ''))); ?></span></div>
             <div class="summary-row"><strong>Email:</strong> <span><?php echo htmlspecialchars($user['email'] ?? ''); ?></span></div>
             <div class="summary-row"><strong>Phone:</strong> <span><?php echo htmlspecialchars($user['phone'] ?? ''); ?></span></div>
@@ -373,6 +382,10 @@ h1 {
 
         <!-- Hidden Edit Form -->
         <form id="editAccountForm" method="POST" action="" style="display:none; margin-top:20px;">
+            <div>
+                <label for="username">Username:</label>
+                <input type="text" id="username" name="username" value="<?php echo htmlspecialchars($user['username'] ?? ''); ?>" required>
+            </div>
             <div>
                 <label for="first_name">First Name:</label>
                 <input type="text" id="first_name" name="first_name" value="<?php echo htmlspecialchars($user['first_name'] ?? ''); ?>" required>

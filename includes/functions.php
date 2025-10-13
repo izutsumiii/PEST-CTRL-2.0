@@ -32,14 +32,11 @@ if (!function_exists('ensureAutoIncrementPrimary')) {
     function ensureAutoIncrementPrimary($tableName) {
         global $pdo;
         try {
-<<<<<<< HEAD
             // Skip if we're in a transaction to avoid conflicts
             if ($pdo->inTransaction()) {
                 return;
             }
             
-=======
->>>>>>> 95b31e0291c2770ca3f15ca5a1084d2d62ce5d4d
             // Determine current database/schema
             $dbName = $pdo->query('SELECT DATABASE()')->fetchColumn();
             if (!$dbName) return;
@@ -396,13 +393,9 @@ function processCheckout($shippingAddress, $paymentMethod) {
         $pdo->commit();
         return $orderId;
     } catch (Exception $e) {
-<<<<<<< HEAD
         if ($pdo->inTransaction()) {
             $pdo->rollBack();
         }
-=======
-        $pdo->rollBack();
->>>>>>> 95b31e0291c2770ca3f15ca5a1084d2d62ce5d4d
         return false;
     }
 }
@@ -1279,24 +1272,16 @@ function processMultiSellerCheckout($shippingAddress, $paymentMethod, $customerN
     $grandTotal = getMultiSellerCartTotal();
     
     try {
-<<<<<<< HEAD
         // Ensure primary keys are properly auto-incremented (before transaction)
-=======
-        // Ensure primary keys are properly auto-incremented
->>>>>>> 95b31e0291c2770ca3f15ca5a1084d2d62ce5d4d
         if (method_exists($pdo, 'query')) {
             ensureAutoIncrementPrimary('payment_transactions');
             ensureAutoIncrementPrimary('orders');
             ensureAutoIncrementPrimary('order_items');
         }
-<<<<<<< HEAD
         
         // Start transaction after all setup
         $pdo->beginTransaction();
         error_log('Transaction started successfully for checkout');
-=======
-        $pdo->beginTransaction();
->>>>>>> 95b31e0291c2770ca3f15ca5a1084d2d62ce5d4d
         
         // 1. Create payment transaction record
         $stmt = $pdo->prepare("
@@ -1353,7 +1338,6 @@ function processMultiSellerCheckout($shippingAddress, $paymentMethod, $customerN
             }
         }
         
-<<<<<<< HEAD
         // 5. Clear the cart after successful checkout
         $stmt = $pdo->prepare("DELETE FROM cart WHERE user_id = ?");
         $stmt->execute([$userId]);
@@ -1369,10 +1353,7 @@ function processMultiSellerCheckout($shippingAddress, $paymentMethod, $customerN
             }
         }
         
-=======
-        $pdo->commit();
-        
->>>>>>> 95b31e0291c2770ca3f15ca5a1084d2d62ce5d4d
+
         return [
             'success' => true,
             'message' => 'Multi-seller checkout completed successfully',
@@ -1382,13 +1363,11 @@ function processMultiSellerCheckout($shippingAddress, $paymentMethod, $customerN
         ];
         
     } catch (Exception $e) {
-<<<<<<< HEAD
+
         if ($pdo->inTransaction()) {
             $pdo->rollBack();
         }
-=======
-        $pdo->rollBack();
->>>>>>> 95b31e0291c2770ca3f15ca5a1084d2d62ce5d4d
+
         error_log('Multi-seller checkout error: ' . $e->getMessage());
         return ['success' => false, 'message' => 'Checkout failed: ' . $e->getMessage()];
     }
@@ -1449,31 +1428,18 @@ function getOrderItemsByPaymentTransaction($paymentTransactionId) {
 }
 
 // Update payment transaction status
-<<<<<<< HEAD
 function updatePaymentTransactionStatus($paymentTransactionId, $status, $paymentReference = null) {
-=======
-function updatePaymentTransactionStatus($paymentTransactionId, $status, $paymentReference = null, $paymongoSessionId = null, $paymongoPaymentId = null) {
->>>>>>> 95b31e0291c2770ca3f15ca5a1084d2d62ce5d4d
+
     global $pdo;
     
     $stmt = $pdo->prepare("
         UPDATE payment_transactions 
         SET payment_status = ?, 
-<<<<<<< HEAD
             payment_reference = ?,
             completed_at = CASE WHEN ? = 'completed' THEN NOW() ELSE completed_at END
         WHERE id = ?
     ");
     return $stmt->execute([$status, $paymentReference, $status, $paymentTransactionId]);
-=======
-            payment_reference = ?, 
-            paymongo_session_id = ?, 
-            paymongo_payment_id = ?,
-            completed_at = CASE WHEN ? = 'completed' THEN NOW() ELSE completed_at END
-        WHERE id = ?
-    ");
-    return $stmt->execute([$status, $paymentReference, $paymongoSessionId, $paymongoPaymentId, $status, $paymentTransactionId]);
->>>>>>> 95b31e0291c2770ca3f15ca5a1084d2d62ce5d4d
 }
 
 // Get seller orders (for seller dashboard)
@@ -1519,7 +1485,6 @@ function getCustomerMultiSellerOrders($userId, $limit = 50, $offset = 0) {
     $stmt->execute([$userId, $limit, $offset]);
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
-<<<<<<< HEAD
 
 // Create notification for order status updates
 function createOrderNotification($userId, $orderId, $message, $type = 'order_update') {
@@ -1554,6 +1519,4 @@ function createOrderNotification($userId, $orderId, $message, $type = 'order_upd
         return false;
     }
 }
-=======
->>>>>>> 95b31e0291c2770ca3f15ca5a1084d2d62ce5d4d
 ?>

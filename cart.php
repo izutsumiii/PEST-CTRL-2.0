@@ -725,15 +725,12 @@ document.addEventListener('DOMContentLoaded', function() {
             fetch('cart.php', { method: 'POST', body: formData })
             .finally(() => {
                 const qs = params.toString();
-<<<<<<< HEAD
                 window.location.href = 'paymongo/multi-seller-checkout.php' + (qs ? ('?' + qs) : '');
-=======
-                window.location.href = 'multi-seller-checkout.php' + (qs ? ('?' + qs) : '');
->>>>>>> 95b31e0291c2770ca3f15ca5a1084d2d62ce5d4d
+
             });
         });
     }
 });
 </script>
 
-<?php  ?>
+<?php require_once 'includes/footer.php'; ?>

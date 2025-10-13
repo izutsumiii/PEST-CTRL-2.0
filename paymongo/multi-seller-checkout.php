@@ -113,6 +113,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['checkout'])) {
                     
                     $stmt = $pdo->prepare("UPDATE orders SET payment_status = 'completed' WHERE payment_transaction_id = ?");
                     $stmt->execute([$result['payment_transaction_id']]);
+                    
+                    // Create notification for COD order
+                    if (function_exists('createOrderNotification')) {
+                        $stmt = $pdo->prepare("SELECT id FROM orders WHERE payment_transaction_id = ?");
+                        $stmt->execute([$result['payment_transaction_id']]);
+                        $orderIds = $stmt->fetchAll(PDO::FETCH_COLUMN);
+                        
+                        foreach ($orderIds as $orderId) {
+                            $message = "Order #" . str_pad($orderId, 6, '0', STR_PAD_LEFT) . " has been placed successfully with Cash on Delivery (COD).";
+                            createOrderNotification($userId, $orderId, $message, 'order_placed');
+                        }
+                    }
                 } catch (Exception $e) {
                     error_log('Error updating COD payment status: ' . $e->getMessage());
                 }
@@ -869,8 +881,8 @@ function createPayMongoCheckoutSession($transactionId, $customerName, $customerE
                 'attributes' => [
                     'line_items' => $lineItems,
                     'payment_method_types' => $paymentMethodTypes,
-                    'success_url' => 'https://nonfragilely-marked-wilfredo.ngrok-free.dev/GITHUB_PEST-CTRL/paymongo/order-success.php?transaction_id=' . $transactionId,
-                    'cancel_url' => 'https://nonfragilely-marked-wilfredo.ngrok-free.dev/GITHUB_PEST-CTRL/paymongo/order-failure.php?transaction_id=' . $transactionId,
+                    'success_url' => getSuccessUrl($transactionId),
+                    'cancel_url' => getCancelUrl(),
                     'billing' => $billing,
                     'reference_number' => 'P-C-' . $transactionId,
                     'statement_descriptor' => 'PEST-CTRL',

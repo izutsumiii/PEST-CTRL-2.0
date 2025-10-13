@@ -1,12 +1,12 @@
 <?php
-require_once 'includes/seller_header.php';
 require_once 'config/database.php';
+require_once 'includes/functions.php';
 
 requireSeller();
 
 $userId = $_SESSION['user_id'];
 
-// Handle product actions (add, edit, delete, toggle)
+// Handle product actions (add, edit, delete, toggle) - MUST BE BEFORE ANY OUTPUT
 if (isset($_POST['add_product'])) {
     $name = sanitizeInput($_POST['name']);
     $description = sanitizeInput($_POST['description']);
@@ -56,36 +56,22 @@ if (isset($_GET['delete'])) {
         try {
             $pdo->beginTransaction();
             
-            $stmt = $pdo->prepare("SELECT COUNT(*) as count FROM cart WHERE product_id = ?");
+            // Remove from cart first
+            $stmt = $pdo->prepare("DELETE FROM cart WHERE product_id = ?");
             $stmt->execute([$productId]);
-            $cartCount = $stmt->fetch(PDO::FETCH_ASSOC)['count'];
             
-            $stmt = $pdo->prepare("SELECT COUNT(*) as count FROM order_items WHERE product_id = ?");
+            // Delete the product completely
+            $stmt = $pdo->prepare("DELETE FROM products WHERE id = ?");
             $stmt->execute([$productId]);
-            $orderItemsCount = $stmt->fetch(PDO::FETCH_ASSOC)['count'];
             
-            if ($cartCount > 0 || $orderItemsCount > 0) {
-                $stmt = $pdo->prepare("UPDATE products SET status = 'inactive' WHERE id = ?");
-                $stmt->execute([$productId]);
-                
-                if ($cartCount > 0) {
-                    $stmt = $pdo->prepare("DELETE FROM cart WHERE product_id = ?");
-                    $stmt->execute([$productId]);
-                }
-                
-                $pdo->commit();
-                $_SESSION['product_message'] = ['type' => 'success', 'text' => 'Product deactivated successfully.'];
-            } else {
-                $stmt = $pdo->prepare("DELETE FROM products WHERE id = ?");
-                $stmt->execute([$productId]);
-                
-                $pdo->commit();
-                $_SESSION['product_message'] = ['type' => 'success', 'text' => 'Product deleted successfully!'];
-            }
+            $pdo->commit();
+            $_SESSION['product_message'] = ['type' => 'success', 'text' => 'Product deleted successfully!'];
             
         } catch (Exception $e) {
-            $pdo->rollback();
-            $_SESSION['product_message'] = ['type' => 'error', 'text' => 'Error deleting product.'];
+            if ($pdo->inTransaction()) {
+                $pdo->rollback();
+            }
+            $_SESSION['product_message'] = ['type' => 'error', 'text' => 'Error deleting product: ' . $e->getMessage()];
         }
     }
     header("Location: manage-products.php");
@@ -117,6 +103,9 @@ $categories = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 $activeProducts = getSellerActiveProducts($userId);
 $inactiveProducts = getSellerInactiveProducts($userId);
+
+// Now include the header after all redirects are handled
+require_once 'includes/seller_header.php';
 ?>
 
 <style>
@@ -187,24 +176,158 @@ h1 { color:#F9F9F9 !important; font-family:var(--font-primary) !important; font-
     position: fixed;
     top: 100px;
     right: 20px;
-    max-width: 400px;
-    background: #1a0a2e;
-    border: 1px solid rgba(255,215,54,0.5);
-    border-left: 4px solid #FFD736;
-    border-radius: 10px;
-    padding: 16px 20px;
+    max-width: 450px;
+    min-width: 350px;
+    background: linear-gradient(135deg, #1a0a2e 0%, #16213e 100%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    padding: 20px 24px;
     color: #F9F9F9;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.05);
     z-index: 10000;
-    animation: slideInRight 0.3s ease;
+    animation: slideInRight 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    backdrop-filter: blur(10px);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    font-family: var(--font-primary, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
 }
 
-.notification-toast.success { border-left-color: #28a745; }
-.notification-toast.error { border-left-color: #dc3545; }
+.notification-toast::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    border-radius: 16px 16px 0 0;
+    background: linear-gradient(90deg, #FFD736, #FFA500);
+}
+
+.notification-toast.success {
+    background: linear-gradient(135deg, #0d2818 0%, #1a4d2e 100%);
+    border-color: rgba(40, 167, 69, 0.3);
+}
+
+.notification-toast.success::before {
+    background: linear-gradient(90deg, #28a745, #20c997);
+}
+
+.notification-toast.error {
+    background: linear-gradient(135deg, #2d0d0d 0%, #4d1a1a 100%);
+    border-color: rgba(220, 53, 69, 0.3);
+}
+
+.notification-toast.error::before {
+    background: linear-gradient(90deg, #dc3545, #fd7e14);
+}
+
+.notification-toast .toast-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    flex-shrink: 0;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(5px);
+}
+
+.notification-toast.success .toast-icon {
+    background: rgba(40, 167, 69, 0.2);
+    color: #28a745;
+}
+
+.notification-toast.error .toast-icon {
+    background: rgba(220, 53, 69, 0.2);
+    color: #dc3545;
+}
+
+.notification-toast .toast-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.notification-toast .toast-title {
+    font-size: 16px;
+    font-weight: 700;
+    margin: 0 0 4px 0;
+    color: #ffffff;
+    line-height: 1.3;
+}
+
+.notification-toast .toast-message {
+    font-size: 14px;
+    margin: 0;
+    color: rgba(249, 249, 249, 0.9);
+    line-height: 1.4;
+}
+
+.notification-toast .toast-close {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: none;
+    border: none;
+    color: rgba(249, 249, 249, 0.6);
+    font-size: 18px;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.notification-toast .toast-close:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+    transform: scale(1.1);
+}
 
 @keyframes slideInRight {
-    from { transform: translateX(400px); opacity: 0; }
-    to { transform: translateX(0); opacity: 1; }
+    0% { 
+        transform: translateX(100%) scale(0.8); 
+        opacity: 0; 
+    }
+    50% {
+        transform: translateX(-10px) scale(1.02);
+        opacity: 0.8;
+    }
+    100% { 
+        transform: translateX(0) scale(1); 
+        opacity: 1; 
+    }
+}
+
+@keyframes slideOutRight {
+    0% { 
+        transform: translateX(0) scale(1); 
+        opacity: 1; 
+    }
+    100% { 
+        transform: translateX(100%) scale(0.8); 
+        opacity: 0; 
+    }
+}
+
+.notification-toast.slide-out {
+    animation: slideOutRight 0.3s ease forwards;
+}
+
+@media (max-width: 768px) {
+    .notification-toast {
+        top: 80px;
+        right: 10px;
+        left: 10px;
+        max-width: none;
+        min-width: auto;
+    }
 }
 
 .products-container {
@@ -653,13 +776,216 @@ h1 { color:#F9F9F9 !important; font-family:var(--font-primary) !important; font-
     .form-actions { flex-direction: column; }
     .products-table { font-size: 12px; }
 }
+
+/* Delete Modal Styles */
+.delete-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10000;
+    backdrop-filter: blur(5px);
+}
+
+.delete-modal-content {
+    background: #1a0a2e;
+    border: 2px solid #dc3545;
+    border-radius: 16px;
+    max-width: 500px;
+    width: 90%;
+    box-shadow: 0 20px 60px rgba(220, 53, 69, 0.3);
+    animation: modalSlideIn 0.3s ease-out;
+}
+
+.delete-modal-header {
+    background: linear-gradient(135deg, #dc3545, #c82333);
+    color: #ffffff;
+    padding: 20px 25px;
+    border-radius: 14px 14px 0 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.delete-modal-header h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.delete-modal-header h3 i {
+    font-size: 20px;
+}
+
+.close-modal {
+    background: none;
+    border: none;
+    color: #ffffff;
+    font-size: 24px;
+    cursor: pointer;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+}
+
+.close-modal:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: scale(1.1);
+}
+
+.delete-modal-body {
+    padding: 25px;
+    color: #F9F9F9;
+}
+
+.delete-modal-body p {
+    margin: 0 0 20px 0;
+    font-size: 16px;
+    line-height: 1.5;
+}
+
+.product-info {
+    background: rgba(255, 215, 54, 0.1);
+    border: 1px solid rgba(255, 215, 54, 0.3);
+    border-radius: 8px;
+    padding: 15px;
+    margin: 20px 0;
+    text-align: center;
+}
+
+.product-info strong {
+    color: #FFD736;
+    font-size: 18px;
+    font-weight: 700;
+}
+
+.warning-message {
+    background: rgba(220, 53, 69, 0.1);
+    border: 1px solid rgba(220, 53, 69, 0.3);
+    border-radius: 8px;
+    padding: 15px;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-top: 20px;
+}
+
+.warning-message i {
+    color: #dc3545;
+    font-size: 18px;
+    margin-top: 2px;
+    flex-shrink: 0;
+}
+
+.warning-message span {
+    color: #F9F9F9;
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+.delete-modal-footer {
+    padding: 20px 25px;
+    border-top: 1px solid #2d1b4e;
+    display: flex;
+    gap: 15px;
+    justify-content: flex-end;
+}
+
+.btn-cancel, .btn-delete-confirm {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-width: 120px;
+}
+
+.btn-cancel {
+    background: #6c757d;
+    color: #ffffff;
+}
+
+.btn-cancel:hover {
+    background: #5a6268;
+    transform: translateY(-2px);
+}
+
+.btn-delete-confirm {
+    background: linear-gradient(135deg, #dc3545, #c82333);
+    color: #ffffff;
+    box-shadow: 0 4px 15px rgba(220, 53, 69, 0.3);
+}
+
+.btn-delete-confirm:hover {
+    background: linear-gradient(135deg, #c82333, #bd2130);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(220, 53, 69, 0.4);
+}
+
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: scale(0.8) translateY(-50px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+@media (max-width: 768px) {
+    .delete-modal-content {
+        width: 95%;
+        margin: 20px;
+    }
+    
+    .delete-modal-footer {
+        flex-direction: column;
+    }
+    
+    .btn-cancel, .btn-delete-confirm {
+        width: 100%;
+    }
+}
 </style>
 
 <main>
 <div class="products-container">
     <?php if (isset($_SESSION['product_message'])): ?>
-        <div class="notification-toast <?php echo $_SESSION['product_message']['type']; ?>">
-            <?php echo htmlspecialchars($_SESSION['product_message']['text']); ?>
+        <div class="notification-toast <?php echo $_SESSION['product_message']['type']; ?>" id="notificationToast">
+            <div class="toast-icon">
+                <?php if ($_SESSION['product_message']['type'] === 'success'): ?>
+                    <i class="fas fa-check-circle"></i>
+                <?php else: ?>
+                    <i class="fas fa-exclamation-circle"></i>
+                <?php endif; ?>
+            </div>
+            <div class="toast-content">
+                <div class="toast-title">
+                    <?php echo $_SESSION['product_message']['type'] === 'success' ? 'Success!' : 'Error!'; ?>
+                </div>
+                <div class="toast-message">
+                    <?php echo htmlspecialchars($_SESSION['product_message']['text']); ?>
+                </div>
+            </div>
+            <button class="toast-close" onclick="closeNotification()">
+                <i class="fas fa-times"></i>
+            </button>
         </div>
         <?php unset($_SESSION['product_message']); ?>
     <?php endif; ?>
@@ -824,7 +1150,7 @@ h1 { color:#F9F9F9 !important; font-family:var(--font-primary) !important; font-
                                         <a href="manage-products.php?toggle_status=<?php echo $product['id']; ?>" class="action-btn btn-toggle">
                                             <i class="fas fa-pause"></i> Deactivate
                                         </a>
-                                        <a href="manage-products.php?delete=<?php echo $product['id']; ?>" class="action-btn btn-delete" onclick="return confirm('Delete this product?')">
+                                        <a href="#" class="action-btn btn-delete" onclick="showDeleteModal(<?php echo $product['id']; ?>, '<?php echo htmlspecialchars($product['name'], ENT_QUOTES); ?>', 'active'); return false;">
                                             <i class="fas fa-trash"></i> Delete
                                         </a>
                                     </div>
@@ -872,7 +1198,7 @@ h1 { color:#F9F9F9 !important; font-family:var(--font-primary) !important; font-
                                         <a href="manage-products.php?toggle_status=<?php echo $product['id']; ?>" class="action-btn btn-toggle">
                                             <i class="fas fa-play"></i> Activate
                                         </a>
-                                        <a href="manage-products.php?delete=<?php echo $product['id']; ?>" class="action-btn btn-delete" onclick="return confirm('Delete this product?')">
+                                        <a href="#" class="action-btn btn-delete" onclick="showDeleteModal(<?php echo $product['id']; ?>, '<?php echo htmlspecialchars($product['name'], ENT_QUOTES); ?>', 'inactive'); return false;">
                                             <i class="fas fa-trash"></i> Delete
                                         </a>
                                     </div>
@@ -885,6 +1211,31 @@ h1 { color:#F9F9F9 !important; font-family:var(--font-primary) !important; font-
         <?php endif; ?>
     </div>
 </div>
+
+<!-- Delete Confirmation Modal -->
+<div id="deleteModal" class="delete-modal" style="display: none;">
+    <div class="delete-modal-content">
+        <div class="delete-modal-header">
+            <h3><i class="fas fa-exclamation-triangle"></i> Delete Product</h3>
+            <button class="close-modal" onclick="hideDeleteModal()">&times;</button>
+        </div>
+        <div class="delete-modal-body">
+            <p>Are you sure you want to delete this product?</p>
+            <div class="product-info">
+                <strong id="productNameToDelete"></strong>
+            </div>
+            <div class="warning-message">
+                <i class="fas fa-warning"></i>
+                <span>This action cannot be undone. The product will be permanently removed from your store.</span>
+            </div>
+        </div>
+        <div class="delete-modal-footer">
+            <button class="btn-cancel" onclick="hideDeleteModal()">Cancel</button>
+            <button class="btn-delete-confirm" onclick="confirmDelete()">Delete Product</button>
+        </div>
+    </div>
+</div>
+
 </main>
 
 <script>
@@ -926,13 +1277,13 @@ function resetForm() {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
+    // Enhanced notification handling
     const toast = document.querySelector('.notification-toast');
     if (toast) {
+        // Auto-hide after 5 seconds with smooth animation
         setTimeout(function() {
-            toast.style.transition = 'opacity 0.5s ease';
-            toast.style.opacity = '0';
-            setTimeout(function() { toast.remove(); }, 500);
-        }, 4000);
+            closeNotification();
+        }, 5000);
     }
 
     // Sidebar state handling
@@ -995,4 +1346,83 @@ document.addEventListener('DOMContentLoaded', function() {
         checkbox.addEventListener('change', validateForm);
     });
 });
+
+// Delete Modal Functions
+let productToDelete = null;
+let productStatus = null;
+
+function showDeleteModal(productId, productName, status) {
+    productToDelete = productId;
+    productStatus = status;
+    document.getElementById('productNameToDelete').textContent = productName;
+    
+    // Always show delete modal since delete button will actually delete
+    const modalHeader = document.querySelector('.delete-modal-header h3');
+    const modalBody = document.querySelector('.delete-modal-body p');
+    const warningMessage = document.querySelector('.warning-message span');
+    const deleteButton = document.querySelector('.btn-delete-confirm');
+    
+    modalHeader.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Delete Product';
+    modalBody.textContent = 'Are you sure you want to permanently delete this product?';
+    warningMessage.textContent = 'This action cannot be undone. The product will be permanently removed from your store and any cart items will be removed.';
+    deleteButton.textContent = 'Delete Product';
+    deleteButton.style.background = 'linear-gradient(135deg, #dc3545, #c82333)';
+    
+    document.getElementById('deleteModal').style.display = 'flex';
+    
+    // Add body scroll lock
+    document.body.style.overflow = 'hidden';
+    
+    // Focus on cancel button for accessibility
+    setTimeout(() => {
+        document.querySelector('.btn-cancel').focus();
+    }, 100);
+}
+
+function hideDeleteModal() {
+    document.getElementById('deleteModal').style.display = 'none';
+    productToDelete = null;
+    productStatus = null;
+    
+    // Remove body scroll lock
+    document.body.style.overflow = '';
+}
+
+function confirmDelete() {
+    if (productToDelete) {
+        // Show loading state
+        const deleteBtn = document.querySelector('.btn-delete-confirm');
+        deleteBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Deleting...';
+        deleteBtn.disabled = true;
+        
+        // Redirect to delete URL
+        window.location.href = 'manage-products.php?delete=' + productToDelete;
+    }
+}
+
+// Close modal when clicking outside
+document.addEventListener('click', function(event) {
+    const modal = document.getElementById('deleteModal');
+    if (event.target === modal) {
+        hideDeleteModal();
+    }
+});
+
+// Close modal with Escape key
+document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') {
+        hideDeleteModal();
+    }
+});
+
+// Close notification function
+function closeNotification() {
+    const toast = document.getElementById('notificationToast');
+    if (toast) {
+        toast.classList.add('slide-out');
+        setTimeout(function() {
+            toast.remove();
+        }, 300);
+    }
+}
 </script>

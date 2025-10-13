@@ -128,11 +128,7 @@ function buyNow(productId, quantity = 1) {
     .then(data => {
         if (data.success) {
             // Redirect to checkout with buy now parameter
-<<<<<<< HEAD
             window.location.href = 'paymongo/multi-seller-checkout.php?buy_now=1';
-=======
-            window.location.href = 'checkout.php?buy_now=1';
->>>>>>> 95b31e0291c2770ca3f15ca5a1084d2d62ce5d4d
         } else {
             // Show error notification
             showNotification(data.message || 'Error processing request', 'error');
@@ -166,11 +162,7 @@ function addToCartAndCheckout(productId, quantity = 1) {
     .then(data => {
         if (data.success) {
             // Redirect to regular cart checkout
-<<<<<<< HEAD
             window.location.href = 'paymongo/multi-seller-checkout.php';
-=======
-            window.location.href = 'checkout.php';
->>>>>>> 95b31e0291c2770ca3f15ca5a1084d2d62ce5d4d
         } else {
             showNotification(data.message || 'Error processing request', 'error');
         }
