@@ -5,12 +5,12 @@
  */
 
 // PayMongo API Configuration
-define('PAYMONGO_SECRET_KEY', 'sk_test_PxE3JBr7SUfUP6NmAdvQsc6e'); // Replace with your actual secret key
-define('PAYMONGO_PUBLIC_KEY', 'pk_test_ZEYJppLbVBzLodtW9mK7q4TJ'); // Replace with your actual public key
+define('PAYMONGO_SECRET_KEY', 'Replace with your actual secret key'); // Replace with your actual secret key
+define('PAYMONGO_PUBLIC_KEY', 'Replace with your actual private key'); // Replace with your actual public key
 define('PAYMONGO_BASE_URL', 'https://api.paymongo.com/v1');
 
 // Base URLs - Updated for current project
-define('NGROK_BASE_URL', 'https://nonfragilely-marked-wilfredo.ngrok-free.dev/GITHUB_PEST-CTRL'); // Replace with your actual ngrok URL
+define('NGROK_BASE_URL', 'ngrok_url'); // Replace with your actual ngrok URL
 define('LOCAL_BASE_URL', 'http://localhost/GITHUB_PEST-CTRL');
 
 // Success and Cancel URLs
