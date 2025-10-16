@@ -163,6 +163,11 @@ if (isLoggedIn()) {
             text-align: center;
             animation: slideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         }
+
+        .register-btn{
+            color: #FFD736;
+            font-weight: 500;
+        }
          /* Enhanced Modal Styles */
         .modal {
             display: none;
@@ -459,9 +464,8 @@ if (isLoggedIn()) {
         <div class="register-section">
             <h4>New to our platform?</h4>
             <p>Create an account to start shopping or selling on our platform</p>
-            <a href="register.php" class="register-btn">
-                <i class="fas fa-user-plus"></i>
-                <span>Create New Account</span>
+            <a href="register.php">
+                <span class="register-btn">Create New Account</span>
             </a>
         </div>
     </div>

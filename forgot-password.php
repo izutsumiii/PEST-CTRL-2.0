@@ -86,13 +86,11 @@ function sendOTPEmail($email, $otp, $name) {
     }
 }
 
-// DEBUG: Show debug info - set to false in production
-$show_debug = true;
+// Debug disabled in production
+$show_debug = false;
 
 // Additional debug: Check if reset-password.php exists
-if ($show_debug && !file_exists('reset-password.php')) {
-    $error = "ERROR: reset-password.php file not found! Please create this file.";
-}
+// Optional: sanity check disabled
 
 // Handle "Change Email" action
 if (isset($_POST['change_email'])) {
@@ -146,8 +144,8 @@ if (isset($_POST['send_otp'])) {
                     $success = "A 6-digit OTP has been sent to your email address. Please check your inbox and enter the code below. The OTP will expire in 24 hours.";
                     $show_otp_form = true;
                     
-                    // DEBUG: Log what was inserted
-                    error_log("DEBUG: OTP sent successfully. Email: $email, OTP: $otp, Token: $token, Expiry: $expiry");
+                    // Log minimal info
+                    error_log("OTP sent successfully for: $email");
                 } else {
                     $error = "Failed to send OTP email. Please try again later.";
                 }
@@ -161,90 +159,35 @@ if (isset($_POST['send_otp'])) {
 }
 
 if (isset($_POST['verify_otp'])) {
-    echo "<div style='background: #000; color: #0f0; padding: 10px; margin: 10px; font-family: monospace; white-space: pre-wrap; border-radius: 5px;'>";
-    echo "DEBUG: OTP VERIFICATION STARTED\n";
-    echo "POST Data: " . print_r($_POST, true) . "\n";
-    echo "SESSION Data: " . print_r($_SESSION, true) . "\n";
-    
     if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
         $error = "Invalid form submission. Please try again.";
-        echo "ERROR: CSRF token validation failed\n";
     } else {
         $otp = sanitizeInput($_POST['otp']);
         $email = $_SESSION['reset_email'] ?? '';
-        
-        echo "Sanitized OTP: '$otp'\n";
-        echo "Session Email: '$email'\n";
-        
+
         if (empty($email)) {
             $error = "Session expired. Please start the reset process again.";
-            echo "ERROR: Email is empty\n";
         } elseif (empty($otp) || strlen($otp) !== 6 || !ctype_digit($otp)) {
             $error = "Please enter a valid 6-digit OTP code.";
             $show_otp_form = true;
-            echo "ERROR: Invalid OTP format. Length: " . strlen($otp) . ", Is digit: " . (ctype_digit($otp) ? 'yes' : 'no') . "\n";
         } else {
-            // Check what's in the database
-            $stmt = $pdo->prepare("SELECT * FROM password_resets WHERE email = ? ORDER BY created_at DESC");
-            $stmt->execute([$email]);
-            $allRecords = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            echo "All records for email '$email':\n" . print_r($allRecords, true) . "\n";
-            
-            // Now verify OTP
             $stmt = $pdo->prepare("SELECT * FROM password_resets WHERE email = ? AND otp = ? AND expires_at > NOW()");
             $stmt->execute([$email, $otp]);
             $resetRecord = $stmt->fetch(PDO::FETCH_ASSOC);
-            
-            echo "Query: SELECT * FROM password_resets WHERE email = '$email' AND otp = '$otp' AND expires_at > NOW()\n";
-            echo "Current time: " . date('Y-m-d H:i:s') . "\n";
-            echo "Reset record found: " . print_r($resetRecord, true) . "\n";
-            
+
             if ($resetRecord) {
-                // OTP is valid, set session variables for reset-password.php
                 $_SESSION['verified_reset_email'] = $email;
                 $_SESSION['reset_token'] = $resetRecord['token'];
-                
-                // Clean up temporary session variables
                 unset($_SESSION['reset_email']);
                 unset($_SESSION['temp_reset_token']);
-                
-                echo "SUCCESS: OTP verified successfully!\n";
-                echo "Setting session variables:\n";
-                echo "verified_reset_email = '$email'\n";
-                echo "reset_token = '{$resetRecord['token']}'\n";
-                echo "About to redirect to reset-password.php\n";
-                echo "</div>";
-                
-                // Multiple redirect attempts
-                echo "<script>
-                    console.log('JavaScript: About to redirect to reset-password.php');
-                    setTimeout(function() {
-                        window.location.href = 'reset-password.php';
-                    }, 1000);
-                </script>";
-                
                 header("Location: reset-password.php");
                 exit();
             } else {
-                // Check if OTP exists but expired
-                $stmt = $pdo->prepare("SELECT * FROM password_resets WHERE email = ? AND otp = ?");
-                $stmt->execute([$email, $otp]);
-                $expiredRecord = $stmt->fetch(PDO::FETCH_ASSOC);
-                
-                echo "Checking for expired record: " . print_r($expiredRecord, true) . "\n";
-                
-                if ($expiredRecord) {
-                    $error = "OTP has expired. Please request a new OTP.";
-                    echo "ERROR: OTP expired\n";
-                } else {
-                    $error = "Invalid OTP code. Please check and try again.";
-                    echo "ERROR: OTP not found in database\n";
-                }
+                $error = "Invalid or expired OTP. Please request a new OTP.";
                 $show_otp_form = true;
             }
         }
     }
-    echo "</div>";
 }
 
 // Check if we should show OTP form

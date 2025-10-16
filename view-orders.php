@@ -350,29 +350,38 @@ h1 { color:#F9F9F9 !important; font-family:var(--font-primary) !important; font-
 }
 
 .grace-period-ready {
-    background: #28a745;
-    border-color: #28a745;
-    color: #ffffff;
+    background: rgba(0,123,255,0.15);
+    border: 1px solid #007bff;
+    color: #007bff;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-weight: 700;
+    text-transform: uppercase;
+    display: inline-block;
 }
 
 .action-buttons {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
+    align-items: center;
     gap: 8px;
 }
 
 .action-btn {
-    width: 100%;
-    padding: 10px 16px;
+    width: 36px;
+    height: 36px;
+    padding: 0;
     border: none;
     border-radius: 8px;
     font-weight: 600;
-    font-size: 13px;
+    font-size: 14px;
     cursor: pointer;
     transition: all 0.3s ease;
     text-align: center;
     text-decoration: none;
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .btn-process {
@@ -396,6 +405,40 @@ h1 { color:#F9F9F9 !important; font-family:var(--font-primary) !important; font-
     transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(220,53,69,0.4);
 }
+
+/* Custom Confirmation Modal */
+.custom-confirm-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.25s ease;
+}
+
+.custom-confirm-overlay.show { opacity: 1; visibility: visible; }
+
+.custom-confirm-dialog {
+    background: linear-gradient(135deg, #1a0a2e 0%, #130325 100%);
+    border: 2px solid #FFD736;
+    border-radius: 12px;
+    padding: 22px;
+    width: 92%;
+    max-width: 420px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+}
+
+.custom-confirm-title { color: #FFD736; font-weight: 800; font-size: 18px; margin: 0 0 10px 0; }
+.custom-confirm-message { color: #F9F9F9; opacity: 0.9; font-size: 14px; margin-bottom: 16px; }
+.custom-confirm-buttons { display: flex; gap: 10px; justify-content: flex-end; }
+.custom-confirm-btn { padding: 10px 14px; border-radius: 8px; font-weight: 800; border: 2px solid transparent; cursor: pointer; }
+.custom-confirm-btn.cancel { background: rgba(108,117,125,0.15); color: #adb5bd; border-color: #6c757d; }
+.custom-confirm-btn.confirm { background: linear-gradient(135deg, #dc3545, #c82333); color: #fff; border-color: #dc3545; }
+.custom-confirm-btn.primary { background: linear-gradient(135deg, #FFD736, #FFD736); color: #130325; border-color: #FFD736; }
 
 .status-form {
     margin-top: 8px;
@@ -549,34 +592,34 @@ h1 { color:#F9F9F9 !important; font-family:var(--font-primary) !important; font-
                                             Ready
             </div>
                                         <div class="action-buttons">
-                                            <form method="POST">
+                                            <form method="POST" onsubmit="return confirmStatusChange('processing');">
                                                 <input type="hidden" name="order_id" value="<?php echo $order['order_id']; ?>">
                                                 <input type="hidden" name="status" value="processing">
                                                 <input type="hidden" name="update_status" value="1">
-                                                <button type="submit" class="action-btn btn-process">
-                                                    <i class="fas fa-cog"></i> Process
+                                                <button type="submit" class="action-btn btn-process" title="Process">
+                                                    <i class="fas fa-check"></i>
                                                 </button>
                                             </form>
-                                            <form method="POST">
+                                            <form method="POST" onsubmit="return confirmStatusChange('cancelled');">
                 <input type="hidden" name="order_id" value="<?php echo $order['order_id']; ?>">
                                                 <input type="hidden" name="status" value="cancelled">
                 <input type="hidden" name="update_status" value="1">
-                                                <button type="submit" class="action-btn btn-cancel">
-                                                    <i class="fas fa-times"></i> Cancel
+                                                <button type="submit" class="action-btn btn-cancel" title="Cancel">
+                                                    <i class="fas fa-times"></i>
                                                 </button>
             </form>
                                         </div>
         <?php endif; ?>
                                 <?php elseif (in_array($order['status'], ['processing', 'shipped'])): ?>
-                                    <form method="POST" class="status-form">
+                                    <form method="POST" class="status-form" onsubmit="return confirmStatusChange(this.querySelector('select').value);">
             <input type="hidden" name="order_id" value="<?php echo $order['order_id']; ?>">
                                         <input type="hidden" name="update_status" value="1">
                                         <label>Update Status:</label>
                                         <select name="status" class="status-select" onchange="this.form.submit()">
                                             <option value="">Select...</option>
                                             <?php if ($order['status'] === 'processing'): ?>
-                <option value="shipped">Shipped</option>
-                <option value="cancelled">Cancelled</option>
+                <option value="shipped">Ship</option>
+                <option value="cancelled">Cancel</option>
     <?php elseif ($order['status'] === 'shipped'): ?>
                 <option value="delivered">Delivered</option>
                                             <?php endif; ?>
@@ -623,5 +666,76 @@ document.addEventListener('DOMContentLoaded', function() {
     if (sidebar) {
         observer.observe(sidebar, { attributes: true, attributeFilter: ['class'] });
     }
+
+    // Remove inline onsubmit from status update forms to avoid double prompts
+    document.querySelectorAll('form[onsubmit]').forEach(function(form){
+        const hasStatus = form.querySelector('input[name="status"], select[name="status"]');
+        const hasFlag = form.querySelector('input[name="update_status"]');
+        if (hasStatus && hasFlag) {
+            form.removeAttribute('onsubmit');
+        }
+    });
+
+    // Intercept forms that update order status so we can show the custom confirm modal first
+    document.addEventListener('submit', function(e) {
+        const form = e.target;
+        if (!(form instanceof HTMLFormElement)) return;
+        const statusField = form.querySelector('input[name="status"], select[name="status"]');
+        const updateFlag = form.querySelector('input[name="update_status"]');
+        if (!statusField || !updateFlag) return; // only intercept order status updates
+
+        const nextStatus = statusField.value;
+        if (!nextStatus) return; // allow native validation/no-op
+
+        e.preventDefault();
+        Promise.resolve(confirmStatusChange(nextStatus)).then(function(ok){
+            if (ok) form.submit();
+        });
+    }, true);
+
+    // Intercept status dropdown direct submit behavior; replace with modal confirmation first
+    document.querySelectorAll('select[name="status"]').forEach(function(sel){
+        // Remove inline onchange submit if present
+        try { sel.onchange = null; } catch (err) {}
+        sel.addEventListener('change', function(ev){
+            ev.preventDefault();
+            const form = sel.form;
+            if (!form) return;
+            const val = sel.value;
+            if (!val) return;
+            Promise.resolve(confirmStatusChange(val)).then(function(ok){
+                if (ok) form.submit();
+            });
+        });
+    });
 });
+</script>
+<script>
+function confirmStatusChange(nextStatus) {
+    if (!nextStatus) return false;
+    const overlay = document.createElement('div');
+    overlay.className = 'custom-confirm-overlay';
+    overlay.innerHTML = `
+      <div class="custom-confirm-dialog">
+        <div class="custom-confirm-title">Confirm Action</div>
+        <div class="custom-confirm-message">${
+            nextStatus==='processing' ? 'Move order to Processing?' :
+            nextStatus==='shipped' ? 'Mark order as Shipped?' :
+            nextStatus==='delivered' ? 'Mark order as Delivered?' :
+            nextStatus==='cancelled' ? 'Cancel this order?' : 'Apply this status change?'
+        }</div>
+        <div class="custom-confirm-buttons">
+          <button type="button" class="custom-confirm-btn cancel">Cancel</button>
+          <button type="button" class="custom-confirm-btn primary">Confirm</button>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+    requestAnimationFrame(()=>overlay.classList.add('show'));
+    return new Promise((resolve)=>{
+      const close = ()=>{ overlay.classList.remove('show'); setTimeout(()=>overlay.remove(), 200); };
+      overlay.querySelector('.cancel').addEventListener('click', ()=>{ close(); resolve(false); });
+      overlay.addEventListener('click', (e)=>{ if(e.target===overlay){ close(); resolve(false);} });
+      overlay.querySelector('.primary').addEventListener('click', ()=>{ close(); resolve(true); });
+    }).then(ok=> ok);
+}
 </script>

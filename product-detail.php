@@ -1,6 +1,6 @@
 <?php
-require_once 'includes/header.php';
 require_once 'config/database.php';
+require_once 'includes/functions.php';
 
 if (!isset($_GET['id'])) {
     header("Location: products.php");
@@ -177,302 +177,76 @@ if (isset($_GET['review_success']) && $_GET['review_success'] == '1') {
 
 // Calculate seller display name
 $sellerDisplayName = trim($product['seller_first_name'] . ' ' . $product['seller_last_name']) ?: $product['seller_name'];
+
+// Include header after redirects to avoid headers already sent
+require_once 'includes/header.php';
 ?>
 
 <style>
-/* Force body and html to have full background coverage */
-html, body {
-    margin: 0;
-    padding: 0;
-    min-height: 100vh;
-    background: #130325 !important;
-}
+/* Base */
+html, body { margin:0; padding:0; min-height:100vh; background:#130325 !important; }
+main { background:transparent !important; margin:0 !important; padding:20px 0 80px 0 !important; min-height:calc(100vh - 80px) !important; }
 
-/* Main container styling */
-main {
-    background: transparent !important;
-    margin: 0 !important;
-    padding: 8px 0 100px 0 !important;
-    min-height: calc(100vh - 80px) !important;
-}
+/* Product Detail Container */
+.product-detail { display:grid; grid-template-columns: 1.1fr 0.9fr; gap:32px; margin:24px 0; background:#1a0a2e; padding:24px; border-radius:16px; box-shadow:0 10px 30px rgba(0,0,0,0.35); border:1px solid #2d1b4e; }
 
-/* Product Detail Styles - Dark Theme */
-.product-detail {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 30px;
-    margin: 40px 0;
-    background: var(--primary-dark);
-    padding: 25px;
-    border-radius: 8px;
-    box-shadow: 0 4px 20px var(--shadow-light);
-    border: 1px solid var(--accent-yellow);
-}
+/* Gallery */
+.product-images { display:flex; flex-direction:column; gap:12px; }
+.product-images img { width:100%; height:auto; border-radius:12px; border:1px solid rgba(255,215,54,0.25); background:#0e0620; box-shadow:0 6px 18px rgba(0,0,0,0.35); }
 
-.product-images {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
+/* Info */
+.product-info { background:#140826; padding:20px; border-radius:12px; border:1px solid #2d1b4e; }
+.product-info h1 { color:#F9F9F9; font-size:1.9rem; font-weight:800; letter-spacing:.2px; margin-bottom:12px; }
+.price { font-size:1.8rem; font-weight:900; color:#FFD736; margin-bottom:8px; }
+.stock { color:#28a745; font-weight:700; margin-bottom:8px; }
+.low-stock { color:#ffc107; font-weight:700; }
+.out-stock { color:#dc3545; font-weight:700; }
+.seller { color:#d7d1e2; margin-bottom:10px; }
+.category-info { color:#d7d1e2; font-size:.92rem; margin-bottom:10px; }
+.rating { color:#FFD736; font-weight:900; letter-spacing:.4px; margin-bottom:16px; }
 
-.product-images img {
-    width: 100%;
-    max-width: 400px;
-    height: auto;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-}
+.quantity-form { display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+.quantity-form label { font-weight:700; color:#d7d1e2; }
+.quantity-form input { width:90px; padding:10px 12px; border:1px solid #2d1b4e; border-radius:10px; background:#0f0820; color:#F9F9F9; }
+.add-to-cart-btn { background:linear-gradient(135deg,#FFD736,#f0c419); color:#130325; border:2px solid #FFD736; padding:12px 16px; border-radius:10px; font-weight:800; cursor:pointer; transition:all .2s ease; }
+.add-to-cart-btn:hover { transform:translateY(-1px); box-shadow:0 10px 22px rgba(255,215,54,0.35); }
 
-.product-info {
-    background: var(--primary-dark);
-    padding: 20px;
-    border-radius: 8px;
-    border: 1px solid var(--accent-yellow);
-}
+/* Description */
+.product-description { background:#140826; padding:18px; border-radius:12px; margin:20px 0; box-shadow:0 10px 30px rgba(0,0,0,0.35); border:1px solid #2d1b4e; }
+.product-description h2 { color:#F9F9F9; margin-bottom:10px; padding-bottom:8px; border-bottom:2px solid #FFD736; font-size:1.2rem; font-weight:800; }
+.description-content { color:#e6e1ee; line-height:1.7; font-size:1rem; }
 
-.product-info h1 {
-    color: var(--primary-light);
-    font-size: 1.8rem;
-    margin-bottom: 15px;
-}
+/* Reviews */
+.product-reviews { background:#140826; padding:22px; border-radius:12px; margin:20px 0; box-shadow:0 10px 30px rgba(0,0,0,0.35); border:1px solid #2d1b4e; }
+.product-reviews h2 { color:#F9F9F9; margin-bottom:16px; padding-bottom:8px; border-bottom:2px solid #FFD736; font-size:1.2rem; font-weight:800; }
+.review { border-bottom:1px solid rgba(255,215,54,0.2); padding:15px 0; }
+.review:last-child { border-bottom:none; }
+.review h4 { color:#FFD736; margin-bottom:6px; font-size:.95rem; font-weight:800; }
+.review p { margin-bottom:6px; color:#e6e1ee; font-size:.98rem; }
+.review small { color:#bbb6c6; font-size:.82rem; }
 
-.price {
-    font-size: 2rem;
-    font-weight: 700;
-    color: #FFD736;
-    margin-bottom: 10px;
-}
+.add-review { background:#140826; padding:22px; border-radius:12px; margin:20px 0; box-shadow:0 10px 30px rgba(0,0,0,0.35); border:1px solid #2d1b4e; }
+.add-review h3 { color:#F9F9F9; margin-bottom:15px; padding-bottom:8px; border-bottom:2px solid #FFD736; font-size:1.2rem; font-weight:800; }
+.review-form { display:flex; flex-direction:column; gap:15px; }
+.form-group { display:flex; flex-direction:column; gap:6px; align-items:flex-start; text-align:left; }
+.form-group label { font-weight:700; color:#d7d1e2; }
+.review-form select, .review-form textarea { padding:12px; border:1px solid #2d1b4e; border-radius:10px; font-size:1rem; background:#0f0820; color:#F9F9F9; }
+.review-form textarea { height:110px; resize:vertical; }
+.star-rating { display:flex; flex-direction:row-reverse; gap:8px; justify-content:flex-start; margin:0; }
+.star-rating input { display:none; }
+.star-rating label { font-size:22px; color:#6b5c86; cursor:pointer; transition:transform .1s ease, color .15s ease; }
+.star-rating label:hover, .star-rating label:hover ~ label { color:#FFD736; transform:translateY(-1px); }
+.star-rating input:checked ~ label { color:#FFD736; }
+.submit-review-btn { background:linear-gradient(135deg,#FFD736,#f0c419); color:#130325; border:2px solid #FFD736; padding:12px 16px; border-radius:10px; font-weight:800; cursor:pointer; transition:all .2s ease; align-self:flex-start; }
+.submit-review-btn:hover { transform:translateY(-1px); box-shadow:0 10px 22px rgba(255,215,54,0.35); }
 
-.stock {
-    color: #28a745;
-    font-weight: 600;
-    margin-bottom: 10px;
-}
+.message { padding:10px; border-radius:6px; margin-bottom:15px; }
+.message.success { background:#d4edda; color:#155724; border:1px solid #c3e6cb; }
+.message.error { background:#f8d7da; color:#721c24; border:1px solid #f5c6cb; }
 
-.seller {
-    color: var(--primary-light);
-    margin-bottom: 10px;
-}
-
-.category-info {
-    color: var(--primary-light);
-    font-size: 0.9rem;
-    margin-bottom: 10px;
-}
-
-.rating {
-    color: var(--primary-light);
-    font-weight: 600;
-    margin-bottom: 20px;
-}
-
-.quantity-form {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 20px;
-}
-
-.quantity-form label {
-    font-weight: 600;
-    color: var(--primary-light);
-}
-
-.quantity-form input {
-    width: 80px;
-    padding: 8px;
-    border: 1px solid #ced4da;
-    border-radius: 4px;
-    background: #ffffff;
-    color: #130325;
-}
-
-.add-to-cart-btn {
-    background: linear-gradient(135deg, #FFD736, #e6c230);
-    color: #130325;
-    border: none;
-    padding: 12px 24px;
-    border-radius: 6px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
-.add-to-cart-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 15px rgba(255, 215, 54, 0.3);
-}
-
-.product-description {
-    background: var(--primary-dark);
-    padding: 15px;
-    border-radius: 8px;
-    margin: 20px 0;
-    box-shadow: 0 4px 20px var(--shadow-light);
-    border: 1px solid var(--accent-yellow);
-}
-
-.product-description h2 {
-    color: var(--primary-light);
-    margin-bottom: 10px;
-    padding-bottom: 8px;
-    border-bottom: 2px solid var(--accent-yellow);
-    font-size: 1.2rem;
-}
-
-.description-content {
-    color: var(--primary-light);
-    line-height: 1.5;
-    font-size: 0.5rem;
-}
-
-.description-content p {
-    color: var(--primary-light);
-    line-height: 1.5;
-    font-size: 1rem;
-    margin: 0;
-}
-
-.product-reviews {
-    background: var(--primary-dark);
-    padding: 25px;
-    border-radius: 8px;
-    margin: 20px 0;
-    box-shadow: 0 4px 20px var(--shadow-light);
-    border: 1px solid var(--accent-yellow);
-}
-
-.product-reviews h2 {
-    color: var(--primary-light);
-    margin-bottom: 20px;
-    padding-bottom: 10px;
-    border-bottom: 2px solid var(--accent-yellow);
-    font-size: 1.2rem;
-}
-
-.review {
-    border-bottom: 1px solid rgba(255, 215, 54, 0.2);
-    padding: 15px 0;
-}
-
-.review:last-child {
-    border-bottom: none;
-}
-
-.review h4 {
-    color: var(--primary-light);
-    margin-bottom: 5px;
-    font-size: 0.9rem;
-}
-
-.review p {
-    margin-bottom: 5px;
-    color: var(--primary-light);
-    font-size: 1rem;
-}
-
-.review small {
-    color: var(--primary-light);
-    opacity: 0.8;
-    font-size: 0.8rem;
-}
-
-.add-review {
-    background: var(--primary-dark);
-    padding: 25px;
-    border-radius: 8px;
-    margin: 20px 0;
-    box-shadow: 0 4px 20px var(--shadow-light);
-    border: 1px solid var(--accent-yellow);
-}
-
-.add-review h3 {
-    color: var(--primary-light);
-    margin-bottom: 15px;
-    padding-bottom: 10px;
-    border-bottom: 2px solid var(--accent-yellow);
-    font-size: 1.2rem;
-}
-
-.review-form {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-}
-
-.form-group {
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-}
-
-.form-group label {
-    font-weight: 600;
-    color: var(--primary-light);
-}
-
-.form-group select,
-.form-group textarea {
-    padding: 10px;
-    border: 1px solid #ced4da;
-    border-radius: 4px;
-    font-size: 1rem;
-    background: #ffffff;
-    color: #130325;
-}
-
-.form-group textarea {
-    height: 100px;
-    resize: vertical;
-}
-
-.submit-review-btn {
-    background: linear-gradient(135deg, #FFD736, #e6c230);
-    color: #130325;
-    border: none;
-    padding: 12px 24px;
-    border-radius: 6px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    align-self: flex-start;
-}
-
-.submit-review-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 15px rgba(255, 215, 54, 0.3);
-}
-
-.message {
-    padding: 10px;
-    border-radius: 4px;
-    margin-bottom: 15px;
-}
-
-.message.success {
-    background: #d4edda;
-    color: #155724;
-    border: 1px solid #c3e6cb;
-}
-
-.message.error {
-    background: #f8d7da;
-    color: #721c24;
-    border: 1px solid #f5c6cb;
-}
-
-@media (max-width: 768px) {
-    .product-detail {
-        grid-template-columns: 1fr;
-        gap: 20px;
-        margin: 20px 0;
-    }
-    
-    .quantity-form {
-        flex-direction: column;
-        align-items: flex-start;
-    }
-}
+/* Responsive */
+@media (max-width: 1024px) { .product-detail { grid-template-columns:1fr; gap:20px; margin:20px 0; } }
+@media (max-width: 768px) { .quantity-form { flex-direction:column; align-items:flex-start; } }
 </style>
 
 <main>
@@ -556,15 +330,19 @@ main {
         <?php else: ?>
             <form method="POST" class="review-form">
                 <div class="form-group">
-                    <label for="rating">Rating:</label>
-                    <select name="rating" id="rating" required>
-                        <option value="">Select Rating</option>
-                        <option value="5">5 - Excellent</option>
-                        <option value="4">4 - Very Good</option>
-                        <option value="3">3 - Good</option>
-                        <option value="2">2 - Fair</option>
-                        <option value="1">1 - Poor</option>
-                    </select>
+                    <label>Rating:</label>
+                    <div class="star-rating" role="radiogroup" aria-label="Rating">
+                        <input type="radio" id="star5" name="rating" value="5" required>
+                        <label for="star5" title="5 stars">★</label>
+                        <input type="radio" id="star4" name="rating" value="4">
+                        <label for="star4" title="4 stars">★</label>
+                        <input type="radio" id="star3" name="rating" value="3">
+                        <label for="star3" title="3 stars">★</label>
+                        <input type="radio" id="star2" name="rating" value="2">
+                        <label for="star2" title="2 stars">★</label>
+                        <input type="radio" id="star1" name="rating" value="1">
+                        <label for="star1" title="1 star">★</label>
+                    </div>
                 </div>
                 
                 <div class="form-group">

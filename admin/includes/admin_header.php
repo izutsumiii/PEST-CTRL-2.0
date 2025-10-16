@@ -1,5 +1,6 @@
 <?php
-require_once '../includes/functions.php';
+$rootPath = dirname(__DIR__, 2);
+require_once $rootPath . '/includes/functions.php';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -55,7 +56,8 @@ require_once '../includes/functions.php';
         }
         .sidebar .section-title { color: #9ca3af; font-size: 11px; text-transform: uppercase; letter-spacing: .08em; margin: 14px 8px 6px; }
         .sidebar .nav-links { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
-        .sidebar .nav-links a { 
+        .sidebar .nav-links a, 
+        .sidebar .nav-dropdown-toggle { 
             display: flex; 
             align-items: center; 
             gap: 10px; 
@@ -68,8 +70,22 @@ require_once '../includes/functions.php';
             transition: all 0.3s ease; 
             position: relative;
         }
-        .sidebar .nav-links a:hover { background: rgba(255, 215, 54, 0.1); color: #FFD736; transform: none; }
-        .sidebar .nav-links a.active { background: rgba(255, 215, 54, 0.15); color: #FFD736; border: 1px solid rgba(255, 215, 54, 0.25); }
+        .sidebar .nav-links a:hover, 
+        .sidebar .nav-dropdown-toggle:hover { background: rgba(255, 215, 54, 0.1); color: #FFD736; transform: none; }
+        .sidebar .nav-links a.active, 
+        .sidebar .nav-dropdown-toggle.active { background: rgba(255, 215, 54, 0.15); color: #FFD736; border: 1px solid rgba(255, 215, 54, 0.25); }
+
+        /* Admin sidebar dropdown (match seller sidebar styles) */
+        .nav-dropdown { display: flex; flex-direction: column; width: 100%; }
+        .nav-dropdown-toggle { background: transparent; border: none; cursor: pointer; text-align: left; justify-content: space-between; }
+        .nav-dropdown-toggle-content { display: flex; align-items: center; gap: 10px; }
+        .nav-dropdown-arrow { transition: transform 0.3s ease; font-size: 12px; margin-left: auto; }
+        .nav-dropdown-arrow.rotated { transform: rotate(90deg); }
+        .nav-dropdown-content { max-height: 0; overflow: hidden; transition: max-height 0.3s ease; display: flex; flex-direction: column; gap: 2px; padding: 0; }
+        .nav-dropdown-content.show { max-height: 300px; padding: 4px 0; }
+        .nav-dropdown-content a { display: flex; align-items: center; gap: 10px; padding: 10px 12px 10px 24px; color: #F9F9F9; text-decoration: none; font-size: 13px; border-radius: 8px; transition: all 0.3s ease; background: rgba(0, 0, 0, 0.2); margin: 0; width: 100%; }
+        .nav-dropdown-content a:hover { background: rgba(255, 215, 54, 0.1); color: #FFD736; }
+        .nav-dropdown-content a i { font-size: 13px; width: 16px; }
         
         /* Tooltip styles for collapsed sidebar */
         .sidebar.collapsed .nav-links a::after {
@@ -135,11 +151,38 @@ require_once '../includes/functions.php';
             pointer-events: none;
         }
         
-        .sidebar.collapsed .nav-links a {
+        .sidebar.collapsed .nav-links a, 
+        .sidebar.collapsed .nav-dropdown-toggle {
             justify-content: center;
             padding: 10px 8px;
             position: relative;
         }
+        .sidebar.collapsed .nav-dropdown-content { display: none; }
+        .sidebar.collapsed .nav-links a::after,
+        .sidebar.collapsed .nav-dropdown-toggle::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            left: 100%;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(19, 3, 37, 0.95);
+            color: #F9F9F9;
+            padding: 12px 16px;
+            border-radius: 4px;
+            font-size: 12px;
+            white-space: nowrap;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            z-index: 1000;
+            margin-left: 15px;
+            border: 1px solid rgba(255, 215, 54, 0.2);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            min-width: 80px;
+            text-align: center;
+        }
+        .sidebar.collapsed .nav-links a:hover::after,
+        .sidebar.collapsed .nav-dropdown-toggle:hover::after { opacity: 1; visibility: visible; }
         
         .sidebar.collapsed .nav-links a span {
             position: absolute;
@@ -937,8 +980,25 @@ require_once '../includes/functions.php';
 
                 <div class="section-title hide-on-collapse">Users</div>
                 <div class="nav-links">
-                    <a href="admin-customers.php" data-tooltip="Customers"><i class="fas fa-shopping-cart"></i><span class="hide-on-collapse"> Customers</span></a>
-                    <a href="admin-sellers.php" data-tooltip="Sellers"><i class="fas fa-store"></i><span class="hide-on-collapse"> Sellers</span></a>
+                    <div class="nav-dropdown">
+                        <button class="nav-dropdown-toggle" onclick="toggleAdminNavDropdown(event, 'manage-users')" data-tooltip="Manage Users">
+                            <div class="nav-dropdown-toggle-content">
+                                <i class="fas fa-users"></i>
+                                <span class="hide-on-collapse">Manage Users</span>
+                            </div>
+                            <i class="fas fa-chevron-right nav-dropdown-arrow hide-on-collapse" id="manage-users-arrow"></i>
+                        </button>
+                        <div class="nav-dropdown-content" id="manage-users-dropdown">
+                            <a href="admin-customers.php">
+                                <i class="fas fa-user"></i>
+                                <span>Customers</span>
+                            </a>
+                            <a href="admin-sellers.php">
+                                <i class="fas fa-store"></i>
+                                <span>Sellers</span>
+                            </a>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="section-title hide-on-collapse">Catalog</div>
@@ -1011,6 +1071,23 @@ require_once '../includes/functions.php';
         });
     </script>
     
+        <script>
+            function toggleAdminNavDropdown(event, id) {
+                event.preventDefault();
+                event.stopPropagation();
+                const dropdown = document.getElementById(id + '-dropdown');
+                const arrow = document.getElementById(id + '-arrow');
+                if (!dropdown) return;
+                const isOpen = dropdown.classList.contains('show');
+                document.querySelectorAll('.nav-dropdown-content.show').forEach(d => d.classList.remove('show'));
+                document.querySelectorAll('.nav-dropdown-arrow.rotated').forEach(a => a.classList.remove('rotated'));
+                if (!isOpen) {
+                    dropdown.classList.add('show');
+                    if (arrow) arrow.classList.add('rotated');
+                }
+            }
+        </script>
+
         <script>
             function toggleAdminSidebar() {
                 const sidebar = document.getElementById('adminSidebar');

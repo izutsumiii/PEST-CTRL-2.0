@@ -104,6 +104,80 @@ $stmt = $pdo->prepare("SELECT * FROM categories WHERE parent_id IS NULL AND sell
 $stmt->execute();
 $parentCategories = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+// Analytics filter (seller/customer) - GET params: from, to, entity
+$filterFrom = isset($_GET['from']) ? trim($_GET['from']) : '';
+$filterTo = isset($_GET['to']) ? trim($_GET['to']) : '';
+$filterEntity = isset($_GET['entity']) ? trim($_GET['entity']) : 'all'; // all|sellers|customers
+
+// Normalize dates
+if ($filterFrom !== '' && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $filterFrom)) { $filterFrom = ''; }
+if ($filterTo !== '' && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $filterTo)) { $filterTo = ''; }
+
+// Default to current 1-week range if no dates provided
+if ($filterFrom === '' && $filterTo === '') {
+    $filterFrom = date('Y-m-d', strtotime('-6 days'));
+    $filterTo = date('Y-m-d');
+}
+
+// Build date range for queries (inclusive range)
+$dateCondition = '';
+$dateParams = [];
+if ($filterFrom !== '' && $filterTo !== '') {
+    $dateCondition = " AND DATE(created_at) BETWEEN ? AND ?";
+    $dateParams = [$filterFrom, $filterTo];
+} elseif ($filterFrom !== '') {
+    $dateCondition = " AND DATE(created_at) >= ?";
+    $dateParams = [$filterFrom];
+} elseif ($filterTo !== '') {
+    $dateCondition = " AND DATE(created_at) <= ?";
+    $dateParams = [$filterTo];
+}
+
+// Compute filtered analytics
+$filteredNewSellers = 0; $filteredNewCustomers = 0; $filteredOrders = 0; $filteredRevenue = 0.0; $filteredProducts = 0;
+
+try {
+    if ($filterEntity === 'all' || $filterEntity === 'sellers') {
+        $q = "SELECT COUNT(*) FROM users WHERE user_type='seller'" . $dateCondition;
+        $stmt = $pdo->prepare($q);
+        $stmt->execute($dateParams);
+        $filteredNewSellers = (int)$stmt->fetchColumn();
+    }
+    if ($filterEntity === 'all' || $filterEntity === 'customers') {
+        $q = "SELECT COUNT(*) FROM users WHERE user_type='customer'" . $dateCondition;
+        $stmt = $pdo->prepare($q);
+        $stmt->execute($dateParams);
+        $filteredNewCustomers = (int)$stmt->fetchColumn();
+    }
+    // Orders and revenue in date range
+    $orderDateCond = '';
+    $orderParams = [];
+    if ($filterFrom !== '' && $filterTo !== '') { $orderDateCond = " WHERE DATE(created_at) BETWEEN ? AND ?"; $orderParams = [$filterFrom, $filterTo]; }
+    elseif ($filterFrom !== '') { $orderDateCond = " WHERE DATE(created_at) >= ?"; $orderParams = [$filterFrom]; }
+    elseif ($filterTo !== '') { $orderDateCond = " WHERE DATE(created_at) <= ?"; $orderParams = [$filterTo]; }
+
+    $stmt = $pdo->prepare("SELECT COUNT(*) FROM orders" . $orderDateCond);
+    $stmt->execute($orderParams);
+    $filteredOrders = (int)$stmt->fetchColumn();
+
+    $revWhere = $orderDateCond === '' ? " WHERE status='delivered'" : $orderDateCond . " AND status='delivered'";
+    if ($orderDateCond === '') { $revParams = []; } else { $revParams = $orderParams; }
+    $stmt = $pdo->prepare("SELECT COALESCE(SUM(total_amount),0) FROM orders" . $revWhere);
+    $stmt->execute($revParams);
+    $filteredRevenue = (float)$stmt->fetchColumn();
+
+    // Products created in range
+    $prodDateCond = '';
+    $prodParams = [];
+    if ($filterFrom !== '' && $filterTo !== '') { $prodDateCond = " WHERE DATE(created_at) BETWEEN ? AND ?"; $prodParams = [$filterFrom, $filterTo]; }
+    elseif ($filterFrom !== '') { $prodDateCond = " WHERE DATE(created_at) >= ?"; $prodParams = [$filterFrom]; }
+    elseif ($filterTo !== '') { $prodDateCond = " WHERE DATE(created_at) <= ?"; $prodParams = [$filterTo]; }
+    $stmt = $pdo->prepare("SELECT COUNT(*) FROM products" . $prodDateCond);
+    $stmt->execute($prodParams);
+    $filteredProducts = (int)$stmt->fetchColumn();
+} catch (Exception $e) {
+    // fail safe: keep zeros
+}
 
 
 // Add notification script function
@@ -130,7 +204,75 @@ function addNotificationScript() {
 }
 ?>
 
-<!-- Edit Category Modal -->
+<!-- Analytics Tabs + Filter -->
+<div class="container" style="max-width:1400px;margin:0 auto 30px;padding:0 20px;">
+  <div class="analytics-tabs">
+    <button class="tab-btn" data-target="customers" <?php echo $filterEntity==='customers'?'data-active="1"':''; ?>>CUSTOMER</button>
+    <button class="tab-btn" data-target="sellers" <?php echo $filterEntity==='sellers'?'data-active="1"':''; ?>>SELLER</button>
+    <a href="admin-dashboard.php" class="tab-close" title="Back to default">✕</a>
+  </div>
+  <div class="analytics-slider <?php echo $filterEntity==='sellers'?'slide-sellers':'slide-customers'; ?>">
+    <!-- Customers Pane -->
+    <div class="analytics-pane">
+      <div class="analytics-filter">
+        <form method="GET" action="admin-dashboard.php" class="analytics-form">
+          <input type="hidden" name="entity" value="customers">
+          <div class="row">
+            <div class="field">
+              <label>From</label>
+              <input type="date" name="from" value="<?php echo htmlspecialchars($filterFrom); ?>">
+            </div>
+            <div class="field">
+              <label>To</label>
+              <input type="date" name="to" value="<?php echo htmlspecialchars($filterTo); ?>">
+            </div>
+            <div class="actions">
+              <button type="submit" class="btn-apply"><i class="fas fa-filter"></i></button>
+              <a href="admin-dashboard.php?entity=customers" class="btn-clear" title="Clear"><i class="fas fa-times"></i></a>
+            </div>
+          </div>
+          <div class="quick-range">
+            <a href="admin-dashboard.php?entity=customers&from=<?php echo date('Y-m-d'); ?>&to=<?php echo date('Y-m-d'); ?>">Today</a>
+            <a href="admin-dashboard.php?entity=customers&from=<?php echo date('Y-m-d', strtotime('-6 days')); ?>&to=<?php echo date('Y-m-d'); ?>">Last 7 days</a>
+            <a href="admin-dashboard.php?entity=customers&from=<?php echo date('Y-m-d', strtotime('-29 days')); ?>&to=<?php echo date('Y-m-d'); ?>">Last 30 days</a>
+          </div>
+        </form>
+
+        
+      </div>
+    </div>
+
+    <!-- Sellers Pane -->
+    <div class="analytics-pane">
+      <div class="analytics-filter">
+        <form method="GET" action="admin-dashboard.php" class="analytics-form">
+          <input type="hidden" name="entity" value="sellers">
+          <div class="row">
+            <div class="field">
+              <label>From</label>
+              <input type="date" name="from" value="<?php echo htmlspecialchars($filterFrom); ?>">
+            </div>
+            <div class="field">
+              <label>To</label>
+              <input type="date" name="to" value="<?php echo htmlspecialchars($filterTo); ?>">
+            </div>
+            <div class="actions">
+              <button type="submit" class="btn-apply"><i class="fas fa-filter"></i></button>
+              <a href="admin-dashboard.php?entity=sellers" class="btn-clear" title="Clear"><i class="fas fa-times"></i></a>
+            </div>
+          </div>
+          <div class="quick-range">
+            <a href="admin-dashboard.php?entity=sellers&from=<?php echo date('Y-m-d'); ?>&to=<?php echo date('Y-m-d'); ?>">Today</a>
+            <a href="admin-dashboard.php?entity=sellers&from=<?php echo date('Y-m-d', strtotime('-6 days')); ?>&to=<?php echo date('Y-m-d'); ?>">Last 7 days</a>
+            <a href="admin-dashboard.php?entity=sellers&from=<?php echo date('Y-m-d', strtotime('-29 days')); ?>&to=<?php echo date('Y-m-d'); ?>">Last 30 days</a>
+          </div>
+        </form>
+
+        
+      </div>
+    </div>
+  </div>
+</div>
 <!-- Edit Category Modal -->
 <div id="editCategoryModal" class="modal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.3);z-index:9999;align-items:center;justify-content:center;">
   <div class="modal-content" style="background:#fff;padding:32px 28px;border-radius:14px;max-width:400px;margin:auto;box-shadow:0 4px 16px rgba(44,62,80,0.18);position:relative;">
@@ -186,20 +328,23 @@ function addNotificationScript() {
 
 <div class="stats">
     <div class="stat-card">
-        <h3>Total Users</h3>
-        <p><?php echo $totalUsers; ?></p>
+        <h3><?php echo $filterEntity==='customers' ? 'New Customers' : ($filterEntity==='sellers' ? 'New Sellers' : 'New Users'); ?></h3>
+        <p><?php echo $filterEntity==='customers' ? $filteredNewCustomers : ($filterEntity==='sellers' ? $filteredNewSellers : $filteredNewSellers + $filteredNewCustomers); ?></p>
     </div>
+    <?php if ($filterEntity !== 'customers'): ?>
     <div class="stat-card">
-        <h3>Total Products</h3>
-        <p><?php echo $totalProducts; ?></p>
+        <h3>Products</h3>
+        <p><?php echo $filteredProducts; ?></p>
     </div>
+    <?php endif; ?>
     <div class="stat-card">
-        <h3>Total Orders</h3>
-        <p><?php echo $totalOrders; ?></p>
+        <h3>Orders</h3>
+        <p><?php echo $filteredOrders; ?></p>
     </div>
+    <?php if ($filterEntity !== 'customers'): ?>
     <div class="stat-card">
-        <h3>Total Revenue</h3>
-        <p>₱<?php echo number_format($totalRevenue, 2); ?></p>
+        <h3>Revenue</h3>
+        <p>₱<?php echo number_format($filteredRevenue, 2); ?></p>
     </div>
     <div class="stat-card">
         <h3>Pending Sellers</h3>
@@ -227,6 +372,7 @@ function addNotificationScript() {
         echo $activeProducts; 
         ?></p>
     </div>
+    <?php endif; ?>
     <div class="stat-card">
         <h3>Completed Orders</h3>
         <p><?php 
@@ -237,6 +383,8 @@ function addNotificationScript() {
         ?></p>
     </div>
 </div>
+
+
 
 <div class="admin-sections">
     <!-- CATEGORY MANAGEMENT SECTION -->
@@ -365,7 +513,6 @@ function addNotificationScript() {
 <!-- SETTINGS SECTION -->
 <div class="page-header" style="margin-top: 50px;">
     <h1>System Settings</h1>
-    <p>Configure platform-wide settings</p>
 </div>
 
 <div class="settings-container">
@@ -431,6 +578,50 @@ function addNotificationScript() {
     margin: 30px 0;
     padding: 20px;
   }
+
+  /* Dark analytics filter styles */
+  .analytics-filter {
+    background: linear-gradient(135deg, #1a0a2e 0%, #130325 100%);
+    border: 2px solid #FFD736;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.35);
+    color: #F9F9F9;
+    width: 100%;
+    max-width: none;
+    margin: 0 auto;
+  }
+  .analytics-form .row { display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap; justify-content: center; }
+  .analytics-form .field { display: flex; flex-direction: column; gap: 6px; }
+  .analytics-form label { font-size: 12px; font-weight: 700; color: rgba(249,249,249,0.8); }
+  .analytics-form input[type="date"],
+  .analytics-form select { background: #0f0a1f; color: #F9F9F9; border: 2px solid rgba(255, 215, 54, 0.3); border-radius: 8px; padding: 10px 12px; font-size: 14px; height: 42px; }
+  .analytics-form input[type="date"]:focus,
+  .analytics-form select:focus { outline: none; border-color: #FFD736; box-shadow: 0 0 0 3px rgba(255, 215, 54, 0.12); }
+  .analytics-form .actions { display: flex; align-items: center; gap: 8px; }
+  .btn-apply { background: linear-gradient(135deg, #FFD736, #FFD736); color: #1a0a2e; border: 2px solid #FFD736; height: 40px; width: 40px; display: inline-flex; align-items: center; justify-content: center; border-radius: 8px; cursor: pointer; }
+  .btn-clear { background: rgba(108,117,125,0.2); color: #adb5bd; border: 2px solid #6c757d; height: 40px; width: 40px; display: inline-flex; align-items: center; justify-content: center; border-radius: 8px; text-decoration: none; font-weight: 800; }
+  .quick-range { display: flex; gap: 10px; margin-top: 12px; justify-content: center; }
+  .quick-range a { color: #FFD736; text-decoration: none; font-weight: 700; border: 1px solid rgba(255,215,54,0.4); padding: 6px 10px; border-radius: 8px; background: rgba(255, 215, 54, 0.06); }
+  .quick-range a:hover { background: rgba(255, 215, 54, 0.12); }
+  .analytics-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 16px; }
+  .analytics-stats .stat { background: rgba(255,255,255,0.05); border: 1px solid rgba(255, 215, 54, 0.3); border-radius: 10px; padding: 14px; text-align: center; }
+  .analytics-stats .label { font-size: 12px; color: rgba(249,249,249,0.8); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+  .analytics-stats .value { font-size: 20px; font-weight: 800; color: #FFD736; }
+
+  /* Tabs slider */
+  .analytics-tabs { display: flex; justify-content: center; align-items: center; gap: 120px; max-width: 900px; margin: 0 auto 16px; position: relative; }
+  .tab-btn { background: transparent; border: none; color: #F9F9F9; padding: 0; cursor: pointer; font-weight: 900; letter-spacing: 1px; font-size: 24px; line-height: 1; }
+  .tab-btn[data-active="1"], .tab-btn:hover { color: #FFD736; text-shadow: 0 0 8px rgba(255, 215, 54, 0.2); }
+  .tab-close { position: absolute; right: 0; display: inline-flex; align-items: center; justify-content: center; text-decoration: none; height: 36px; width: 36px; border-radius: 8px; background: linear-gradient(135deg, #dc3545, #c82333); color: #fff; border: 2px solid #dc3545; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+  .tab-close:hover { filter: brightness(0.95); transform: translateY(-1px); box-shadow: 0 6px 16px rgba(0,0,0,0.35); }
+  .analytics-slider { display: grid; grid-template-columns: 100% 100%; transition: transform 0.35s ease; }
+  .analytics-slider.slide-customers { transform: translateX(0); }
+  .analytics-slider.slide-sellers { transform: translateX(-100%); }
+  .analytics-pane { padding: 0 6px; display: flex; justify-content: center; }
+
+  /* Center bottom analytics cards container */
+  .stats { max-width: 1200px; margin: 30px auto; padding: 0 20px; }
 
   .stat-card {
     background: linear-gradient(135deg, #f8fff8 0%, #e8f5e8 100%);
@@ -1156,9 +1347,93 @@ function addNotificationScript() {
     transform: translateY(-2px) scale(1.03);
     box-shadow: 0 8px 24px rgba(67,160,71,0.18);
 }
+
+/* Dashboard Dark Theme Overrides */
+/* Cards grid */
+.stats { padding: 0; }
+.stat-card {
+  background: linear-gradient(135deg, #1a0a2e 0%, #130325 100%) !important;
+  border: 1px solid rgba(255, 215, 54, 0.3) !important;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.35) !important;
+}
+.stat-card h3 { color: #FFD736 !important; }
+.stat-card p { color: #F9F9F9 !important; text-shadow: none !important; }
+.stat-card:hover { border-color: #FFD736 !important; box-shadow: 0 8px 24px rgba(0,0,0,0.45) !important; }
+
+/* Section containers */
+.admin-sections .section,
+.category-management-section,
+.categories-list,
+.add-category-form,
+.settings-container,
+.setting-group {
+  background: linear-gradient(135deg, #1a0a2e 0%, #130325 100%) !important;
+  border: 1px solid rgba(255, 215, 54, 0.25) !important;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.35) !important;
+  color: #F9F9F9 !important;
+}
+.admin-sections .section h2,
+.categories-list h3,
+.setting-group h3,
+.page-header h1 { color: #FFD736 !important; border-color: rgba(255, 215, 54, 0.35) !important; }
+.admin-sections .section p,
+.setting-description { color: rgba(249,249,249,0.8) !important; }
+
+/* Tables */
+.admin-sections table,
+.categories-table { background: rgba(255,255,255,0.03) !important; box-shadow: none !important; }
+.admin-sections table thead,
+.categories-table thead { background: rgba(255, 215, 54, 0.08) !important; }
+.admin-sections table th,
+.categories-table th { color: #FFD736 !important; border-bottom: 1px solid rgba(255, 215, 54, 0.3) !important; }
+.admin-sections table td,
+.categories-table td { color: #F0F0F0 !important; border-bottom: 1px solid rgba(255, 215, 54, 0.15) !important; }
+.admin-sections table tbody tr:hover,
+.categories-table tbody tr:hover { background: rgba(255, 255, 255, 0.05) !important; }
+
+/* Forms and inputs */
+.settings-container input,
+.settings-container select,
+.settings-container textarea { background: #0f0a1f !important; border: 2px solid rgba(255, 215, 54, 0.3) !important; color: #F9F9F9 !important; }
+.settings-container input:focus,
+.settings-container select:focus,
+.settings-container textarea:focus { border-color: #FFD736 !important; box-shadow: 0 0 0 3px rgba(255, 215, 54, 0.12) !important; }
+.input-suffix { color: #FFD736 !important; }
+.current-value { background: rgba(255, 215, 54, 0.08) !important; border-left-color: #FFD736 !important; color: #F9F9F9 !important; }
+.warning-box { background: rgba(255, 193, 7, 0.12) !important; border-color: rgba(255, 193, 7, 0.5) !important; color: #ffc107 !important; }
+
+/* Buttons */
+.btn,
+.btn-primary { background: linear-gradient(135deg, #FFD736, #FFD736) !important; color: #1a0a2e !important; box-shadow: none !important; border: 2px solid #FFD736 !important; }
+.btn:hover,
+.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0,0,0,0.35) !important; }
+
+/* Alerts */
+.success-message { background: rgba(40, 167, 69, 0.15) !important; color: #28a745 !important; border-color: #28a745 !important; }
+.error-message { background: rgba(220, 53, 69, 0.15) !important; color: #dc3545 !important; border-color: #dc3545 !important; }
 </style>
 
 <script>
+// Tabs toggle
+document.addEventListener('DOMContentLoaded', function() {
+  const tabs = document.querySelectorAll('.tab-btn');
+  const slider = document.querySelector('.analytics-slider');
+  tabs.forEach(btn => {
+    btn.addEventListener('click', () => {
+      tabs.forEach(b => b.removeAttribute('data-active'));
+      btn.setAttribute('data-active','1');
+      const target = btn.getAttribute('data-target');
+      if (slider) {
+        slider.classList.toggle('slide-sellers', target === 'sellers');
+        slider.classList.toggle('slide-customers', target === 'customers');
+      }
+      const url = new URL(window.location.href);
+      url.searchParams.set('entity', target === 'sellers' ? 'sellers' : 'customers');
+      // reset dates to keep current window
+      window.location.href = url.toString();
+    });
+  });
+});
     
 function openEditModal(id, name, parentId) {
   document.getElementById('edit_category_id').value = id;

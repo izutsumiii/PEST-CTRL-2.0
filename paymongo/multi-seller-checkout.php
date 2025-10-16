@@ -129,7 +129,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['checkout'])) {
                     error_log('Error updating COD payment status: ' . $e->getMessage());
                 }
                 
-                header("Location: order-success.php?transaction_id=" . $result['payment_transaction_id']);
+                header("Location: paymongo/order-success.php?transaction_id=" . $result['payment_transaction_id']);
                 exit();
             }
         } else {

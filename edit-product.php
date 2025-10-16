@@ -1,6 +1,6 @@
 <?php
-require_once 'includes/seller_header.php';
 require_once 'config/database.php';
+require_once 'includes/functions.php';
 
 requireSeller();
 
@@ -73,18 +73,13 @@ if (isset($_POST['update_product'])) {
     } else {
         $stmt = $pdo->prepare("UPDATE products SET name = ?, description = ?, price = ?, category_id = ?, stock_quantity = ?, status = ?, image_url = ? WHERE id = ?");
         if ($stmt->execute([$name, $description, $price, $categoryId, $stockQuantity, $status, $imageUrl, $productId])) {
-            echo "<p class='success-message'>Product updated successfully!</p>";
-            $stmt = $pdo->prepare("SELECT * FROM products WHERE id = ?");
-            $stmt->execute([$productId]);
-            $product = $stmt->fetch(PDO::FETCH_ASSOC);
-            
-            echo "<script>
-                    setTimeout(function() {
-                        window.location.href = 'manage-products.php';
-                    }, 2000);
-                  </script>";
+            $_SESSION['product_toast'] = ['type' => 'success', 'text' => 'Product updated successfully!'];
+            header("Location: edit-product.php?id=" . $productId);
+            exit();
         } else {
-            echo "<p class='error-message'>Error updating product. Please try again.</p>";
+            $_SESSION['product_toast'] = ['type' => 'error', 'text' => 'Error updating product. Please try again.'];
+            header("Location: edit-product.php?id=" . $productId);
+            exit();
         }
     }
 }
@@ -93,7 +88,16 @@ if (isset($_POST['update_product'])) {
 $stmt = $pdo->prepare("SELECT * FROM categories WHERE seller_id IS NULL ORDER BY name");
 $stmt->execute();
 $categories = $stmt->fetchAll(PDO::FETCH_ASSOC);
+// Include header after form processing is complete (to avoid headers already sent)
+require_once 'includes/seller_header.php';
 ?>
+
+<?php if (isset($_SESSION['product_toast'])): ?>
+    <div class="notification-toast <?php echo $_SESSION['product_toast']['type']; ?>">
+        <?php echo htmlspecialchars($_SESSION['product_toast']['text']); ?>
+    </div>
+    <?php unset($_SESSION['product_toast']); ?>
+<?php endif; ?>
 
 <h1>Edit Product</h1>
 
@@ -280,6 +284,30 @@ $categories = $stmt->fetchAll(PDO::FETCH_ASSOC);
 </div>
 
 <style>
+/* Toast Notification */
+.notification-toast {
+    position: fixed;
+    top: 100px;
+    right: 20px;
+    max-width: 400px;
+    background: #1a0a2e;
+    border: 1px solid rgba(255,215,54,0.5);
+    border-left: 4px solid #FFD736;
+    border-radius: 10px;
+    padding: 16px 20px;
+    color: #F9F9F9;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+    z-index: 10000;
+    animation: slideInRight 0.3s ease;
+}
+
+.notification-toast.success { border-left-color: #28a745; }
+.notification-toast.error { border-left-color: #dc3545; }
+
+@keyframes slideInRight {
+    from { transform: translateX(400px); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
 /* Import all styles from manage-products.php */
 .category-selection-container {
     max-height: 400px;
@@ -781,6 +809,14 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     });
+    const toast = document.querySelector('.notification-toast');
+    if (toast) {
+        setTimeout(function() {
+            toast.style.transition = 'opacity 0.5s ease';
+            toast.style.opacity = '0';
+            setTimeout(function() { toast.remove(); }, 500);
+        }, 3000);
+    }
 });
 
 function previewImage(event) {

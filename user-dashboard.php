@@ -540,62 +540,35 @@ h1 {
 
 /* Orders section */
 .user-orders {
-    background: rgba(255,255,255,0.9);
-    backdrop-filter: blur(20px);
-    border: 1px solid rgba(255,255,255,0.2);
-    padding: 25px;
-    border-radius: 15px;
-    box-shadow: var(--shadow-soft);
+    background: #1a0a2e;
+    border: 1px solid #2d1b4e;
+    padding: 22px;
+    border-radius: 14px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.35);
     height: fit-content;
     max-height: 600px;
     overflow-y: auto;
 }
 
 .user-orders h2 {
-    font-size: 1.6rem;
-    margin-bottom: 20px;
-    text-transform: uppercase;
-    color: #130325;
+    color: #F9F9F9;
+    font-size: 1.4rem;
+    font-weight: 800;
+    margin-bottom: 14px;
+    border-bottom: 2px solid #FFD736;
+    padding-bottom: 8px;
 }
 
-.user-orders p {
-    color: var(--text-muted);
-    font-size: 1.1rem;
-    text-align: center;
-    margin-top: 40px;
-    font-style: italic;
-}
+.user-orders p { color:#d7d1e2; font-size: .98rem; text-align:center; margin-top: 40px; font-style: italic; }
 
 /* Order Card Styles */
-.order-card {
-    background: white;
-    border-radius: 10px;
-    padding: 20px;
-    margin-bottom: 20px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    border: 1px solid #e9ecef;
-    transition: all 0.3s ease;
-}
+.order-card { background:#140826; border-radius:12px; padding:18px; margin-bottom:18px; box-shadow: 0 8px 22px rgba(0,0,0,0.35); border:1px solid #2d1b4e; transition: all 0.3s ease; }
 
-.order-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 15px rgba(0,0,0,0.15);
-}
+.order-card:hover { transform: translateY(-2px); box-shadow: 0 10px 26px rgba(0,0,0,0.4); }
 
-.order-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 15px;
-    padding-bottom: 15px;
-    border-bottom: 2px solid #f0f0f0;
-}
+.order-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; padding-bottom:12px; border-bottom: 1px solid rgba(255,255,255,0.08); }
 
-.order-number {
-    font-size: 1.2rem;
-    font-weight: 700;
-    color: #2c3e50;
-}
+.order-number { font-size: 1.05rem; font-weight: 800; color:#FFD736; }
 
 .order-date {
     color: #6c757d;
@@ -636,48 +609,28 @@ h1 {
     color: #2c3e50;
 }
 
-.order-status {
-    padding: 6px 12px;
-    border-radius: 20px;
-    font-size: 0.8rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
+.order-status { padding:6px 12px; border-radius:999px; font-size:.78rem; font-weight:800; text-transform:uppercase; letter-spacing:.5px; border:1px solid transparent; }
 
-.order-status.pending {
-    background: #fff3cd;
-    color: #856404;
-}
+.order-status.pending { background: rgba(255,193,7,0.2); color:#ffc107; border-color:#ffc107; }
 
-.order-status.processing {
-    background: #d1ecf1;
-    color: #0c5460;
-}
+.order-status.processing { background: rgba(0,123,255,0.2); color:#007bff; border-color:#007bff; }
 
-.order-status.shipped {
-    background: #d4edda;
-    color: #155724;
-}
+.order-status.shipped { background: rgba(23,162,184,0.2); color:#17a2b8; border-color:#17a2b8; }
 
-.order-status.delivered {
-    background: #d4edda;
-    color: #155724;
-}
+.order-status.delivered { background: rgba(40,167,69,0.2); color:#28a745; border-color:#28a745; }
 
-.order-status.cancelled {
-    background: #f8d7da;
-    color: #721c24;
-}
+.order-status.cancelled { background: rgba(220,53,69,0.2); color:#dc3545; border-color:#dc3545; }
 
 .order-items {
-    background: #f8f9fa;
+    background: #120722;
     padding: 12px;
     border-radius: 8px;
     margin: 15px 0;
     font-size: 0.95rem;
-    color: #495057;
+    color: #e6e1ee;
+    border: 1px solid #2d1b4e;
 }
+.order-items strong { color: #F9F9F9; }
 
 .delivery-info {
     background: linear-gradient(135deg, #d4edda, #c3e6cb);
@@ -1429,71 +1382,83 @@ document.addEventListener('DOMContentLoaded', () => {
     <?php endif; ?>
 </div>
 
-</div>
+<!-- Delivered Products - Add Reviews Section (Restored & Restyled) -->
+<style>
+.delivered-reviews-wrap { max-width: 1400px; margin: 20px auto 10px auto; padding: 0 20px; }
+.delivered-card { background:#1a0a2e; border:1px solid #2d1b4e; border-radius:14px; overflow:hidden; box-shadow:0 10px 30px rgba(0,0,0,0.35); }
+.delivered-card .header { display:flex; align-items:center; justify-content:space-between; padding:16px 20px; border-bottom:1px solid rgba(255,215,54,0.25); }
+.delivered-card .title { color:#F9F9F9; font-size:18px; font-weight:800; letter-spacing:.3px; }
+.delivered-card .subtitle { color:#d7d1e2; font-size:13px; opacity:.9; }
+.delivered-list { max-height: 460px; overflow-y:auto; }
+.delivered-item { display:flex; gap:16px; align-items:flex-start; padding:14px 20px; border-bottom:1px solid rgba(255,255,255,0.08); }
+.delivered-item:last-child { border-bottom:none; }
+.delivered-thumb { width:60px; height:60px; border-radius:8px; border:1px solid rgba(255,215,54,0.35); object-fit:cover; background:#0e0620; flex-shrink:0; }
+.delivered-body { flex:1; min-width:0; }
+.delivered-name { color:#F9F9F9; font-weight:700; margin:0 0 6px 0; font-size:15px; }
+.delivered-meta { display:flex; gap:14px; flex-wrap:wrap; color:#d7d1e2; font-size:12.5px; margin-bottom:6px; }
+.delivered-meta .price { color:#FFD736; font-weight:800; }
+.delivered-meta .date { color:#bfb8cb; }
+.review-cta { display:flex; align-items:center; gap:10px; }
+.btn-review { background:linear-gradient(135deg,#FFD736,#f0c419); color:#130325; border:2px solid #FFD736; padding:8px 12px; border-radius:10px; font-weight:800; font-size:13px; text-decoration:none; display:inline-flex; align-items:center; gap:8px; }
+.btn-review:hover { transform:translateY(-1px); box-shadow:0 10px 22px rgba(255,215,54,0.35); }
+.badge-reviewed { display:inline-block; padding:6px 10px; border-radius:999px; border:1px solid #28a745; color:#28a745; background:rgba(40,167,69,0.15); font-weight:800; font-size:12px; }
 
-<!-- Delivered Products - Add Reviews Section -->
-    <div class="delivered-products">
-        <h2>Delivered Products - Add Reviews</h2>
-        <div class="delivered-products-scroll">
+.delivered-list::-webkit-scrollbar { width:8px; }
+.delivered-list::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); }
+.delivered-list::-webkit-scrollbar-thumb { background: linear-gradient(135deg,#FFD736,#f0c419); border-radius:6px; }
+
+@media (max-width: 640px){
+  .delivered-item { flex-direction:column; align-items:flex-start; }
+  .review-cta { width:100%; }
+}
+</style>
+
+<div class="delivered-reviews-wrap">
+    <div class="delivered-card">
+        <div class="header">
+            <div>
+                <div class="title">Delivered Products - Add Reviews</div>
+                <div class="subtitle">Review your recently delivered items</div>
+            </div>
+        </div>
+        <div class="delivered-list">
             <?php if (empty($deliveredOrders)): ?>
-                <div class="no-delivered-products">
-                    <p>No delivered products yet. Complete an order to see products here for review.</p>
+                <div class="delivered-item" style="justify-content:center;">
+                    <div class="delivered-body" style="text-align:center; color:#d7d1e2;">No delivered products yet. Complete an order to see products here for review.</div>
                 </div>
             <?php else: ?>
                 <?php foreach ($deliveredOrders as $deliveredItem): ?>
-                    <div class="delivered-product-item">
-<<<<<<< HEAD
-                        <div class="product-info" style="display: flex; align-items: flex-start; gap: 15px;">
-                            <img src="<?php echo htmlspecialchars($deliveredItem['image_url']); ?>" 
-                                 alt="<?php echo htmlspecialchars($deliveredItem['product_name']); ?>" 
-                                 style="width: 60px; height: 60px; object-fit: cover; border-radius: 6px; border: 1px solid rgba(255, 215, 54, 0.3); flex-shrink: 0;">
-                            <div style="flex: 1;">
-                                <div class="product-name" style="font-size: 16px; font-weight: 600; color: #F9F9F9; margin-bottom: 8px;"><?php echo htmlspecialchars($deliveredItem['product_name']); ?></div>
-                                <div class="product-details" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; font-size: 14px;">
-                                    <span style="color: #F9F9F9;"><strong>Quantity:</strong> <?php echo (int)$deliveredItem['quantity']; ?></span>
-                                    <span style="color: #F9F9F9;"><strong>Price:</strong> ₱<?php echo number_format((float)$deliveredItem['price'], 2); ?></span>
-                                    <span style="color: #FFD736;"><strong>Total:</strong> ₱<?php echo number_format((float)$deliveredItem['item_total'], 2); ?></span>
-                                    <span style="color: #F9F9F9;"><strong>Order Date:</strong> <?php echo date('M j, Y g:i A', strtotime($deliveredItem['order_date'])); ?></span>
-                                    <?php if (!empty($deliveredItem['delivery_date'])): ?>
-                                        <span style="color: #F9F9F9;"><strong>Delivered:</strong> 
-                                            <span class="delivery-date" style="color: #28a745;">
-                                                <?php echo date('M j, Y g:i A', strtotime($deliveredItem['delivery_date'])); ?>
-                                            </span>
-                                        </span>
-                                    <?php endif; ?>
-                                </div>
-                            </div>
-                        </div>
-=======
-                        <div class="product-info">
-                            <div class="product-name"><?php echo htmlspecialchars($deliveredItem['product_name']); ?></div>
-                            <div class="product-details">
-                                <span><strong>Quantity:</strong> <?php echo (int)$deliveredItem['quantity']; ?></span>
-                                <span><strong>Price:</strong> $<?php echo number_format((float)$deliveredItem['price'], 2); ?></span>
-                                <span><strong>Total:</strong> $<?php echo number_format((float)$deliveredItem['item_total'], 2); ?></span>
-                                <span><strong>Order Date:</strong> <?php echo date('M j, Y g:i A', strtotime($deliveredItem['order_date'])); ?></span>
+                    <div class="delivered-item">
+                        <img class="delivered-thumb" src="<?php echo htmlspecialchars($deliveredItem['image_url']); ?>" alt="<?php echo htmlspecialchars($deliveredItem['product_name']); ?>" onerror="this.src='assets/uploads/tempo_image.jpg'">
+                        <div class="delivered-body">
+                            <div class="delivered-name"><?php echo htmlspecialchars($deliveredItem['product_name']); ?></div>
+                            <div class="delivered-meta">
+                                <span>Qty: <?php echo (int)$deliveredItem['quantity']; ?></span>
+                                <span class="price">₱<?php echo number_format((float)$deliveredItem['price'], 2); ?></span>
+                                <span>Total: ₱<?php echo number_format((float)$deliveredItem['item_total'], 2); ?></span>
                                 <?php if (!empty($deliveredItem['delivery_date'])): ?>
-                                    <span><strong>Delivered:</strong> 
-                                        <span class="delivery-date">
-                                            <?php echo date('M j, Y g:i A', strtotime($deliveredItem['delivery_date'])); ?>
-                                        </span>
-                                    </span>
+                                    <span class="date">Delivered: <?php echo date('M j, Y g:i A', strtotime($deliveredItem['delivery_date'])); ?></span>
                                 <?php endif; ?>
                             </div>
->>>>>>> 95b31e0291c2770ca3f15ca5a1084d2d62ce5d4d
-                            <?php if (!empty($deliveredItem['delivery_date'])): ?>
+                            <div class="review-cta">
                                 <?php
-                                $deliveryTime = strtotime($deliveredItem['delivery_date']);
-                                $currentTime = time();
-                                $daysDiff = floor(($currentTime - $deliveryTime) / (60 * 60 * 24));
+                                $alreadyReviewed = false;
+                                try {
+                                    if (isset($_SESSION['user_id'])) {
+                                        $rv = $pdo->prepare("SELECT 1 FROM product_reviews WHERE user_id = ? AND product_id = ? LIMIT 1");
+                                        $rv->execute([$_SESSION['user_id'], $deliveredItem['product_id']]);
+                                        $alreadyReviewed = (bool)$rv->fetchColumn();
+                                    }
+                                } catch (Exception $e) { $alreadyReviewed = false; }
                                 ?>
-                                <div class="delivery-info">
-                                    <strong>Delivered <?php echo $daysDiff > 0 ? $daysDiff . ' day' . ($daysDiff > 1 ? 's' : '') . ' ago' : 'today'; ?></strong> - Ready for review
-                                </div>
-                            <?php endif; ?>
-                        </div>
-                        <div class="review-action">
-                            <a href="product-detail.php?id=<?php echo $deliveredItem['product_id']; ?>" class="btn btn-review">Add Review</a>
+                                <?php if ($alreadyReviewed): ?>
+                                    <span class="badge-reviewed">Reviewed</span>
+                                <?php else: ?>
+                                    <a href="product-detail.php?id=<?php echo $deliveredItem['product_id']; ?>#review" class="btn-review">
+                                        <i class="fas fa-star"></i> Add Review
+                                    </a>
+                                <?php endif; ?>
+                            </div>
                         </div>
                     </div>
                 <?php endforeach; ?>

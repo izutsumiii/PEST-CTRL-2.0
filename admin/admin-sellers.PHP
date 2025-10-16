@@ -4,6 +4,9 @@ require_once 'includes/admin_header.php';
 
 requireAdmin();
 
+$message = '';
+$messageType = '';
+
 $userId = $_SESSION['user_id'];
 
 // Handle seller actions
@@ -64,16 +67,18 @@ if (isset($_GET['action']) && isset($_GET['id'])) {
             }
             
             if (isset($message)) {
-                echo "<p class='success-message'>$message</p>";
+                $messageType = 'success';
             }
         } else {
-            echo "<p class='error-message'>Seller not found.</p>";
+            $message = 'Seller not found.';
+            $messageType = 'error';
         }
     }
 }
 
 // Get sellers with filter
 $statusFilter = isset($_GET['status']) ? sanitizeInput($_GET['status']) : 'all';
+$searchTerm = isset($_GET['search']) ? sanitizeInput($_GET['search']) : '';
 $page = isset($_GET['page']) ? intval($_GET['page']) : 1;
 $limit = 10;
 $offset = ($page - 1) * $limit;
@@ -82,6 +87,13 @@ $offset = ($page - 1) * $limit;
 $query = "SELECT * FROM users WHERE user_type = 'seller'";
 $params = [];
 $countParams = [];
+
+if (!empty($searchTerm)) {
+    $query .= " AND (username LIKE ? OR email LIKE ? OR first_name LIKE ? OR last_name LIKE ?)";
+    $like = "%{$searchTerm}%";
+    array_push($params, $like, $like, $like, $like);
+    array_push($countParams, $like, $like, $like, $like);
+}
 
 if ($statusFilter !== 'all') {
     $query .= " AND seller_status = ?";
@@ -108,6 +120,9 @@ $sellers = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Get total count for pagination
 $countQuery = "SELECT COUNT(*) as total FROM users WHERE user_type = 'seller'";
+if (!empty($searchTerm)) {
+    $countQuery .= " AND (username LIKE ? OR email LIKE ? OR first_name LIKE ? OR last_name LIKE ?)";
+}
 if ($statusFilter !== 'all') {
     $countQuery .= " AND seller_status = ?";
 }
@@ -118,90 +133,451 @@ $totalSellers = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
 $totalPages = ceil($totalSellers / $limit);
 ?>
 
-<h1>Manage Sellers</h1>
+<style>
+    :root {
+        --primary-dark: #1a0a2e;
+        --secondary-dark: #130325;
+        --accent-yellow: #FFD736;
+        --text-light: #F9F9F9;
+        --border-color: rgba(255, 215, 54, 0.3);
+        --success-green: #28a745;
+        --warning-yellow: #ffc107;
+        --danger-red: #dc3545;
+    }
 
-<div class="admin-filters">
-    <h2>Filter by Status</h2>
-    <div class="status-filters">
-        <a href="admin-sellers.php?status=all" class="<?php echo $statusFilter === 'all' ? 'active' : ''; ?>">All</a>
-        <a href="admin-sellers.php?status=pending" class="<?php echo $statusFilter === 'pending' ? 'active' : ''; ?>">Pending</a>
-        <a href="admin-sellers.php?status=approved" class="<?php echo $statusFilter === 'approved' ? 'active' : ''; ?>">Approved</a>
-        <a href="admin-sellers.php?status=rejected" class="<?php echo $statusFilter === 'rejected' ? 'active' : ''; ?>">Rejected</a>
-        <a href="admin-sellers.php?status=suspended" class="<?php echo $statusFilter === 'suspended' ? 'active' : ''; ?>">Suspended</a>
-        <a href="admin-sellers.php?status=banned" class="<?php echo $statusFilter === 'banned' ? 'active' : ''; ?>">Banned</a>
+    body {
+        background: linear-gradient(135deg, var(--secondary-dark) 0%, var(--primary-dark) 100%);
+        color: var(--text-light);
+        min-height: 100vh;
+        margin: 0;
+        font-family: 'Inter', 'Segoe UI', sans-serif;
+    }
+
+    /* Message Alerts */
+    .alert {
+        max-width: 1400px;
+        margin: 20px auto 0;
+        padding: 14px 18px;
+        border-radius: 10px;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        border: 2px solid transparent;
+    }
+    .alert-success { background: rgba(40,167,69,0.15); color: var(--success-green); border-color: var(--success-green); }
+    .alert-error { background: rgba(220,53,69,0.15); color: var(--danger-red); border-color: var(--danger-red); }
+    .alert-warning { background: rgba(255,193,7,0.15); color: var(--warning-yellow); border-color: var(--warning-yellow); }
+
+    /* Custom Confirmation Dialog Styles (shared) */
+    .custom-confirm-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 10000; opacity: 0; visibility: hidden; transition: all 0.25s ease; }
+    .custom-confirm-overlay.show { opacity: 1; visibility: visible; }
+    .custom-confirm-dialog { background: linear-gradient(135deg, var(--primary-dark) 0%, var(--secondary-dark) 100%); border: 2px solid var(--accent-yellow); border-radius: 12px; padding: 24px; max-width: 420px; width: 92%; box-shadow: 0 20px 40px rgba(0,0,0,0.5); transform: translateY(-8px) scale(0.98); transition: transform 0.25s ease; }
+    .custom-confirm-overlay.show .custom-confirm-dialog { transform: translateY(0) scale(1); }
+    .custom-confirm-header { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+    .custom-confirm-icon { width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 20px; }
+    .custom-confirm-icon.warning { background: linear-gradient(135deg, var(--warning-yellow), #e6a800); color: #1a0a2e; }
+    .custom-confirm-icon.danger { background: linear-gradient(135deg, var(--danger-red), #e74c3c); }
+    .custom-confirm-title { font-size: 18px; font-weight: 800; color: var(--text-light); margin: 0; }
+    .custom-confirm-message { color: rgba(249,249,249,0.85); font-size: 14px; line-height: 1.5; margin-bottom: 18px; }
+    .custom-confirm-buttons { display: flex; gap: 10px; justify-content: flex-end; }
+    .custom-confirm-btn { padding: 10px 16px; border-radius: 8px; font-size: 12px; font-weight: 800; border: 2px solid transparent; cursor: pointer; transition: all 0.2s ease; text-transform: uppercase; letter-spacing: 0.5px; }
+    .custom-confirm-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0,0,0,0.3); }
+    .custom-confirm-btn.cancel { background: rgba(108,117,125,0.15); color: #adb5bd; border-color: #6c757d; }
+    .custom-confirm-btn.cancel:hover { background: #6c757d; color: #fff; }
+    .custom-confirm-btn.warning { background: linear-gradient(135deg, var(--warning-yellow), #e6a800); color: #1a0a2e; border-color: var(--warning-yellow); }
+    .custom-confirm-btn.confirm { background: linear-gradient(135deg, var(--danger-red), #e74c3c); color: #fff; border-color: var(--danger-red); }
+
+    /* Page Header */
+    h1 {
+        max-width: 1400px;
+        margin: 10px auto 30px;
+        padding: 0 20px;
+        font-size: 28px;
+        font-weight: 800;
+        color: var(--text-light);
+    }
+    .container > h1 { padding: 0; margin: 0 0 10px 0; }
+    .page-heading-title { font-size: 20px; font-weight: 800; color: var(--text-light); margin: 0; }
+
+    /* Main Container */
+    .container {
+        max-width: 1400px;
+        margin: 0 auto 30px;
+        padding: 0 20px;
+    }
+
+    /* Filter Section */
+    .filter-section {
+        background: var(--primary-dark);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+    }
+
+    .status-filters { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: center; }
+    .seller-filter-form { display: flex; align-items: center; gap: 10px; flex-wrap: nowrap; justify-content: center; }
+    .seller-filter-form .filter-select { min-width: 160px; padding: 12px 16px; background: #0f0a1f; border: 2px solid var(--accent-yellow); border-radius: 8px; color: #F9F9F9; font-size: 14px; height: 42px; }
+    .seller-filter-form .search-input { flex: 1; min-width: 260px; padding: 12px 16px; background: #0f0a1f; border: 1px solid #3a2b55; border-radius: 8px; color: #F9F9F9; font-size: 14px; height: 42px; transition: all 0.25s ease; }
+    .seller-filter-form .search-input:focus { border-color: var(--accent-yellow); box-shadow: 0 0 0 3px rgba(255, 215, 54, 0.12); outline: none; }
+    .seller-filter-form .btn-search { background: linear-gradient(135deg, var(--accent-yellow), var(--accent-yellow)); color: #1a0a2e; border: 2px solid var(--accent-yellow); height: 40px; width: 40px; display: inline-flex; align-items: center; justify-content: center; border-radius: 8px; }
+
+    /* Page Title */
+    .page-title {
+        font-size: 24px;
+        font-weight: 700;
+        color: var(--accent-yellow);
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .page-title i {
+        font-size: 28px;
+    }
+
+    /* Table Container */
+    .table-container {
+        background: var(--primary-dark);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+        margin-bottom: 20px;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    thead {
+        background: rgba(255, 215, 54, 0.1);
+    }
+
+    th {
+        padding: 16px 12px;
+        text-align: left;
+        font-size: 13px;
+        color: var(--accent-yellow);
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border-bottom: 2px solid var(--accent-yellow);
+    }
+
+    td {
+        padding: 16px 12px;
+        border-bottom: 1px solid var(--border-color);
+        font-size: 14px;
+        color: var(--text-light);
+    }
+
+    tr:hover {
+        background: rgba(255, 255, 255, 0.02);
+    }
+
+    /* Status Badges */
+    .status-badge {
+        display: inline-block;
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+    }
+
+    .status-pending {
+        background: rgba(255, 193, 7, 0.2);
+        color: var(--warning-yellow);
+        border: 1px solid var(--warning-yellow);
+    }
+
+    .status-approved {
+        background: rgba(40, 167, 69, 0.2);
+        color: var(--success-green);
+        border: 1px solid var(--success-green);
+    }
+
+    .status-rejected, .status-banned {
+        background: rgba(220, 53, 69, 0.2);
+        color: var(--danger-red);
+        border: 1px solid var(--danger-red);
+    }
+
+    .status-suspended {
+        background: rgba(108, 117, 125, 0.2);
+        color: #6c757d;
+        border: 1px solid #6c757d;
+    }
+
+    .verified {
+        color: var(--success-green);
+        font-size: 11px;
+        font-weight: 600;
+        margin-top: 4px;
+        display: block;
+    }
+
+    /* Action Buttons */
+    .action-buttons {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 12px 20px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 700;
+        text-decoration: none;
+        border: none;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+
+    .btn-view { background: linear-gradient(135deg, #3498db, #5dade2); color: white; }
+
+    .btn-approve { background: linear-gradient(135deg, var(--success-green), #20c997); color: white; }
+
+    .btn-reject { background: linear-gradient(135deg, var(--danger-red), #e74c3c); color: white; }
+
+    .btn-suspend { background: linear-gradient(135deg, #6c757d, #95a5a6); color: white; }
+
+    .btn-ban { background: linear-gradient(135deg, #c0392b, #e74c3c); color: white; }
+
+    .btn-restore { background: linear-gradient(135deg, #3498db, #5dade2); color: white; }
+
+    /* Pagination */
+    .pagination {
+        display: flex;
+        justify-content: center;
+        gap: 8px;
+        margin-top: 20px;
+    }
+
+    .page-link {
+        padding: 10px 16px;
+        background: var(--primary-dark);
+        color: var(--accent-yellow);
+        text-decoration: none;
+        border-radius: 6px;
+        border: 1px solid var(--border-color);
+        font-weight: 700;
+        font-size: 14px;
+        transition: all 0.3s ease;
+    }
+
+    .page-link:hover {
+        background: var(--accent-yellow);
+        color: var(--primary-dark);
+        transform: translateY(-2px);
+    }
+
+    .page-link.active {
+        background: var(--accent-yellow);
+        color: var(--primary-dark);
+    }
+
+    .page-ellipsis {
+        padding: 10px 8px;
+        color: rgba(249, 249, 249, 0.5);
+        font-weight: 700;
+    }
+
+    .pagination-info {
+        text-align: center;
+        margin-top: 16px;
+        color: rgba(249, 249, 249, 0.7);
+        font-size: 14px;
+        font-weight: 500;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+        .status-filters {
+            flex-direction: column;
+        }
+        
+        .action-buttons {
+            flex-direction: column;
+        }
+        
+        .btn {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+</style>
+
+<script>
+// Shared custom confirmation used for restore action
+function showCustomConfirm(title, message, type = 'warning', onConfirm) {
+    const existing = document.querySelector('.custom-confirm-overlay');
+    if (existing) existing.remove();
+    const overlay = document.createElement('div');
+    overlay.className = 'custom-confirm-overlay';
+    const dialog = document.createElement('div');
+    dialog.className = 'custom-confirm-dialog';
+    const header = document.createElement('div');
+    header.className = 'custom-confirm-header';
+    const icon = document.createElement('div');
+    icon.className = `custom-confirm-icon ${type === 'danger' ? 'danger' : 'warning'}`;
+    icon.innerHTML = type === 'danger' ? '<i class="fas fa-exclamation-circle"></i>' : '<i class="fas fa-exclamation-triangle"></i>';
+    const titleEl = document.createElement('h3');
+    titleEl.className = 'custom-confirm-title';
+    titleEl.textContent = title;
+    const msgEl = document.createElement('div');
+    msgEl.className = 'custom-confirm-message';
+    msgEl.textContent = message;
+    const btns = document.createElement('div');
+    btns.className = 'custom-confirm-buttons';
+    const cancelBtn = document.createElement('button');
+    cancelBtn.className = 'custom-confirm-btn cancel';
+    cancelBtn.textContent = 'Cancel';
+    const confirmBtn = document.createElement('button');
+    confirmBtn.className = `custom-confirm-btn ${type === 'danger' ? 'confirm' : 'warning'}`;
+    confirmBtn.textContent = 'Confirm';
+    header.appendChild(icon); header.appendChild(titleEl);
+    dialog.appendChild(header); dialog.appendChild(msgEl);
+    btns.appendChild(cancelBtn); btns.appendChild(confirmBtn);
+    dialog.appendChild(btns); overlay.appendChild(dialog);
+    document.body.appendChild(overlay);
+    requestAnimationFrame(() => overlay.classList.add('show'));
+    function close() { overlay.classList.remove('show'); setTimeout(() => overlay.remove(), 250); }
+    cancelBtn.addEventListener('click', close);
+    overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
+    confirmBtn.addEventListener('click', () => { close(); if (typeof onConfirm === 'function') onConfirm(); });
+}
+</script>
+
+<?php if (!empty($message)): ?>
+    <div class="alert alert-<?php echo $messageType; ?>" id="page-alert">
+        <i class="fas fa-<?php echo $messageType === 'success' ? 'check-circle' : ($messageType === 'warning' ? 'exclamation-triangle' : 'times-circle'); ?>"></i>
+        <?php echo htmlspecialchars($message); ?>
     </div>
-</div>
+<?php endif; ?>
 
-<div class="admin-content">
-    <h2>Sellers List (<?php echo $totalSellers; ?> total)</h2>
+<div class="container">
+    <h1 style="padding:0; margin: 0 0 10px 0;"><span class="page-heading-title">Manage Sellers</span></h1>
+    <!-- Filter Section -->
+    <div class="filter-section">
+        <div class="status-filters">
+            <form method="GET" action="admin-sellers.php" class="seller-filter-form">
+                <select name="status" class="filter-select" title="Filter by status" onchange="this.form.submit()">
+                    <option value="all" <?php echo $statusFilter==='all'?'selected':''; ?>>All</option>
+                    <option value="pending" <?php echo $statusFilter==='pending'?'selected':''; ?>>Pending</option>
+                    <option value="approved" <?php echo $statusFilter==='approved'?'selected':''; ?>>Approved</option>
+                    <option value="rejected" <?php echo $statusFilter==='rejected'?'selected':''; ?>>Rejected</option>
+                    <option value="suspended" <?php echo $statusFilter==='suspended'?'selected':''; ?>>Suspended</option>
+                    <option value="banned" <?php echo $statusFilter==='banned'?'selected':''; ?>>Banned</option>
+                </select>
+                <input type="text" name="search" placeholder="Search sellers..." value="<?php echo htmlspecialchars($searchTerm ?? ''); ?>" class="search-input" />
+                <button type="submit" class="btn btn-search" aria-label="Search"><i class="fas fa-search" aria-hidden="true"></i></button>
+            </form>
+        </div>
+    </div>
+
+    <div class="page-title">
+        Sellers List 
+        <span style="color: var(--text-light); font-size: 18px; font-weight: 500;">
+            (<?php echo $totalSellers; ?> total)
+        </span>
+    </div>
     
     <?php if (empty($sellers)): ?>
-        <p>No sellers found.</p>
+        <div style="text-align: center; padding: 40px; color: rgba(249, 249, 249, 0.6);">
+            <i class="fas fa-store" style="font-size: 48px; display: block; margin-bottom: 16px; opacity: 0.5;"></i>
+            <p>No sellers found.</p>
+        </div>
     <?php else: ?>
-        <table class="admin-table">
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Username</th>
-                    <th>Email</th>
-                    <th>Status</th>
-                    <th>Documents</th>
-                    <th>Registered</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php foreach ($sellers as $seller): ?>
+        <div class="table-container">
+            <table>
+                <thead>
                     <tr>
-                        <td><?php echo $seller['id']; ?></td>
-                        <td><?php echo $seller['username']; ?></td>
-                        <td><?php echo $seller['email']; ?></td>
-                        <td>
-                            <span class="status-badge status-<?php echo $seller['seller_status']; ?>">
-                                <?php echo ucfirst($seller['seller_status']); ?>
-                            </span>
-                            <?php if ($seller['document_verified']): ?>
-                                <br><small class="verified">Documents Verified</small>
-                            <?php endif; ?>
-                        </td>
-                        <td>
-                            <?php if ($seller['document_path']): ?>
-                                <a href="<?php echo $seller['document_path']; ?>" target="_blank">View Document</a>
-                            <?php else: ?>
-                                No document
-                            <?php endif; ?>
-                        </td>
-                        <td><?php echo date('M j, Y', strtotime($seller['created_at'])); ?></td>
-                        <td>
-                            <div class="action-buttons">
-                                <?php if ($seller['seller_status'] === 'pending'): ?>
-                                    <a href="admin-sellers.php?action=approve&id=<?php echo $seller['id']; ?>" class="btn-approve">Approve</a>
-                                    <a href="admin-sellers.php?action=reject&id=<?php echo $seller['id']; ?>" class="btn-reject">Reject</a>
-                                <?php endif; ?>
-                                
-                                <?php if ($seller['seller_status'] === 'approved'): ?>
-                                    <a href="admin-sellers.php?action=suspend&id=<?php echo $seller['id']; ?>" class="btn-suspend">Suspend</a>
-                                <?php endif; ?>
-                                
-                                <?php if (in_array($seller['seller_status'], ['approved', 'suspended'])): ?>
-                                    <a href="admin-sellers.php?action=ban&id=<?php echo $seller['id']; ?>" class="btn-ban">Ban</a>
-                                <?php endif; ?>
-                                
-                                <?php if (in_array($seller['seller_status'], ['suspended', 'banned'])): ?>
-                                    <a href="admin-sellers.php?action=restore&id=<?php echo $seller['id']; ?>" class="btn-restore" onclick="return confirm('Are you sure you want to restore this seller to approved status?');">Restore to Approved</a>
-                                <?php endif; ?>
-                                
-                                <?php if ($seller['document_path'] && !$seller['document_verified']): ?>
-                                    <a href="admin-sellers.php?action=verify_documents&id=<?php echo $seller['id']; ?>" class="btn-verify">Verify Docs</a>
-                                <?php endif; ?>
-                                
-                                <?php if ($seller['document_verified']): ?>
-                                    <a href="admin-sellers.php?action=unverify_documents&id=<?php echo $seller['id']; ?>" class="btn-unverify">Unverify Docs</a>
-                                <?php endif; ?>
-                            </div>
-                        </td>
+                        <th>ID</th>
+                        <th>Username</th>
+                        <th>Email</th>
+                        <th>Status</th>
+                        <th>Registered</th>
+                        <th>Actions</th>
                     </tr>
-                <?php endforeach; ?>
+                </thead>
+                <tbody>
+                    <?php foreach ($sellers as $seller): ?>
+                        <tr>
+                            <td><strong>#<?php echo $seller['id']; ?></strong></td>
+                            <td><?php echo htmlspecialchars($seller['username']); ?></td>
+                            <td><?php echo htmlspecialchars($seller['email']); ?></td>
+                            <td>
+                                <span class="status-badge status-<?php echo $seller['seller_status']; ?>">
+                                    <i class="fas fa-<?php 
+                                        switch($seller['seller_status']) {
+                                            case 'pending': echo 'clock'; break;
+                                            case 'approved': echo 'check-circle'; break;
+                                            case 'rejected': echo 'times-circle'; break;
+                                            case 'suspended': echo 'pause-circle'; break;
+                                            case 'banned': echo 'ban'; break;
+                                            default: echo 'question-circle';
+                                        }
+                                    ?>"></i>
+                                    <?php echo ucfirst($seller['seller_status']); ?>
+                                </span>
+                                <?php if ($seller['document_verified']): ?>
+                                    <br><small class="verified"><i class="fas fa-check-circle"></i> Documents Verified</small>
+                                <?php endif; ?>
+                            </td>
+                            <td><?php echo date('M j, Y', strtotime($seller['created_at'])); ?></td>
+                            <td>
+                                <div class="action-buttons">
+                                    <a href="seller-details.php?id=<?php echo $seller['id']; ?>" class="btn btn-view">
+                                        <i class="fas fa-eye"></i> View
+                                    </a>
+                                    <?php if ($seller['seller_status'] === 'pending'): ?>
+                                        <a href="admin-sellers.php?action=approve&id=<?php echo $seller['id']; ?>" class="btn btn-approve">
+                                            <i class="fas fa-check"></i> Approve
+                                        </a>
+                                        <a href="admin-sellers.php?action=reject&id=<?php echo $seller['id']; ?>" class="btn btn-reject">
+                                            <i class="fas fa-times"></i> Reject
+                                        </a>
+                                    <?php endif; ?>
+                                    
+                                    <?php if ($seller['seller_status'] === 'approved'): ?>
+                                        <a href="admin-sellers.php?action=suspend&id=<?php echo $seller['id']; ?>" class="btn btn-suspend">
+                                            <i class="fas fa-pause"></i> Suspend
+                                        </a>
+                                    <?php endif; ?>
+                                    
+                                    <?php if (in_array($seller['seller_status'], ['approved', 'suspended'])): ?>
+                                        <a href="admin-sellers.php?action=ban&id=<?php echo $seller['id']; ?>" class="btn btn-ban">
+                                            <i class="fas fa-ban"></i> Ban
+                                        </a>
+                                    <?php endif; ?>
+                                    
+                                    <?php if (in_array($seller['seller_status'], ['suspended', 'banned'])): ?>
+                                        <a href="admin-sellers.php?action=restore&id=<?php echo $seller['id']; ?>" class="btn btn-restore">
+                                            <i class="fas fa-undo"></i> Restore
+                                        </a>
+                                    <?php endif; ?>
+                                </div>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
             </tbody>
         </table>
 
@@ -209,399 +585,80 @@ $totalPages = ceil($totalSellers / $limit);
         <?php if ($totalPages > 1): ?>
             <div class="pagination">
                 <?php if ($page > 1): ?>
-                    <a href="admin-sellers.php?status=<?php echo $statusFilter; ?>&page=<?php echo $page - 1; ?>">Previous</a>
+                    <a href="admin-sellers.php?status=<?php echo $statusFilter; ?>&search=<?php echo urlencode($searchTerm); ?>&page=<?php echo $page - 1; ?>" class="page-link">
+                        <i class="fas fa-chevron-left"></i> Previous
+                    </a>
                 <?php endif; ?>
                 
                 <?php for ($i = 1; $i <= $totalPages; $i++): ?>
-                    <a href="admin-sellers.php?status=<?php echo $statusFilter; ?>&page=<?php echo $i; ?>" 
-                       class="<?php echo $i === $page ? 'active' : ''; ?>"><?php echo $i; ?></a>
+                    <a href="admin-sellers.php?status=<?php echo $statusFilter; ?>&search=<?php echo urlencode($searchTerm); ?>&page=<?php echo $i; ?>" 
+                       class="page-link <?php echo $i === $page ? 'active' : ''; ?>"><?php echo $i; ?></a>
                 <?php endfor; ?>
                 
                 <?php if ($page < $totalPages): ?>
-                    <a href="admin-sellers.php?status=<?php echo $statusFilter; ?>&page=<?php echo $page + 1; ?>">Next</a>
+                    <a href="admin-sellers.php?status=<?php echo $statusFilter; ?>&search=<?php echo urlencode($searchTerm); ?>&page=<?php echo $page + 1; ?>" class="page-link">
+                        Next <i class="fas fa-chevron-right"></i>
+                    </a>
                 <?php endif; ?>
+            </div>
+            
+            <div class="pagination-info">
+                Showing <?php echo (($page - 1) * $limit + 1); ?>-<?php echo min($page * $limit, $totalSellers); ?> 
+                of <?php echo $totalSellers; ?> sellers
             </div>
         <?php endif; ?>
     <?php endif; ?>
 </div>
-<style>
 
-
-/* Admin Sellers Page Styles */
-
-/* Page Header */
-h1 {
-    color: #2c3e50;
-    font-size: 2rem;
-    margin-bottom: 2rem;
-    padding-bottom: 1rem;
-    border-bottom: 3px solid #3498db;
-}
-
-/* Filters Section */
-.admin-filters {
-    background: #fff;
-    padding: 1.5rem;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    margin-bottom: 2rem;
-}
-
-.admin-filters h2 {
-    color: #34495e;
-    font-size: 1.2rem;
-    margin-bottom: 1rem;
-}
-
-.status-filters {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.75rem;
-}
-
-.status-filters a {
-    padding: 0.5rem 1.25rem;
-    background: #ecf0f1;
-    color: #2c3e50;
-    text-decoration: none;
-    border-radius: 5px;
-    transition: all 0.3s ease;
-    font-weight: 500;
-    border: 2px solid transparent;
-}
-
-.status-filters a:hover {
-    background: #bdc3c7;
-    transform: translateY(-2px);
-}
-
-.status-filters a.active {
-    background: #3498db;
-    color: white;
-    border-color: #2980b9;
-}
-
-/* Content Section */
-.admin-content {
-    background: #fff;
-    padding: 2rem;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-.admin-content h2 {
-    color: #34495e;
-    font-size: 1.5rem;
-    margin-bottom: 1.5rem;
-}
-
-/* Messages */
-.success-message {
-    background: #2ecc71;
-    color: white;
-    padding: 1rem;
-    border-radius: 5px;
-    margin-bottom: 1rem;
-    font-weight: 500;
-}
-
-.error-message {
-    background: #e74c3c;
-    color: white;
-    padding: 1rem;
-    border-radius: 5px;
-    margin-bottom: 1rem;
-    font-weight: 500;
-}
-
-/* Table Styles */
-.admin-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 1rem;
-    background: white;
-}
-
-.admin-table thead {
-    background: #34495e;
-    color: white;
-}
-
-.admin-table th {
-    padding: 1rem;
-    text-align: left;
-    font-weight: 600;
-    text-transform: uppercase;
-    font-size: 0.85rem;
-    letter-spacing: 0.5px;
-}
-
-.admin-table td {
-    padding: 1rem;
-    border-bottom: 1px solid #ecf0f1;
-    vertical-align: middle;
-}
-
-.admin-table tbody tr {
-    transition: background 0.2s ease;
-}
-
-.admin-table tbody tr:hover {
-    background: #f8f9fa;
-}
-
-/* Status Badges */
-.status-badge {
-    display: inline-block;
-    padding: 0.4rem 0.8rem;
-    border-radius: 20px;
-    font-size: 0.85rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-.status-pending {
-    background: #f39c12;
-    color: white;
-}
-
-.status-approved {
-    background: #2ecc71;
-    color: white;
-}
-
-.status-rejected {
-    background: #e74c3c;
-    color: white;
-}
-
-.status-suspended {
-    background: #e67e22;
-    color: white;
-}
-
-.status-banned {
-    background: #c0392b;
-    color: white;
-}
-
-.verified {
-    color: #27ae60;
-    font-weight: 600;
-    font-style: italic;
-}
-
-/* Action Buttons */
-.action-buttons {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-}
-
-.action-buttons a,
-.action-buttons button {
-    padding: 0.5rem 1rem;
-    border-radius: 5px;
-    text-decoration: none;
-    font-size: 0.85rem;
-    font-weight: 600;
-    border: none;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    white-space: nowrap;
-}
-
-.btn-approve {
-    background: #2ecc71;
-    color: white;
-}
-
-.btn-approve:hover {
-    background: #27ae60;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(46, 204, 113, 0.3);
-}
-
-.btn-reject {
-    background: #e74c3c;
-    color: white;
-}
-
-.btn-reject:hover {
-    background: #c0392b;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(231, 76, 60, 0.3);
-}
-
-.btn-suspend {
-    background: #e67e22;
-    color: white;
-}
-
-.btn-suspend:hover {
-    background: #d35400;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(230, 126, 34, 0.3);
-}
-
-.btn-ban {
-    background: #c0392b;
-    color: white;
-}
-
-.btn-ban:hover {
-    background: #a93226;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(192, 57, 43, 0.3);
-}
-
-.btn-restore {
-    background: #3498db;
-    color: white;
-}
-
-.btn-restore:hover {
-    background: #2980b9;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(52, 152, 219, 0.3);
-}
-
-.btn-verify {
-    background: #9b59b6;
-    color: white;
-}
-
-.btn-verify:hover {
-    background: #8e44ad;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(155, 89, 182, 0.3);
-}
-
-.btn-unverify {
-    background: #95a5a6;
-    color: white;
-}
-
-.btn-unverify:hover {
-    background: #7f8c8d;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(149, 165, 166, 0.3);
-}
-
-/* Pagination */
-.pagination {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 0.5rem;
-    margin-top: 2rem;
-    padding-top: 2rem;
-    border-top: 2px solid #ecf0f1;
-}
-
-.pagination a {
-    padding: 0.6rem 1rem;
-    background: #ecf0f1;
-    color: #2c3e50;
-    text-decoration: none;
-    border-radius: 5px;
-    font-weight: 500;
-    transition: all 0.3s ease;
-    border: 2px solid transparent;
-}
-
-.pagination a:hover {
-    background: #bdc3c7;
-    transform: translateY(-2px);
-}
-
-.pagination a.active {
-    background: #3498db;
-    color: white;
-    border-color: #2980b9;
-}
-
-/* Document Links */
-.admin-table a[href*="document"] {
-    color: #3498db;
-    text-decoration: none;
-    font-weight: 500;
-}
-
-.admin-table a[href*="document"]:hover {
-    color: #2980b9;
-    text-decoration: underline;
-}
-
-/* Empty State */
-.admin-content > p {
-    text-align: center;
-    color: #7f8c8d;
-    font-size: 1.1rem;
-    padding: 3rem;
-}
-
-/* Responsive Design */
-@media (max-width: 1200px) {
-    .admin-table {
-        font-size: 0.9rem;
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const alertEl = document.getElementById('page-alert');
+    if (alertEl) {
+        setTimeout(() => {
+            alertEl.style.transition = 'opacity 250ms ease, transform 250ms ease';
+            alertEl.style.opacity = '0';
+            alertEl.style.transform = 'translateY(-6px)';
+            setTimeout(() => alertEl.remove(), 260);
+        }, 1200);
     }
-    
-    .admin-table th,
-    .admin-table td {
-        padding: 0.75rem;
-    }
-}
 
-@media (max-width: 992px) {
-    .action-buttons {
-        flex-direction: column;
-    }
-    
-    .action-buttons a,
-    .action-buttons button {
-        width: 100%;
-        text-align: center;
-    }
-}
+    // Wire restore confirmation
+    document.querySelectorAll('a[href*="action=restore"]').forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            showCustomConfirm(
+                'Restore Seller',
+                'Are you sure you want to restore this seller to approved status?',
+                'warning',
+                () => { window.location.href = link.href; }
+            );
+        });
+    });
 
-@media (max-width: 768px) {
-    .admin-filters,
-    .admin-content {
-        padding: 1rem;
-    }
-    
-    .status-filters {
-        flex-direction: column;
-    }
-    
-    .status-filters a {
-        text-align: center;
-    }
-    
-    .admin-table {
-        display: block;
-        overflow-x: auto;
-        white-space: nowrap;
-    }
-    
-    h1 {
-        font-size: 1.5rem;
-    }
-}
+    // Wire suspend confirmation
+    document.querySelectorAll('a[href*="action=suspend"]').forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            showCustomConfirm(
+                'Suspend Seller',
+                'Suspend this seller account? They will not be able to list or sell items until restored.',
+                'warning',
+                () => { window.location.href = link.href; }
+            );
+        });
+    });
 
-@media (max-width: 576px) {
-    .pagination {
-        flex-wrap: wrap;
-    }
-    
-    .pagination a {
-        padding: 0.5rem 0.75rem;
-        font-size: 0.85rem;
-    }
-}
-
-
-</style>
-<?php require_once '../includes/footer.php'; ?>
+    // Wire ban confirmation
+    document.querySelectorAll('a[href*="action=ban"]').forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            showCustomConfirm(
+                'Ban Seller',
+                'Are you sure you want to permanently ban this seller? This action is intended for severe violations.',
+                'danger',
+                () => { window.location.href = link.href; }
+            );
+        });
+    });
+});
+</script>

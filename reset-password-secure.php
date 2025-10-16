@@ -162,14 +162,14 @@ require_once 'includes/header.php';
             background: var(--primary-dark);
             backdrop-filter: blur(20px);
             border-radius: 24px;
-            padding: 20px 16px;
+            padding: 18px 16px;
             box-shadow: 0 20px 40px var(--shadow-light);
             border: 1px solid var(--border-secondary);
-            max-width: 360px;
+            max-width: 480px;
             width: 100%;
             position: relative;
             overflow: hidden;
-            margin: 140px auto 24px;
+            margin: 80px auto 24px;
             color: var(--primary-light);
         }
 
@@ -248,13 +248,8 @@ require_once 'includes/header.php';
             font-size: 12px;
         }
 
-        .links { font-size: 0.8rem; }
-
-        .success-message {
-            background: linear-gradient(135deg, #c6f6d5, #9ae6b4);
-            color: #22543d;
-            border: 1px solid #9ae6b4;
-        }
+        .links { font-size: 0.75rem; }
+        .links a, p { font-size: 0.9rem; }
 
         .error-message {
             background: linear-gradient(135deg, #fed7d7, #feb2b2);
@@ -289,12 +284,6 @@ require_once 'includes/header.php';
             <div class="email-display">
                 <i class="fas fa-envelope"></i>
                 Resetting password for: <strong><?php echo htmlspecialchars($userEmail); ?></strong>
-            </div>
-        <?php endif; ?>
-
-        <?php if (isset($success)): ?>
-            <div class="success-message">
-                <i class="fas fa-check-circle"></i> <?php echo $success; ?>
             </div>
         <?php endif; ?>
 

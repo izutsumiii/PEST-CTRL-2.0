@@ -849,4 +849,3 @@ document.querySelectorAll('.action-buttons a').forEach(function(button) {
 });
 </script>
 
-<?php require_once '../includes/footer.php'; ?>

@@ -1,6 +1,6 @@
 <?php
-require_once 'includes/seller_header.php';
 require_once 'config/database.php';
+require_once 'includes/functions.php';
 
 requireSeller();
 
@@ -84,6 +84,8 @@ if (isset($_GET['delete'])) {
     header("Location: view-products.php");
     exit();
 }
+// Include header after form processing is complete (to avoid headers already sent)
+require_once 'includes/seller_header.php';
 ?>
 
 <style>
@@ -364,6 +366,39 @@ main.sidebar-collapsed { margin-left: 0px !important; }
     display: block;
 }
 
+/* Custom Confirmation Modal */
+.custom-confirm-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.25s ease;
+}
+
+.custom-confirm-overlay.show { opacity: 1; visibility: visible; }
+
+.custom-confirm-dialog {
+    background: linear-gradient(135deg, #1a0a2e 0%, #130325 100%);
+    border: 2px solid #FFD736;
+    border-radius: 12px;
+    padding: 22px;
+    width: 92%;
+    max-width: 420px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+}
+
+.custom-confirm-title { color: #FFD736; font-weight: 800; font-size: 18px; margin: 0 0 10px 0; }
+.custom-confirm-message { color: #F9F9F9; opacity: 0.9; font-size: 14px; margin-bottom: 16px; }
+.custom-confirm-buttons { display: flex; gap: 10px; justify-content: flex-end; }
+.custom-confirm-btn { padding: 10px 14px; border-radius: 8px; font-weight: 800; border: 2px solid transparent; cursor: pointer; }
+.custom-confirm-btn.cancel { background: rgba(108,117,125,0.15); color: #adb5bd; border-color: #6c757d; }
+.custom-confirm-btn.primary { background: linear-gradient(135deg, #FFD736, #FFD736); color: #130325; border-color: #FFD736; }
+
 @media (max-width: 768px) {
     main { padding: 15px 15px 60px 15px !important; }
     .search-wrapper { flex-direction: column; }
@@ -445,14 +480,16 @@ main.sidebar-collapsed { margin-left: 0px !important; }
                                         <i class="fas fa-edit"></i> Edit
                                     </a>
                                     <a href="?toggle_status=<?php echo $product['id']; ?>" 
-                                       class="action-btn btn-toggle"
-                                       onclick="return confirm('Are you sure you want to <?php echo ($product['status'] == 'active') ? 'deactivate' : 'activate'; ?> this product?')">
+                                       class="action-btn btn-toggle product-toggle"
+                                       data-action="<?php echo ($product['status'] == 'active') ? 'deactivate' : 'activate'; ?>"
+                                       data-product-name="<?php echo htmlspecialchars($product['name']); ?>">
                                         <i class="fas fa-<?php echo ($product['status'] == 'active') ? 'pause' : 'play'; ?>"></i>
                                         <?php echo ($product['status'] == 'active') ? 'Deactivate' : 'Activate'; ?>
                                     </a>
                                     <a href="?delete=<?php echo $product['id']; ?>" 
-                                       class="action-btn btn-delete"
-                                       onclick="return confirm('Are you sure you want to delete this product? This action cannot be undone.')">
+                                       class="action-btn btn-delete product-delete"
+                                       data-action="delete"
+                                       data-product-name="<?php echo htmlspecialchars($product['name']); ?>">
                                         <i class="fas fa-trash"></i> Delete
                                     </a>
                                 </div>
@@ -524,6 +561,48 @@ document.addEventListener('DOMContentLoaded', function() {
     if (sidebar) {
         observer.observe(sidebar, { attributes: true, attributeFilter: ['class'] });
     }
+
+    // Intercept product toggle and delete with custom confirm
+    function showConfirm(message, confirmText) {
+        return new Promise(function(resolve){
+            const overlay = document.createElement('div');
+            overlay.className = 'custom-confirm-overlay';
+            overlay.innerHTML = `
+                <div class="custom-confirm-dialog">
+                    <div class="custom-confirm-title">Confirm Action</div>
+                    <div class="custom-confirm-message">${message}</div>
+                    <div class="custom-confirm-buttons">
+                        <button type="button" class="custom-confirm-btn cancel">Cancel</button>
+                        <button type="button" class="custom-confirm-btn primary">${confirmText || 'Confirm'}</button>
+                    </div>
+                </div>`;
+            document.body.appendChild(overlay);
+            requestAnimationFrame(()=> overlay.classList.add('show'));
+            const close = ()=>{ overlay.classList.remove('show'); setTimeout(()=>overlay.remove(), 200); };
+            overlay.addEventListener('click', (e)=>{ if(e.target === overlay){ close(); resolve(false);} });
+            overlay.querySelector('.cancel').addEventListener('click', ()=>{ close(); resolve(false); });
+            overlay.querySelector('.primary').addEventListener('click', ()=>{ close(); resolve(true); });
+        });
+    }
+
+    document.querySelectorAll('a.product-toggle').forEach(function(link){
+        link.addEventListener('click', function(e){
+            e.preventDefault();
+            const action = link.getAttribute('data-action');
+            const name = link.getAttribute('data-product-name') || 'this product';
+            const message = `Are you sure you want to ${action} ${name}?`;
+            showConfirm(message, 'Yes').then(function(ok){ if (ok) window.location.href = link.href; });
+        });
+    });
+
+    document.querySelectorAll('a.product-delete').forEach(function(link){
+        link.addEventListener('click', function(e){
+            e.preventDefault();
+            const name = link.getAttribute('data-product-name') || 'this product';
+            const message = `Are you sure you want to delete ${name}? This action cannot be undone.`;
+            showConfirm(message, 'Delete').then(function(ok){ if (ok) window.location.href = link.href; });
+        });
+    });
 });
 </script>
 

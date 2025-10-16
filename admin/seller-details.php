@@ -4,15 +4,13 @@ require_once 'includes/admin_header.php';
 
 requireAdmin();
 
-// Get user ID from URL
-$userId = isset($_GET['id']) ? intval($_GET['id']) : 0;
-
-if (!$userId) {
-    header('Location: admin-customers.php?msg=' . urlencode('Invalid user ID') . '&type=error');
+$sellerId = isset($_GET['id']) ? intval($_GET['id']) : 0;
+if (!$sellerId) {
+    header('Location: admin-sellers.php?msg=' . urlencode('Invalid seller ID') . '&type=error');
     exit();
 }
 
-// Initialize variables
+// Initialize message variables
 $message = '';
 $messageType = '';
 
@@ -22,159 +20,149 @@ if (isset($_GET['action'])) {
     
     try {
         switch ($action) {
-            case 'activate':
-                $stmt = $pdo->prepare("UPDATE users SET is_active = TRUE WHERE id = ?");
-                $stmt->execute([$userId]);
-                if ($stmt->rowCount() > 0) {
-                    $message = "User activated successfully!";
-                    $messageType = 'success';
-                }
+            case 'approve':
+                $stmt = $pdo->prepare("UPDATE users SET seller_status = 'approved' WHERE id = ? AND user_type = 'seller'");
+                $stmt->execute([$sellerId]);
+                $message = "Seller approved successfully!";
+                $messageType = 'success';
                 break;
                 
-            case 'deactivate':
-                $stmt = $pdo->prepare("UPDATE users SET is_active = FALSE WHERE id = ?");
-                $stmt->execute([$userId]);
-                if ($stmt->rowCount() > 0) {
-                    $message = "User deactivated successfully!";
-                    $messageType = 'warning';
-                }
+            case 'reject':
+                $stmt = $pdo->prepare("UPDATE users SET seller_status = 'rejected' WHERE id = ? AND user_type = 'seller'");
+                $stmt->execute([$sellerId]);
+                $message = "Seller rejected.";
+                $messageType = 'warning';
                 break;
                 
-            case 'delete':
-                // Check for orders first
-                $stmt = $pdo->prepare("SELECT COUNT(*) as count FROM orders WHERE user_id = ?");
-                $stmt->execute([$userId]);
-                $orderCount = $stmt->fetch(PDO::FETCH_ASSOC)['count'];
+            case 'suspend':
+                $stmt = $pdo->prepare("UPDATE users SET seller_status = 'suspended' WHERE id = ? AND user_type = 'seller'");
+                $stmt->execute([$sellerId]);
+                $message = "Seller suspended.";
+                $messageType = 'warning';
+                break;
                 
-                if ($orderCount > 0) {
-                    $message = "Cannot delete user. User has {$orderCount} order(s).";
-                    $messageType = 'error';
-                } else {
-                    $stmt = $pdo->prepare("DELETE FROM users WHERE id = ?");
-                    $stmt->execute([$userId]);
-                    if ($stmt->rowCount() > 0) {
-                        header('Location: admin-customers.php?msg=' . urlencode('User deleted successfully') . '&type=success');
-                        exit();
-                    }
-                }
+            case 'ban':
+                $stmt = $pdo->prepare("UPDATE users SET seller_status = 'banned' WHERE id = ? AND user_type = 'seller'");
+                $stmt->execute([$sellerId]);
+                $message = "Seller banned.";
+                $messageType = 'error';
+                break;
+                
+            case 'restore':
+                $stmt = $pdo->prepare("UPDATE users SET seller_status = 'approved' WHERE id = ? AND user_type = 'seller'");
+                $stmt->execute([$sellerId]);
+                $message = "Seller restored to approved status.";
+                $messageType = 'success';
                 break;
         }
     } catch (PDOException $e) {
-        $message = "Database error: " . $e->getMessage();
+        $message = "Error: " . $e->getMessage();
         $messageType = 'error';
     }
 }
 
-// Get user details
+// Get seller details
 try {
-    $stmt = $pdo->prepare("
-        SELECT *, 
-               CASE WHEN is_active IS NULL THEN TRUE ELSE is_active END as active_status
-        FROM users 
-        WHERE id = ?
-    ");
-    $stmt->execute([$userId]);
-    $user = $stmt->fetch(PDO::FETCH_ASSOC);
+    $stmt = $pdo->prepare("SELECT * FROM users WHERE id = ? AND user_type = 'seller'");
+    $stmt->execute([$sellerId]);
+    $seller = $stmt->fetch(PDO::FETCH_ASSOC);
     
-    if (!$user) {
-        header('Location: admin-customers.php?msg=' . urlencode('User not found') . '&type=error');
+    if (!$seller) {
+        header('Location: admin-sellers.php?msg=' . urlencode('Seller not found') . '&type=error');
         exit();
     }
-    
 } catch (PDOException $e) {
-    header('Location: admin-customers.php?msg=' . urlencode('Error retrieving user details') . '&type=error');
+    header('Location: admin-sellers.php?msg=' . urlencode('Error retrieving seller details') . '&type=error');
     exit();
 }
 
-// Get user's orders with pagination
-$orderPage = isset($_GET['order_page']) ? max(1, intval($_GET['order_page'])) : 1;
-$orderLimit = 10;
-$orderOffset = ($orderPage - 1) * $orderLimit;
-
+// Get seller statistics
 try {
-    // Get orders count
-    $stmt = $pdo->prepare("SELECT COUNT(*) as total FROM orders WHERE user_id = ?");
-    $stmt->execute([$userId]);
-    $totalOrders = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
-    $totalOrderPages = ceil($totalOrders / $orderLimit);
+    // Total products
+    $stmt = $pdo->prepare("SELECT COUNT(*) as total FROM products WHERE seller_id = ?");
+    $stmt->execute([$sellerId]);
+    $totalProducts = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
     
-    // Get orders with details
+    // Active products
+    $stmt = $pdo->prepare("SELECT COUNT(*) as total FROM products WHERE seller_id = ? AND is_active = 1");
+    $stmt->execute([$sellerId]);
+    $activeProducts = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
+    
+    // Out of stock products
+    $stmt = $pdo->prepare("SELECT COUNT(*) as total FROM products WHERE seller_id = ? AND stock_quantity = 0");
+    $stmt->execute([$sellerId]);
+    $outOfStock = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
+    
+    // Total orders
     $stmt = $pdo->prepare("
-        SELECT o.*, 
-               COALESCE(o.total_amount, 0) as total_amount,
-               COALESCE(o.status, 'pending') as status
+        SELECT COUNT(DISTINCT o.id) as total 
         FROM orders o 
-        WHERE o.user_id = ? 
-        ORDER BY o.created_at DESC 
-        LIMIT ? OFFSET ?
+        JOIN order_items oi ON o.id = oi.order_id 
+        JOIN products p ON oi.product_id = p.id 
+        WHERE p.seller_id = ?
     ");
-    $stmt->execute([$userId, $orderLimit, $orderOffset]);
-    $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $stmt->execute([$sellerId]);
+    $totalOrders = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
     
-} catch (PDOException $e) {
-    $orders = [];
-    $totalOrders = 0;
-    $totalOrderPages = 0;
-}
-
-// Get user statistics - optimized with single query
-try {
-    $stats = [
-        'total_orders' => $totalOrders,
-        'total_spent' => 0,
-        'last_order_date' => null,
-        'account_age_days' => 0,
-        'completed_orders' => 0,
-        'pending_orders' => 0,
-        'cancelled_orders' => 0
-    ];
+    // Total revenue
+    $stmt = $pdo->prepare("
+        SELECT COALESCE(SUM(oi.price * oi.quantity), 0) as total_revenue
+        FROM order_items oi
+        JOIN products p ON oi.product_id = p.id
+        WHERE p.seller_id = ?
+    ");
+    $stmt->execute([$sellerId]);
+    $totalRevenue = $stmt->fetch(PDO::FETCH_ASSOC)['total_revenue'];
     
-    if ($totalOrders > 0) {
-        // Get all order statistics in one query
-        $stmt = $pdo->prepare("
-            SELECT 
-                COALESCE(SUM(total_amount), 0) as total_spent,
-                MAX(created_at) as last_order,
-                SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed_orders,
-                SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending_orders,
-                SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END) as cancelled_orders
-            FROM orders 
-            WHERE user_id = ?
-        ");
-        $stmt->execute([$userId]);
-        $orderStats = $stmt->fetch(PDO::FETCH_ASSOC);
-        
-        $stats['total_spent'] = $orderStats['total_spent'];
-        $stats['last_order_date'] = $orderStats['last_order'];
-        $stats['completed_orders'] = $orderStats['completed_orders'];
-        $stats['pending_orders'] = $orderStats['pending_orders'];
-        $stats['cancelled_orders'] = $orderStats['cancelled_orders'];
-    }
+    // Average product price
+    $stmt = $pdo->prepare("SELECT COALESCE(AVG(price), 0) as avg_price FROM products WHERE seller_id = ?");
+    $stmt->execute([$sellerId]);
+    $avgPrice = $stmt->fetch(PDO::FETCH_ASSOC)['avg_price'];
+    
+    // Total product views (if you have a views column)
+    $stmt = $pdo->prepare("SELECT COALESCE(SUM(views), 0) as total_views FROM products WHERE seller_id = ?");
+    $stmt->execute([$sellerId]);
+    $totalViews = $stmt->fetch(PDO::FETCH_ASSOC)['total_views'];
     
     // Account age
-    if ($user['created_at']) {
-        $stats['account_age_days'] = floor((time() - strtotime($user['created_at'])) / (60 * 60 * 24));
-    }
+    $accountAgeDays = $seller['created_at'] ? floor((time() - strtotime($seller['created_at'])) / 86400) : 0;
     
 } catch (PDOException $e) {
-    $stats = [
-        'total_orders' => 0,
-        'total_spent' => 0,
-        'last_order_date' => null,
-        'account_age_days' => 0,
-        'completed_orders' => 0,
-        'pending_orders' => 0,
-        'cancelled_orders' => 0
-    ];
+    $totalProducts = $activeProducts = $outOfStock = $totalOrders = 0;
+    $totalRevenue = $avgPrice = $totalViews = 0;
+    $accountAgeDays = 0;
 }
 
-// Check if is_active column exists
-$isActiveExists = false;
+// Get seller's products
 try {
-    $stmt = $pdo->query("SHOW COLUMNS FROM users LIKE 'is_active'");
-    $isActiveExists = $stmt->rowCount() > 0;
+    $stmt = $pdo->prepare("
+        SELECT id, name, price, stock_quantity, is_active, created_at, image_url
+        FROM products 
+        WHERE seller_id = ? 
+        ORDER BY created_at DESC 
+        LIMIT 10
+    ");
+    $stmt->execute([$sellerId]);
+    $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
 } catch (PDOException $e) {
-    $isActiveExists = false;
+    $products = [];
+}
+
+// Get recent orders
+try {
+    $stmt = $pdo->prepare("
+        SELECT DISTINCT o.id, o.created_at, o.status, o.total_amount
+        FROM orders o
+        JOIN order_items oi ON o.id = oi.order_id
+        JOIN products p ON oi.product_id = p.id
+        WHERE p.seller_id = ?
+        ORDER BY o.created_at DESC
+        LIMIT 10
+    ");
+    $stmt->execute([$sellerId]);
+    $recentOrders = $stmt->fetchAll(PDO::FETCH_ASSOC);
+} catch (PDOException $e) {
+    $recentOrders = [];
 }
 ?>
 
@@ -231,7 +219,7 @@ try {
     /* Breadcrumb */
     .breadcrumb {
         max-width: 1400px;
-        margin: 10px auto 5px;
+        margin: 20px auto 10px;
         padding: 0 20px;
     }
     
@@ -254,7 +242,7 @@ try {
     /* Page Header */
     h1 {
         max-width: 1400px;
-        margin: 5px auto 20px;
+        margin: 10px auto 30px;
         padding: 0 20px;
         font-size: 28px;
         font-weight: 800;
@@ -335,25 +323,58 @@ try {
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
     }
 
-    .action-icon-deactivate {
-        background: rgba(255, 193, 7, 0.2);
-        color: var(--warning-yellow);
-        border: 1px solid var(--warning-yellow);
+    .action-icon-approve {
+        background: rgba(40, 167, 69, 0.2);
+        color: var(--success-green);
+        border: 1px solid var(--success-green);
     }
 
-    .action-icon-deactivate:hover {
-        background: var(--warning-yellow);
-        color: #1a0a2e;
+    .action-icon-approve:hover {
+        background: var(--success-green);
+        color: white;
     }
 
-    .action-icon-delete {
+    .action-icon-reject {
         background: rgba(220, 53, 69, 0.2);
         color: var(--danger-red);
         border: 1px solid var(--danger-red);
     }
 
-    .action-icon-delete:hover {
+    .action-icon-reject:hover {
         background: var(--danger-red);
+        color: white;
+    }
+
+    .action-icon-suspend {
+        background: rgba(108, 117, 125, 0.2);
+        color: #6c757d;
+        border: 1px solid #6c757d;
+    }
+
+    .action-icon-suspend:hover {
+        background: #6c757d;
+        color: white;
+    }
+
+    .action-icon-ban {
+        background: rgba(192, 57, 43, 0.2);
+        color: #c0392b;
+        border: 1px solid #c0392b;
+    }
+
+    .action-icon-ban:hover {
+        background: #c0392b;
+        color: white;
+    }
+
+    .action-icon-restore {
+        background: rgba(52, 152, 219, 0.2);
+        color: #3498db;
+        border: 1px solid #3498db;
+    }
+
+    .action-icon-restore:hover {
+        background: #3498db;
         color: white;
     }
 
@@ -414,6 +435,11 @@ try {
         animation: shimmer 3s linear infinite;
     }
 
+    @keyframes shimmer {
+        0% { background-position: -200% 0; }
+        100% { background-position: 200% 0; }
+    }
+
     .custom-confirm-header {
         display: flex;
         align-items: center;
@@ -438,6 +464,10 @@ try {
 
     .custom-confirm-icon.danger {
         background: linear-gradient(135deg, var(--danger-red), #e74c3c);
+    }
+
+    .custom-confirm-icon.success {
+        background: linear-gradient(135deg, var(--success-green), #20c997);
     }
 
     .custom-confirm-title {
@@ -506,6 +536,16 @@ try {
 
     .custom-confirm-btn.warning:hover {
         background: linear-gradient(135deg, #e6a800, #ffc107);
+    }
+
+    .custom-confirm-btn.success {
+        background: linear-gradient(135deg, var(--success-green), #20c997);
+        color: white;
+        border: 2px solid var(--success-green);
+    }
+
+    .custom-confirm-btn.success:hover {
+        background: linear-gradient(135deg, #1e7e34, #28a745);
     }
 
     .card-content {
@@ -597,42 +637,28 @@ try {
         text-transform: uppercase;
     }
 
-    .status-active, .status-completed, .status-approved {
-        background: rgba(40, 167, 69, 0.2);
-        color: var(--success-green);
-        border: 2px solid var(--success-green);
-    }
-
-    .status-inactive, .status-cancelled, .status-rejected, .status-banned {
-        background: rgba(220, 53, 69, 0.2);
-        color: var(--danger-red);
-        border: 2px solid var(--danger-red);
-    }
-
     .status-pending {
         background: rgba(255, 193, 7, 0.2);
         color: var(--warning-yellow);
         border: 2px solid var(--warning-yellow);
     }
 
+    .status-approved {
+        background: rgba(40, 167, 69, 0.2);
+        color: var(--success-green);
+        border: 2px solid var(--success-green);
+    }
+
+    .status-rejected, .status-banned {
+        background: rgba(220, 53, 69, 0.2);
+        color: var(--danger-red);
+        border: 2px solid var(--danger-red);
+    }
+
     .status-suspended {
         background: rgba(108, 117, 125, 0.2);
         color: #6c757d;
         border: 2px solid #6c757d;
-    }
-
-    .user-type-badge {
-        display: inline-block;
-        padding: 8px 16px;
-        border-radius: 20px;
-        font-size: 13px;
-        font-weight: 700;
-        background: rgba(52, 152, 219, 0.2);
-        color: #3498db;
-        border: 2px solid #3498db;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        margin-left: 8px;
     }
 
     /* Tables */
@@ -672,6 +698,14 @@ try {
         background: rgba(255, 255, 255, 0.02);
     }
 
+    .product-image {
+        width: 50px;
+        height: 50px;
+        object-fit: cover;
+        border-radius: 6px;
+        border: 2px solid var(--border-color);
+    }
+
     /* Action Buttons */
     .action-buttons {
         display: flex;
@@ -699,57 +733,29 @@ try {
         box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
     }
 
-    .btn-activate {
+    .btn-approve {
         background: linear-gradient(135deg, var(--success-green), #20c997);
         color: white;
     }
 
-    .btn-deactivate {
-        background: linear-gradient(135deg, var(--warning-yellow), #e6a800);
-        color: #1a0a2e;
-    }
-
-    .btn-delete {
+    .btn-reject {
         background: linear-gradient(135deg, var(--danger-red), #e74c3c);
         color: white;
     }
 
-    .btn-view {
+    .btn-suspend {
+        background: linear-gradient(135deg, #6c757d, #95a5a6);
+        color: white;
+    }
+
+    .btn-ban {
+        background: linear-gradient(135deg, #c0392b, #e74c3c);
+        color: white;
+    }
+
+    .btn-restore {
         background: linear-gradient(135deg, #3498db, #5dade2);
         color: white;
-        font-size: 13px;
-        padding: 8px 16px;
-    }
-
-    /* Pagination */
-    .pagination {
-        display: flex;
-        justify-content: center;
-        gap: 8px;
-        margin-top: 20px;
-    }
-
-    .page-link {
-        padding: 10px 16px;
-        background: var(--primary-dark);
-        color: var(--accent-yellow);
-        text-decoration: none;
-        border-radius: 6px;
-        border: 1px solid var(--border-color);
-        font-weight: 700;
-        font-size: 14px;
-        transition: all 0.3s ease;
-    }
-
-    .page-link:hover {
-        background: var(--accent-yellow);
-        color: var(--primary-dark);
-        transform: translateY(-2px);
-    }
-
-    .page-link.active {
-        background: var(--accent-yellow);
-        color: var(--primary-dark);
     }
 
     /* Full Width Cards */
@@ -781,8 +787,6 @@ try {
             width: 100%;
         }
     }
-
-
 </style>
 
 <?php if ($message): ?>
@@ -793,41 +797,54 @@ try {
 <?php endif; ?>
 
 <div class="breadcrumb">
-    <a href="admin-customers.php">
-        <i class="fas fa-arrow-left"></i> Back to Customers
+    <a href="admin-sellers.php">
+        <i class="fas fa-arrow-left"></i> Back to Sellers
     </a>
 </div>
 
-<h1><i class="fas fa-user"></i> Customer Details</h1>
+<h1><i class="fas fa-store"></i> Seller Details</h1>
 
 <div class="container">
     <div class="grid">
-        <!-- User Profile Card -->
+        <!-- Seller Profile Card -->
         <div class="card">
             <div class="card-header">
-                <h2><i class="fas fa-user-circle"></i> User Profile</h2>
+                <h2><i class="fas fa-user-circle"></i> Seller Profile</h2>
                 <div class="card-header-actions">
-                    <span class="status-badge status-<?php echo $user['active_status'] ? 'active' : 'inactive'; ?>">
-                        <?php echo $user['active_status'] ? 'Active' : 'Inactive'; ?>
+                    <span class="status-badge status-<?php echo htmlspecialchars(strtolower($seller['seller_status'] ?? 'pending')); ?>">
+                        <?php echo htmlspecialchars(ucfirst($seller['seller_status'] ?? 'Pending')); ?>
                     </span>
-                    <?php if ($isActiveExists): ?>
-                        <?php if ($user['active_status']): ?>
-                            <a href="user-details.php?id=<?php echo $userId; ?>&action=deactivate" 
-                               class="action-icon action-icon-deactivate"
-                               title="Deactivate User">
-                                <i class="fas fa-user-slash"></i>
-                            </a>
-                        <?php else: ?>
-                            <a href="user-details.php?id=<?php echo $userId; ?>&action=activate" 
-                               class="action-icon action-icon-deactivate"
-                               title="Activate User">
-                                <i class="fas fa-user-check"></i>
-                            </a>
-                        <?php endif; ?>
-                        <a href="user-details.php?id=<?php echo $userId; ?>&action=delete" 
-                           class="action-icon action-icon-delete"
-                           title="Delete User">
-                            <i class="fas fa-trash-alt"></i>
+                    <?php if (($seller['seller_status'] ?? 'pending') === 'pending'): ?>
+                        <a href="seller-details.php?action=approve&id=<?php echo (int)$sellerId; ?>" 
+                           class="action-icon action-icon-approve"
+                           title="Approve Seller">
+                            <i class="fas fa-check-circle"></i>
+                        </a>
+                        <a href="seller-details.php?action=reject&id=<?php echo (int)$sellerId; ?>" 
+                           class="action-icon action-icon-reject"
+                           title="Reject Seller">
+                            <i class="fas fa-times-circle"></i>
+                        </a>
+                    <?php endif; ?>
+                    
+                    <?php if (($seller['seller_status'] ?? '') === 'approved'): ?>
+                        <a href="seller-details.php?action=suspend&id=<?php echo (int)$sellerId; ?>" 
+                           class="action-icon action-icon-suspend"
+                           title="Suspend Seller">
+                            <i class="fas fa-pause-circle"></i>
+                        </a>
+                        <a href="seller-details.php?action=ban&id=<?php echo (int)$sellerId; ?>" 
+                           class="action-icon action-icon-ban"
+                           title="Ban Seller">
+                            <i class="fas fa-ban"></i>
+                        </a>
+                    <?php endif; ?>
+                    
+                    <?php if (in_array(($seller['seller_status'] ?? ''), ['suspended','banned','rejected'])): ?>
+                        <a href="seller-details.php?action=restore&id=<?php echo (int)$sellerId; ?>" 
+                           class="action-icon action-icon-restore"
+                           title="Restore to Approved">
+                            <i class="fas fa-undo"></i>
                         </a>
                     <?php endif; ?>
                 </div>
@@ -835,42 +852,42 @@ try {
             <div class="card-content">
                 <div class="info-grid">
                     <div class="info-item">
-                        <label><i class="fas fa-hashtag"></i> User ID</label>
-                        <span><?php echo (int)$user['id']; ?></span>
+                        <label><i class="fas fa-hashtag"></i> Seller ID</label>
+                        <span><?php echo (int)$seller['id']; ?></span>
                     </div>
                     <div class="info-item">
                         <label><i class="fas fa-user"></i> Username</label>
-                        <span><?php echo htmlspecialchars($user['username'] ?? ''); ?></span>
+                        <span><?php echo htmlspecialchars($seller['username'] ?? ''); ?></span>
                     </div>
                     <div class="info-item">
                         <label><i class="fas fa-signature"></i> Full Name</label>
-                        <span><?php echo htmlspecialchars(trim(($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? ''))); ?></span>
+                        <span><?php echo htmlspecialchars(trim(($seller['first_name'] ?? '') . ' ' . ($seller['last_name'] ?? ''))); ?></span>
                     </div>
                     <div class="info-item">
                         <label><i class="fas fa-envelope"></i> Email</label>
-                        <span><?php echo htmlspecialchars($user['email'] ?? ''); ?></span>
+                        <span><?php echo htmlspecialchars($seller['email'] ?? ''); ?></span>
                     </div>
                     <div class="info-item">
                         <label><i class="fas fa-phone"></i> Phone</label>
-                        <span><?php echo htmlspecialchars($user['phone'] ?? 'Not provided'); ?></span>
+                        <span><?php echo htmlspecialchars($seller['phone'] ?? 'Not provided'); ?></span>
                     </div>
                     <div class="info-item">
                         <label><i class="fas fa-map-marker-alt"></i> Address</label>
-                        <span><?php echo htmlspecialchars($user['address'] ?? 'Not provided'); ?></span>
+                        <span><?php echo htmlspecialchars($seller['address'] ?? 'Not provided'); ?></span>
                     </div>
                     <div class="info-item">
                         <label><i class="fas fa-calendar-alt"></i> Registration Date</label>
-                        <span><?php echo $user['created_at'] ? date('F j, Y g:i A', strtotime($user['created_at'])) : 'N/A'; ?></span>
+                        <span><?php echo $seller['created_at'] ? date('F j, Y g:i A', strtotime($seller['created_at'])) : 'N/A'; ?></span>
                     </div>
                     <div class="info-item">
                         <label><i class="fas fa-clock"></i> Account Age</label>
-                        <span><?php echo $stats['account_age_days']; ?> days</span>
+                        <span><?php echo $accountAgeDays; ?> days</span>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- User Statistics Card -->
+        <!-- Seller Statistics Card -->
         <div class="card">
             <div class="card-header">
                 <h2><i class="fas fa-chart-line"></i> Statistics</h2>
@@ -878,24 +895,47 @@ try {
             <div class="card-content">
                 <div class="stats-grid">
                     <div class="stat-item">
-                        <div class="stat-number"><?php echo number_format($stats['total_orders']); ?></div>
+                        <div class="stat-number"><?php echo number_format($totalProducts); ?></div>
+                        <div class="stat-label">Total Products</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number"><?php echo number_format($activeProducts); ?></div>
+                        <div class="stat-label">Active Products</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number"><?php echo number_format($totalOrders); ?></div>
                         <div class="stat-label">Total Orders</div>
                     </div>
                     <div class="stat-item">
-                        <div class="stat-number">₱<?php echo number_format($stats['total_spent'], 2); ?></div>
-                        <div class="stat-label">Total Spent</div>
+                        <div class="stat-number">₱<?php echo number_format($totalRevenue, 2); ?></div>
+                        <div class="stat-label">Total Revenue</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Product Analytics Card -->
+        <div class="card">
+            <div class="card-header">
+                <h2><i class="fas fa-box"></i> Product Analytics</h2>
+            </div>
+            <div class="card-content">
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-number"><?php echo number_format($outOfStock); ?></div>
+                        <div class="stat-label">Out of Stock</div>
                     </div>
                     <div class="stat-item">
-                        <div class="stat-number"><?php echo number_format($stats['completed_orders']); ?></div>
-                        <div class="stat-label">Completed Orders</div>
+                        <div class="stat-number">₱<?php echo number_format($avgPrice, 2); ?></div>
+                        <div class="stat-label">Avg Product Price</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number"><?php echo number_format($totalViews); ?></div>
+                        <div class="stat-label">Total Views</div>
                     </div>
                     <div class="stat-item">
                         <div class="stat-number">
-                            <?php 
-                            echo $stats['total_orders'] > 0 
-                                ? '₱' . number_format($stats['total_spent'] / $stats['total_orders'], 2)
-                                : '₱0.00';
-                            ?>
+                            <?php echo $totalOrders > 0 ? '₱' . number_format($totalRevenue / $totalOrders, 2) : '₱0.00'; ?>
                         </div>
                         <div class="stat-label">Avg Order Value</div>
                     </div>
@@ -903,55 +943,59 @@ try {
             </div>
         </div>
 
-        <!-- Order Analytics Card -->
-        <div class="card">
+        <!-- Products Card -->
+        <div class="card full-width">
             <div class="card-header">
-                <h2><i class="fas fa-box"></i> Order Analytics</h2>
+                <h2><i class="fas fa-shopping-bag"></i> Recent Products (<?php echo count($products); ?>)</h2>
             </div>
             <div class="card-content">
-                <div class="stats-grid">
-                    <div class="stat-item">
-                        <div class="stat-number"><?php echo number_format($stats['pending_orders']); ?></div>
-                        <div class="stat-label">Pending Orders</div>
+                <?php if (empty($products)): ?>
+                    <p style="text-align: center; color: rgba(249, 249, 249, 0.6);">No products found.</p>
+                <?php else: ?>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Image</th>
+                                    <th>Product Name</th>
+                                    <th>Price</th>
+                                    <th>Stock</th>
+                                    <th>Status</th>
+                                    <th>Created</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($products as $product): ?>
+                                    <tr>
+                                        <td>
+                                            <img src="<?php echo htmlspecialchars($product['image_url'] ?? 'images/placeholder.jpg'); ?>" 
+                                                 alt="Product" class="product-image">
+                                        </td>
+                                        <td><?php echo htmlspecialchars($product['name']); ?></td>
+                                        <td>₱<?php echo number_format($product['price'], 2); ?></td>
+                                        <td><?php echo number_format($product['stock_quantity']); ?></td>
+                                        <td>
+                                            <span class="status-badge status-<?php echo $product['is_active'] ? 'approved' : 'suspended'; ?>">
+                                                <?php echo $product['is_active'] ? 'Active' : 'Inactive'; ?>
+                                            </span>
+                                        </td>
+                                        <td><?php echo date('M j, Y', strtotime($product['created_at'])); ?></td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
                     </div>
-                    <div class="stat-item">
-                        <div class="stat-number"><?php echo number_format($stats['cancelled_orders']); ?></div>
-                        <div class="stat-label">Cancelled Orders</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-number">
-                            <?php 
-                            $successRate = $stats['total_orders'] > 0 
-                                ? round(($stats['completed_orders'] / $stats['total_orders']) * 100) 
-                                : 0;
-                            echo $successRate . '%';
-                            ?>
-                        </div>
-                        <div class="stat-label">Success Rate</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-number">
-                            <?php 
-                            if ($stats['last_order_date']) {
-                                echo date('M j, Y', strtotime($stats['last_order_date']));
-                            } else {
-                                echo 'Never';
-                            }
-                            ?>
-                        </div>
-                        <div class="stat-label">Last Order</div>
-                    </div>
-                </div>
+                <?php endif; ?>
             </div>
         </div>
 
         <!-- Recent Orders Card -->
         <div class="card full-width">
             <div class="card-header">
-                <h2><i class="fas fa-receipt"></i> Recent Orders (<?php echo count($orders); ?>)</h2>
+                <h2><i class="fas fa-receipt"></i> Recent Orders (<?php echo count($recentOrders); ?>)</h2>
             </div>
             <div class="card-content">
-                <?php if (empty($orders)): ?>
+                <?php if (empty($recentOrders)): ?>
                     <p style="text-align: center; color: rgba(249, 249, 249, 0.6);">No orders found.</p>
                 <?php else: ?>
                     <div class="table-container">
@@ -965,7 +1009,7 @@ try {
                                 </tr>
                             </thead>
                             <tbody>
-                                <?php foreach ($orders as $order): ?>
+                                <?php foreach ($recentOrders as $order): ?>
                                     <tr>
                                         <td>#<?php echo htmlspecialchars($order['id']); ?></td>
                                         <td><?php echo date('M j, Y g:i A', strtotime($order['created_at'])); ?></td>
@@ -1003,7 +1047,13 @@ function showCustomConfirm(title, message, type = 'warning', onConfirm) {
     
     const icon = document.createElement('div');
     icon.className = `custom-confirm-icon ${type}`;
-    icon.innerHTML = type === 'danger' ? '<i class="fas fa-exclamation-triangle"></i>' : '<i class="fas fa-question-circle"></i>';
+    if (type === 'danger') {
+        icon.innerHTML = '<i class="fas fa-exclamation-triangle"></i>';
+    } else if (type === 'success') {
+        icon.innerHTML = '<i class="fas fa-check-circle"></i>';
+    } else {
+        icon.innerHTML = '<i class="fas fa-question-circle"></i>';
+    }
     
     const titleEl = document.createElement('h3');
     titleEl.className = 'custom-confirm-title';
@@ -1028,7 +1078,13 @@ function showCustomConfirm(title, message, type = 'warning', onConfirm) {
     
     const confirmBtn = document.createElement('button');
     confirmBtn.className = `custom-confirm-btn ${type}`;
-    confirmBtn.textContent = type === 'danger' ? 'Delete' : 'Confirm';
+    if (type === 'danger') {
+        confirmBtn.textContent = 'Confirm';
+    } else if (type === 'success') {
+        confirmBtn.textContent = 'Approve';
+    } else {
+        confirmBtn.textContent = 'Confirm';
+    }
     confirmBtn.onclick = () => {
         closeDialog();
         onConfirm();
@@ -1078,14 +1134,30 @@ function showCustomConfirm(title, message, type = 'warning', onConfirm) {
 
 // Override default confirm for action icons
 document.addEventListener('DOMContentLoaded', function() {
-    // Handle deactivate/activate actions
-    const deactivateLinks = document.querySelectorAll('a[href*="action=deactivate"]');
-    deactivateLinks.forEach(link => {
+    // Handle approve actions
+    const approveLinks = document.querySelectorAll('a[href*="action=approve"]');
+    approveLinks.forEach(link => {
         link.onclick = function(e) {
             e.preventDefault();
             showCustomConfirm(
-                'Deactivate User',
-                'Are you sure you want to deactivate this user? They will not be able to log in.',
+                'Approve Seller',
+                'Are you sure you want to approve this seller? They will be able to start selling products.',
+                'success',
+                () => {
+                    window.location.href = this.href;
+                }
+            );
+        };
+    });
+    
+    // Handle reject actions
+    const rejectLinks = document.querySelectorAll('a[href*="action=reject"]');
+    rejectLinks.forEach(link => {
+        link.onclick = function(e) {
+            e.preventDefault();
+            showCustomConfirm(
+                'Reject Seller',
+                'Are you sure you want to reject this seller? This action will prevent them from selling.',
                 'warning',
                 () => {
                     window.location.href = this.href;
@@ -1094,13 +1166,14 @@ document.addEventListener('DOMContentLoaded', function() {
         };
     });
     
-    const activateLinks = document.querySelectorAll('a[href*="action=activate"]');
-    activateLinks.forEach(link => {
+    // Handle suspend actions
+    const suspendLinks = document.querySelectorAll('a[href*="action=suspend"]');
+    suspendLinks.forEach(link => {
         link.onclick = function(e) {
             e.preventDefault();
             showCustomConfirm(
-                'Activate User',
-                'Are you sure you want to activate this user?',
+                'Suspend Seller',
+                'Are you sure you want to suspend this seller? They will not be able to sell products temporarily.',
                 'warning',
                 () => {
                     window.location.href = this.href;
@@ -1109,15 +1182,31 @@ document.addEventListener('DOMContentLoaded', function() {
         };
     });
     
-    // Handle delete actions
-    const deleteLinks = document.querySelectorAll('a[href*="action=delete"]');
-    deleteLinks.forEach(link => {
+    // Handle ban actions
+    const banLinks = document.querySelectorAll('a[href*="action=ban"]');
+    banLinks.forEach(link => {
         link.onclick = function(e) {
             e.preventDefault();
             showCustomConfirm(
-                'Delete User',
-                'Are you sure you want to delete this user? This action cannot be undone. Users with orders cannot be deleted.',
+                'Ban Seller',
+                'Are you sure you want to ban this seller? This is a severe action that will permanently prevent them from selling.',
                 'danger',
+                () => {
+                    window.location.href = this.href;
+                }
+            );
+        };
+    });
+    
+    // Handle restore actions
+    const restoreLinks = document.querySelectorAll('a[href*="action=restore"]');
+    restoreLinks.forEach(link => {
+        link.onclick = function(e) {
+            e.preventDefault();
+            showCustomConfirm(
+                'Restore Seller',
+                'Are you sure you want to restore this seller to approved status? They will be able to sell products again.',
+                'success',
                 () => {
                     window.location.href = this.href;
                 }

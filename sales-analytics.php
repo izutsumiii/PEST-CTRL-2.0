@@ -572,7 +572,7 @@ $periodLabels = [
             
             <div class="stat-card border-l-indigo-500" data-aos="fade-up" data-aos-delay="600">
                 <h3 class="text-lg font-medium text-gray-300">Avg Order Value</h3>
-                <div class="stat-value">$<?php echo number_format($avgOrderValue, 2); ?></div>
+                <div class="stat-value">₱<?php echo number_format($avgOrderValue, 2); ?></div>
                 <small class="text-gray-400"><?php echo $uniqueOrders; ?> orders average</small>
                 <div class="period-badge"><?php echo $periodLabels[$selectedPeriod]; ?></div>
             </div>
@@ -691,19 +691,19 @@ $periodLabels = [
                     <tbody class="text-gray-200">
                         <tr class="border-b border-gray-700 hover:bg-white hover:bg-opacity-5 transition-colors">
                             <td class="py-3">Expected Revenue</td>
-                            <td class="py-3 text-right font-bold text-blue-400">$<?php echo number_format($expectedRevenue, 2); ?></td>
+                            <td class="py-3 text-right font-bold text-blue-400">₱<?php echo number_format($expectedRevenue, 2); ?></td>
                             <td class="py-3 text-right">100%</td>
                         </tr>
                         <tr class="border-b border-gray-700 hover:bg-white hover:bg-opacity-5 transition-colors">
                             <td class="py-3 pl-4">↳ Confirmed</td>
-                            <td class="py-3 text-right font-bold text-green-400">$<?php echo number_format($confirmedRevenue, 2); ?></td>
+                            <td class="py-3 text-right font-bold text-green-400">₱<?php echo number_format($confirmedRevenue, 2); ?></td>
                             <td class="py-3 text-right">
                                 <?php echo $expectedRevenue > 0 ? number_format(($confirmedRevenue / $expectedRevenue) * 100, 1) : 0; ?>%
                             </td>
                         </tr>
                         <tr class="border-b border-gray-700 hover:bg-white hover:bg-opacity-5 transition-colors">
                             <td class="py-3 pl-4">↳ Pending</td>
-                            <td class="py-3 text-right font-bold text-yellow-400">$<?php echo number_format($pendingRevenue, 2); ?></td>
+                            <td class="py-3 text-right font-bold text-yellow-400">₱<?php echo number_format($pendingRevenue, 2); ?></td>
                             <td class="py-3 text-right">
                                 <?php echo $expectedRevenue > 0 ? number_format(($pendingRevenue / $expectedRevenue) * 100, 1) : 0; ?>%
                             </td>
@@ -715,7 +715,7 @@ $periodLabels = [
                         </tr>
                         <tr class="border-b border-gray-700 hover:bg-white hover:bg-opacity-5 transition-colors">
                             <td class="py-3">Average Order Value</td>
-                            <td class="py-3 text-right font-bold text-purple-400">$<?php echo number_format($avgOrderValue, 2); ?></td>
+                            <td class="py-3 text-right font-bold text-purple-400">₱<?php echo number_format($avgOrderValue, 2); ?></td>
                             <td class="py-3 text-right">-</td>
                         </tr>
                         <tr class="hover:bg-white hover:bg-opacity-5 transition-colors">
@@ -917,7 +917,7 @@ $periodLabels = [
                                 if (label) {
                                     label += ': ';
                                 }
-                                label += '$' + context.parsed.y.toFixed(2);
+                                label += '₱' + context.parsed.y.toFixed(2);
                                 return label;
                             }
                         }
@@ -931,7 +931,7 @@ $periodLabels = [
                         },
                         ticks: {
                             callback: function(value) {
-                                return '$' + value.toFixed(0);
+                                return '₱' + value.toFixed(0);
                             }
                         }
                     },
