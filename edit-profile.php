@@ -1,6 +1,8 @@
 <?php
 require_once 'includes/header.php';
 require_once 'config/database.php';
+?>
+<?php
 
 // spacer below fixed header
 echo '<div style="height:40px"></div>';
@@ -270,6 +272,7 @@ main {
     border-radius: 4px;
 }
 
+
 /* Success/Error message styling */
 .profile-editor p {
     padding: 10px;
@@ -435,6 +438,7 @@ h1 {
             </div>
         </form>
     </div>
+
  </div>
 </div>
 </main>
@@ -476,7 +480,9 @@ document.addEventListener('DOMContentLoaded', function() {
             pwHint.style.display = 'block'; 
         });
     }
+
 });
 </script>
+
 
 <?php require_once 'includes/footer.php'; ?>

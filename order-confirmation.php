@@ -102,32 +102,12 @@ h1 {
     overflow: hidden;
 }
 
-.confirmation-header {
-    background: linear-gradient(135deg, #FFD736, #e6c230);
-    color: #130325;
-    padding: 40px;
-    text-align: center;
-}
-
-.confirmation-header h2 {
-    margin: 0 0 15px 0;
-    font-size: 2rem;
-    font-weight: 700;
-    color: #130325;
-}
-
-.confirmation-header p {
-    margin: 0;
-    font-size: 1.1rem;
-    color: #130325;
-    opacity: 0.8;
-}
-
 .order-details, .customer-details, .order-items, .order-support {
     padding: 30px 40px;
     border-bottom: 1px solid rgba(255, 215, 54, 0.3);
     background: rgba(255, 255, 255, 0.05);
 }
+
 
 .order-details:last-child, .customer-details:last-child, .order-items:last-child, .order-support:last-child {
     border-bottom: none;
@@ -334,12 +314,14 @@ h1 {
 .order-support h3 {
     color: #FFD736;
     border-bottom-color: #FFD736;
+    font-size: 1.1rem;
 }
 
 .order-support p {
     margin: 10px 0;
     color: #F9F9F9;
     line-height: 1.6;
+    font-size: 1.1rem;
 }
 
 /* Responsive Design */
@@ -356,7 +338,7 @@ h1 {
         margin: 0 10px;
     }
     
-    .confirmation-header, .order-details, .customer-details, .order-items, .order-support {
+    .order-details, .customer-details, .order-items, .order-support {
         padding: 20px;
     }
     
@@ -417,14 +399,9 @@ h1 {
 }
 </style>
 
-<h1>Order Confirmation</h1>
+<h1>Order Details</h1>
 
 <div class="order-confirmation">
-    <div class="confirmation-header">
-        <h2>Thank you for your order!</h2>
-        <p>Your order has been received and is now being processed. Below are your order details.</p>
-    </div>
-
     <div class="order-details">
         <h3>Order Information</h3>
         <div class="order-info-grid">

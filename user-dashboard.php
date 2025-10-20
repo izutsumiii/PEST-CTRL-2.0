@@ -73,7 +73,7 @@ function sendCancellationEmail($orderId, $customerName, $customerEmail, $reason,
                             <p style='margin: 10px 0;'><strong>Order ID:</strong> #" . str_pad($orderId, 6, '0', STR_PAD_LEFT) . "</p>
                             <p style='margin: 10px 0;'><strong>Customer Name:</strong> " . htmlspecialchars($customerName) . "</p>
                             <p style='margin: 10px 0;'><strong>Customer Email:</strong> " . htmlspecialchars($customerEmail) . "</p>
-                            <p style='margin: 10px 0;'><strong>Order Total:</strong> $" . number_format($orderTotal, 2) . "</p>
+                            <p style='margin: 10px 0;'><strong>Order Total:</strong> ₱" . number_format($orderTotal, 2) . "</p>
                             <p style='margin: 10px 0;'><strong>Cancellation Date:</strong> " . date('F j, Y g:i A') . "</p>
                         </div>
                         
@@ -562,13 +562,125 @@ h1 {
 .user-orders p { color:#d7d1e2; font-size: .98rem; text-align:center; margin-top: 40px; font-style: italic; }
 
 /* Order Card Styles */
-.order-card { background:#140826; border-radius:12px; padding:18px; margin-bottom:18px; box-shadow: 0 8px 22px rgba(0,0,0,0.35); border:1px solid #2d1b4e; transition: all 0.3s ease; }
+.order-card { background:#ffffff; border-radius:12px; padding:10px; margin-bottom:10px; box-shadow: 0 8px 22px rgba(0,0,0,0.35); border:2px solid #FFD736; transition: all 0.3s ease; }
 
 .order-card:hover { transform: translateY(-2px); box-shadow: 0 10px 26px rgba(0,0,0,0.4); }
 
-.order-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; padding-bottom:12px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+.order-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; padding-bottom:8px; border-bottom: 1px solid rgba(255,255,255,0.08); }
 
-.order-number { font-size: 1.05rem; font-weight: 800; color:#FFD736; }
+/* New Clean Order Layout */
+.order-summary {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    padding: 6px 0;
+}
+
+.summary-left {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.order-total {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #FFD736;
+}
+
+.summary-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+}
+
+.delivery-info-small {
+    font-size: 0.8rem;
+    color: #28a745;
+    font-weight: 500;
+}
+
+.order-items-compact {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 8px;
+    padding: 4px 0;
+}
+
+.item-compact {
+    display: flex;
+    align-items: flex-start;
+    gap: 15px;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 215, 54, 0.2);
+    width: 100%;
+}
+
+.item-thumb {
+    width: 80px;
+    height: 80px;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 2px solid #130325;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    flex-shrink: 0;
+}
+
+.item-details {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1;
+}
+
+.item-name {
+    color: #130325;
+    font-size: 1rem;
+    font-weight: 600;
+    line-height: 1.3;
+    margin-bottom: 4px;
+}
+
+.item-qty {
+    color: #130325;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.item-price {
+    color: #130325;
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-left: auto;
+    align-self: flex-start;
+}
+
+.more-items {
+    color: #130325;
+    opacity: 0.7;
+    font-size: 0.8rem;
+    font-style: italic;
+    padding: 6px 10px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    border: 1px solid rgba(255, 215, 54, 0.2);
+}
+
+.order-number { 
+    font-size: 1.05rem; 
+    font-weight: 800; 
+    color: #130325;
+}
+
+.order-status-header {
+    display: flex;
+    align-items: center;
+}
 
 .order-date {
     color: #6c757d;
@@ -1285,68 +1397,37 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="order-card" data-order-id="<?php echo $order['id']; ?>">
                 <div class="order-header">
                     <div class="order-number">Order #<?php echo str_pad($order['id'], 6, '0', STR_PAD_LEFT); ?></div>
-                    <div class="order-date"><?php echo date('M j, Y g:i A', strtotime($order['created_at'])); ?></div>
+                    <div class="order-status-header">
+                        <span class="order-status <?php echo strtolower($order['status']); ?>">
+                            <?php echo ucfirst($order['status']); ?>
+                        </span>
+                    </div>
                 </div>
                 
                 <div class="order-body">
-                    <div class="order-details">
-                        <div class="detail-item">
-                            <div class="detail-label">Total Amount</div>
-                            <div class="detail-value">$<?php echo number_format((float)$order['total_amount'], 2); ?></div>
-                        </div>
-                        <div class="detail-item">
-                            <div class="detail-label">Status</div>
-                            <div class="detail-value">
-                                <span class="order-status <?php echo strtolower($order['status']); ?>">
-                                    <?php echo ucfirst($order['status']); ?>
-                                </span>
-                            </div>
-                        </div>
-                        <div class="detail-item">
-                            <div class="detail-label">Order Date</div>
-                            <div class="detail-value"><?php echo date('M j, Y', strtotime($order['created_at'])); ?></div>
-                        </div>
-                        <?php if ($order['status'] === 'delivered' && !empty($order['delivery_date'])): ?>
-                            <div class="detail-item">
-                                <div class="detail-label">Delivery Date</div>
-                                <div class="detail-value delivery-date">
-                                    <?php echo date('M j, Y g:i A', strtotime($order['delivery_date'])); ?>
-                                </div>
-                            </div>
-                        <?php else: ?>
-                            <div class="detail-item">
-                                <div class="detail-label">Expected Delivery</div>
-                                <div class="detail-value">
-                                    <?php 
-                                    $expectedDelivery = date('M j', strtotime($order['created_at'] . ' +5 days')) . '-' . 
-                                                       date('j, Y', strtotime($order['created_at'] . ' +7 days'));
-                                    echo $expectedDelivery; 
-                                    ?>
-                                </div>
-                            </div>
-                        <?php endif; ?>
-                    </div>
                     
-                    <div class="order-items">
-                        <strong>Items:</strong>
-                        <div class="order-items-list" style="margin-top: 10px;">
-                            <?php if (!empty($order['order_items'])): ?>
-                                <?php foreach ($order['order_items'] as $item): ?>
-                                    <div class="order-item-row" style="display: flex; align-items: center; margin-bottom: 8px; padding: 8px; background: rgba(255, 255, 255, 0.1); border-radius: 6px;">
-                                        <img src="<?php echo htmlspecialchars($item['image_url']); ?>" 
-                                             alt="<?php echo htmlspecialchars($item['product_name']); ?>" 
-                                             style="width: 40px; height: 40px; object-fit: cover; border-radius: 4px; margin-right: 12px; border: 1px solid rgba(255, 215, 54, 0.3);">
-                                        <div style="flex: 1;">
-                                            <div style="color: #F9F9F9; font-weight: 600; font-size: 14px;"><?php echo htmlspecialchars($item['product_name']); ?></div>
-                                            <div style="color: #F9F9F9; opacity: 0.8; font-size: 12px;">Qty: <?php echo $item['quantity']; ?> × ₱<?php echo number_format($item['price'], 2); ?></div>
-                                        </div>
-                                        <div style="color: #FFD736; font-weight: 600; font-size: 14px;">₱<?php echo number_format($item['quantity'] * $item['price'], 2); ?></div>
+                    <div class="order-items-compact">
+                        <?php if (!empty($order['order_items'])): ?>
+                            <?php 
+                            $itemCount = count($order['order_items']);
+                            $displayItems = array_slice($order['order_items'], 0, 2);
+                            ?>
+                            <?php foreach ($displayItems as $item): ?>
+                                <div class="item-compact">
+                                    <img src="<?php echo htmlspecialchars($item['image_url']); ?>" 
+                                         alt="<?php echo htmlspecialchars($item['product_name']); ?>" 
+                                         class="item-thumb">
+                                    <div class="item-details">
+                                        <div class="item-name"><?php echo htmlspecialchars($item['product_name']); ?></div>
+                                        <div class="item-qty">Qty: <?php echo $item['quantity']; ?></div>
                                     </div>
-                                <?php endforeach; ?>
-                            <?php else: ?>
-                                <div style="color: #F9F9F9; opacity: 0.8; font-style: italic;">No items found</div>
+                                    <div class="item-price">₱<?php echo number_format($item['quantity'] * $item['price'], 2); ?></div>
+                                </div>
+                            <?php endforeach; ?>
+                            <?php if ($itemCount > 2): ?>
+                                <div class="more-items">+<?php echo ($itemCount - 2); ?> more items</div>
                             <?php endif; ?>
-                        </div>
+                        <?php endif; ?>
                     </div>
                     
                     <?php if ($order['status'] === 'delivered' && !empty($order['delivery_date'])): ?>
@@ -1359,8 +1440,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="order-actions">
                         <a href="order-confirmation.php?id=<?php echo $order['id']; ?>" class="btn btn-primary">View Details</a>
                         
-                        <?php if ($order['status'] === 'delivered'): ?>
-                            <span class="btn" style="background: #28a745; color: white; cursor: default;">Order Delivered</span>
+                        <?php if ($order['status'] === 'cancelled'): ?>
+                            <!-- No action button for cancelled orders -->
                         <?php elseif (canCustomerCancelOrder($order)): ?>
                             <button type="button" 
                                     class="btn btn-danger btn-cancel-modal" 
@@ -1368,12 +1449,10 @@ document.addEventListener('DOMContentLoaded', () => {
                                     data-order-number="#<?php echo str_pad($order['id'], 6, '0', STR_PAD_LEFT); ?>">
                                 Cancel Order
                             </button>
-                        <?php elseif ($order['status'] === 'cancelled'): ?>
-                            <span class="btn" style="background: #6c757d; color: white; cursor: default;">Order Cancelled</span>
                         <?php else: ?>
-                            <span class="btn" style="background: #17a2b8; color: white; cursor: default;">
-                                <?php echo ucfirst($order['status']); ?>
-                            </span>
+                            <a href="customer-returns.php" class="btn" style="background: #6c757d; color: white; text-decoration: none;">
+                                Return/Refund
+                            </a>
                         <?php endif; ?>
                     </div>
                 </div>
@@ -1384,7 +1463,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 <!-- Delivered Products - Add Reviews Section (Restored & Restyled) -->
 <style>
-.delivered-reviews-wrap { max-width: 1400px; margin: 20px auto 10px auto; padding: 0 20px; }
+.delivered-reviews-wrap { max-width: 1600px; margin: 20px auto 10px auto; padding: 0 20px; }
 .delivered-card { background:#1a0a2e; border:1px solid #2d1b4e; border-radius:14px; overflow:hidden; box-shadow:0 10px 30px rgba(0,0,0,0.35); }
 .delivered-card .header { display:flex; align-items:center; justify-content:space-between; padding:16px 20px; border-bottom:1px solid rgba(255,215,54,0.25); }
 .delivered-card .title { color:#F9F9F9; font-size:18px; font-weight:800; letter-spacing:.3px; }
@@ -1399,8 +1478,8 @@ document.addEventListener('DOMContentLoaded', () => {
 .delivered-meta .price { color:#FFD736; font-weight:800; }
 .delivered-meta .date { color:#bfb8cb; }
 .review-cta { display:flex; align-items:center; gap:10px; }
-.btn-review { background:linear-gradient(135deg,#FFD736,#f0c419); color:#130325; border:2px solid #FFD736; padding:8px 12px; border-radius:10px; font-weight:800; font-size:13px; text-decoration:none; display:inline-flex; align-items:center; gap:8px; }
-.btn-review:hover { transform:translateY(-1px); box-shadow:0 10px 22px rgba(255,215,54,0.35); }
+.btn-review { background:linear-gradient(135deg,#FFD736,#f0c419); color:#130325; border:2px solid #FFD736; padding:10px 16px; border-radius:10px; font-weight:800; font-size:13px; text-decoration:none; display:inline-flex; align-items:center; gap:8px; transition: all 0.3s ease; }
+.btn-review:hover { background:linear-gradient(135deg,#e6c230,#d4b017); border-color:#e6c230; transform:translateY(-2px); box-shadow:0 8px 20px rgba(255,215,54,0.5); color:#130325; text-decoration:none; }
 .badge-reviewed { display:inline-block; padding:6px 10px; border-radius:999px; border:1px solid #28a745; color:#28a745; background:rgba(40,167,69,0.15); font-weight:800; font-size:12px; }
 
 .delivered-list::-webkit-scrollbar { width:8px; }
