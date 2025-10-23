@@ -11,6 +11,16 @@ if (!isLoggedIn()) {
 
 $userId = $_SESSION['user_id'];
 
+// Check if this is a buy now request
+$isBuyNow = isset($_GET['buy_now']) && $_GET['buy_now'] == '1';
+$buyNowItem = null;
+
+if ($isBuyNow && isset($_SESSION['buy_now_item'])) {
+    $buyNowItem = $_SESSION['buy_now_item'];
+    // Clear the buy now session after retrieving it
+    unset($_SESSION['buy_now_item']);
+}
+
 // Load user profile for auto-fill
 $userProfile = null;
 try {
@@ -28,7 +38,46 @@ if (!empty($_GET['selected'])) {
     $selectedIds = array_values(array_filter(array_map('intval', explode(',', $_GET['selected']))));
 }
 
-$groupedItems = getCartItemsGroupedBySeller();
+// If this is a buy now request, create a single-item cart
+if ($isBuyNow && $buyNowItem) {
+    // Get seller info for the buy now item
+    $stmt = $pdo->prepare("SELECT seller_id FROM products WHERE id = ?");
+    $stmt->execute([$buyNowItem['id']]);
+    $sellerId = $stmt->fetchColumn();
+    
+    if ($sellerId) {
+        // Get seller info
+        $stmt = $pdo->prepare("SELECT username, email FROM users WHERE id = ?");
+        $stmt->execute([$sellerId]);
+        $seller = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        // Create single-item group
+        $groupedItems = [
+            $sellerId => [
+                'seller_id' => $sellerId,
+                'seller_name' => $seller['username'] ?? 'Unknown Seller',
+                'seller_display_name' => $seller['username'] ?? 'Unknown Seller',
+                'seller_email' => $seller['email'] ?? '',
+                'items' => [
+                    [
+                        'product_id' => $buyNowItem['id'],
+                        'name' => $buyNowItem['name'],
+                        'price' => $buyNowItem['price'],
+                        'quantity' => $buyNowItem['quantity'],
+                        'image_url' => $buyNowItem['image_url'],
+                        'seller_id' => $sellerId
+                    ]
+                ],
+                'subtotal' => $buyNowItem['total'],
+                'item_count' => $buyNowItem['quantity']
+            ]
+        ];
+    } else {
+        $groupedItems = [];
+    }
+} else {
+    $groupedItems = getCartItemsGroupedBySeller();
+}
 if (!empty($selectedIds)) {
     // Filter items to selected product IDs only, recompute subtotals and item counts
     foreach ($groupedItems as $sid => &$sg) {
