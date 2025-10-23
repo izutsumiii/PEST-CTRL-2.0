@@ -1,5 +1,15 @@
 <?php
 // ajax/add-to-cart.php
+// Turn off error display for JSON requests
+error_reporting(0);
+ini_set('display_errors', 0);
+ini_set('log_errors', 0);
+
+// Clear any previous output
+while (ob_get_level()) {
+    ob_end_clean();
+}
+
 session_start();
 require_once '../config/database.php';
 require_once '../includes/functions.php';

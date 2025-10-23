@@ -1,0 +1,21 @@
+[33mbf8186d[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m HEAD@{0}: pull origin main: Fast-forward
+[33m2c5e524[m HEAD@{1}: commit: added return/refund for seller and cx - must edit
+[33ma5b0f32[m HEAD@{2}: Branch: renamed refs/heads/main to refs/heads/main
+[33ma5b0f32[m HEAD@{4}: rebase (abort): returning to refs/heads/main
+[33mf7c1a3f[m HEAD@{5}: pull origin main --rebase (start): checkout f7c1a3f9e9db4ca2b0d221d85a6491431f0160b8
+[33ma5b0f32[m HEAD@{6}: Branch: renamed refs/heads/main to refs/heads/main
+[33ma5b0f32[m HEAD@{8}: commit: pest-ctrl ver 1.8
+[33m42b7059[m HEAD@{9}: commit: init commit - pest-ctrl ver 1.8
+[33m14371aa[m HEAD@{10}: checkout: moving from main to main
+[33m14371aa[m HEAD@{11}: commit: ver 1.8
+[33m6e6c36f[m HEAD@{12}: commit: Fix merge conflicts and remove API keys from config
+[33m952752c[m[33m ([m[1;32mnew-version[m[33m)[m HEAD@{13}: checkout: moving from main_2 to main
+[33m4608bcd[m[33m ([m[1;32mmain_2[m[33m)[m HEAD@{14}: commit: VER 1.8 - Clean project files
+[33m5526efb[m HEAD@{15}: commit: ver 1.8
+[33m952752c[m[33m ([m[1;32mnew-version[m[33m)[m HEAD@{16}: checkout: moving from new-version to main_2
+[33m952752c[m[33m ([m[1;32mnew-version[m[33m)[m HEAD@{17}: checkout: moving from main to new-version
+[33m952752c[m[33m ([m[1;32mnew-version[m[33m)[m HEAD@{18}: commit: ver 1.8 - add pk and sk in config
+[33m007e99b[m HEAD@{19}: commit: ver 1.8 - add sk and pk in config
+[33m1d67cc6[m HEAD@{20}: commit (merge): ver 1.8
+[33mb8561ed[m HEAD@{21}: Branch: renamed refs/heads/master to refs/heads/main
+[33mb8561ed[m HEAD@{23}: commit (initial): pest ctrl ver 1.8 - admin needs minor editing

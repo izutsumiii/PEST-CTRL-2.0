@@ -92,7 +92,7 @@ if (!function_exists('resolveProductImageUrl')) {
 
 /* Body background - Light like index.php */
 body {
-    background: #f8f9fa;
+    background: #f0f2f5;
     min-height: 100vh;
     color: #130325;
     margin: 0;
@@ -205,7 +205,6 @@ body {
     right: 15px !important;
     background: rgba(255, 215, 54, 0.15) !important;
     padding: 8px 12px !important;
-    border-radius: 25px !important;
     border: 1px solid rgba(255, 215, 54, 0.4) !important;
     display: flex !important;
     align-items: center !important;
@@ -290,6 +289,60 @@ body {
     margin-top: auto !important;
 }
 
+.cart-actions {
+    display: flex !important;
+    gap: 8px !important;
+    align-items: center !important;
+}
+
+.btn-cart-icon {
+    background: #FFD736 !important;
+    color: #130325 !important;
+    border: 2px solid #130325 !important;
+    padding: 6px !important;
+    cursor: pointer !important;
+    font-size: 12px !important;
+    width: 32px !important;
+    height: 32px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    transition: all 0.3s ease !important;
+    flex-shrink: 0 !important;
+}
+
+.btn-cart-icon:hover {
+    background: #130325 !important;
+    color: #FFD736 !important;
+    transform: translateY(-2px) !important;
+}
+
+.btn-buy-now {
+    background: #130325 !important;
+    color: white !important;
+    border: 2px solid #FFD736 !important;
+    padding: 6px 12px !important;
+    cursor: pointer !important;
+    font-size: 0.8rem !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
+    transition: all 0.3s ease !important;
+    text-decoration: none !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+    flex: 1 !important;
+    height: 32px !important;
+}
+
+.btn-buy-now:hover {
+    background: #FFD736 !important;
+    color: #130325 !important;
+    transform: translateY(-2px) !important;
+}
+
 /* Buttons - EXACT MATCH */
 .btn {
     padding: 12px 20px !important;
@@ -311,7 +364,7 @@ body {
 .btn-details {
     background: #130325 !important;
     color: #ffffff !important;
-    border: 2px solid #FFD736 !important;
+    border: 2px solid #130325 !important;
 }
 
 .btn-details:hover {
@@ -336,11 +389,10 @@ body {
     background: transparent;
     border: none;
     border-radius: 0;
-    padding: 20px;
+    padding: 10px;
     margin: 80px 0 20px -20px;
     box-shadow: none;
     color: #130325;
-    border-right: 4px solid #d0d0d0;
     grid-column: 1;
     grid-row: 1;
     max-width: 300px;
@@ -362,8 +414,8 @@ body {
 }
 
 .filter-group {
-    margin-bottom: 20px;
-    padding-bottom: 15px;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
     border-bottom: 1px solid rgba(255, 215, 54, 0.1);
 }
 
@@ -381,9 +433,9 @@ body {
 .filter-group select,
 .filter-group input[type="number"] {
     width: 100%;
-    padding: 8px 12px;
+    padding: 6px 10px;
     border: 1px solid rgba(255, 215, 54, 0.3);
-    border-radius: 6px;
+    border-radius: 0;
     background: rgba(26, 10, 46, 0.4);
     color: #130325;
     font-size: 0.8rem;
@@ -413,8 +465,8 @@ body {
 
 .rating-filter {
     background: rgba(255, 215, 54, 0.05);
-    padding: 10px;
-    border-radius: 6px;
+    padding: 8px;
+    border-radius: 0;
 }
 
 .rating-options label {
@@ -463,40 +515,88 @@ body {
     margin-top: 20px;
 }
 
-.filter-actions button {
-    background: #FFD736;
-    color: #130325;
+.filter-actions button,
+.filter-group button {
+    background: #130325;
+    color: white;
     border: none;
-    padding: 12px 20px;
-    border-radius: 8px;
-    font-size: 0.95rem;
+    padding: 8px 16px;
+    border-radius: 0;
+    font-size: 0.9rem;
     font-weight: 700;
     cursor: pointer;
     text-transform: uppercase;
     transition: all 0.3s ease;
 }
 
-.filter-actions button:hover {
-    background: #e6c230;
+.filter-actions button:hover,
+.filter-group button:hover {
+    background: #FFD736;
+    color: #130325;
     transform: translateY(-2px);
 }
 
 .clear-filters {
     text-align: center;
-    color: #dc3545;
+    color: white;
     text-decoration: none;
-    font-size: 0.8rem;
-    padding: 10px;
-    border: 1px solid #dc3545;
-    border-radius: 8px;
-    font-weight: 600;
+    font-size: 0.9rem;
+    padding: 8px 16px;
+    border: none;
+    border-radius: 0;
+    background: #130325;
+    font-weight: 700;
+    text-transform: uppercase;
     transition: all 0.3s ease;
+    display: block;
 }
 
 .clear-filters:hover {
     background: #dc3545;
     color: #130325;
     transform: translateY(-2px);
+}
+
+/* Sorting Container */
+.sorting-container {
+    background: #f0f2f5;
+    padding: 15px 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 8px rgba(19, 3, 37, 0.1);
+}
+
+.sorting-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.sort-label {
+    color: #130325;
+    font-weight: 700;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    margin: 0;
+}
+
+.sort-select,
+.order-select {
+    background: #130325;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 0;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    min-width: 120px;
+}
+
+.sort-select:focus,
+.order-select:focus {
+    outline: none;
+    background: #FFD736;
+    color: #130325;
 }
 
 /* Category Tree */
@@ -517,7 +617,7 @@ body {
     font-size: 12px;
     width: 20px;
     display: inline-block;
-    color: #FFD736;
+    color: #130325;
     user-select: none;
 }
 
@@ -530,13 +630,14 @@ body {
     display: flex;
     align-items: center;
     gap: 5px;
-    font-size: 0.85rem;
+    font-size: 0.75rem;
     color: #130325;
 }
 
 .category-name {
     color: #130325;
     font-weight: 500;
+    font-size: 0.8rem;
 }
 
 /* Compare Bar - EXACT MATCH TO INDEX.PHP */
@@ -546,11 +647,11 @@ body {
     bottom: 0;
     left: 0;
     right: 0;
-    background: linear-gradient(135deg, #130325, #2a0a4a);
-    box-shadow: 0 -5px 20px rgba(0, 0, 0, 0.5);
+    background: #FFD736;
+    box-shadow: 0 -5px 20px rgba(0, 0, 0, 0.3);
     z-index: 1000;
     padding: 20px;
-    border-top: 3px solid #FFD736;
+    border-top: 3px solid #130325;
 }
 
 .compare-content {
@@ -564,7 +665,7 @@ body {
 
 .compare-content h4 {
     margin: 0;
-    color: #130325;
+    color: #ffffff;
     font-size: 1.1rem;
     font-weight: 700;
 }
@@ -582,7 +683,6 @@ body {
     gap: 10px;
     background: rgba(255, 215, 54, 0.15);
     padding: 10px 15px;
-    border-radius: 25px;
     border: 2px solid #FFD736;
 }
 
@@ -590,11 +690,10 @@ body {
     width: 35px;
     height: 35px;
     object-fit: cover;
-    border-radius: 6px;
 }
 
 .compare-item span {
-    color: #130325;
+    color: #ffffff;
     max-width: 150px;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -628,24 +727,37 @@ body {
 }
 
 .btn-compare {
-    background: #FFD736;
-    color: #130325;
+    background: #FFD736 !important;
+    color: #130325 !important;
     font-weight: 700;
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+    padding: 10px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s ease;
 }
 
 .btn-compare:hover:not(:disabled) {
-    background: #e6c230;
+    background: #e6c230 !important;
+    color: #130325 !important;
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+    transform: translateY(-1px);
 }
 
 .btn-compare:disabled {
     background: #6c757d;
     opacity: 0.5;
     cursor: not-allowed;
+    transform: none;
 }
 
 .btn-clear {
     background: #dc3545;
-    color: #130325;
+    color: #130325 !important;
 }
 
 .btn-clear:hover {
@@ -791,6 +903,7 @@ body {
                     <span>to</span>
                     <input type="number" name="max_price" placeholder="Max" value="<?php echo $maxPrice; ?>" step="0.01" min="0">
                 </div>
+                <button type="submit" style="width: 100%; margin-top: 10px;">Apply</button>
             </div>
             
             <div class="filter-group">
@@ -816,50 +929,44 @@ body {
                 </div>
             </div>
             
-            <div class="filter-group">
-                <h3>Number of Reviews</h3>
-                <select name="min_reviews">
-                    <option value="0" <?php echo $minReviews == 0 ? 'selected' : ''; ?>>Any Number</option>
-                    <option value="1" <?php echo $minReviews == 1 ? 'selected' : ''; ?>>1+ Reviews</option>
-                    <option value="5" <?php echo $minReviews == 5 ? 'selected' : ''; ?>>5+ Reviews</option>
-                    <option value="10" <?php echo $minReviews == 10 ? 'selected' : ''; ?>>10+ Reviews</option>
-                    <option value="20" <?php echo $minReviews == 20 ? 'selected' : ''; ?>>20+ Reviews</option>
-                    <option value="50" <?php echo $minReviews == 50 ? 'selected' : ''; ?>>50+ Reviews</option>
-                </select>
-            </div>
             
-            <div class="filter-group">
-                <h3>Availability</h3>
-                <label>
-                    <input type="checkbox" name="in_stock" <?php echo $inStock ? 'checked' : ''; ?>>
-                    In Stock Only
-                </label>
-            </div>
-            
-            <div class="filter-group">
-                <h3>Sort By</h3>
-                <select name="sort">
-                    <option value="created_at" <?php echo $sort == 'created_at' ? 'selected' : ''; ?>>Newest</option>
-                    <option value="price" <?php echo $sort == 'price' ? 'selected' : ''; ?>>Price</option>
-                    <option value="name" <?php echo $sort == 'name' ? 'selected' : ''; ?>>Name</option>
-                    <option value="rating" <?php echo $sort == 'rating' ? 'selected' : ''; ?>>Rating</option>
-                    <option value="review_count" <?php echo $sort == 'review_count' ? 'selected' : ''; ?>>Most Reviews</option>
-                </select>
-                <select name="order" style="margin-top: 10px;">
-                    <option value="DESC" <?php echo $order == 'DESC' ? 'selected' : ''; ?>>Descending</option>
-                    <option value="ASC" <?php echo $order == 'ASC' ? 'selected' : ''; ?>>Ascending</option>
-                </select>
-            </div>
             
             <div class="filter-actions">
-                <button type="submit">Apply Filters</button>
-                <a href="products.php" class="clear-filters">Clear All</a>
+                <a href="products.php" class="clear-filters">CLEAR ALL</a>
             </div>
         </form>
     </div>
     
     <!-- Products Main -->
     <div class="products-main">
+        <!-- Sorting Container -->
+        <div class="sorting-container">
+            <form method="GET" class="sorting-form">
+                <input type="hidden" name="search" value="<?php echo htmlspecialchars($search); ?>">
+                <input type="hidden" name="categories" value="<?php echo htmlspecialchars(implode(',', $selectedCategories)); ?>">
+                <input type="hidden" name="min_price" value="<?php echo $minPrice; ?>">
+                <input type="hidden" name="max_price" value="<?php echo $maxPrice; ?>">
+                <input type="hidden" name="min_rating" value="<?php echo $minRating; ?>">
+                <input type="hidden" name="min_reviews" value="<?php echo $minReviews; ?>">
+                <input type="hidden" name="in_stock" value="<?php echo $inStock ? '1' : ''; ?>">
+                
+                <div class="sorting-wrapper">
+                    <label class="sort-label">SORT BY</label>
+                    <select name="sort" class="sort-select" onchange="this.form.submit()">
+                        <option value="created_at" <?php echo $sort == 'created_at' ? 'selected' : ''; ?>>Newest</option>
+                        <option value="price" <?php echo $sort == 'price' ? 'selected' : ''; ?>>Price</option>
+                        <option value="name" <?php echo $sort == 'name' ? 'selected' : ''; ?>>Name</option>
+                        <option value="rating" <?php echo $sort == 'rating' ? 'selected' : ''; ?>>Rating</option>
+                        <option value="review_count" <?php echo $sort == 'review_count' ? 'selected' : ''; ?>>Most Reviews</option>
+                    </select>
+                    <select name="order" class="order-select" onchange="this.form.submit()">
+                        <option value="DESC" <?php echo $order == 'DESC' ? 'selected' : ''; ?>>Descending</option>
+                        <option value="ASC" <?php echo $order == 'ASC' ? 'selected' : ''; ?>>Ascending</option>
+                    </select>
+                </div>
+            </form>
+        </div>
+        
         <div class="products-list">
             <?php if ($search !== ''): ?>
                 <h2>Search Results (<?php echo count($products); ?> found)</h2>
@@ -926,11 +1033,19 @@ body {
                                    class="btn btn-details">
                                     <i class="fas fa-eye"></i> View Details
                                 </a>
-                                <button onclick="addToCart(<?php echo $product['id']; ?>, 1)" 
-                                        class="btn btn-cart" 
-                                        data-product-id="<?php echo $product['id']; ?>">
-                                    <i class="fas fa-shopping-cart"></i> Add to Cart
-                                </button>
+                                <div class="cart-actions">
+                                    <button onclick="addToCart(<?php echo $product['id']; ?>, 1)" 
+                                            class="btn-cart-icon" 
+                                            data-product-id="<?php echo $product['id']; ?>"
+                                            title="Add to Cart">
+                                        <i class="fas fa-shopping-cart"></i>
+                                    </button>
+                                    <button onclick="handleBuyNow(<?php echo $product['id']; ?>, 1)" 
+                                            class="btn btn-buy-now" 
+                                            data-product-id="<?php echo $product['id']; ?>">
+                                        Buy Now
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     <?php endforeach; ?>
@@ -1085,6 +1200,12 @@ function compareSelected() {
     }
     const productIds = compareProducts.map(p => p.id).join(',');
     window.location.href = `compare.php?products=${productIds}`;
+}
+
+function handleBuyNow(productId, quantity = 1) {
+    // Add to cart and redirect to checkout
+    addToCart(productId, quantity);
+    window.location.href = 'cart.php';
 }
 
 document.addEventListener('DOMContentLoaded', function() {

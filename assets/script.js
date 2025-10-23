@@ -2,8 +2,8 @@
 function addToCart(productId, quantity = 1) {
     // Show loading state
     const button = document.querySelector(`button[data-product-id="${productId}"]`);
-    const originalText = button.textContent;
-    button.textContent = 'Adding...';
+    const originalHTML = button.innerHTML;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
     button.disabled = true;
     
     // Make AJAX request to add item to cart
@@ -28,23 +28,20 @@ function addToCart(productId, quantity = 1) {
                 updateCartNotification(data.cartCount);
             }
             
-            // Temporarily change button text
-            button.textContent = '✓ Added';
-            setTimeout(() => {
-                button.textContent = originalText;
-                button.disabled = false;
-            }, 2000);
+            // Keep the original cart icon, no text change
+            button.innerHTML = originalHTML;
+            button.disabled = false;
         } else {
             // Show error notification
             showNotification(data.message || 'Error adding to cart', 'error');
-            button.textContent = originalText;
+            button.innerHTML = originalHTML;
             button.disabled = false;
         }
     })
     .catch(error => {
         console.error('Error:', error);
         showNotification('Error adding to cart', 'error');
-        button.textContent = originalText;
+        button.innerHTML = originalHTML;
         button.disabled = false;
     });
 }
@@ -90,16 +87,59 @@ function updateCartNotification(count) {
 }
 
 function loadCartCount() {
+    // Try fetch first
     fetch('ajax/cart-handler.php?action=get_count')
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
     .then(data => {
         const count = data && data.success ? data.count : 0;
         updateCartNotification(count);
     })
     .catch(error => {
-        console.error('Error loading cart count:', error);
-        updateCartNotification(0);
+        console.warn('Cart count fetch failed (likely antivirus interference):', error.message);
+        // Fallback: try XMLHttpRequest
+        tryXMLHttpRequest();
     });
+}
+
+function tryXMLHttpRequest() {
+    const xhr = new XMLHttpRequest();
+    xhr.open('GET', 'ajax/cart-handler.php?action=get_count', true);
+    xhr.timeout = 5000; // 5 second timeout
+    
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState === 4) {
+            if (xhr.status === 200) {
+                try {
+                    const data = JSON.parse(xhr.responseText);
+                    const count = data && data.success ? data.count : 0;
+                    updateCartNotification(count);
+                } catch (e) {
+                    console.warn('Failed to parse cart count response');
+                    updateCartNotification(0);
+                }
+            } else {
+                console.warn('XMLHttpRequest failed, setting cart count to 0');
+                updateCartNotification(0);
+            }
+        }
+    };
+    
+    xhr.ontimeout = function() {
+        console.warn('Cart count request timed out');
+        updateCartNotification(0);
+    };
+    
+    xhr.onerror = function() {
+        console.warn('XMLHttpRequest error, setting cart count to 0');
+        updateCartNotification(0);
+    };
+    
+    xhr.send();
 }
 
 // Updated Buy now function - creates separate buy now session

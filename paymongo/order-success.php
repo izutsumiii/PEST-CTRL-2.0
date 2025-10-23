@@ -1,29 +1,46 @@
 <?php
 require_once '../config/database.php';
 require_once '../includes/functions.php';
+require_once '../includes/header.php';
 
+$orderId = isset($_GET['order_id']) ? (int)$_GET['order_id'] : 0;
 $transactionId = isset($_GET['transaction_id']) ? (int)$_GET['transaction_id'] : 0;
 
-if ($transactionId <= 0) {
+if ($orderId <= 0 && $transactionId <= 0) {
     header("Location: ../products.php");
     exit();
 }
 
 try {
-    // Get payment transaction details
-    $stmt = $pdo->prepare("SELECT * FROM payment_transactions WHERE id = ?");
-    $stmt->execute([$transactionId]);
-    $transaction = $stmt->fetch(PDO::FETCH_ASSOC);
-    
-    if (!$transaction) {
-        header("Location: ../products.php");
-        exit();
+    // Get order details - either by order_id or transaction_id
+    if ($orderId > 0) {
+        // Single order lookup
+        $stmt = $pdo->prepare("SELECT * FROM orders WHERE id = ?");
+        $stmt->execute([$orderId]);
+        $order = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        // Get transaction details if available
+        $transaction = null;
+        if ($order && $order['payment_transaction_id']) {
+            $stmt = $pdo->prepare("SELECT * FROM payment_transactions WHERE id = ?");
+            $stmt->execute([$order['payment_transaction_id']]);
+            $transaction = $stmt->fetch(PDO::FETCH_ASSOC);
+        }
+    } else {
+        // Multi-seller order lookup by transaction_id
+        $stmt = $pdo->prepare("SELECT * FROM payment_transactions WHERE id = ?");
+        $stmt->execute([$transactionId]);
+        $transaction = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if (!$transaction) {
+            header("Location: ../products.php");
+            exit();
+        }
+        
+        $stmt = $pdo->prepare("SELECT * FROM orders WHERE payment_transaction_id = ? LIMIT 1");
+        $stmt->execute([$transactionId]);
+        $order = $stmt->fetch(PDO::FETCH_ASSOC);
     }
-    
-    // Get order details from the transaction
-    $stmt = $pdo->prepare("SELECT * FROM orders WHERE payment_transaction_id = ?");
-    $stmt->execute([$transactionId]);
-    $order = $stmt->fetch(PDO::FETCH_ASSOC);
     
     if (!$order) {
         header("Location: ../products.php");
@@ -38,20 +55,32 @@ try {
     $stmt->execute([$order['id']]);
     $orderItems = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
-    // Get customer info
-    $customerName = $transaction['customer_name'] ?? '';
-    $customerEmail = $transaction['customer_email'] ?? '';
-    $paymentMethod = $transaction['payment_method'] ?? '';
-    $totalAmount = $transaction['total_amount'] ?? 0;
+    // Get customer info - from transaction if available, otherwise from order
+    if ($transaction) {
+        $customerName = $transaction['customer_name'] ?? '';
+        $customerEmail = $transaction['customer_email'] ?? '';
+        $paymentMethod = $transaction['payment_method'] ?? '';
+        $totalAmount = $transaction['total_amount'] ?? 0;
+    } else {
+        // Get customer info from order
+        $stmt = $pdo->prepare("SELECT first_name, last_name, email FROM users WHERE id = ?");
+        $stmt->execute([$order['user_id']]);
+        $customer = $stmt->fetch(PDO::FETCH_ASSOC);
+        $customerName = ($customer['first_name'] ?? '') . ' ' . ($customer['last_name'] ?? '');
+        $customerEmail = $customer['email'] ?? '';
+        $paymentMethod = $order['payment_method'] ?? '';
+        $totalAmount = $order['total_amount'] ?? 0;
+    }
     
     // Format payment method display
     $paymentMethodLabels = [
         'card' => 'Debit/Credit Card',
         'gcash' => 'GCash',
+        'cod' => 'Cash on Delivery',
+        'cash_on_delivery' => 'Cash on Delivery',
         'paymaya' => 'PayMaya',
         'grab_pay' => 'GrabPay',
-        'billease' => 'Billease',
-        'cod' => 'Cash on Delivery (COD)'
+        'billease' => 'Billease'
     ];
     $paymentMethodDisplay = $paymentMethodLabels[$paymentMethod] ?? $paymentMethod;
     

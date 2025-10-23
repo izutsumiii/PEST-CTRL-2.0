@@ -367,6 +367,160 @@ require_once 'functions.php';
             color: #FFD736;
         }
         
+        /* Seller Notifications */
+        .seller-notifications {
+            position: relative;
+            margin-right: 15px;
+        }
+        
+        .notification-bell {
+            position: relative;
+            background: none;
+            border: none;
+            padding: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .notification-bell:hover {
+            transform: scale(1.1);
+        }
+        
+        .notification-bell i {
+            color: #FFD736;
+            font-size: 16px;
+        }
+        
+        .notification-badge {
+            background: #dc3545;
+            color: white;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: bold;
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            min-width: 18px;
+        }
+        
+        .notification-badge.hidden {
+            display: none;
+        }
+        
+        .notification-dropdown {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+            width: 350px;
+            max-height: 400px;
+            z-index: 1000;
+            display: none;
+            overflow: hidden;
+        }
+        
+        .notification-dropdown.show {
+            display: block;
+        }
+        
+        .notification-header {
+            padding: 15px;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .notification-header h6 {
+            margin: 0;
+            color: #1f2937;
+            font-weight: 600;
+        }
+        
+        .mark-all-read {
+            background: none;
+            border: none;
+            color: #FFD736;
+            font-size: 12px;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+        }
+        
+        .mark-all-read:hover {
+            background: rgba(255, 215, 54, 0.1);
+        }
+        
+        .notification-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .notification-item {
+            padding: 12px 15px;
+            border-bottom: 1px solid #f3f4f6;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .notification-item:hover {
+            background: #f9fafb;
+        }
+        
+        .notification-item.unread {
+            background: #fef3c7;
+            border-left: 3px solid #f59e0b;
+        }
+        
+        .notification-item i {
+            color: #6b7280;
+            margin-top: 2px;
+            font-size: 14px;
+        }
+        
+        .notification-content {
+            flex: 1;
+        }
+        
+        .notification-title {
+            font-weight: 600;
+            color: #1f2937;
+            font-size: 13px;
+            margin-bottom: 4px;
+        }
+        
+        .notification-message {
+            color: #6b7280;
+            font-size: 12px;
+            line-height: 1.4;
+        }
+        
+        .notification-time {
+            color: #9ca3af;
+            font-size: 11px;
+            margin-top: 4px;
+        }
+        
+        .notification-type-info i { color: #17a2b8; }
+        .notification-type-warning i { color: #ffc107; }
+        .notification-type-success i { color: #28a745; }
+        .notification-type-error i { color: #dc3545; }
+        
         .header-user-avatar {
             width: 32px;
             height: 32px;
@@ -418,7 +572,7 @@ require_once 'functions.php';
         /* Main content offset */
         main {
             margin-left: var(--sidebar-width);
-            margin-top: 60px;
+            margin-top: 20px;
             transition: all 0.3s ease;
         }
 
@@ -438,6 +592,28 @@ require_once 'functions.php';
         
         <?php if (isLoggedIn() && isSeller()): ?>
         <div class="header-right">
+            <!-- Seller Notifications -->
+            <div class="seller-notifications">
+                <div class="notification-bell" onclick="toggleSellerNotifications()">
+                    <i class="fas fa-bell"></i>
+                    <span class="notification-badge" id="sellerNotificationBadge">0</span>
+                </div>
+                <div class="notification-dropdown" id="sellerNotificationDropdown">
+                    <div class="notification-header">
+                        <h6>Notifications</h6>
+                    </div>
+                    <div class="notification-list" id="sellerNotificationList">
+                        <div class="notification-item">
+                            <i class="fas fa-spinner fa-spin"></i>
+                            <span style="color: #1f2937;">Loading notifications...</span>
+                        </div>
+                    </div>
+                    <div class="notification-footer" style="text-align: center; padding: 10px; border-top: 1px solid #e5e7eb;">
+                        <a href="seller-notifications.php" style="color: #1f2937; text-decoration: none; font-size: 12px;">See All</a>
+                    </div>
+                </div>
+            </div>
+            
             <div class="header-user">
                 <div class="header-user-info" onclick="toggleHeaderDropdown()">
                     <div class="header-user-avatar"><?php echo strtoupper(substr($_SESSION['username'], 0, 1)); ?></div>
@@ -594,7 +770,124 @@ require_once 'functions.php';
                 sidebar.classList.add('collapsed');
                 main.style.marginLeft = '70px';
             }
+            
+            // Load seller notifications on page load
+            loadSellerNotifications();
+        });
+
+        // Seller Notification Functions
+        function toggleSellerNotifications() {
+            const dropdown = document.getElementById('sellerNotificationDropdown');
+            const isVisible = dropdown.classList.contains('show');
+            
+            // Close other dropdowns
+            document.getElementById('headerDropdown').classList.remove('show');
+            
+            if (isVisible) {
+                dropdown.classList.remove('show');
+            } else {
+                dropdown.classList.add('show');
+                loadSellerNotifications();
+            }
+        }
+
+        function loadSellerNotifications() {
+            fetch('ajax/get-seller-notifications.php')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        updateSellerNotificationBadge(data.unreadCount);
+                        displaySellerNotifications(data.notifications);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading notifications:', error);
+                });
+        }
+
+        function updateSellerNotificationBadge(count) {
+            const badge = document.getElementById('sellerNotificationBadge');
+            if (count > 0) {
+                badge.textContent = count;
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+        }
+
+        function displaySellerNotifications(notifications) {
+            const list = document.getElementById('sellerNotificationList');
+            
+            if (notifications.length === 0) {
+                list.innerHTML = '<div class="notification-item"><span>No notifications</span></div>';
+                return;
+            }
+            
+            list.innerHTML = notifications.map(notification => `
+                <div class="notification-item ${!notification.is_read ? 'unread' : ''}" 
+                     onclick="markSellerNotificationAsRead(${notification.id})">
+                    <i class="fas fa-${getNotificationIcon(notification.type)} notification-type-${notification.type}"></i>
+                    <div class="notification-content">
+                        <div class="notification-title">${notification.title}</div>
+                        <div class="notification-message">${notification.message}</div>
+                        <div class="notification-time">${formatTime(notification.created_at)}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function markSellerNotificationAsRead(notificationId) {
+            fetch('ajax/mark-seller-notification-read.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ notification_id: notificationId })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    loadSellerNotifications(); // Reload to update badge
+                }
+            })
+            .catch(error => {
+                console.error('Error marking notification as read:', error);
+            });
+        }
+
+
+        function getNotificationIcon(type) {
+            switch(type) {
+                case 'warning': return 'exclamation-triangle';
+                case 'success': return 'check-circle';
+                case 'error': return 'times-circle';
+                default: return 'info-circle';
+            }
+        }
+
+        function formatTime(timestamp) {
+            const date = new Date(timestamp);
+            const now = new Date();
+            const diff = now - date;
+            
+            if (diff < 60000) return 'Just now';
+            if (diff < 3600000) return Math.floor(diff / 60000) + 'm ago';
+            if (diff < 86400000) return Math.floor(diff / 3600000) + 'h ago';
+            return Math.floor(diff / 86400000) + 'd ago';
+        }
+
+        // Close notification dropdown when clicking outside
+        document.addEventListener('click', function(event) {
+            const notifications = document.querySelector('.seller-notifications');
+            const dropdown = document.getElementById('sellerNotificationDropdown');
+            
+            if (notifications && !notifications.contains(event.target)) {
+                dropdown.classList.remove('show');
+            }
         });
     </script>
+    
+    <!-- Bootstrap JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
     <main>

@@ -335,6 +335,7 @@ h1 { color:#F9F9F9 !important; font-family:var(--font-primary) !important; font-
 
 .actions-cell {
     min-width: 200px;
+    text-align: center;
 }
 
 .grace-period-timer {
@@ -364,6 +365,7 @@ h1 { color:#F9F9F9 !important; font-family:var(--font-primary) !important; font-
     display: flex;
     flex-direction: row;
     align-items: center;
+    justify-content: center;
     gap: 8px;
 }
 

@@ -69,82 +69,140 @@ foreach ($orderItems as $item) {
 ?>
 
 <style>
-/* Order Confirmation Page Styles - Matching Website Theme */
+/* Order Confirmation Page Styles - Clean and Modern */
 body {
-    background: #130325 !important;
+    background: #f8f9fa !important;
     margin: 0;
     padding: 0;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
 main {
-    background: #130325;
+    background: #f8f9fa;
     min-height: 100vh;
-    padding: 120px 20px 60px 20px;
+    padding: 80px 0 60px 0;
+}
+
+.page-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin: 0 60px 20px 60px;
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.header-right {
+    display: flex;
+    align-items: center;
+}
+
+.back-arrow {
+    color: #130325;
+    text-decoration: none;
+    font-size: 1.8rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.back-arrow:hover {
+    color: #FFD736;
 }
 
 h1 {
-    color: #FFD736;
-    text-align: center;
-    margin: 0 0 40px 0;
-    font-size: 2.5rem;
-    font-weight: 700;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    color: #130325;
+    margin: 8px 0 0 0;
+    font-size: 1.5rem;
+    font-weight: 400;
+    text-shadow: none;
 }
 
 .order-confirmation {
-    max-width: 1200px;
-    margin: 0 auto;
-    background: rgba(26, 10, 46, 0.95);
-    border: 2px solid #FFD736;
-    border-radius: 15px;
-    box-shadow: 0 10px 40px rgba(255, 215, 54, 0.2);
+    max-width: 1400px;
+    margin: 0 60px;
+    background: #ffffff;
+    border: 1px solid rgba(0,0,0,0.1);
+    border-radius: 8px;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
     overflow: hidden;
 }
 
-.order-details, .customer-details, .order-items, .order-support {
-    padding: 30px 40px;
-    border-bottom: 1px solid rgba(255, 215, 54, 0.3);
-    background: rgba(255, 255, 255, 0.05);
+.order-card {
+    padding: 25px;
+    border-bottom: 1px solid rgba(0,0,0,0.1);
+    background: #ffffff;
 }
 
-
-.order-details:last-child, .customer-details:last-child, .order-items:last-child, .order-support:last-child {
+.order-card:last-child {
     border-bottom: none;
 }
 
-.order-details h3, .customer-details h3, .order-items h3, .order-support h3 {
-    color: #FFD736;
-    margin: 0 0 25px 0;
-    font-size: 1.5rem;
-    font-weight: 600;
+.order-card h3 {
+    color: #130325;
+    margin: 0 0 20px 0;
+    font-size: 1.4rem;
+    font-weight: 700;
     border-bottom: 2px solid #FFD736;
-    padding-bottom: 10px;
+    padding-bottom: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.status-card {
+    background: #130325;
+    padding: 20px 25px;
+    border-bottom: 1px solid rgba(0,0,0,0.1);
+}
+
+.status-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 15px;
+}
+
+.status-title {
+    color: #FFD736;
+    font-size: 1.3rem;
+    font-weight: 700;
+    margin: 0;
+    text-transform: uppercase;
+    letter-spacing: 1px;
 }
 
 .order-info-grid, .customer-info-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 20px;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 15px;
 }
 
 .info-item {
-    background: rgba(255, 215, 54, 0.1);
-    border: 1px solid rgba(255, 215, 54, 0.3);
-    padding: 15px 20px;
-    border-radius: 8px;
-    border-left: 4px solid #FFD736;
+    background: #f8f9fa;
+    border: 1px solid rgba(0,0,0,0.1);
+    padding: 12px 15px;
+    border-radius: 6px;
 }
 
 .info-item strong {
-    color: #FFD736;
-    font-weight: 600;
+    color: #130325;
+    font-weight: 700;
     display: block;
-    margin-bottom: 5px;
+    margin-bottom: 6px;
+    font-size: 1rem;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
 }
 
 .info-item {
-    color: #F9F9F9;
+    color: #130325;
+    font-size: 1rem;
+    font-weight: 500;
 }
 
 .status-badge {
@@ -190,33 +248,33 @@ h1 {
 .order-items-table {
     width: 100%;
     border-collapse: collapse;
-    background: rgba(26, 10, 46, 0.8);
-    border: 1px solid #FFD736;
+    background: #ffffff;
+    border: 1px solid rgba(0,0,0,0.1);
     border-radius: 8px;
     overflow: hidden;
-    box-shadow: 0 2px 10px rgba(255, 215, 54, 0.1);
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
 }
 
 .order-items-table th {
-    background: #130325;
-    color: #FFD736;
+    background: #f8f9fa;
+    color: #130325;
     padding: 15px;
     text-align: left;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    border-bottom: 2px solid #FFD736;
+    border-bottom: 1px solid rgba(0,0,0,0.1);
 }
 
 .order-items-table td {
     padding: 15px;
-    border-bottom: 1px solid rgba(255, 215, 54, 0.2);
+    border-bottom: 1px solid rgba(0,0,0,0.1);
     vertical-align: middle;
-    color: #F9F9F9;
+    color: #130325;
 }
 
 .order-items-table tbody tr:hover {
-    background: rgba(255, 215, 54, 0.1);
+    background: rgba(0,0,0,0.05);
 }
 
 .product-info {
@@ -235,7 +293,7 @@ h1 {
 
 .product-info span {
     font-weight: 600;
-    color: #F9F9F9;
+    color: #130325;
 }
 
 .order-items-table tfoot {
@@ -246,57 +304,181 @@ h1 {
 .order-items-table tfoot td {
     border-bottom: none;
     padding: 20px 15px;
-    color: #FFD736;
+    color: #130325;
 }
 
 .order-actions {
-    padding: 30px 40px;
-    background: rgba(255, 215, 54, 0.1);
+    padding: 25px;
+    background: #ffffff;
     display: flex;
-    gap: 15px;
+    gap: 12px;
     flex-wrap: wrap;
-    justify-content: center;
+    justify-content: flex-end;
+    border-top: 1px solid rgba(0,0,0,0.1);
 }
 
-.back-button, .print-button, .contact-button {
-    padding: 12px 24px;
-    border: 2px solid;
-    border-radius: 8px;
+.action-btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 6px;
     font-weight: 600;
     text-decoration: none;
     cursor: pointer;
     transition: all 0.3s ease;
+    font-size: 0.9rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-cancel {
+    background: #dc3545;
+    color: white;
+}
+
+.btn-cancel:hover {
+    background: #c82333;
+    transform: translateY(-1px);
+}
+
+.btn-buy-again {
+    background: #130325;
+    color: white;
+}
+
+.btn-buy-again:hover {
+    background: #0f0220;
+    transform: translateY(-1px);
+}
+
+.btn-rate {
+    background: #FFD736;
+    color: #130325;
+}
+
+.btn-rate:hover {
+    background: #e6c230;
+    transform: translateY(-1px);
+}
+
+.btn-invoice {
+    background: #6c757d;
+    color: white;
+}
+
+.btn-invoice:hover {
+    background: #5a6268;
+    transform: translateY(-1px);
+}
+
+.btn-return {
+    background: #495057;
+    color: white;
+}
+
+.btn-return:hover {
+    background: #343a40;
+    transform: translateY(-1px);
+}
+
+.btn-return-disabled {
+    background: #6c757d;
+    color: #ffffff;
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.btn-return-disabled:hover {
+    background: #6c757d;
+    transform: none;
+    cursor: not-allowed;
+}
+
+/* Return Expired Popup Styles */
+.return-expired-popup {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10000;
+    backdrop-filter: blur(5px);
+}
+
+.return-expired-content {
+    background: #ffffff;
+    padding: 40px;
+    border-radius: 15px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    max-width: 500px;
+    width: 90%;
+    text-align: center;
+    border: 3px solid #dc3545;
+    animation: popupSlideIn 0.3s ease-out;
+}
+
+@keyframes popupSlideIn {
+    from {
+        opacity: 0;
+        transform: scale(0.8) translateY(-50px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+.return-expired-icon {
+    font-size: 4rem;
+    color: #dc3545;
+    margin-bottom: 20px;
+    animation: shake 0.5s ease-in-out;
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+}
+
+.return-expired-title {
+    color: #dc3545;
+    font-size: 1.8rem;
+    font-weight: 700;
+    margin-bottom: 15px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.return-expired-message {
+    color: #130325;
+    font-size: 1.1rem;
+    line-height: 1.6;
+    margin-bottom: 25px;
+}
+
+.return-expired-button {
+    background: #dc3545;
+    color: white;
+    border: none;
+    padding: 12px 30px;
+    border-radius: 8px;
     font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
-.back-button {
-    background: #130325;
-    color: #FFD736;
-    border-color: #FFD736;
-}
-
-.back-button:hover {
-    background: #FFD736;
-    color: #130325;
+.return-expired-button:hover {
+    background: #c82333;
     transform: translateY(-2px);
-}
-
-.print-button {
-    background: #130325;
-    color: #0dcaf0;
-    border-color: #0dcaf0;
-}
-
-.print-button:hover {
-    background: #0dcaf0;
-    color: #130325;
-    transform: translateY(-2px);
-}
-
-.contact-button {
-    background: #FFD736;
-    color: #130325;
-    border-color: #FFD736;
+    box-shadow: 0 5px 15px rgba(220, 53, 69, 0.4);
 }
 
 .contact-button:hover {
@@ -399,10 +581,28 @@ h1 {
 }
 </style>
 
-<h1>Order Details</h1>
+<div class="page-header">
+    <div class="header-left">
+        <a href="user-dashboard.php" class="back-arrow">
+            <i class="fas fa-arrow-left"></i>
+        </a>
+        <h1>Order Details</h1>
+    </div>
+    <div class="header-right">
+    </div>
+</div>
 
 <div class="order-confirmation">
-    <div class="order-details">
+    <!-- Status Card -->
+    <div class="status-card">
+        <div class="status-header">
+            <h3 class="status-title">Order Status</h3>
+            <span class="status-badge status-<?php echo $order['status']; ?>"><?php echo ucfirst($order['status']); ?></span>
+        </div>
+    </div>
+
+    <!-- Order Details Card -->
+    <div class="order-card">
         <h3>Order Information</h3>
         <div class="order-info-grid">
             <div class="info-item">
@@ -410,9 +610,6 @@ h1 {
             </div>
             <div class="info-item">
                 <strong>Order Date:</strong> <?php echo date('F j, Y, g:i a', strtotime($order['created_at'])); ?>
-            </div>
-            <div class="info-item">
-                <strong>Order Status:</strong> <span class="status-badge status-<?php echo $order['status']; ?>"><?php echo ucfirst($order['status']); ?></span>
             </div>
             <div class="info-item">
                 <strong>Payment Method:</strong> <?php echo ucfirst(str_replace('_', ' ', $order['payment_method'])); ?>
@@ -426,8 +623,9 @@ h1 {
         </div>
     </div>
 
-    <div class="customer-details">
-        <h3>Customer Information</h3>
+    <!-- Customer Details Card -->
+    <div class="order-card">
+        <h3>Delivery Information</h3>
         <div class="customer-info-grid">
             <div class="info-item">
                 <strong>Name:</strong> <?php echo $order['first_name'] . ' ' . $order['last_name']; ?>
@@ -444,7 +642,8 @@ h1 {
         </div>
     </div>
 
-    <div class="order-items">
+    <!-- Order Items Card -->
+    <div class="order-card">
         <h3>Order Items</h3>
         <table class="order-items-table">
             <thead>
@@ -484,20 +683,143 @@ h1 {
     </div>
 
     <div class="order-actions">
-        <a href="user-dashboard.php" class="back-button">Back to Dashboard</a>
-        <button onclick="window.print()" class="print-button">Print Confirmation</button>
+        <button onclick="downloadInvoice()" class="action-btn btn-invoice">
+            <i class="fas fa-download"></i> Download Invoice
+        </button>
         
         <?php if ($order['status'] === 'pending' || $order['status'] === 'processing'): ?>
-            <a href="https://www.facebook.com/kyaajhon1299" target="_blank" class="contact-button">Contact Support</a>
+            <button onclick="cancelOrder(<?php echo $order['id']; ?>)" class="action-btn btn-cancel">
+                <i class="fas fa-times"></i> Cancel Order
+            </button>
+        <?php elseif ($order['status'] === 'delivered'): ?>
+            <button onclick="buyAgain(<?php echo $order['id']; ?>)" class="action-btn btn-buy-again">
+                <i class="fas fa-shopping-cart"></i> Buy Again
+            </button>
+            <?php 
+            // Check if 1 week has passed since delivery
+            $deliveryDate = new DateTime($order['delivery_date'] ?? $order['created_at']);
+            $currentDate = new DateTime();
+            $daysSinceDelivery = $currentDate->diff($deliveryDate)->days;
+            $canReturn = $daysSinceDelivery <= 7;
+            ?>
+            <?php if ($canReturn): ?>
+                <a href="customer-returns.php?order_id=<?php echo $order['id']; ?>" class="action-btn btn-return">
+                    <i class="fas fa-undo"></i> Return/Refund
+                </a>
+            <?php else: ?>
+                <button onclick="showReturnExpiredPopup()" class="action-btn btn-return-disabled" disabled>
+                    <i class="fas fa-undo"></i> Return/Refund
+                </button>
+            <?php endif; ?>
+            <button onclick="rateOrder(<?php echo $order['id']; ?>)" class="action-btn btn-rate">
+                <i class="fas fa-star"></i> Rate Order
+            </button>
         <?php endif; ?>
     </div>
 
-    <div class="order-support">
-        <h3>Need Help?</h3>
-        <p>If you have any questions about your order, please contact our customer support team.</p>
-        <p><a href="https://www.facebook.com/kyaajhon1299" target="_blank" style="color: #FFD736; text-decoration: none; font-weight: 600;">📘 Contact us on Facebook</a> | Email: support@ecommerce.example.com</p>
-    </div>
 </div>
+
+<script>
+function downloadInvoice() {
+    // Create a simple invoice download
+    const orderData = {
+        orderNumber: '<?php echo $order['id']; ?>',
+        date: '<?php echo date('F j, Y, g:i a', strtotime($order['created_at'])); ?>',
+        total: '<?php echo number_format($order['total_amount'], 2); ?>',
+        status: '<?php echo $order['status']; ?>'
+    };
+    
+    // Simple invoice generation (you can enhance this)
+    const invoiceContent = `
+        INVOICE
+        Order #${orderData.orderNumber}
+        Date: ${orderData.date}
+        Status: ${orderData.status}
+        Total: ₱${orderData.total}
+    `;
+    
+    const blob = new Blob([invoiceContent], { type: 'text/plain' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `invoice-${orderData.orderNumber}.txt`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+}
+
+function cancelOrder(orderId) {
+    if (confirm('Are you sure you want to cancel this order?')) {
+        // Redirect to cancel order page or handle via AJAX
+        window.location.href = `cancel-order.php?id=${orderId}`;
+    }
+}
+
+function buyAgain(orderId) {
+    // Redirect to reorder functionality
+    window.location.href = `reorder.php?id=${orderId}`;
+}
+
+function rateOrder(orderId) {
+    // Redirect to rating page
+    window.location.href = `rate-order.php?id=${orderId}`;
+}
+
+function returnRefund(orderId) {
+    if (confirm('Are you sure you want to request a return/refund for this order?')) {
+        // Redirect to return/refund page
+        window.location.href = `return-refund.php?id=${orderId}`;
+    }
+}
+
+function showReturnExpiredPopup() {
+    // Create popup HTML
+    const popupHTML = `
+        <div class="return-expired-popup" id="returnExpiredPopup">
+            <div class="return-expired-content">
+                <div class="return-expired-icon">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <h2 class="return-expired-title">Return Period Expired</h2>
+                <p class="return-expired-message">
+                    Sorry, the return/refund period for this order has expired. 
+                    Returns and refunds are only allowed within 7 days of delivery.
+                </p>
+                <button class="return-expired-button" onclick="closeReturnExpiredPopup()">
+                    I Understand
+                </button>
+            </div>
+        </div>
+    `;
+    
+    // Add popup to body
+    document.body.insertAdjacentHTML('beforeend', popupHTML);
+    
+    // Prevent body scroll
+    document.body.style.overflow = 'hidden';
+    
+    // Close popup when clicking outside
+    document.getElementById('returnExpiredPopup').addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeReturnExpiredPopup();
+        }
+    });
+    
+    // Close popup with Escape key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closeReturnExpiredPopup();
+        }
+    });
+}
+
+function closeReturnExpiredPopup() {
+    const popup = document.getElementById('returnExpiredPopup');
+    if (popup) {
+        popup.remove();
+        document.body.style.overflow = '';
+    }
+}
+</script>
 
 <?php
 // Send confirmation email if this is the first time viewing the confirmation

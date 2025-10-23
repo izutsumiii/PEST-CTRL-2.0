@@ -168,6 +168,32 @@ $pathPrefix = ($currentDir === 'paymongo') ? '../' : '';
             z-index: 1000 !important;
         }
         
+        .notif-badge {
+            position: absolute !important;
+            top: -10px !important;
+            right: -8px !important;
+            background: #FFD736 !important;
+            color: #130325 !important;
+            border-radius: 50% !important;
+            width: 20px !important;
+            height: 20px !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            font-size: 12px !important;
+            font-weight: bold !important;
+            min-width: 20px !important;
+            opacity: 0;
+            transform: scale(0);
+            transition: all 0.3s ease;
+            z-index: 1000 !important;
+        }
+        
+        .notif-badge.show {
+            opacity: 1;
+            transform: scale(1);
+        }
+        
         .cart-notification.show {
             opacity: 1;
             transform: scale(1);
@@ -207,21 +233,91 @@ $pathPrefix = ($currentDir === 'paymongo') ? '../' : '';
             top: 100%;
             right: 0;
             width: 340px;
-            background: #1a0a2e;
-            border: 1px solid #2d1b4e;
+            background: #ffffff;
+            border: 1px solid rgba(0, 0, 0, 0.1);
             border-radius: 10px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
             display: none;
             z-index: 1200;
             padding: 10px;
         }
         
         .notif-popper.show { display: block; }
-        .notif-item-ui { display:flex; gap:10px; padding:10px; border-radius:8px; border:1px solid rgba(255,215,54,0.2); background: rgba(255,215,54,0.06); margin: 6px 0; color:#F9F9F9; text-decoration:none; }
-        .notif-item-ui:hover { background: rgba(255,215,54,0.12); }
+        .notif-item-ui { display:flex; gap:10px; padding:10px; border-radius:8px; border:1px solid rgba(0,0,0,0.1); background: rgba(248,249,250,0.5); margin: 6px 0; color:#130325; text-decoration:none; }
+        .notif-item-ui:hover { background: rgba(248,249,250,0.8); }
         .notif-item-ui .icon { width:28px; height:28px; display:flex; align-items:center; justify-content:center; background: rgba(255,215,54,0.2); color:#FFD736; border-radius:6px; }
-        .notif-header { display:flex; align-items:center; justify-content:space-between; color:#F9F9F9; margin-bottom:6px; }
-        .notif-empty { color:#F9F9F9; opacity:0.9; text-align:center; padding:16px 8px; }
+        .notif-header { display:flex; align-items:center; justify-content:space-between; color:#130325; margin-bottom:6px; }
+        .notif-empty { color:#130325; opacity:0.7; text-align:center; padding:16px 8px; }
+        
+        .clear-all-btn {
+            background: rgba(220, 53, 69, 0.2);
+            border: 1px solid rgba(220, 53, 69, 0.4);
+            color: #dc3545;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .clear-all-btn:hover {
+            background: rgba(220, 53, 69, 0.4);
+            border-color: #dc3545;
+        }
+        
+        .notif-footer {
+            border-top: 1px solid rgba(0, 0, 0, 0.1);
+            padding: 8px 0 0 0;
+            margin-top: 8px;
+            text-align: center;
+        }
+        
+        .see-all-btn {
+            display: block;
+            text-align: center;
+            color: #130325 !important;
+            text-decoration: none;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            background: rgba(248, 249, 250, 0.8) !important;
+            margin: 0 auto;
+            width: fit-content;
+        }
+        
+        .see-all-btn:hover {
+            color: #130325 !important;
+            background: rgba(248, 249, 250, 0.8) !important;
+        }
+        
+        
+        .notif-delete-btn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: rgba(220, 53, 69, 0.2);
+            border: 1px solid rgba(220, 53, 69, 0.4);
+            color: #dc3545;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 10px;
+            transition: all 0.3s ease;
+            z-index: 10;
+        }
+        
+        .notif-delete-btn:hover {
+            background: rgba(220, 53, 69, 0.4);
+            border-color: #dc3545;
+            transform: scale(1.1);
+        }
         
         .cart-link {
             background: none !important;
@@ -255,11 +351,11 @@ $pathPrefix = ($currentDir === 'paymongo') ? '../' : '';
             position: absolute;
             right: 0;
             top: 100%;
-            min-width: 200px;
+            min-width: 220px;
             background: #ffffff;
-            border: 1px solid #e9ecef;
-            border-radius: 8px;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+            border: 1px solid rgba(0,0,0,0.1);
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
             z-index: 1000;
             margin-top: 8px;
             overflow: hidden;
@@ -272,9 +368,11 @@ $pathPrefix = ($currentDir === 'paymongo') ? '../' : '';
         
         .dropdown-item {
             display: block;
-            padding: 12px 16px;
+            padding: 14px 18px;
             color: #130325;
             text-decoration: none;
+            font-weight: 600;
+            font-size: 14px;
             transition: all 0.3s ease;
             border-bottom: 1px solid #f8f9fa;
         }
@@ -495,12 +593,18 @@ $pathPrefix = ($currentDir === 'paymongo') ? '../' : '';
                     <a href="<?php echo $pathPrefix; ?>products.php">Products</a>
                     <div class="notif-bell" id="notifBell" title="Notifications">
                         <i class="fas fa-bell"></i>
+                        <?php if (isLoggedIn()): ?>
+                            <span id="notif-badge" class="notif-badge" style="display: none;">0</span>
+                        <?php endif; ?>
                         <div class="notif-popper" id="notifPopper">
                             <div class="notif-header">
                                 <strong>Notifications</strong>
-                                <a href="<?php echo $pathPrefix; ?>notifications.php" style="color:#FFD736; text-decoration:none; font-size:12px;">See all</a>
+                                <button class="clear-all-btn" onclick="clearAllNotifications()" title="Clear all from view">Clear All</button>
                             </div>
                             <div id="notifList"></div>
+                            <div class="notif-footer">
+                                <a href="<?php echo $pathPrefix; ?>customer-notifications.php" class="see-all-btn">See All</a>
+                            </div>
                         </div>
                     </div>
                     <a href="<?php echo $pathPrefix; ?>cart.php" class="cart-link">
@@ -538,7 +642,7 @@ $pathPrefix = ($currentDir === 'paymongo') ? '../' : '';
                                              <a class="dropdown-item" href="<?php echo $pathPrefix; ?>manage-products.php">Manage Products</a>
                                         <?php else: ?>
                                             <a class="dropdown-item" href="<?php echo $pathPrefix; ?>user-dashboard.php">My Orders</a>
-                                            <a class="dropdown-item" href="<?php echo $pathPrefix; ?>notifications.php">Notifications</a>
+                                            <a class="dropdown-item" href="<?php echo $pathPrefix; ?>customer-notifications.php">Notifications</a>
                                         <?php endif; ?>
                                         <a class="dropdown-item" href="<?php echo $pathPrefix; ?>edit-profile.php">My Account</a>
                                         <a class="dropdown-item" href="<?php echo $pathPrefix; ?>logout.php">Logout</a>
@@ -626,7 +730,7 @@ $pathPrefix = ($currentDir === 'paymongo') ? '../' : '';
                     <a href="<?php echo $pathPrefix; ?>user-dashboard.php">My Orders</a>
                 <?php endif; ?>
                 <a href="<?php echo $pathPrefix; ?>edit-profile.php">Edit Profile</a>
-                <a href="<?php echo $pathPrefix; ?>notifications.php">Notifications</a>
+                <a href="<?php echo $pathPrefix; ?>customer-notifications.php">Notifications</a>
                 <a href="<?php echo $pathPrefix; ?>logout.php">Logout</a>
             <?php else: ?>
                 <a href="<?php echo $pathPrefix; ?>login.php">Login</a>
@@ -667,7 +771,7 @@ $pathPrefix = ($currentDir === 'paymongo') ? '../' : '';
             function closePop(e){ if (!pop.contains(e.target) && e.target !== bell && !bell.contains(e.target)) pop.classList.remove('show'); }
             bell.addEventListener('click', function(){
                 if (pop.classList.contains('show')) { pop.classList.remove('show'); return; }
-                const notifUrl = '<?php echo $pathPrefix; ?>notifications.php?as=json';
+                const notifUrl = '<?php echo $pathPrefix; ?>customer-notifications.php?as=json';
                 fetch(notifUrl, { credentials: 'same-origin' })
                     .then(r => r.json())
                     .then(data => {
@@ -682,26 +786,44 @@ $pathPrefix = ($currentDir === 'paymongo') ? '../' : '';
                         }
                         
                         const items = (data && data.items) ? data.items.slice(0,6) : [];
+                        // Show total count of all notifications
+                        updateNotificationBadge(items.length);
+                        
                         if (!items.length) {
                             list.innerHTML = '<div class="notif-empty">No notifications yet.</div>';
                         } else {
                             items.forEach(it => {
                                 const url = '<?php echo $pathPrefix; ?>user-dashboard.php#order-' + it.order_id;
-                                const item = document.createElement('a');
-                                item.href = url;
+                                const item = document.createElement('div');
                                 item.className = 'notif-item-ui';
+                                item.style.position = 'relative';
                                 
+                                let content = '';
                                 if (it.status === 'notification') {
                                     // This is a custom notification
-                                    item.innerHTML = '<div class="icon"><i class="fas fa-info-circle"></i></div>'+
-                                                     '<div style="flex:1;"><div style="font-weight:700; color:#F9F9F9;">' + it.message + '</div>'+
-                                                     '<div style="opacity:0.9; font-size:12px; color:#F9F9F9;">' + it.updated_at_human + '</div></div>';
+                                    content = '<div class="icon"><i class="fas fa-info-circle"></i></div>'+
+                                             '<div style="flex:1;"><div style="font-weight:700; color:#130325;">' + it.message + '</div>'+
+                                             '<div style="opacity:0.9; font-size:12px; color:#130325;">' + it.updated_at_human + '</div></div>';
                                 } else {
                                     // This is an order status update
-                                    item.innerHTML = '<div class="icon"><i class="fas fa-bell"></i></div>'+
-                                                     '<div style="flex:1;"><div style="font-weight:700; color:#F9F9F9;">Order #' + it.order_id + ' update</div>'+
-                                                     '<div style="opacity:0.9; font-size:12px; color:#F9F9F9;">Status: ' + it.status + ' • ' + it.updated_at_human + '</div></div>';
+                                    content = '<div class="icon"><i class="fas fa-bell"></i></div>'+
+                                             '<div style="flex:1;"><div style="font-weight:700; color:#130325;">Order #' + it.order_id + ' update</div>'+
+                                             '<div style="opacity:0.9; font-size:12px; color:#130325;">Status: ' + it.status + ' • ' + it.updated_at_human + '</div></div>';
                                 }
+                                
+                                // Add X button for deleting notifications
+                                content += '<button class="notif-delete-btn" onclick="deleteNotification(' + it.order_id + ', this); event.stopPropagation();" title="Delete notification">' +
+                                          '<i class="fas fa-times"></i></button>';
+                                
+                                item.innerHTML = content;
+                                
+                                // Add click handler for the main content (not the X button)
+                                item.addEventListener('click', function(e) {
+                                    if (!e.target.closest('.notif-delete-btn')) {
+                                        window.location.href = url;
+                                    }
+                                });
+                                
                                 list.appendChild(item);
                             });
                         }
@@ -716,6 +838,91 @@ $pathPrefix = ($currentDir === 'paymongo') ? '../' : '';
                     });
             });
         })();
+        
+        // Notification badge and delete functions
+        function updateNotificationBadge(count) {
+            const badge = document.getElementById('notif-badge');
+            if (!badge) return;
+            
+            if (count > 0) {
+                badge.textContent = count;
+                badge.style.display = 'flex';
+                badge.classList.add('show');
+            } else {
+                badge.style.display = 'none';
+                badge.classList.remove('show');
+            }
+        }
+        
+        function deleteNotification(orderId, button) {
+            // Show loading state
+            button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            button.disabled = true;
+            
+            // Make AJAX request to delete notification
+            fetch('<?php echo $pathPrefix; ?>ajax/delete-notification.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    order_id: orderId
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Remove the notification item from the list
+                    const notificationItem = button.closest('.notif-item-ui');
+                    if (notificationItem) {
+                        notificationItem.style.opacity = '0';
+                        notificationItem.style.transform = 'translateX(100%)';
+                        setTimeout(() => {
+                            notificationItem.remove();
+                            // Update badge count
+                            const remainingItems = document.querySelectorAll('.notif-item-ui').length;
+                            updateNotificationBadge(remainingItems);
+                        }, 300);
+                    }
+                } else {
+                    // Show error and restore button
+                    button.innerHTML = '<i class="fas fa-times"></i>';
+                    button.disabled = false;
+                    alert('Error deleting notification: ' + (data.message || 'Unknown error'));
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                button.innerHTML = '<i class="fas fa-times"></i>';
+                button.disabled = false;
+                alert('Error deleting notification');
+            });
+        }
+        
+        function clearAllNotifications() {
+            const list = document.getElementById('notifList');
+            if (list) {
+                list.innerHTML = '<div class="notif-empty">No notifications to show.</div>';
+                updateNotificationBadge(0);
+            }
+        }
+        
+        // Load notification count on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            if (document.getElementById('notif-badge')) {
+                fetch('<?php echo $pathPrefix; ?>customer-notifications.php?as=json')
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data && data.items) {
+                            // Show total count of all notifications
+                            updateNotificationBadge(data.items.length);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error loading notification count:', error);
+                    });
+            }
+        });
     </script>
 
     <main>

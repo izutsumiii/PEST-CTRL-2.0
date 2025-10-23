@@ -69,7 +69,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['process_payment'])) {
         // Process offline payment (simulate success)
         updatePaymentTransactionStatus($paymentTransactionId, 'completed', 'OFFLINE_PAYMENT');
-        header("Location: paymongo/order-success.php?transaction_id=" . $paymentTransactionId);
+        header("Location: order-success.php?transaction_id=" . $paymentTransactionId);
         exit();
     }
 }

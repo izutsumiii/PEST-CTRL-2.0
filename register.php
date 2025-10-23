@@ -317,51 +317,61 @@ require_once 'includes/header.php';
 <form method="POST" action="" id="registerForm">
     <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">
     
-    <div class="form-group">
-        <label for="username">Username:</label>
-        <input type="text" id="username" name="username" value="<?php echo isset($_POST['username']) ? htmlspecialchars($_POST['username']) : ''; ?>" required>
-        <small>3-20 characters, letters, numbers, and underscores only</small>
-    </div>
-
-    <div class="form-group">
-        <label for="email">Email:</label>
-        <input type="email" id="email" name="email" value="<?php echo isset($_POST['email']) ? htmlspecialchars($_POST['email']) : ''; ?>" required>
+    <!-- First Row: Username and Email -->
+    <div class="form-row">
+        <div class="form-group">
+            <label for="username">Username:</label>
+            <input type="text" id="username" name="username" value="<?php echo isset($_POST['username']) ? htmlspecialchars($_POST['username']) : ''; ?>" required>
+            <small>3-20 characters, letters, numbers, and underscores only</small>
+        </div>
+        <div class="form-group">
+            <label for="email">Email:</label>
+            <input type="email" id="email" name="email" value="<?php echo isset($_POST['email']) ? htmlspecialchars($_POST['email']) : ''; ?>" required>
+        </div>
     </div>
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-    <div class="form-group">
-        <label for="password">Password:</label>
-        <div class="password-input-container">
-            <input type="password" id="password" name="password" required>
-            <button type="button" class="toggle-password" onclick="togglePassword('password')">
-                <i class="fa-solid fa-eye"></i>
-            </button>
+    <!-- Second Row: Password (full width) -->
+    <div class="form-row">
+        <div class="form-group full-width">
+            <label for="password">Password:</label>
+            <div class="password-input-container">
+                <input type="password" id="password" name="password" required>
+                <button type="button" class="toggle-password" onclick="togglePassword('password')">
+                    <i class="fa-solid fa-eye"></i>
+                </button>
+            </div>
+            
+            <div class="password-strength-meter">
+                <div class="password-strength-bar"></div>
+            </div>
+            <small id="password-strength-text">Password strength: None</small>
+            <small class="password-requirements">Must be at least 8 characters with uppercase, lowercase, and numbers</small>
         </div>
-        
-        <div class="password-strength-meter">
-            <div class="password-strength-bar"></div>
+    </div>
+    
+    <!-- Third Row: First Name and Last Name -->
+    <div class="form-row">
+        <div class="form-group">
+            <label for="first_name">First Name:</label>
+            <input type="text" id="first_name" name="first_name" value="<?php echo isset($_POST['first_name']) ? htmlspecialchars($_POST['first_name']) : ''; ?>" required>
         </div>
-        <small id="password-strength-text">Password strength: None</small>
-        <small class="password-requirements">Must be at least 8 characters with uppercase, lowercase, and numbers</small>
+        <div class="form-group">
+            <label for="last_name">Last Name:</label>
+            <input type="text" id="last_name" name="last_name" value="<?php echo isset($_POST['last_name']) ? htmlspecialchars($_POST['last_name']) : ''; ?>" required>
+        </div>
     </div>
     
-    <div class="form-group">
-        <label for="first_name">First Name:</label>
-        <input type="text" id="first_name" name="first_name" value="<?php echo isset($_POST['first_name']) ? htmlspecialchars($_POST['first_name']) : ''; ?>" required>
-    </div>
-    
-    <div class="form-group">
-        <label for="last_name">Last Name:</label>
-        <input type="text" id="last_name" name="last_name" value="<?php echo isset($_POST['last_name']) ? htmlspecialchars($_POST['last_name']) : ''; ?>" required>
-    </div>
-    
-    <div class="form-group">
-        <label for="user_type">Account Type:</label>
-        <select id="user_type" name="user_type">
-            <option value="customer" <?php echo (isset($_POST['user_type']) && $_POST['user_type'] == 'customer') ? 'selected' : ''; ?>>Customer</option>
-            <option value="seller" <?php echo (isset($_POST['user_type']) && $_POST['user_type'] == 'seller') ? 'selected' : ''; ?>>Seller/Supplier</option>
-        </select>
+    <!-- Fourth Row: Account Type (full width) -->
+    <div class="form-row">
+        <div class="form-group full-width">
+            <label for="user_type">Account Type:</label>
+            <select id="user_type" name="user_type">
+                <option value="customer" <?php echo (isset($_POST['user_type']) && $_POST['user_type'] == 'customer') ? 'selected' : ''; ?>>Customer</option>
+                <option value="seller" <?php echo (isset($_POST['user_type']) && $_POST['user_type'] == 'seller') ? 'selected' : ''; ?>>Seller/Supplier</option>
+            </select>
+        </div>
     </div>
     
     <!-- Terms & Conditions and Privacy Policy Section -->
@@ -474,45 +484,62 @@ body {
 }
 
 .register-container {
-    max-width: 420px;
-    margin: 40px auto;
+    max-width: 800px;
+    margin: 60px auto 20px auto;
     padding: 25px;
-    border: 1px solid var(--border-secondary);
-    border-radius: 15px;
-    background: linear-gradient(135deg, var(--primary-dark) 0%, rgba(19, 3, 37, 0.95) 100%);
-    color: var(--primary-light);
-    box-shadow: 0 10px 40px var(--shadow-dark);
+    border-radius: 8px;
+    background: #ffffff;
+    color: #130325;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
     position: relative;
     overflow: hidden;
 }
 
 .register-header {
     text-align: center;
-    margin-bottom: 30px;
+    margin-bottom: 15px;
 }
 
 .register-header h1 {
     margin: 0;
-    font-size: 24px;
+    font-size: 18px;
     font-weight: 700;
-    color: var(--accent-yellow);
+    color: #130325;
+    margin-bottom: 4px;
 }
 
 .register-header .subtitle {
-    font-size: 14px;
-    opacity: 0.8;
-    margin-top: 5px;
-    line-height: 1.4;
+    font-size: 11px;
+    color: #130325;
+    opacity: 0.7;
 }
 
 .form-group {
-    margin-bottom: 20px;
+    margin-bottom: 10px;
+}
+
+/* Horizontal form rows */
+.form-row {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 10px;
+}
+
+.form-row .form-group {
+    flex: 1;
+    margin-bottom: 0;
+}
+
+.form-row .form-group.full-width {
+    flex: 1 1 100%;
 }
 
 .form-group label {
     display: block;
     margin-bottom: 5px;
-    font-weight: 500;
+    font-weight: 600;
+    color: #130325;
+    font-size: 12px;
 }
 
 .form-group input[type="text"],
@@ -520,12 +547,12 @@ body {
 .form-group input[type="password"],
 .form-group select {
     width: 100%;
-    padding: 10px 14px;
-    border: 1px solid rgba(249, 249, 249, 0.3);
-    border-radius: 10px;
-    font-size: 13px;
-    background: rgba(249, 249, 249, 0.1);
-    color: #F9F9F9;
+    padding: 8px 10px;
+    border: 2px solid rgba(19, 3, 37, 0.2);
+    border-radius: 6px;
+    font-size: 12px;
+    background: #ffffff;
+    color: #130325;
     box-sizing: border-box;
     transition: all 0.3s ease;
 }
@@ -533,13 +560,13 @@ body {
 .form-group input:focus,
 .form-group select:focus {
     outline: none;
-    background: rgba(249, 249, 249, 0.2);
-    border-color: rgba(255, 215, 54, 0.5);
-    box-shadow: 0 0 15px rgba(255, 215, 54, 0.3);
+    background: #ffffff;
+    border-color: #FFD736;
+    box-shadow: 0 0 0 3px rgba(255, 215, 54, 0.2);
 }
 
 .form-group input::placeholder {
-    color: rgba(249, 249, 249, 0.7);
+    color: rgba(19, 3, 37, 0.5);
 }
 
 .otp-container {
@@ -561,12 +588,19 @@ body {
 
 .toggle-password {
     position: absolute;
-    right: 10px;
+    right: 8px;
     background: none;
     border: none;
     cursor: pointer;
-    padding: 5px;
-    color: var(--primary-light);
+    padding: 3px;
+    color: #130325;
+    opacity: 0.6;
+    transition: opacity 0.3s ease;
+    font-size: 12px;
+}
+
+.toggle-password:hover {
+    opacity: 1;
 }
 
 .password-strength-meter {
@@ -591,38 +625,41 @@ body {
 
 /* Legal Agreements Section */
 .legal-agreements {
-    background: rgba(249, 249, 249, 0.05);
-    border: 1px solid rgba(249, 249, 249, 0.2);
-    border-radius: 10px;
-    padding: 20px;
-    margin: 25px 0;
+    background: rgba(255, 215, 54, 0.1);
+    border: 1px solid rgba(255, 215, 54, 0.3);
+    border-radius: 6px;
+    padding: 12px;
+    margin: 15px 0;
 }
 
 .legal-agreements h3 {
-    color: var(--accent-yellow);
-    font-size: 16px;
-    margin: 0 0 10px 0;
+    color: #130325;
+    font-size: 14px;
+    margin: 0 0 8px 0;
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
+    font-weight: 700;
 }
 
 .legal-notice {
-    color: rgba(249, 249, 249, 0.8);
-    font-size: 13px;
-    margin-bottom: 15px;
+    color: #130325;
+    font-size: 11px;
+    margin-bottom: 12px;
+    opacity: 1;
 }
 
 .checkbox-group {
-    margin-bottom: 15px;
+    margin-bottom: 10px;
 }
 
 .checkbox-label {
     display: flex;
     align-items: flex-start;
     cursor: pointer;
-    font-size: 13px;
+    font-size: 11px;
     line-height: 1.4;
+    color: #130325;
 }
 
 .checkbox-label input[type="checkbox"] {
@@ -633,33 +670,33 @@ body {
 
 .checkmark {
     display: inline-block;
-    width: 18px;
-    height: 18px;
-    background-color: rgba(249, 249, 249, 0.1);
-    border: 2px solid rgba(249, 249, 249, 0.3);
-    border-radius: 4px;
-    margin-right: 10px;
+    width: 16px;
+    height: 16px;
+    background-color: #ffffff;
+    border: 2px solid rgba(19, 3, 37, 0.3);
+    border-radius: 3px;
+    margin-right: 8px;
     flex-shrink: 0;
     position: relative;
     transition: all 0.3s ease;
 }
 
 .checkbox-label:hover .checkmark {
-    background-color: rgba(249, 249, 249, 0.15);
+    background-color: rgba(255, 215, 54, 0.1);
 }
 
 .checkbox-label input[type="checkbox"]:checked ~ .checkmark {
-    background-color: var(--accent-green);
-    border-color: var(--accent-green);
+    background-color: #28a745;
+    border-color: #28a745;
 }
 
 .checkbox-label input[type="checkbox"]:checked ~ .checkmark:after {
     content: '✓';
     position: absolute;
     top: -2px;
-    left: 2px;
+    left: 1px;
     color: white;
-    font-size: 14px;
+    font-size: 12px;
     font-weight: bold;
 }
 
@@ -668,39 +705,41 @@ body {
 }
 
 .legal-link {
-    color: var(--accent-yellow);
+    color: #130325;
     text-decoration: underline;
-    font-weight: 500;
+    font-weight: 600;
 }
 
 .legal-link:hover {
-    color: var(--primary-light);
+    color: #FFD736;
 }
 
 .legal-info {
     background: rgba(255, 215, 54, 0.1);
     border: 1px solid rgba(255, 215, 54, 0.3);
-    border-radius: 8px;
-    padding: 15px;
-    margin-top: 15px;
+    border-radius: 6px;
+    padding: 10px;
+    margin-top: 10px;
 }
 
 .legal-info p {
-    margin: 0 0 10px 0;
-    font-size: 12px;
-    color: rgba(249, 249, 249, 0.9);
+    margin: 0 0 8px 0;
+    font-size: 11px;
+    color: #130325;
+    font-weight: 600;
 }
 
 .legal-info ul {
     margin: 0;
-    padding-left: 15px;
-    font-size: 11px;
-    color: rgba(249, 249, 249, 0.8);
-    line-height: 1.4;
+    padding-left: 12px;
+    font-size: 10px;
+    color: #130325;
+    line-height: 1.3;
+    opacity: 0.8;
 }
 
 .legal-info li {
-    margin-bottom: 5px;
+    margin-bottom: 3px;
 }
 
 .success-message {
@@ -780,56 +819,88 @@ body {
 /* Main form buttons */
 button[type="submit"] {
     width: 100%;
-    padding: 12px 16px;
-    background-color: #FFD736;
-    color: #130325;
-    border: none;
-    border-radius: 8px;
-    font-size: 1rem;
-    font-weight: 600;
+    padding: 10px 16px;
+    background-color: #130325;
+    color: #F9F9F9;
+    border: 2px solid #130325;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 700;
     cursor: pointer;
     text-decoration: none;
     text-align: center;
-    transition: all 0.2s;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 6px;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
+    gap: 6px;
 }
 
 button[type="submit"]:hover:not(:disabled) {
-    background-color: #e6c230;
-    transform: translateY(-1px);
+    background-color: #FFD736;
+    color: #130325;
+    border-color: #FFD736;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(255, 215, 54, 0.4);
 }
 
 button[type="submit"]:disabled {
     background-color: #666;
     color: #999;
+    border-color: #666;
     cursor: not-allowed;
     opacity: 0.6;
 }
 
 .login-link {
     text-align: center;
-    margin-top: 20px;
-    font-size: 13px;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(19, 3, 37, 0.1);
+    font-size: 11px;
+    color: #130325;
 }
 
 .login-link a {
-    color: var(--accent-yellow);
+    color: #130325;
     text-decoration: none;
+    font-weight: 600;
 }
 
 .login-link a:hover {
-    color: var(--primary-light);
+    color: #FFD736;
     text-decoration: underline;
 }
 
 /* Responsive Design */
+@media (max-width: 768px) {
+    .register-container {
+        max-width: 600px;
+        margin: 40px 15px 15px 15px;
+        padding: 20px;
+    }
+    
+    .form-row {
+        flex-direction: column;
+        gap: 0;
+    }
+    
+    .form-row .form-group {
+        margin-bottom: 12px;
+    }
+    
+    .register-header {
+        margin-bottom: 15px;
+    }
+}
+
 @media (max-width: 480px) {
     .register-container {
-        margin: 20px;
-        padding: 20px;
+        margin: 30px 10px 10px 10px;
+        padding: 15px;
         max-width: none;
     }
     
@@ -843,6 +914,10 @@ button[type="submit"]:disabled {
     
     #resend_otp, #cancel_otp {
         max-width: none;
+    }
+    
+    .register-header h1 {
+        font-size: 16px;
     }
 }
 </style>

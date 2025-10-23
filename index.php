@@ -88,7 +88,7 @@ body {
 
 /* Dark purple container spanning full width - using header color */
 .dark-purple-container {
-    background: #130325; /* Same as header color */
+    background: #130325;
     width: 100%;
     margin: 0;
     padding: 60px 0;
@@ -124,19 +124,116 @@ body {
     margin-bottom: 30px;
 }
 
+.hero-layout {
+    display: flex;
+    gap: 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+.promo-banners {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    width: 300px;
+    flex-shrink: 0;
+}
+
+.promo-banner {
+    background: linear-gradient(135deg, #FFD736, #FFA500);
+    padding: 15px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    height: 140px;
+    box-shadow: 0 15px 40px rgba(0,0,0,0.4);
+}
+
+.promo-content {
+    flex: 1;
+}
+
+.promo-content h3 {
+    color: #130325;
+    font-size: 16px;
+    font-weight: 700;
+    margin: 0 0 5px 0;
+}
+
+.promo-content p {
+    color: #130325;
+    font-size: 12px;
+    margin: 0 0 10px 0;
+    line-height: 1.4;
+}
+
+.promo-btn {
+    background: #130325;
+    color: white;
+    padding: 6px 12px;
+    font-size: 11px;
+    font-weight: 600;
+    text-decoration: none;
+    display: inline-block;
+    transition: all 0.3s ease;
+}
+
+.promo-btn:hover {
+    background: #FFD736;
+    color: #130325;
+}
+
+.promo-image {
+    width: 80px;
+    height: 80px;
+    overflow: hidden;
+}
+
+.promo-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
 .slideshow-container {
     position: relative;
-    max-width: 1400px;
-    margin: 0 auto;
-    border-radius: 16px;
+    flex: 1;
     overflow: hidden;
     box-shadow: 0 15px 40px rgba(0,0,0,0.4);
+}
+
+.hero-prev, .hero-next {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 20px;
+    color: #130325;
+    background: rgba(255, 255, 255, 0.8);
+    border: 2px solid #130325;
+    transition: all 0.3s ease;
+    z-index: 100;
+    opacity: 0;
+}
+
+.hero-prev { left: 10px; }
+.hero-next { right: 10px; }
+
+.slideshow-container:hover .hero-prev,
+.slideshow-container:hover .hero-next {
+    opacity: 1;
 }
 
 .slide {
     display: none;
     position: relative;
-    height: 400px;
+    height: 300px;
 }
 
 .slide.active {
@@ -167,7 +264,6 @@ body {
     color: #130325;
     padding: 18px 40px;
     text-decoration: none;
-    border-radius: 50px;
     font-weight: 800;
     font-size: 1.2rem;
     text-transform: uppercase;
@@ -185,35 +281,6 @@ body {
     text-decoration: none;
 }
 
-.hero-prev, .hero-next {
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    background: #FFD736;
-    border: 2px solid #130325;
-    border-radius: 50%;
-    width: 60px;
-    height: 60px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    font-size: 24px;
-    color: #130325;
-    transition: all 0.3s ease;
-    z-index: 100;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-}
-
-.hero-prev { left: 30px; }
-.hero-next { right: 30px; }
-
-.hero-prev:hover, .hero-next:hover {
-    background: #e6c230;
-    transform: translateY(-50%) scale(1.1);
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
-}
-
 .dots-container {
     position: absolute;
     bottom: 30px;
@@ -228,19 +295,19 @@ body {
     width: 12px;
     height: 12px;
     border-radius: 50%;
-    background: rgba(255, 255, 255, 0.5);
+    background: rgba(19, 3, 37, 0.5);
     cursor: pointer;
     transition: all 0.3s ease;
     border: 2px solid transparent;
 }
 
 .dot.active {
-    background: #FFD736;
+    background: #130325;
     border-color: #fff;
     transform: scale(1.3);
 }
 
-/* Quick Features - Simplified */
+/* Quick Features */
 .quick-features {
     max-width: 1400px;
     margin: 0 auto 60px;
@@ -285,7 +352,7 @@ body {
 }
 
 .feature-item h3 {
-    color: #130325; /* Dark color for light background */
+    color: #130325;
     font-size: 1.1rem;
     font-weight: 700;
     margin: 0 0 8px 0;
@@ -293,7 +360,7 @@ body {
 }
 
 .feature-item p {
-    color: #6c757d; /* Dark color for light background */
+    color: #6c757d;
     font-size: 0.9rem;
     margin: 0;
     line-height: 1.5;
@@ -303,13 +370,15 @@ body {
 
 /* Featured Products Section */
 .featured-products {
-    max-width: 1200px;
     margin: 0 auto 80px auto;
-    padding: 0 20px;
+    text-align: center;
+}
+
+.featured-products .hero-layout {
     display: flex;
     flex-direction: column;
     align-items: center;
-    text-align: center;
+    gap: 0;
 }
 
 .section-header {
@@ -318,7 +387,7 @@ body {
 }
 
 .section-title {
-    color: #F9F9F9; /* Light color for dark background */
+    color: #F9F9F9;
     font-size: 2.5rem;
     font-weight: 800;
     text-transform: uppercase;
@@ -327,18 +396,9 @@ body {
 }
 
 .section-subtitle {
-    color: rgba(249, 249, 249, 0.8); /* Light color for dark background */
+    color: rgba(249, 249, 249, 0.8);
     font-size: 1.1rem;
     margin: 0;
-}
-
-/* Shop By Category - Dark text for light background */
-.shop-categories .section-title {
-    color: #130325; /* Dark color for light background */
-}
-
-.shop-categories .section-subtitle {
-    color: #6c757d; /* Dark color for light background */
 }
 
 section.featured-products .products-grid {
@@ -367,12 +427,6 @@ section.featured-products .products-container {
      text-align: center !important;
  }
 
-.carousel-nav {
-    display: none;
-}
-
-/* Carousel navigation hidden */
-
  .product-card {
      position: relative;
      background: rgba(26, 10, 46, 0.6);
@@ -383,9 +437,9 @@ section.featured-products .products-container {
      transition: all 0.3s ease;
      display: flex;
      flex-direction: column;
-     flex: 0 0 19%; /* Fixed width for 5 products - SAME SIZE AS BEFORE */
+     flex: 0 0 19%;
      min-width: 250px;
-     max-height: 400px; /* Limit height */
+     max-height: 400px;
  }
 
 .product-card:hover {
@@ -400,7 +454,6 @@ section.featured-products .products-container {
     right: 15px;
     background: rgba(255, 215, 54, 0.15);
     padding: 8px 12px;
-    border-radius: 25px;
     border: 1px solid rgba(255, 215, 54, 0.4);
     display: flex;
     align-items: center;
@@ -482,6 +535,61 @@ section.featured-products .product-card .rating-text {
     flex-direction: column;
     gap: 10px;
     margin-top: auto;
+    margin-bottom: 10px;
+}
+
+.cart-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.btn-cart-icon {
+    background: #FFD736;
+    color: #130325;
+    border: 2px solid #130325;
+    padding: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    flex-shrink: 0;
+}
+
+.btn-cart-icon:hover {
+    background: #130325;
+    color: #FFD736;
+    transform: translateY(-2px);
+}
+
+.btn-buy-now {
+    background: #130325;
+    color: white;
+    border: 2px solid #FFD736;
+    padding: 6px 12px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    flex: 1;
+    height: 32px;
+}
+
+.btn-buy-now:hover {
+    background: #FFD736;
+    color: #130325;
+    transform: translateY(-2px);
 }
 
 .btn {
@@ -504,7 +612,7 @@ section.featured-products .product-card .rating-text {
 .btn-details {
     background: #130325;
     color: #F9F9F9;
-    border: 2px solid #FFD736;
+    border: 2px solid #130325;
 }
 
 .btn-details:hover {
@@ -514,21 +622,90 @@ section.featured-products .product-card .rating-text {
     text-decoration: none;
 }
 
-.btn-cart {
-    background: #007bff;
-    color: #F9F9F9;
+/* ============================================
+   CATEGORY CAROUSEL - AMAZON STYLE REDESIGN
+   ============================================ */
+
+.category-carousel-section {
+    background: #f8f9fa;
+    padding: 80px 0;
+    margin: 60px 0;
+    position: relative;
 }
 
-.btn-cart:hover {
-    background: #0056b3;
-    transform: translateY(-2px);
-}
-
-/* Shop By Category - Simplified */
-.shop-categories {
+.category-carousel-container {
     max-width: 1400px;
-    margin: 120px auto 80px; /* Increased top margin from 0 to 120px */
+    margin: 0 auto;
     padding: 0 20px;
+}
+
+.category-carousel-header {
+    text-align: center;
+    margin-bottom: 50px;
+}
+
+.category-carousel-title {
+    font-size: 2.8rem;
+    font-weight: 800;
+    color: #130325;
+    margin: 0 0 15px 0;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    position: relative;
+    display: inline-block;
+}
+
+.category-carousel-title::after {
+    content: '';
+    position: absolute;
+    bottom: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80px;
+    height: 4px;
+    background: linear-gradient(90deg, #FFD736, #130325);
+    border-radius: 2px;
+}
+
+.category-carousel-subtitle {
+    font-size: 1.15rem;
+    color: #6c757d;
+    margin: 20px 0 0 0;
+    font-weight: 400;
+}
+
+.category-carousel-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 30px;
+    padding: 0 60px;
+}
+
+.category-carousel {
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+}
+
+.category-type-slide {
+    display: none;
+    animation: fadeInSlide 0.5s ease;
+}
+
+.category-type-slide.active {
+    display: block;
+}
+
+@keyframes fadeInSlide {
+    from {
+        opacity: 0;
+        transform: translateX(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
 }
 
 .categories-grid {
@@ -536,58 +713,137 @@ section.featured-products .product-card .rating-text {
     grid-template-columns: repeat(4, 1fr);
     gap: 25px;
     margin-top: 30px;
-    max-width: 800px;
-    margin-left: auto;
-    margin-right: auto;
 }
 
 .category-card {
-    background: transparent;
-    border: none;
-    border-radius: 0;
-    padding: 20px 15px;
+    background: white;
+    border: 2px solid #e6e6e6;
+    border-radius: 12px;
+    padding: 30px 20px;
     text-align: center;
     text-decoration: none;
     transition: all 0.3s ease;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 12px;
+    gap: 15px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    position: relative;
+    overflow: hidden;
 }
+
 
 .category-card:hover {
     transform: translateY(-5px);
     text-decoration: none;
+    border-color: #130325;
+    box-shadow: 0 8px 20px rgba(19, 3, 37, 0.2);
 }
 
+
 .category-icon {
-    width: 100px;
-    height: 100px;
-    background: #ffffff;
+    width: 90px;
+    height: 90px;
+    background: linear-gradient(135deg, #130325 0%, #2a0a4a 100%);
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.6rem;
-    color: #130325;
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-    border: 2px solid #f8f9fa;
+    font-size: 2rem;
+    color: white;
+    transition: all 0.4s ease;
+    box-shadow: 0 4px 15px rgba(19, 3, 37, 0.2);
+    position: relative;
+}
+
+.category-icon::after {
+    content: '';
+    position: absolute;
+    inset: -3px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #FFD736, #130325);
+    z-index: -1;
+    opacity: 0;
+    transition: opacity 0.3s ease;
 }
 
 .category-card:hover .category-icon {
-    background: #FFD736;
-    transform: scale(1.05);
-    box-shadow: 0 6px 20px rgba(255, 215, 54, 0.3);
+    background: #130325;
+    color: white;
+    transform: none;
+    box-shadow: 0 4px 15px rgba(19, 3, 37, 0.2);
+}
+
+.category-card:hover .category-icon::after {
+    opacity: 1;
 }
 
 .category-name {
     color: #130325;
-    font-size: 0.9rem;
-    font-weight: 600;
+    font-size: 1rem;
+    font-weight: 700;
     text-transform: capitalize;
     margin: 0;
-    line-height: 1.3;
+    line-height: 1.4;
+    letter-spacing: 0.3px;
+    transition: color 0.3s ease;
+}
+
+.category-card:hover .category-name {
+    color: #FFD736;
+}
+
+.carousel-nav {
+    background: white;
+    color: #130325;
+    border: 2px solid #130325;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 20px;
+    transition: all 0.3s ease;
+    z-index: 10;
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.carousel-prev {
+    left: -30px;
+}
+
+.carousel-next {
+    right: -30px;
+}
+
+.carousel-nav:hover {
+    background: linear-gradient(135deg, #FFD736, #f0c419);
+    color: #130325;
+    border-color: #FFD736;
+    transform: translateY(-50%) scale(1.1);
+    box-shadow: 0 6px 20px rgba(255, 215, 54, 0.3);
+}
+
+.carousel-nav:active {
+    transform: translateY(-50%) scale(0.95);
+}
+
+.carousel-nav:disabled {
+    background: #e9ecef;
+    border-color: #dee2e6;
+    color: #adb5bd;
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+.carousel-nav:disabled:hover {
+    transform: translateY(-50%) scale(1);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
 }
 
 /* Compare Bar */
@@ -597,11 +853,11 @@ section.featured-products .product-card .rating-text {
     bottom: 0;
     left: 0;
     right: 0;
-    background: linear-gradient(135deg, #130325, #2a0a4a);
-    box-shadow: 0 -5px 20px rgba(0, 0, 0, 0.5);
+    background: #FFD736;
+    box-shadow: 0 -5px 20px rgba(0, 0, 0, 0.3);
     z-index: 1000;
     padding: 20px;
-    border-top: 3px solid #FFD736;
+    border-top: 3px solid #130325;
 }
 
 .compare-content {
@@ -615,7 +871,7 @@ section.featured-products .product-card .rating-text {
 
 .compare-content h4 {
     margin: 0;
-    color: #F9F9F9;
+    color: #ffffff;
     font-size: 1.1rem;
     font-weight: 700;
 }
@@ -633,7 +889,6 @@ section.featured-products .product-card .rating-text {
     gap: 10px;
     background: rgba(255, 215, 54, 0.15);
     padding: 10px 15px;
-    border-radius: 25px;
     border: 2px solid #FFD736;
 }
 
@@ -641,11 +896,10 @@ section.featured-products .product-card .rating-text {
     width: 35px;
     height: 35px;
     object-fit: cover;
-    border-radius: 6px;
 }
 
 .compare-item span {
-    color: #F9F9F9;
+    color: #ffffff;
     max-width: 150px;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -679,24 +933,37 @@ section.featured-products .product-card .rating-text {
 }
 
 .btn-compare {
-    background: #FFD736;
-    color: #130325;
+    background: #FFD736 !important;
+    color: #130325 !important;
     font-weight: 700;
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+    padding: 10px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s ease;
 }
 
 .btn-compare:hover:not(:disabled) {
-    background: #e6c230;
+    background: #e6c230 !important;
+    color: #130325 !important;
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+    transform: translateY(-1px);
 }
 
 .btn-compare:disabled {
     background: #6c757d;
     opacity: 0.5;
     cursor: not-allowed;
+    transform: none;
 }
 
 .btn-clear {
     background: #dc3545;
-    color: #F9F9F9;
+    color: #130325 !important;
 }
 
 .btn-clear:hover {
@@ -704,32 +971,56 @@ section.featured-products .product-card .rating-text {
 }
 
 /* Responsive */
+@media (max-width: 1200px) {
+    .categories-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 20px;
+    }
+    
+    .carousel-nav {
+        width: 50px;
+        height: 50px;
+        font-size: 18px;
+    }
+    
+    .carousel-prev {
+        left: -25px;
+    }
+    
+    .carousel-next {
+        right: -25px;
+    }
+}
+
 @media (max-width: 768px) {
+    .hero-layout {
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .promo-banners {
+        width: 100%;
+        flex-direction: row;
+        gap: 10px;
+    }
+    
+    .promo-banner {
+        flex: 1;
+        height: 120px;
+    }
+    
+    .promo-image {
+        width: 60px;
+        height: 60px;
+    }
+    
     .slideshow-container {
-        border-radius: 12px;
+        order: -1;
     }
     
     .slide {
         height: 400px;
     }
-    
-    .hero-prev, .hero-next {
-        width: 50px;
-        height: 50px;
-        font-size: 20px;
-    }
-    
-    .hero-prev { left: 15px; }
-    .hero-next { right: 15px; }
-    
-    .carousel-nav {
-        width: 50px;
-        height: 50px;
-        font-size: 20px;
-    }
-    
-    .carousel-nav.prev { left: 5px; }
-    .carousel-nav.next { right: 5px; }
     
     .section-title {
         font-size: 2rem;
@@ -740,9 +1031,29 @@ section.featured-products .product-card .rating-text {
         gap: 20px;
     }
     
+    .category-carousel-section {
+        padding: 60px 0;
+    }
+    
+    .category-carousel-title {
+        font-size: 2.2rem;
+    }
+    
+    .category-carousel-wrapper {
+        padding: 0 50px;
+    }
+    
     .categories-grid {
-        grid-template-columns: repeat(3, 1fr);
+        grid-template-columns: repeat(2, 1fr);
         gap: 20px;
+    }
+    
+    .carousel-prev {
+        left: -20px;
+    }
+    
+    .carousel-next {
+        right: -20px;
     }
 }
 
@@ -768,64 +1079,121 @@ section.featured-products .product-card .rating-text {
         grid-template-columns: 1fr;
     }
     
+    .category-carousel-section {
+        padding: 40px 0;
+    }
+    
+    .category-carousel-title {
+        font-size: 1.8rem;
+    }
+    
+    .category-carousel-subtitle {
+        font-size: 1rem;
+    }
+    
+    .category-carousel-wrapper {
+        padding: 0 40px;
+    }
+    
+    .carousel-prev {
+        left: -15px;
+    }
+    
+    .carousel-next {
+        right: -15px;
+    }
+    
+    .carousel-nav {
+        width: 40px;
+        height: 40px;
+        font-size: 16px;
+    }
+    
     .categories-grid {
         grid-template-columns: repeat(2, 1fr);
         gap: 15px;
+    }
+    
+    .category-card {
+        padding: 20px 15px;
+    }
+    
+    .category-icon {
+        width: 70px;
+        height: 70px;
+        font-size: 1.5rem;
+    }
+    
+    .category-name {
+        font-size: 0.9rem;
     }
 }
 </style>
 
 <!-- Hero Slideshow -->
 <section class="hero-slideshow">
-    <div class="slideshow-container">
-        <div class="slide active">
-            <img src="assets/uploads/1759552181_Imidart.jpg" alt="Pest Control Products">
-            <div class="slide-content">
-                <a href="products.php" class="shop-now-btn">Shop Now</a>
+    <div class="hero-layout">
+        <!-- Main Slideshow -->
+        <div class="slideshow-container">
+            <div class="slide active">
+                <img src="assets/uploads/1759552181_Imidart.jpg" alt="Pest Control Products">
+            </div>
+            
+            <div class="slide">
+                <img src="assets/uploads/1759501037_INSECTICIDES-Mahishmati.jpg" alt="Insecticides">
+            </div>
+            
+            <div class="slide">
+                <img src="assets/uploads/1759552123_mouse trap.jpg" alt="Mouse Traps">
+            </div>
+            
+            <div class="slide">
+                <img src="assets/uploads/1759552310_304-Advion-Roach-Bait-Gel-Syngenta.jpg.thumb_450x450.jpg" alt="Roach Control">
+            </div>
+            
+            <div class="slide">
+                <img src="assets/uploads/1759552519_391-Tempo-1pc-Dust-envu.jpg.thumb_450x450.jpg" alt="Pest Control Dust">
+            </div>
+            
+            <button class="hero-prev" onclick="changeSlide(-1)">
+                <i class="fas fa-chevron-left"></i>
+            </button>
+            <button class="hero-next" onclick="changeSlide(1)">
+                <i class="fas fa-chevron-right"></i>
+            </button>
+            
+            <div class="dots-container">
+                <span class="dot active" onclick="currentSlide(1)"></span>
+                <span class="dot" onclick="currentSlide(2)"></span>
+                <span class="dot" onclick="currentSlide(3)"></span>
+                <span class="dot" onclick="currentSlide(4)"></span>
+                <span class="dot" onclick="currentSlide(5)"></span>
             </div>
         </div>
         
-        <div class="slide">
-            <img src="assets/uploads/1759501037_INSECTICIDES-Mahishmati.jpg" alt="Insecticides">
-            <div class="slide-content">
-                <a href="products.php" class="shop-now-btn">Shop Now</a>
+        <!-- Promotional Banners -->
+        <div class="promo-banners">
+            <div class="promo-banner">
+                <div class="promo-content">
+                    <h3>Special Offer</h3>
+                    <p>Get 20% off on all rodent control products</p>
+                    <a href="products.php" class="promo-btn">Shop Now</a>
+                </div>
+                <div class="promo-image">
+                    <img src="assets/uploads/1759552123_mouse trap.jpg" alt="Special Offer">
+                </div>
             </div>
-        </div>
-        
-        <div class="slide">
-            <img src="assets/uploads/1759552123_mouse trap.jpg" alt="Mouse Traps">
-            <div class="slide-content">
-                <a href="products.php" class="shop-now-btn">Shop Now</a>
+            
+            <div class="promo-banner">
+                <div class="promo-content">
+                    <h3>New Arrivals</h3>
+                    <p>Latest eco-friendly pest control solutions</p>
+                    <a href="products.php" class="promo-btn">Explore</a>
+                </div>
+                <div class="promo-image">
+                    <img src="assets/uploads/1759501037_INSECTICIDES-Mahishmati.jpg" alt="New Arrivals">
+                </div>
             </div>
-        </div>
-        
-        <div class="slide">
-            <img src="assets/uploads/1759552310_304-Advion-Roach-Bait-Gel-Syngenta.jpg.thumb_450x450.jpg" alt="Roach Control">
-            <div class="slide-content">
-                <a href="products.php" class="shop-now-btn">Shop Now</a>
-            </div>
-        </div>
-        
-        <div class="slide">
-            <img src="assets/uploads/1759552519_391-Tempo-1pc-Dust-envu.jpg.thumb_450x450.jpg" alt="Pest Control Dust">
-            <div class="slide-content">
-                <a href="products.php" class="shop-now-btn">Shop Now</a>
-            </div>
-        </div>
-        
-        <button class="hero-prev" onclick="changeSlide(-1)">
-            <i class="fas fa-chevron-left"></i>
-        </button>
-        <button class="hero-next" onclick="changeSlide(1)">
-            <i class="fas fa-chevron-right"></i>
-        </button>
-        
-        <div class="dots-container">
-            <span class="dot active" onclick="currentSlide(1)"></span>
-            <span class="dot" onclick="currentSlide(2)"></span>
-            <span class="dot" onclick="currentSlide(3)"></span>
-            <span class="dot" onclick="currentSlide(4)"></span>
-            <span class="dot" onclick="currentSlide(5)"></span>
         </div>
     </div>
 </section>
@@ -858,108 +1226,142 @@ section.featured-products .product-card .rating-text {
 
 <!-- Dark Purple Container for Featured Products -->
 <div class="dark-purple-container">
-<!-- Featured Products -->
-<section class="featured-products">
-    <div class="section-header">
-        <h2 class="section-title">Featured Products</h2>
-        <p class="section-subtitle">Best-selling pest control solutions</p>
-    </div>
-    
-     <div class="products-grid">
-         <div class="products-container" id="productsContainer">
-            <?php 
-            $isLoggedIn = isset($_SESSION['user_id']);
-            foreach ($featuredProducts as $product): 
-                $featImg = resolveProductImageUrl($product['image_url'] ?? '');
-            ?>
-                <div class="product-card">
-                    <div class="product-checkbox">
-                        <input type="checkbox"
-                               class="compare-checkbox"
-                               data-product-id="<?php echo $product['id']; ?>"
-                               data-product-name="<?php echo htmlspecialchars($product['name']); ?>"
-                               data-product-price="<?php echo $product['price']; ?>"
-                               data-product-image="<?php echo htmlspecialchars($featImg); ?>"
-                               data-product-rating="<?php echo $product['rating']; ?>"
-                               data-product-reviews="<?php echo $product['review_count']; ?>"
-                               onchange="toggleCompare(this)">
-                        <label>Compare</label>
-                    </div>
-                    <img loading="lazy" src="<?php echo htmlspecialchars($featImg); ?>" 
-                         alt="<?php echo htmlspecialchars($product['name']); ?>">
-                    <h3 class="product-name"><?php echo htmlspecialchars($product['name']); ?></h3>
-                    <p class="price">₱<?php echo number_format($product['price'], 2); ?></p>
-                    <div class="rating">
-                        <?php
-                            $rating = $product['rating'] ?? 0;
-                            $fullStars = floor($rating);
-                            $hasHalfStar = ($rating - $fullStars) >= 0.5;
-                            for ($i = 1; $i <= 5; $i++) {
-                                if ($i <= $fullStars) {
-                                    echo '★';
-                                } elseif ($i == $fullStars + 1 && $hasHalfStar) {
-                                    echo '☆';
-                                } else {
-                                    echo '☆';
-                                }
-                            }
-                        ?>
-                        <span class="rating-text">(<?php echo number_format($product['rating'] ?? 0, 1); ?>)</span>
-                    </div>
-                    <div class="stock"><?php echo $product['stock_quantity'] ?? 0; ?> in stock</div>
-                    <div class="product-actions">
-                        <a href="product-detail.php?id=<?php echo $product['id']; ?>" 
-                           class="btn btn-details">
-                            <i class="fas fa-eye"></i> View Details
-                        </a>
-                        <button onclick="handleAddToCart(<?php echo $product['id']; ?>, 1)" 
-                                class="btn btn-cart" 
-                                data-product-id="<?php echo $product['id']; ?>">
-                            <i class="fas fa-shopping-cart"></i> Add to Cart
-                        </button>
-                    </div>
+    <!-- Featured Products -->
+    <section class="featured-products">
+        <div class="hero-layout">
+            <div class="section-header">
+                <h2 class="section-title">Featured Products</h2>
+                <p class="section-subtitle">Best-selling pest control solutions</p>
+            </div>
+            
+            <div class="products-grid">
+                <div class="products-container" id="productsContainer">
+                    <?php 
+                    $isLoggedIn = isset($_SESSION['user_id']);
+                    foreach ($featuredProducts as $product): 
+                        $featImg = resolveProductImageUrl($product['image_url'] ?? '');
+                    ?>
+                        <div class="product-card">
+                            <div class="product-checkbox">
+                                <input type="checkbox"
+                                       class="compare-checkbox"
+                                       data-product-id="<?php echo $product['id']; ?>"
+                                       data-product-name="<?php echo htmlspecialchars($product['name']); ?>"
+                                       data-product-price="<?php echo $product['price']; ?>"
+                                       data-product-image="<?php echo htmlspecialchars($featImg); ?>"
+                                       data-product-rating="<?php echo $product['rating']; ?>"
+                                       data-product-reviews="<?php echo $product['review_count']; ?>"
+                                       onchange="toggleCompare(this)">
+                                <label>Compare</label>
+                            </div>
+                            <img loading="lazy" src="<?php echo htmlspecialchars($featImg); ?>" 
+                                 alt="<?php echo htmlspecialchars($product['name']); ?>">
+                            <h3 class="product-name"><?php echo htmlspecialchars($product['name']); ?></h3>
+                            <p class="price">₱<?php echo number_format($product['price'], 2); ?></p>
+                            <div class="rating">
+                                <?php
+                                    $rating = $product['rating'] ?? 0;
+                                    $fullStars = floor($rating);
+                                    $hasHalfStar = ($rating - $fullStars) >= 0.5;
+                                    for ($i = 1; $i <= 5; $i++) {
+                                        if ($i <= $fullStars) {
+                                            echo '★';
+                                        } elseif ($i == $fullStars + 1 && $hasHalfStar) {
+                                            echo '☆';
+                                        } else {
+                                            echo '☆';
+                                        }
+                                    }
+                                ?>
+                                <span class="rating-text">(<?php echo number_format($product['rating'] ?? 0, 1); ?>)</span>
+                            </div>
+                            <div class="stock"><?php echo $product['stock_quantity'] ?? 0; ?> in stock</div>
+                            <div class="product-actions">
+                                <a href="product-detail.php?id=<?php echo $product['id']; ?>" 
+                                   class="btn btn-details">
+                                    <i class="fas fa-eye"></i> View Details
+                                </a>
+                                <div class="cart-actions">
+                                    <button onclick="handleAddToCart(<?php echo $product['id']; ?>, 1)" 
+                                            class="btn-cart-icon" 
+                                            data-product-id="<?php echo $product['id']; ?>"
+                                            title="Add to Cart">
+                                        <i class="fas fa-shopping-cart"></i>
+                                    </button>
+                                    <button onclick="handleBuyNow(<?php echo $product['id']; ?>, 1)" 
+                                            class="btn btn-buy-now" 
+                                            data-product-id="<?php echo $product['id']; ?>">
+                                        Buy Now
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
                 </div>
-            <?php endforeach; ?>
+            </div>
         </div>
-    </div>
-</section>
+    </section>
+</div>
 
-</div> <!-- End Dark Purple Container for Featured Products -->
-
-<!-- Shop By Category -->
-<section class="shop-categories">
-    <div class="section-header">
-        <h2 class="section-title">Shop By Pest</h2>
-        <p class="section-subtitle">Find the right solution for your pest problem</p>
-    </div>
-    
-    <div class="categories-grid">
-        <?php
-        $topLevel = getChildrenByParentId(0);
-        $targetPestParentId = 0;
-        foreach ($topLevel as $parentCat) {
-            $name = strtolower($parentCat['clean_name']);
-            if (strpos($name, 'pest') !== false) { 
-                $targetPestParentId = (int)$parentCat['id']; 
-                break; 
-            }
-        }
-        if ($targetPestParentId === 0 && !empty($topLevel)) {
-            $targetPestParentId = (int)$topLevel[0]['id'];
-        }
+<!-- Category Carousel - Amazon Style -->
+<section class="category-carousel-section">
+    <div class="category-carousel-container">
+        <div class="category-carousel-header">
+            <h2 class="category-carousel-title" id="carousel-title">Shop By Pest</h2>
+            <p class="category-carousel-subtitle" id="carousel-subtitle">Find the right solution for your pest problem</p>
+        </div>
         
-        $children = getChildrenByParentId($targetPestParentId);
-        $limitedChildren = array_slice($children, 0, 8);
-        
-        foreach ($limitedChildren as $child) {
-            $hrefChild = 'products.php?categories[]=' . (int)$child['id'];
-            $icon = iconForCategory($child['clean_name']);
-            echo '<a class="category-card" href="' . htmlspecialchars($hrefChild) . '">
-                    <div class="category-icon"><i class="fas ' . htmlspecialchars($icon) . '"></i></div>
-                    <h3 class="category-name">' . htmlspecialchars($child['clean_name']) . '</h3>
-                  </a>';
-        }
-        ?>
+        <div class="category-carousel-wrapper">
+            <button class="carousel-nav carousel-prev" onclick="changeCategoryType(-1)">
+                <i class="fas fa-chevron-left"></i>
+            </button>
+            
+            <div class="category-carousel" id="category-carousel">
+                <?php
+                $categoryTypes = [
+                    [
+                        'title' => 'Shop By Pest',
+                        'subtitle' => 'Find the right solution for your pest problem',
+                        'parent_id' => 75
+                    ],
+                    [
+                        'title' => 'Shop By Formulation',
+                        'subtitle' => 'Choose the right application method',
+                        'parent_id' => 78
+                    ],
+                    [
+                        'title' => 'Shop By Product Type',
+                        'subtitle' => 'Browse by product category',
+                        'parent_id' => 76
+                    ]
+                ];
+                
+                foreach ($categoryTypes as $index => $type) {
+                    $children = getChildrenByParentId($type['parent_id']);
+                    $limitedChildren = array_slice($children, 0, 8);
+                    
+                    echo '<div class="category-type-slide' . ($index === 0 ? ' active' : '') . '" data-type="' . $index . '">';
+                    echo '<div class="categories-grid">';
+                    
+                    foreach ($limitedChildren as $child) {
+                        $hrefChild = 'products.php?categories[]=' . (int)$child['id'];
+                        $icon = iconForCategory($child['clean_name']);
+                        echo '<a class="category-card" href="' . htmlspecialchars($hrefChild) . '">
+                                <div class="category-icon"><i class="fas ' . htmlspecialchars($icon) . '"></i></div>
+                                <h3 class="category-name">' . htmlspecialchars($child['clean_name']) . '</h3>
+                              </a>';
+                    }
+                    
+                    echo '</div>';
+                    echo '</div>';
+                }
+                ?>
+            </div>
+            
+            <button class="carousel-nav carousel-next" onclick="changeCategoryType(1)">
+                <i class="fas fa-chevron-right"></i>
+            </button>
+        </div>
     </div>
 </section>
 
@@ -979,141 +1381,187 @@ section.featured-products .product-card .rating-text {
 const isLoggedIn = <?php echo json_encode($isLoggedIn); ?>;
 
 function handleAddToCart(productId, quantity = 1) {
-  if (!isLoggedIn) {
-    window.location.href = 'login.php';
-    return;
-  }
-  addToCart(productId, quantity);
+    if (!isLoggedIn) {
+        window.location.href = 'login.php';
+        return;
+    }
+    addToCart(productId, quantity);
 }
 
-// ---------------- SLIDESHOW ----------------
+function handleBuyNow(productId, quantity = 1) {
+    if (!isLoggedIn) {
+        window.location.href = 'login.php';
+        return;
+    }
+    addToCart(productId, quantity);
+    window.location.href = 'cart.php';
+}
+
+// Slideshow
 let currentSlideIndex = 0;
 const slides = document.querySelectorAll('.slide');
 const dots = document.querySelectorAll('.dot');
 
 function showSlide(index) {
-  slides.forEach(slide => slide.classList.remove('active'));
-  dots.forEach(dot => dot.classList.remove('active'));
-  if (slides[index]) slides[index].classList.add('active');
-  if (dots[index]) dots[index].classList.add('active');
+    slides.forEach(slide => slide.classList.remove('active'));
+    dots.forEach(dot => dot.classList.remove('active'));
+    if (slides[index]) slides[index].classList.add('active');
+    if (dots[index]) dots[index].classList.add('active');
 }
 
 window.changeSlide = function(direction) {
-  currentSlideIndex += direction;
-  if (currentSlideIndex >= slides.length) currentSlideIndex = 0;
-  else if (currentSlideIndex < 0) currentSlideIndex = slides.length - 1;
-  showSlide(currentSlideIndex);
+    currentSlideIndex += direction;
+    if (currentSlideIndex >= slides.length) currentSlideIndex = 0;
+    else if (currentSlideIndex < 0) currentSlideIndex = slides.length - 1;
+    showSlide(currentSlideIndex);
 };
 
 window.currentSlide = function(index) {
-  currentSlideIndex = index - 1;
-  showSlide(currentSlideIndex);
+    currentSlideIndex = index - 1;
+    showSlide(currentSlideIndex);
 };
 
-let slideInterval = setInterval(() => changeSlide(1), 5000);
+let slideInterval = setInterval(() => changeSlide(1), 3000);
 
 const slideshowContainer = document.querySelector('.slideshow-container');
 if (slideshowContainer) {
-  slideshowContainer.addEventListener('mouseenter', () => clearInterval(slideInterval));
-  slideshowContainer.addEventListener('mouseleave', () => {
-    slideInterval = setInterval(() => changeSlide(1), 5000);
-  });
+    slideshowContainer.addEventListener('mouseenter', () => clearInterval(slideInterval));
+    slideshowContainer.addEventListener('mouseleave', () => {
+        slideInterval = setInterval(() => changeSlide(1), 3000);
+    });
 }
 
 document.addEventListener('DOMContentLoaded', () => showSlide(0));
 
-// ---------------- COMPARE FUNCTIONALITY ----------------
+// Category Carousel
+let currentCategoryType = 0;
+const categoryTypes = [
+    {
+        title: 'Shop By Pest',
+        subtitle: 'Find the right solution for your pest problem'
+    },
+    {
+        title: 'Shop By Formulation', 
+        subtitle: 'Choose the right application method'
+    },
+    {
+        title: 'Shop By Product Type',
+        subtitle: 'Browse by product category'
+    }
+];
+
+function changeCategoryType(direction) {
+    const slideElements = document.querySelectorAll('.category-type-slide');
+    const title = document.getElementById('carousel-title');
+    const subtitle = document.getElementById('carousel-subtitle');
+    
+    slideElements[currentCategoryType].classList.remove('active');
+    
+    currentCategoryType += direction;
+    
+    if (currentCategoryType >= slideElements.length) {
+        currentCategoryType = 0;
+    } else if (currentCategoryType < 0) {
+        currentCategoryType = slideElements.length - 1;
+    }
+    
+    slideElements[currentCategoryType].classList.add('active');
+    
+    title.textContent = categoryTypes[currentCategoryType].title;
+    subtitle.textContent = categoryTypes[currentCategoryType].subtitle;
+}
+
+window.changeCategoryType = changeCategoryType;
+
+// Compare Functionality
 let compareProducts = [];
 const maxCompare = 4;
 
 function toggleCompare(checkbox) {
-  const productId = checkbox.dataset.productId;
-  const productName = checkbox.dataset.productName;
-  const productPrice = checkbox.dataset.productPrice;
-  const productImage = checkbox.dataset.productImage;
-  const productRating = checkbox.dataset.productRating || '0';
-  const productReviews = checkbox.dataset.productReviews || '0';
-  
-  if (checkbox.checked) {
-    if (compareProducts.length >= maxCompare) {
-      checkbox.checked = false;
-      alert(`You can only compare up to ${maxCompare} products at a time.`);
-      return;
+    const productId = checkbox.dataset.productId;
+    const productName = checkbox.dataset.productName;
+    const productPrice = checkbox.dataset.productPrice;
+    const productImage = checkbox.dataset.productImage;
+    const productRating = checkbox.dataset.productRating || '0';
+    const productReviews = checkbox.dataset.productReviews || '0';
+    
+    if (checkbox.checked) {
+        if (compareProducts.length >= maxCompare) {
+            checkbox.checked = false;
+            alert(`You can only compare up to ${maxCompare} products at a time.`);
+            return;
+        }
+        if (compareProducts.some(p => p.id === productId)) {
+            checkbox.checked = false;
+            return;
+        }
+        compareProducts.push({ 
+            id: productId, 
+            name: productName, 
+            price: productPrice, 
+            image: productImage, 
+            rating: productRating, 
+            reviews: productReviews 
+        });
+    } else {
+        compareProducts = compareProducts.filter(p => p.id !== productId);
     }
-    if (compareProducts.some(p => p.id === productId)) {
-      checkbox.checked = false;
-      return;
-    }
-    compareProducts.push({ 
-      id: productId, 
-      name: productName, 
-      price: productPrice, 
-      image: productImage, 
-      rating: productRating, 
-      reviews: productReviews 
-    });
-  } else {
-    compareProducts = compareProducts.filter(p => p.id !== productId);
-  }
-  updateCompareBar();
+    updateCompareBar();
 }
 
 function updateCompareBar() {
-  const compareBar = document.getElementById('compare-bar');
-  const compareCount = document.getElementById('compare-count');
-  const compareItems = document.getElementById('compare-items');
-  const compareBtn = document.getElementById('compare-btn');
-  
-  if (!compareBar || !compareCount || !compareItems || !compareBtn) return;
-  
-  compareCount.textContent = compareProducts.length;
-  
-  if (compareProducts.length > 0) {
-    compareBar.style.display = 'block';
-    compareBtn.disabled = compareProducts.length < 2;
-    compareItems.innerHTML = compareProducts.map(product => `
-      <div class="compare-item">
-        <img src="${product.image || 'default-image.jpg'}" alt="${product.name}" onerror="this.src='default-image.jpg'">
-        <span title="${product.name}">${product.name}</span>
-        <button onclick="removeFromCompare('${product.id}')" class="remove-compare" title="Remove">×</button>
-      </div>
-    `).join('');
-  } else {
-    compareBar.style.display = 'none';
-  }
+    const compareBar = document.getElementById('compare-bar');
+    const compareCount = document.getElementById('compare-count');
+    const compareItems = document.getElementById('compare-items');
+    const compareBtn = document.getElementById('compare-btn');
+    
+    if (!compareBar || !compareCount || !compareItems || !compareBtn) return;
+    
+    compareCount.textContent = compareProducts.length;
+    
+    if (compareProducts.length > 0) {
+        compareBar.style.display = 'block';
+        compareBtn.disabled = compareProducts.length < 2;
+        compareItems.innerHTML = compareProducts.map(product => `
+            <div class="compare-item">
+                <img src="${product.image || 'default-image.jpg'}" alt="${product.name}" onerror="this.src='default-image.jpg'">
+                <span title="${product.name}">${product.name}</span>
+                <button onclick="removeFromCompare('${product.id}')" class="remove-compare" title="Remove">×</button>
+            </div>
+        `).join('');
+    } else {
+        compareBar.style.display = 'none';
+    }
 }
 
 function removeFromCompare(productId) {
-  compareProducts = compareProducts.filter(p => p.id !== productId);
-  const checkbox = document.querySelector(`.compare-checkbox[data-product-id="${productId}"]`);
-  if (checkbox) checkbox.checked = false;
-  updateCompareBar();
+    compareProducts = compareProducts.filter(p => p.id !== productId);
+    const checkbox = document.querySelector(`.compare-checkbox[data-product-id="${productId}"]`);
+    if (checkbox) checkbox.checked = false;
+    updateCompareBar();
 }
 
 function clearCompare() {
-  compareProducts = [];
-  document.querySelectorAll('.compare-checkbox').forEach(cb => cb.checked = false);
-  updateCompareBar();
+    compareProducts = [];
+    document.querySelectorAll('.compare-checkbox').forEach(cb => cb.checked = false);
+    updateCompareBar();
 }
 
 function compareSelected() {
-  if (compareProducts.length < 2) {
-    alert('Please select at least 2 products to compare.');
-    return;
-  }
-  const productIds = compareProducts.map(p => p.id).join(',');
-  window.location.href = `compare.php?products=${productIds}`;
+    if (compareProducts.length < 2) {
+        alert('Please select at least 2 products to compare.');
+        return;
+    }
+    const productIds = compareProducts.map(p => p.id).join(',');
+    window.location.href = `compare.php?products=${productIds}`;
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-  const compareBtn = document.getElementById('compare-btn');
-  const clearCompareBtn = document.getElementById('clear-compare');
-  if (compareBtn) compareBtn.addEventListener('click', compareSelected);
-  if (clearCompareBtn) clearCompareBtn.addEventListener('click', clearCompare);
+    const compareBtn = document.getElementById('compare-btn');
+    const clearCompareBtn = document.getElementById('clear-compare');
+    if (compareBtn) compareBtn.addEventListener('click', compareSelected);
+    if (clearCompareBtn) clearCompareBtn.addEventListener('click', clearCompare);
 });
-
-// ---------------- FEATURED PRODUCTS (NO CAROUSEL) ----------------
-// No carousel needed - just display 4 random products
 </script>
 
 <?php require_once 'includes/footer.php'; ?>

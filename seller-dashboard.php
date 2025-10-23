@@ -413,6 +413,8 @@ $topProducts = $stmt->fetchAll(PDO::FETCH_ASSOC);
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
     <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 <style>
 /* Base Styles */
 body { 
@@ -422,7 +424,7 @@ body {
 }
 
 main { 
-    margin-top: 140px; 
+    margin-top: 20px; 
 }
 
 /* Typography */
@@ -457,6 +459,186 @@ h3 {
     backdrop-filter: blur(10px);
     transition: all 0.3s ease;
 }
+
+/* New KPI Card Styles */
+.kpi-card {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+    color: #F9F9F9;
+    backdrop-filter: blur(10px);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    min-height: 140px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.kpi-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+    transform: translateX(-100%);
+    transition: transform 0.8s ease;
+}
+
+.kpi-card:hover::before {
+    transform: translateX(100%);
+}
+
+.kpi-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 30px rgba(0,0,0,0.2);
+    border-color: rgba(255, 255, 255, 0.25);
+}
+
+.kpi-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.kpi-header i {
+    font-size: 1.2em;
+}
+
+.kpi-header h3 {
+    font-size: 0.9em;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.8);
+    margin: 0;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.kpi-value {
+    font-size: 1.8em;
+    font-weight: bold;
+    margin: 8px 0;
+    background: linear-gradient(135deg, #fff, #e0e7ff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1.2;
+}
+
+.kpi-subtitle {
+    font-size: 0.75em;
+    color: rgba(255, 255, 255, 0.6);
+    margin-bottom: 8px;
+    font-weight: 500;
+}
+
+/* Widened KPI Card */
+.kpi-card-wide {
+    grid-column: span 2; /* Takes up 2 columns on large screens */
+}
+
+@media (max-width: 1024px) {
+    .kpi-card-wide {
+        grid-column: span 1; /* Back to single column on smaller screens */
+    }
+}
+
+/* Export Button Styling */
+.download-icon-btn {
+    background: linear-gradient(135deg, #FFD736, #FFA500);
+    border: none;
+    border-radius: 6px;
+    padding: 6px 12px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: 600;
+    font-size: 0.8rem;
+    color: #130325;
+}
+
+.download-icon-btn:hover {
+    background: linear-gradient(135deg, #FFA500, #FF8C00);
+    transform: translateY(-2px);
+}
+
+.download-icon-btn i {
+    color: #130325;
+    font-size: 1rem;
+}
+
+/* Export Modal Styling */
+.modal {
+    position: fixed !important; top: 0 !important; left: 0 !important;
+    width: 100% !important; height: 100% !important;
+    z-index: 9999 !important; background-color: rgba(0, 0, 0, 0.5) !important;
+    display: none !important; align-items: center !important; justify-content: center !important;
+}
+.modal.show { display: flex !important; }
+.modal-dialog { max-width: 400px; width: 90%; margin: 0 !important; position: relative; z-index: 10000; }
+.modal-content {
+    background: rgb(230, 230, 230); /* Off-white */
+    border: none; border-radius: 12px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+    position: relative; z-index: 10001;
+}
+.modal-header {
+    background: rgb(230, 230, 230); /* Off-white */
+    color: #333; border-bottom: 1px solid #e5e5e5;
+    padding: 20px 20px 15px 20px; border-radius: 12px 12px 0 0; position: relative;
+}
+.modal-title { font-weight: 600; font-size: 1.1rem; color: #333; margin: 0; }
+.modal-body { padding: 20px; background: rgb(230, 230, 230); /* Off-white */ }
+.modal-footer {
+    border-top: 1px solid #e5e5e5; padding: 15px 20px;
+    background: rgb(230, 230, 230); /* Off-white */
+    border-radius: 0 0 12px 12px;
+}
+.form-label { font-weight: 500; color: #333; margin-bottom: 8px; font-size: 0.9rem; }
+.form-select {
+    background: rgb(230, 230, 230); /* Off-white */
+    border: 1px solid #ddd; border-radius: 8px; padding: 10px 12px;
+    font-size: 0.9rem; color: #333; transition: all 0.3s ease; width: 100%;
+}
+.form-select:focus {
+    background: rgb(230, 230, 230); /* Off-white */
+    border-color: #007bff; box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+    outline: none; color: #333;
+}
+.form-select option { background: rgb(230, 230, 230); color: #333; padding: 8px; } /* Off-white */
+.btn-close {
+    background: #dc3545; border: none; border-radius: 6px; width: 28px; height: 28px;
+    opacity: 1; color: #fff; font-size: 0.9rem; font-weight: bold;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.3s ease; position: absolute; top: 15px; right: 15px;
+}
+.btn-close:hover { background: #c82333; color: #fff; }
+.btn-cancel {
+    background: #dc3545; color: #ffffff; border: none; border-radius: 8px;
+    padding: 8px 16px; font-size: 0.9rem; font-weight: 500; cursor: pointer; transition: all 0.3s ease;
+}
+.btn-cancel:hover { background: #c82333; }
+.btn-export {
+    background: #FFD736; color: #130325; border: none; border-radius: 8px;
+    padding: 8px 16px; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: all 0.3s ease;
+}
+.btn-export:hover { background: #FFA500; }
+.error-message {
+    display: flex; align-items: center; gap: 8px; color: #dc3545; font-size: 0.85rem;
+    margin-top: 8px; padding: 8px 12px; background: rgba(220, 53, 69, 0.1);
+    border: 1px solid rgba(220, 53, 69, 0.3); border-radius: 6px;
+}
+.error-message i { font-size: 0.9rem; }
 
 .stat-card:hover {
     transform: translateY(-5px);
@@ -989,41 +1171,92 @@ h3 {
 </style>
 
 <body class="bg-gray-50">
-    <div class="container mx-auto px-4 py-8">
-                <!-- Key Performance Indicators -->
-         <!-- Replace the KPI section with this corrected version -->
-<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-    <div class="stat-card bg-white rounded-lg shadow p-6 border-l-4 border-blue-500" data-aos="fade-up" data-aos-delay="100">
-        <h3 class="text-lg font-medium text-gray-600">Expected Revenue</h3>
-        <p class="text-3xl font-bold text-gray-800 my-2">₱<?php echo number_format($expectedRevenue, 2); ?></p>
-        <small class="text-gray-500">All active orders</small>
-    </div>
-    <div class="stat-card bg-white rounded-lg shadow p-6 border-l-4 border-green-500" data-aos="fade-up" data-aos-delay="200">
-        <h3 class="text-lg font-medium text-gray-600">Confirmed Revenue</h3>
-        <p class="text-3xl font-bold text-gray-800 my-2">₱<?php echo number_format($confirmedRevenue, 2); ?></p>
-        <small class="text-gray-500">Online payments + COD delivered</small>
-    </div>
-    <div class="stat-card bg-white rounded-lg shadow p-6 border-l-4 border-yellow-500" data-aos="fade-up" data-aos-delay="300">
-        <h3 class="text-lg font-medium text-gray-600">Pending Revenue</h3>
-        <p class="text-3xl font-bold text-gray-800 my-2">₱<?php echo number_format($pendingRevenue, 2); ?></p>
-        <small class="text-gray-500">COD orders awaiting delivery</small>
-    </div>
-    <div class="stat-card bg-white rounded-lg shadow p-6 border-l-4 border-purple-500" data-aos="fade-up" data-aos-delay="400">
-        <h3 class="text-lg font-medium text-gray-600">Total Products</h3>
-        <p class="text-3xl font-bold text-gray-800 my-2"><?php echo $totalProducts; ?></p>
-        <small class="text-gray-500">Active listings</small>
-    </div>
-    <div class="stat-card bg-white rounded-lg shadow p-6 border-l-4 border-red-500" data-aos="fade-up" data-aos-delay="500">
-        <h3 class="text-lg font-medium text-gray-600">Items Sold</h3>
-        <p class="text-3xl font-bold text-gray-800 my-2"><?php echo $totalSales; ?></p>
-        <small class="text-gray-500">Total quantity sold</small>
-    </div>
-    <div class="stat-card bg-white rounded-lg shadow p-6 border-l-4 border-indigo-500" data-aos="fade-up" data-aos-delay="600">
-        <h3 class="text-lg font-medium text-gray-600">Avg Order Value</h3>
-        <p class="text-3xl font-bold text-gray-800 my-2">₱<?php echo number_format($avgOrderValue, 2); ?></p>
-        <small class="text-gray-500"><?php echo $uniqueOrders; ?> orders average</small>
-    </div>
-</div>
+    <div class="container mx-auto px-4 py-2">
+        <!-- Main Section Header with Export Button -->
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-4xl font-bold text-center text-white">
+                Seller Dashboard
+            </h1>
+            <button onclick="showDashboardExportModal()" class="download-icon-btn" title="Export Dashboard Data">
+                <i class="fas fa-download"></i> Export Data
+            </button>
+        </div>
+
+        <!-- Key Performance Indicators -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            <!-- Confirmed Revenue - DOUBLE WIDTH -->
+            <div class="kpi-card kpi-card-wide" data-aos="fade-up" data-aos-delay="100">
+                <div class="kpi-header">
+                    <i class="fas fa-money-bill-wave text-green-400"></i>
+                    <h3>Confirmed Revenue</h3>
+                </div>
+                <div class="kpi-value">₱<?php echo number_format($confirmedRevenue, 2); ?></div>
+                <div class="kpi-subtitle">Money received</div>
+            </div>
+            
+            <!-- Total Orders -->
+            <div class="kpi-card" data-aos="fade-up" data-aos-delay="200">
+                <div class="kpi-header">
+                    <i class="fas fa-shopping-cart text-blue-400"></i>
+                    <h3>Total Orders</h3>
+                </div>
+                <div class="kpi-value"><?php echo number_format($uniqueOrders); ?></div>
+                <div class="kpi-subtitle">Orders placed</div>
+            </div>
+            
+            <!-- Items Sold -->
+            <div class="kpi-card" data-aos="fade-up" data-aos-delay="300">
+                <div class="kpi-header">
+                    <i class="fas fa-box text-purple-400"></i>
+                    <h3>Items Sold</h3>
+                </div>
+                <div class="kpi-value"><?php echo number_format($totalSales); ?></div>
+                <div class="kpi-subtitle">Total quantity</div>
+            </div>
+        </div>
+
+        <!-- Secondary Metrics -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            <!-- Average Order Value (moved from first row) -->
+            <div class="kpi-card" data-aos="fade-up" data-aos-delay="400">
+                <div class="kpi-header">
+                    <i class="fas fa-chart-line text-yellow-400"></i>
+                    <h3>Avg Order Value</h3>
+                </div>
+                <div class="kpi-value">₱<?php echo number_format($avgOrderValue, 2); ?></div>
+                <div class="kpi-subtitle">Per order</div>
+            </div>
+            
+            <!-- Pending Revenue -->
+            <div class="kpi-card" data-aos="fade-up" data-aos-delay="500">
+                <div class="kpi-header">
+                    <i class="fas fa-clock text-orange-400"></i>
+                    <h3>Pending Revenue</h3>
+                </div>
+                <div class="kpi-value">₱<?php echo number_format($pendingRevenue, 2); ?></div>
+                <div class="kpi-subtitle">COD awaiting delivery</div>
+            </div>
+            
+            <!-- Return Rate -->
+            <div class="kpi-card" data-aos="fade-up" data-aos-delay="600">
+                <div class="kpi-header">
+                    <i class="fas fa-undo text-red-400"></i>
+                    <h3>Return Rate</h3>
+                </div>
+                <div class="kpi-value">0.0%</div>
+                <div class="kpi-subtitle">0 returns</div>
+            </div>
+            
+            <!-- Active Products -->
+            <div class="kpi-card" data-aos="fade-up" data-aos-delay="700">
+                <div class="kpi-header">
+                    <i class="fas fa-store text-indigo-400"></i>
+                    <h3>Active Products</h3>
+                </div>
+                <div class="kpi-value"><?php echo $totalProducts; ?></div>
+                <div class="kpi-subtitle">Listings</div>
+            </div>
+        </div>
 
 <!-- Optional: Add a breakdown section for more detailed revenue tracking -->
 <div class="stat-card bg-white rounded-lg shadow p-6 border-l-4 border-green-500 mb-8" data-aos="fade-up">
@@ -1326,6 +1559,35 @@ h3 {
 
         <!-- Quick Actions -->
         
+        <!-- Dashboard Export Modal -->
+        <div class="modal fade" id="dashboardExportModal" tabindex="-1" aria-hidden="true" style="display: none;">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Export Dashboard Data</h5>
+                        <button type="button" class="btn-close" onclick="closeDashboardExportModal()" aria-label="Close">×</button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="dashboardExportFormat" class="form-label">Format</label>
+                            <select class="form-select" id="dashboardExportFormat" required>
+                                <option value="">Select format...</option>
+                                <option value="csv">CSV</option>
+                                <option value="pdf">PDF</option>
+                            </select>
+                            <div id="dashboardExportError" class="error-message" style="display: none;">
+                                <i class="fas fa-exclamation-circle"></i>
+                                <span>Please select an export format.</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn-cancel" onclick="closeDashboardExportModal()">Cancel</button>
+                        <button type="button" class="btn-export" onclick="confirmDashboardExport()">Export</button>
+                    </div>
+                </div>
+            </div>
+        </div>
     
     <script>
         // Initialize AOS animations
@@ -1744,8 +2006,8 @@ function stopAutoUpdate() {
     }
 });
 
-        // Add hover effects to stat cards
-        document.querySelectorAll('.stat-card').forEach(card => {
+        // Add hover effects to stat cards and KPI cards
+        document.querySelectorAll('.stat-card, .kpi-card').forEach(card => {
             card.addEventListener('mouseenter', function() {
                 this.style.transform = 'translateY(-5px)';
                 this.style.boxShadow = '0 10px 20px rgba(0,0,0,0.1)';
@@ -1842,6 +2104,164 @@ function stopAutoUpdate() {
             row.addEventListener('mouseleave', function() {
                 this.style.backgroundColor = 'transparent';
             });
+        });
+
+        // Dashboard Export Modal Functions
+        function showDashboardExportModal() {
+            const modalElement = document.getElementById('dashboardExportModal');
+            if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                const modal = new bootstrap.Modal(modalElement);
+                modal.show();
+            } else {
+                modalElement.style.display = 'flex';
+                modalElement.classList.add('show');
+                document.body.style.overflow = 'hidden';
+            }
+        }
+
+        function closeDashboardExportModal() {
+            const modalElement = document.getElementById('dashboardExportModal');
+            if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                const modal = bootstrap.Modal.getInstance(modalElement);
+                if (modal) {
+                    modal.hide();
+                }
+            } else {
+                modalElement.style.display = 'none';
+                modalElement.classList.remove('show');
+                document.body.style.overflow = '';
+            }
+        }
+
+        function confirmDashboardExport() {
+            const format = document.getElementById('dashboardExportFormat').value;
+            const errorDiv = document.getElementById('dashboardExportError');
+            
+            if (!format) {
+                errorDiv.style.display = 'flex';
+                return;
+            }
+            
+            errorDiv.style.display = 'none';
+            closeDashboardExportModal();
+            
+            if (format === 'csv') {
+                exportDashboardToCSV();
+            } else if (format === 'pdf') {
+                exportDashboardToPDF();
+            }
+        }
+
+        function exportDashboardToCSV() {
+            // Dashboard-specific CSV export
+            const csvData = [
+                ['Dashboard Metrics', 'Value', 'Description'],
+                ['Confirmed Revenue', '₱<?php echo number_format($confirmedRevenue, 2); ?>', 'Money received'],
+                ['Total Orders', '<?php echo number_format($uniqueOrders); ?>', 'Orders placed'],
+                ['Items Sold', '<?php echo number_format($totalSales); ?>', 'Total quantity'],
+                ['Avg Order Value', '₱<?php echo number_format($avgOrderValue, 2); ?>', 'Per order'],
+                ['Pending Revenue', '₱<?php echo number_format($pendingRevenue, 2); ?>', 'COD awaiting delivery'],
+                ['Return Rate', '0.0%', '0 returns'],
+                ['Active Products', '<?php echo $totalProducts; ?>', 'Listings'],
+                ['', '', ''],
+                ['Recent Orders', '', ''],
+                ['Order ID', 'Customer', 'Product', 'Total', 'Status', 'Date']
+            ];
+            
+            // Add recent orders data
+            <?php foreach ($recentOrders as $order): ?>
+            csvData.push([
+                '#<?php echo $order['id']; ?>',
+                '<?php echo htmlspecialchars($order['customer_name']); ?>',
+                '<?php echo htmlspecialchars($order['product_name']); ?>',
+                '₱<?php echo number_format($order['total_amount'], 2); ?>',
+                '<?php echo ucfirst($order['status']); ?>',
+                '<?php echo date('M j, Y', strtotime($order['created_at'])); ?>'
+            ]);
+            <?php endforeach; ?>
+            
+            const csvContent = csvData.map(row => row.join(',')).join('\n');
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', 'dashboard_data_' + new Date().toISOString().split('T')[0] + '.csv');
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function exportDashboardToPDF() {
+            // Dashboard-specific PDF export
+            const element = document.createElement('div');
+            element.innerHTML = `
+                <div style="font-family: Arial, sans-serif; padding: 20px;">
+                    <h1 style="color: #333; text-align: center; margin-bottom: 30px;">Seller Dashboard Report</h1>
+                    <p style="text-align: center; color: #666; margin-bottom: 30px;">Generated on ${new Date().toLocaleDateString()}</p>
+                    
+                    <h2 style="color: #333; border-bottom: 2px solid #007bff; padding-bottom: 10px;">Key Performance Indicators</h2>
+                    <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px;">
+                        <tr style="background-color: #f8f9fa;">
+                            <th style="border: 1px solid #ddd; padding: 12px; text-align: left;">Metric</th>
+                            <th style="border: 1px solid #ddd; padding: 12px; text-align: left;">Value</th>
+                            <th style="border: 1px solid #ddd; padding: 12px; text-align: left;">Description</th>
+                        </tr>
+                        <tr>
+                            <td style="border: 1px solid #ddd; padding: 12px;">Confirmed Revenue</td>
+                            <td style="border: 1px solid #ddd; padding: 12px; font-weight: bold;">₱<?php echo number_format($confirmedRevenue, 2); ?></td>
+                            <td style="border: 1px solid #ddd; padding: 12px;">Money received</td>
+                        </tr>
+                        <tr>
+                            <td style="border: 1px solid #ddd; padding: 12px;">Total Orders</td>
+                            <td style="border: 1px solid #ddd; padding: 12px; font-weight: bold;"><?php echo number_format($uniqueOrders); ?></td>
+                            <td style="border: 1px solid #ddd; padding: 12px;">Orders placed</td>
+                        </tr>
+                        <tr>
+                            <td style="border: 1px solid #ddd; padding: 12px;">Items Sold</td>
+                            <td style="border: 1px solid #ddd; padding: 12px; font-weight: bold;"><?php echo number_format($totalSales); ?></td>
+                            <td style="border: 1px solid #ddd; padding: 12px;">Total quantity</td>
+                        </tr>
+                        <tr>
+                            <td style="border: 1px solid #ddd; padding: 12px;">Avg Order Value</td>
+                            <td style="border: 1px solid #ddd; padding: 12px; font-weight: bold;">₱<?php echo number_format($avgOrderValue, 2); ?></td>
+                            <td style="border: 1px solid #ddd; padding: 12px;">Per order</td>
+                        </tr>
+                        <tr>
+                            <td style="border: 1px solid #ddd; padding: 12px;">Pending Revenue</td>
+                            <td style="border: 1px solid #ddd; padding: 12px; font-weight: bold;">₱<?php echo number_format($pendingRevenue, 2); ?></td>
+                            <td style="border: 1px solid #ddd; padding: 12px;">COD awaiting delivery</td>
+                        </tr>
+                        <tr>
+                            <td style="border: 1px solid #ddd; padding: 12px;">Active Products</td>
+                            <td style="border: 1px solid #ddd; padding: 12px; font-weight: bold;"><?php echo $totalProducts; ?></td>
+                            <td style="border: 1px solid #ddd; padding: 12px;">Listings</td>
+                        </tr>
+                    </table>
+                </div>
+            `;
+            
+            const opt = {
+                margin: 1,
+                filename: 'dashboard_report_' + new Date().toISOString().split('T')[0] + '.pdf',
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2 },
+                jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+            };
+            
+            html2pdf().set(opt).from(element).save();
+        }
+
+        // Event listener for export format dropdown
+        document.getElementById('dashboardExportFormat').addEventListener('change', function() {
+            document.getElementById('dashboardExportError').style.display = 'none';
+        });
+
+        // Click outside to close modal
+        document.getElementById('dashboardExportModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeDashboardExportModal();
+            }
         });
     </script>
 </body>

@@ -102,235 +102,386 @@ if (isset($_COOKIE['remember_token']) && !isLoggedIn()) {
 require_once 'includes/header.php';
 ?>
 
+<link href="https://fonts.googleapis.com/css2?family=Libre+Barcode+128+Text&display=swap" rel="stylesheet">
+
 <style>
-        /* Login Seller Page Styles */
-        body {
-            background: linear-gradient(135deg, var(--primary-dark) 0%, rgba(19, 3, 37, 0.9) 100%);
-            min-height: 100vh;
-            margin: 0;
-            font-family: var(--font-primary);
+    /* Override body background */
+    body {
+        background: linear-gradient(135deg, var(--primary-dark) 0%, rgba(19, 3, 37, 0.9) 100%);
+        min-height: 100vh;
+        margin: 0;
+    }
+
+    /* Main wrapper matching login_customer.php layout */
+    .login-page-wrapper {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        min-height: calc(100vh - 80px);
+        padding: 30px 60px;
+        gap: 50px;
+        max-width: 1400px;
+        margin: 0 auto;
+    }
+
+    /* Left Side Branding */
+    .branding-section {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+    }
+
+    .main-logo {
+        font-size: 80px;
+        font-family: 'Libre Barcode 128 Text', monospace;
+        font-weight: 400;
+        color: #FFD736;
+        margin-bottom: 25px;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    .tagline {
+        font-size: 26px;
+        color: #FFD736;
+        font-weight: 700;
+        margin-bottom: 12px;
+        opacity: 0.95;
+        letter-spacing: 0.5px;
+    }
+
+    .subtagline {
+        font-size: 18px;
+        color: #FFD736;
+        opacity: 0.75;
+        font-weight: 400;
+        max-width: 400px;
+        line-height: 1.5;
+    }
+
+    /* Login Container - Extra Minimized */
+/* Login Container - Extra Minimized */
+    .login-container {
+        max-width: 380px; 
+        width: 100%;
+        padding: 20px;
+        border-radius: 8px;
+        background: #ffffff;
+        color: #130325;
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .login-header {
+        text-align: center;
+        margin-bottom: 14px;
+    }
+
+    .login-header h1 {
+        color: #130325;
+        font-size: 18px;
+        font-weight: 700;
+        margin-bottom: 4px;
+    }
+
+    .login-header .subtitle {
+        font-size: 11px;
+        color: #130325;
+        opacity: 0.7;
+    }
+
+    .seller-requirements {
+        background: rgba(255, 215, 54, 0.1);
+        border: 1px solid rgba(255, 215, 54, 0.3);
+        padding: 10px;
+        border-radius: 6px;
+        margin-bottom: 12px;
+        font-size: 11px;
+    }
+
+    .seller-requirements h4 {
+        margin: 0 0 6px 0;
+        font-size: 12px;
+        color: #130325;
+        font-weight: 700;
+    }
+
+    .seller-requirements ul {
+        margin: 4px 0;
+        padding-left: 18px;
+    }
+
+    .seller-requirements li {
+        margin-bottom: 3px;
+        color: #130325;
+    }
+    
+    .form-group {
+        margin-bottom: 12px;
+    }
+    
+    .form-group label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: 600;
+        color: #130325;
+        font-size: 12px;
+    }
+    
+    .form-group input[type="text"],
+    .form-group input[type="password"] {
+        width: 100%;
+        padding: 8px 10px;
+        border: 2px solid rgba(19, 3, 37, 0.2);
+        border-radius: 6px;
+        font-size: 12px;
+        background: #ffffff;
+        color: #130325;
+        box-sizing: border-box;
+        transition: all 0.3s ease;
+    }
+
+    .form-group input:focus {
+        outline: none;
+        background: #ffffff;
+        border-color: #FFD736;
+        box-shadow: 0 0 0 3px rgba(255, 215, 54, 0.2);
+    }
+    
+    .form-group input::placeholder {
+        color: rgba(19, 3, 37, 0.5);
+    }
+    
+    .password-input-container {
+        position: relative;
+        display: flex;
+        align-items: center;
+    }
+    
+    .toggle-password {
+        position: absolute;
+        right: 8px;
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 3px;
+        color: #130325;
+        opacity: 0.6;
+        transition: opacity 0.3s ease;
+        font-size: 12px;
+    }
+
+    .toggle-password:hover {
+        opacity: 1;
+    }
+    
+    .forgot-password {
+        color: #130325;
+        font-size: 11px;
+        text-decoration: none;
+        float: right;
+        margin-top: 4px;
+        opacity: 0.7;
+        transition: opacity 0.3s ease;
+    }
+    
+    .forgot-password:hover {
+        opacity: 1;
+        text-decoration: underline;
+    }
+    
+    .remember-me {
+        display: flex;
+        align-items: center;
+        font-size: 12px;
+        color: #130325;
+    }
+    
+    .remember-me input[type="checkbox"] {
+        margin-right: 5px;
+        accent-color: #FFD736;
+        transform: scale(1.0);
+    }
+    
+    .login-container button[type="submit"] {
+        width: 100%;
+        padding: 10px 16px;
+        background-color: #130325;
+        color: #F9F9F9;
+        border: 2px solid #130325;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 700;
+        cursor: pointer;
+        text-decoration: none;
+        text-align: center;
+        transition: all 0.3s ease;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-top: 6px;
+    }
+    
+    .login-container button[type="submit"]:hover:not(:disabled) {
+        background-color: #FFD736;
+        color: #130325;
+        border-color: #FFD736;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(255, 215, 54, 0.4);
+    }
+    
+    .login-links {
+        text-align: center;
+        margin-top: 12px;
+        padding-top: 12px;
+        border-top: 1px solid rgba(19, 3, 37, 0.1);
+    }
+    
+    .login-links p {
+        font-size: 11px;
+        color: #130325;
+        margin: 0;
+    }
+
+    .login-links a {
+        color: #130325;
+        text-decoration: none;
+        font-weight: 600;
+    }
+    
+    .login-links a:hover {
+        color: #FFD736;
+        text-decoration: underline;
+    }
+    
+    .other-logins {
+        text-align: center;
+        margin-top: 12px;
+        padding-top: 12px;
+        border-top: 1px solid rgba(19, 3, 37, 0.1);
+    }
+
+    .other-logins p {
+        margin-bottom: 8px;
+        font-size: 11px;
+        color: #130325;
+        opacity: 0.7;
+    }
+    
+    .other-logins a {
+        display: inline-block;
+        margin: 3px 5px;
+        padding: 6px 12px;
+        background: #130325;
+        color: #FFD736;
+        text-decoration: none;
+        border-radius: 5px;
+        font-size: 11px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        border: 2px solid #130325;
+    }
+    
+    .other-logins a:hover {
+        background: #FFD736;
+        color: #130325;
+        border-color: #FFD736;
+        transform: translateY(-2px);
+    }
+    
+    .success-message, .error-message {
+        padding: 8px 12px;
+        border-radius: 6px;
+        margin-bottom: 12px;
+        text-align: center;
+        font-size: 12px;
+        font-weight: 600;
+    }
+    
+    .success-message {
+        background: rgba(40, 167, 69, 0.15);
+        border: 2px solid rgba(40, 167, 69, 0.4);
+        color: #28a745;
+    }
+    
+    .error-message {
+        background: rgba(220, 53, 69, 0.15);
+        border: 2px solid rgba(220, 53, 69, 0.4);
+        color: #dc3545;
+    }
+
+    /* Responsive */
+    @media (max-width: 1024px) {
+        .login-page-wrapper {
+            flex-direction: column;
+            padding: 30px;
+            gap: 30px;
         }
 
-        /* Use default header styles from includes/header.php (no overrides here) */
+        .branding-section {
+            order: 1;
+        }
 
         .login-container {
-            max-width: 380px;
-            margin: 40px auto;
-            padding: 20px;
-            border: 1px solid var(--border-secondary);
-            border-radius: 15px;
-            background: linear-gradient(135deg, var(--primary-dark) 0%, rgba(19, 3, 37, 0.95) 100%);
-            color: var(--primary-light);
-            box-shadow: 0 10px 40px var(--shadow-dark);
-            position: relative;
-            overflow: hidden;
+            order: 2;
+            max-width: 400px;
         }
-        
-        
-        .login-header {
-            text-align: center;
-            margin-bottom: 30px;
+    }
+
+    @media (max-width: 768px) {
+        .login-page-wrapper {
+            padding: 25px 20px;
+        }
+
+        .main-logo {
+            font-size: 60px;
+        }
+
+        .tagline {
+            font-size: 22px;
+        }
+
+        .subtagline {
+            font-size: 16px;
+        }
+
+        .login-container {
+            max-width: 100%;
+            padding: 18px;
         }
 
         .login-header h1 {
-            margin: 0;
-            font-size: 24px;
-            font-weight: 700;
-            color: var(--accent-yellow);
+            font-size: 18px;
         }
+    }
 
-        .login-header .subtitle {
-            font-size: 14px;
-            opacity: 0.8;
-            margin-top: 5px;
-        }
-
-        .status-info {
-            background: rgba(255,255,255,0.1);
-            padding: 15px;
-            border-radius: 5px;
-            margin-bottom: 20px;
-            font-size: 14px;
-            text-align: center;
-            border-left: 4px solid rgba(255,255,255,0.3);
-        }
-        
-        .form-group {
-            margin-bottom: 20px;
-        }
-        
-        .form-group label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: 500;
-        }
-        
-        .form-group input[type="text"],
-        .form-group input[type="password"] {
-            width: 100%;
-            padding: 10px 14px;
-            border: 1px solid rgba(249, 249, 249, 0.3);
-            border-radius: 10px;
-            font-size: 13px;
-            background: rgba(249, 249, 249, 0.1);
-            color: #F9F9F9;
-            box-sizing: border-box;
-            transition: all 0.3s ease;
-        }
-
-        .form-group input:focus {
-            outline: none;
-            background: rgba(249, 249, 249, 0.2);
-            border-color: rgba(255, 215, 54, 0.5);
-            box-shadow: 0 0 15px rgba(255, 215, 54, 0.3);
-        }
-        
-        .form-group input::placeholder {
-            color: rgba(249, 249, 249, 0.7);
-        }
-        
-        .password-input-container {
-            position: relative;
-            display: flex;
-            align-items: center;
-        }
-        
-        .toggle-password {
-            position: absolute;
-            right: 10px;
-            background: none;
-            border: none;
-            cursor: pointer;
-            padding: 5px;
-            color: #666;
-        }
-        
-        .forgot-password {
-            color: var(--accent-yellow);
-            font-size: 14px;
-            text-decoration: none;
-            float: right;
-            margin-top: 5px;
-        }
-        
-        .forgot-password:hover {
-            color: var(--primary-light);
-            text-decoration: underline;
-        }
-        
-        .remember-me {
-            display: flex;
-            align-items: center;
-            font-size: 14px;
-        }
-        
-        .remember-me input[type="checkbox"] {
-            margin-right: 8px;
-        }
-        
+    @media (max-width: 480px) {
         .login-container button[type="submit"] {
-            width: 100%;
-            padding: 8px 16px;
-            background-color: #FFD736;
-            color: #130325;
-            border: none;
-            border-radius: 4px;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            text-decoration: none;
-            text-align: center;
-            transition: all 0.2s;
-        }
-        
-        .login-container button[type="submit"]:hover:not(:disabled) {
-            background-color: #e6c230;
-        }
-        
-        .login-links {
-            text-align: center;
-            margin-top: 16px;
-            font-size: 0.75rem;
-            line-height: 1.2;
-        }
-        
-        .login-links a {
-            color: var(--accent-yellow);
-            text-decoration: none;
-            margin: 0 8px;
-            font-size: 0.75rem;
-        }
-        
-        .login-links a:hover {
-            color: var(--primary-light);
-            text-decoration: underline;
-        }
-        
-        .other-logins {
-            text-align: center;
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 1px solid rgba(255,255,255,0.2);
-        }
-        
-        .other-logins a {
-            display: inline-block;
-            margin: 5px 10px;
-            padding: 8px 16px;
-            background: rgba(255,255,255,0.1);
-            color: white;
-            text-decoration: none;
-            border-radius: 5px;
-            font-size: 14px;
-            transition: background 0.3s ease;
-        }
-        
-        .other-logins a:hover {
-            background: rgba(255,255,255,0.2);
-        }
-        
-        .success-message, .error-message {
-            padding: 12px;
-            border-radius: 5px;
-            margin-bottom: 20px;
-            text-align: center;
-        }
-        
-        .success-message {
-            background: rgba(40, 167, 69, 0.2);
-            border: 1px solid rgba(40, 167, 69, 0.5);
-        }
-        
-        .error-message {
-            background: rgba(220, 53, 69, 0.2);
-            border: 1px solid rgba(220, 53, 69, 0.5);
-        }
-        
-        .seller-requirements {
-            background: rgba(255,255,255,0.1);
-            padding: 15px;
-            border-radius: 5px;
-            margin-bottom: 20px;
+            padding: 10px 16px;
             font-size: 13px;
         }
-        
-        .seller-requirements h4 {
-            margin: 0 0 10px 0;
-            font-size: 14px;
+
+        .other-logins a {
+            display: block;
+            margin: 6px 0;
         }
-        
-        .seller-requirements ul {
-            margin: 5px 0;
-            padding-left: 20px;
-        }
-        
-        .seller-requirements li {
-            margin-bottom: 5px;
-        }
-    </style>
+    }
+</style>
+
+<div class="login-page-wrapper">
+    <!-- Left Side Branding -->
+    <div class="branding-section">
+        <div class="main-logo">PEST-CTRL</div>
+        <div class="tagline">Seller Portal</div>
+        <div class="subtagline">Manage your products and grow your pest control business</div>
+    </div>
+
+    <!-- Login Container -->
     <div class="login-container">
         <div class="login-header">
-            <h1><i class="fas fa-store"></i> Seller Portal</h1>
+            <h1><i class="fas fa-store"></i> Seller Login</h1>
             <div class="subtitle">Access your seller dashboard</div>
         </div>
 
@@ -338,21 +489,20 @@ require_once 'includes/header.php';
             <h4><i class="fas fa-info-circle"></i> Seller Account Requirements:</h4>
             <ul>
                 <li>Account must be approved by admin</li>
-                <!-- <li>Valid business documents required</li> -->
                 <li>Active account status needed</li>
             </ul>
         </div>
 
         <?php if (isset($_SESSION['success'])): ?>     
-            <div class="success-message">         
-                <?php echo $_SESSION['success']; ?>         
+            <div class="success-message">
+                <i class="fas fa-check-circle"></i> <?php echo $_SESSION['success']; ?>         
                 <?php unset($_SESSION['success']); ?>     
             </div> 
         <?php endif; ?>  
 
         <?php if (isset($error)): ?>     
-            <div class="error-message">         
-                <?php echo htmlspecialchars($error); ?>     
+            <div class="error-message">
+                <i class="fas fa-exclamation-circle"></i> <?php echo htmlspecialchars($error); ?>     
             </div> 
         <?php endif; ?>  
 
@@ -360,14 +510,23 @@ require_once 'includes/header.php';
             <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">          
             
             <div class="form-group">         
-                <label for="username"><i class="fas fa-user-tie"></i> Username or Email:</label>         
-                <input type="text" id="username" name="username" value="<?php echo isset($_POST['username']) ? htmlspecialchars($_POST['username']) : ''; ?>" required>     
+                <label for="username"><i class="fas fa-user-tie"></i> Username or Email</label>         
+                <input type="text" 
+                       id="username" 
+                       name="username" 
+                       placeholder="Enter your username or email"
+                       value="<?php echo isset($_POST['username']) ? htmlspecialchars($_POST['username']) : ''; ?>" 
+                       required>     
             </div>          
             
             <div class="form-group">
-                <label for="password"><i class="fas fa-lock"></i> Password:</label>
+                <label for="password"><i class="fas fa-lock"></i> Password</label>
                 <div class="password-input-container">
-                    <input type="password" id="password" name="password" required>
+                    <input type="password" 
+                           id="password" 
+                           name="password" 
+                           placeholder="Enter your password"
+                           required>
                     <button type="button" class="toggle-password" onclick="togglePassword('password')">
                         <i class="fa-solid fa-eye"></i>
                     </button>
@@ -382,39 +541,41 @@ require_once 'includes/header.php';
                 </label>     
             </div>          
             
-            <button type="submit" name="login"><i class="fas fa-sign-in-alt"></i> Login as Seller</button> 
+            <button type="submit" name="login">
+                <i class="fas fa-sign-in-alt"></i> Login as Seller
+            </button> 
         </form>  
 
         <div class="login-links">
-            <p style = "font-size: 13px;">Need a seller account? <a href="register.php">Register here</a></p>
+            <p>Need a seller account? <a href="register.php">Register here</a></p>
         </div>
         
         <div class="other-logins">
-            <p style="margin-bottom: 10px; font-size: 14px; opacity: 0.8;">Login as:</p>
+            <p>Login as:</p>
             <a href="login_customer.php"><i class="fas fa-shopping-cart"></i> Customer</a>
-            <!-- <a href="login_admin.php"><i class="fas fa-user-shield"></i> Admin</a> -->
+            <a href="login.php"><i class="fas fa-arrow-left"></i> Back to Login Options</a>
         </div>
     </div>
+</div>
 
-    <script> 
-    // Toggle password visibility 
-    function togglePassword(fieldId) {
-        const passwordField = document.getElementById(fieldId);
-        const toggleButton = passwordField.nextElementSibling;
-        const icon = toggleButton.querySelector("i");
+<script> 
+// Toggle password visibility 
+function togglePassword(fieldId) {
+    const passwordField = document.getElementById(fieldId);
+    const toggleButton = passwordField.nextElementSibling;
+    const icon = toggleButton.querySelector("i");
 
-        if (passwordField.type === 'password') {
-            passwordField.type = 'text';
-            icon.classList.remove("fa-eye");
-            icon.classList.add("fa-eye-slash");
-        } else {
-            passwordField.type = 'password';
-            icon.classList.remove("fa-eye-slash");
-            icon.classList.add("fa-eye");
-        }
+    if (passwordField.type === 'password') {
+        passwordField.type = 'text';
+        icon.classList.remove("fa-eye");
+        icon.classList.add("fa-eye-slash");
+    } else {
+        passwordField.type = 'password';
+        icon.classList.remove("fa-eye-slash");
+        icon.classList.add("fa-eye");
     }
-    </script>
-<?php require_once 'includes/footer.php'; ?>
+}
+</script>
 
 <?php
 // End output buffering and flush content

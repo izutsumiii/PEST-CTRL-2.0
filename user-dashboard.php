@@ -210,6 +210,39 @@ function getDeliveredOrders() {
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
+// Function to check if user has reviewed a product from an order
+function hasUserReviewedProduct($pdo, $userId, $orderId) {
+    try {
+        // Get all products from the order
+        $stmt = $pdo->prepare("
+            SELECT oi.product_id 
+            FROM order_items oi 
+            JOIN orders o ON oi.order_id = o.id 
+            WHERE o.id = ? AND o.user_id = ?
+        ");
+        $stmt->execute([$orderId, $userId]);
+        $products = $stmt->fetchAll(PDO::FETCH_COLUMN);
+        
+        if (empty($products)) {
+            return false;
+        }
+        
+        // Check if user has reviewed any of these products
+        $placeholders = str_repeat('?,', count($products) - 1) . '?';
+        $stmt = $pdo->prepare("
+            SELECT 1 FROM product_reviews 
+            WHERE user_id = ? AND product_id IN ($placeholders) 
+            LIMIT 1
+        ");
+        $stmt->execute(array_merge([$userId], $products));
+        
+        return (bool)$stmt->fetchColumn();
+    } catch (PDOException $e) {
+        error_log("Error checking if user reviewed product: " . $e->getMessage());
+        return false;
+    }
+}
+
 // Function to update order status and set delivery date
 function updateOrderStatus($orderId, $newStatus, $updatedBy = null, $notes = '') {
     global $pdo;
@@ -391,36 +424,310 @@ if (!$user) {
 ?>
 
 <style>
-/* Dashboard Styles */
-* {
+/* Modern Dashboard Styles - Matching Products.php Design */
+
+/* Body background - Lighter white like products.php */
+body {
+    background: #f8f9fa !important;
+    min-height: 100vh;
+    color: #130325;
     margin: 0;
     padding: 0;
-    box-sizing: border-box;
 }
 
-/* Hover for filter tabs */
-.filter-tab:hover {
-    background: #FFD736 !important;
+/* Override text-align for header and navigation */
+.site-header,
+.site-header *,
+.navbar,
+.navbar *,
+.dropdown,
+.dropdown * {
+    text-align: left !important;
+}
+
+/* Dashboard Layout - Matching delivered products width */
+.dashboard-layout {
+    display: grid;
+    grid-template-columns: 1fr;
+    align-items: start;
+    gap: 30px;
+    max-width: 1600px;
+    margin: 0 auto;
+    padding: 0 20px;
+    margin-top: 40px;
+}
+
+/* Main dashboard content */
+.dashboard-main {
+    min-width: 0;
+    grid-column: 1;
+    grid-row: 1;
+}
+
+/* Page title styling */
+.page-title {
     color: #130325 !important;
-    border-color: #FFD736 !important;
+    text-align: left;
+    margin: 0 0 30px 60px;
+    font-size: 1.8rem;
+    font-weight: 700;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
-/* Dark background for user dashboard page */
-body {
-    background-color: #130325 !important;
+/* Filter container */
+.filter-container {
+    background: #ffffff;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    padding: 20px;
+    margin: 0 60px 30px 60px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
 }
 
-/* Removed body background override to match header styling */
+/* Filter tabs styling */
+.filter-tabs {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.filter-tab {
+    background: #f8f9fa !important;
+    border: 1px solid rgba(0, 0, 0, 0.1) !important;
+    color: #130325 !important;
+    padding: 10px 20px;
+    border-radius: 4px;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 14px;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.filter-tab:hover {
+    background: #130325 !important;
+    color: #ffffff !important;
+    border-color: #130325 !important;
+}
+
+.filter-tab.active {
+    background: #130325 !important;
+    color: #ffffff !important;
+    border-color: #130325 !important;
+}
+
+/* Order cards styling - compact cards */
+.order-card {
+    background: #ffffff !important;
+    border: 1px solid rgba(0, 0, 0, 0.1) !important;
+    border-radius: 6px !important;
+    padding: 15px !important;
+    margin: 0 60px 10px 60px !important;
+    transition: all 0.3s ease !important;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+    min-height: 80px;
+    max-width: 100%;
+}
+
+.order-card:hover {
+    border-color: rgba(0, 0, 0, 0.2) !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1) !important;
+}
+
+/* Order header - compact layout */
+.order-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.order-number {
+    color: #130325 !important;
+    font-size: 1.1rem;
+    font-weight: 700;
+}
+
+.order-date {
+    color: #666 !important;
+    font-size: 0.8rem;
+}
+
+.order-left {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.seller-info {
+    color: #666 !important;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+/* Order status */
+.order-status {
+    display: inline-block;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.status-pending { background: #fff3cd; color: #856404; }
+.status-processing { background: #d1ecf1; color: #0c5460; }
+.status-shipped { background: #d4edda; color: #155724; }
+.status-delivered { background: #d1ecf1; color: #0c5460; }
+.status-cancelled { background: #f8d7da; color: #721c24; }
+
+/* Order items - compact */
+.order-items {
+    margin: 8px 0;
+}
+
+.order-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px;
+    background: #ffffff;
+    border-radius: 4px;
+    margin-bottom: 6px;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.order-item img {
+    width: 40px;
+    height: 40px;
+    object-fit: cover;
+    border-radius: 4px;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.order-item-info {
+    flex: 1;
+}
+
+.order-item-name {
+    color: #130325 !important;
+    font-weight: 600;
+    font-size: 0.9rem;
+    margin-bottom: 2px;
+}
+
+.order-item-details {
+    color: #666 !important;
+    font-size: 0.8rem;
+}
+
+/* Order bottom section */
+.order-bottom {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+/* Order total */
+.order-total {
+    text-align: left;
+}
+
+.order-total-amount {
+    color: #130325 !important;
+    font-size: 1.1rem;
+    font-weight: 700;
+}
+
+/* Order actions */
+.order-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.btn {
+    padding: 6px 12px;
+    border: none;
+    border-radius: 4px;
+    font-weight: 600;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    font-size: 0.8rem;
+}
+
+.btn-primary {
+    background: #130325;
+    color: #ffffff;
+}
+
+.btn-primary:hover {
+    background: #0f0220;
+    box-shadow: 0 4px 12px rgba(19, 3, 37, 0.3);
+}
+
+.btn-danger {
+    background: #dc3545;
+    color: white;
+}
+
+.btn-danger:hover {
+    background: #c82333;
+    box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
+}
+
+.btn-secondary {
+    background: #FFD736;
+    color: #130325;
+}
+
+.btn-secondary:hover {
+    background: #e6c230;
+    box-shadow: 0 4px 12px rgba(255, 215, 54, 0.3);
+}
+
+.btn-warning {
+    background: #FFD736;
+    color: #130325;
+}
+
+.btn-warning:hover {
+    background: #e6c230;
+    box-shadow: 0 4px 12px rgba(255, 215, 54, 0.3);
+}
+
+/* No orders message */
+.no-orders {
+    text-align: center;
+    padding: 60px 20px;
+    color: #666;
+}
+
+.no-orders p {
+    font-size: 1.1rem;
+    margin-bottom: 20px;
+}
 
 /* Alert Styles */
 .alert {
     padding: 15px 20px;
     margin: 20px auto;
     max-width: 1200px;
-    border-radius: 10px;
+    border-radius: 12px;
     font-size: 1rem;
     border: none;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
 }
 
 .alert-success {
@@ -441,61 +748,234 @@ body {
     border-left: 5px solid #ffc107;
 }
 
-/* Main heading */
-h1 {
-    color: var(--primary-dark);
-    text-align: center;
-    margin: 30px 0;
-    font-size: 2.5rem;
-    font-weight: 600;
-    text-shadow: 0 2px 4px var(--shadow-light);
+/* Responsive design */
+@media (max-width: 768px) {
+    .dashboard-layout {
+        padding: 0 15px;
+        margin-top: 60px;
+    }
+    
+    .order-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    
+    .order-actions {
+        flex-direction: column;
+    }
+    
+    .btn {
+        justify-content: center;
+    }
 }
 
-/* My Orders title should be white on dark background */
-.page-title {
-    color: #ffffff !important;
-}
-
-/* Container for the entire dashboard */
-.dashboard-container {
-    max-width: 1400px;
-    margin: 0 auto;
-    padding: 20px;
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 30px;
-    align-items: start;
-}
-
-/* Full width container for delivered products */
-.dashboard-full-width {
-    max-width: 1400px;
-    margin: 30px auto 0;
+/* Reviews Section - Wider and Modern Design */
+.delivered-reviews-wrap { 
+    max-width: 1600px; 
+    margin: 40px auto 20px auto; 
     padding: 0 20px;
 }
 
-/* User info section */
-.user-info {
-    background: var(--gradient-primary);
-    position: relative;
-    overflow: hidden;
-    padding: 25px;
-    border-radius: 15px;
-    box-shadow: var(--shadow-soft);
-    height: fit-content;
-    max-height: 400px;
+.delivered-card { 
+    background: #ffffff !important;
+    border: 1px solid rgba(0, 0, 0, 0.1) !important;
+    border-radius: 8px !important;
+    overflow: hidden; 
+    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+    transition: all 0.3s ease;
 }
 
-.user-info::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(255,255,255,0.1);
-    border-radius: 15px;
-    pointer-events: none;
+.delivered-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 15px 35px rgba(255, 215, 54, 0.2);
+}
+
+.delivered-card .header { 
+    display: flex; 
+    align-items: center; 
+    justify-content: space-between; 
+    padding: 20px 25px; 
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    background: rgba(248, 249, 250, 0.8);
+}
+
+.delivered-card .title { 
+    color: #130325 !important; 
+    font-size: 20px; 
+    font-weight: 700; 
+    letter-spacing: 0.3px; 
+    margin: 0;
+}
+
+.delivered-card .subtitle { 
+    color: #666 !important; 
+    font-size: 14px; 
+    opacity: 0.9; 
+    margin: 5px 0 0 0;
+}
+
+.delivered-list { 
+    max-height: 500px; 
+    overflow-y: auto; 
+    padding: 10px 0;
+}
+
+.delivered-item { 
+    display: flex; 
+    gap: 20px; 
+    align-items: flex-start; 
+    padding: 18px 25px; 
+    border-bottom: 1px solid rgba(255, 215, 54, 0.1);
+    transition: all 0.3s ease;
+}
+
+.delivered-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.delivered-item:last-child { 
+    border-bottom: none; 
+}
+
+.delivered-thumb { 
+    width: 80px; 
+    height: 80px; 
+    border-radius: 12px; 
+    border: 2px solid #130325; 
+    object-fit: cover; 
+    background: #f8f9fa; 
+    flex-shrink: 0;
+    transition: all 0.3s ease;
+}
+
+.delivered-thumb:hover {
+    transform: scale(1.05);
+    border-color: #FFD736;
+}
+
+.delivered-body { 
+    flex: 1; 
+    min-width: 0; 
+}
+
+.delivered-name { 
+    color: #130325 !important; 
+    font-weight: 700; 
+    margin: 0 0 8px 0; 
+    font-size: 16px;
+    line-height: 1.3;
+}
+
+.delivered-meta { 
+    display: flex; 
+    gap: 16px; 
+    flex-wrap: wrap; 
+    color: #666 !important; 
+    font-size: 13px; 
+    margin-bottom: 8px; 
+}
+
+.delivered-meta .price { 
+    color: #FFD736 !important; 
+    font-weight: 700; 
+}
+
+.delivered-meta .date { 
+    color: #999 !important; 
+}
+
+.review-cta { 
+    display: flex; 
+    align-items: center; 
+    gap: 12px; 
+    margin-top: 8px;
+}
+
+.btn-review { 
+    background: #FFD736 !important;
+    color: #130325 !important; 
+    border: 2px solid #FFD736 !important; 
+    padding: 12px 20px; 
+    border-radius: 10px; 
+    font-weight: 700; 
+    font-size: 14px; 
+    text-decoration: none; 
+    display: inline-flex; 
+    align-items: center; 
+    gap: 8px; 
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.btn-review:hover { 
+    background: #e6c230 !important;
+    border-color: #e6c230 !important; 
+    transform: translateY(-2px); 
+    box-shadow: 0 8px 20px rgba(255, 215, 54, 0.4); 
+    color: #130325 !important; 
+    text-decoration: none; 
+}
+
+.badge-reviewed { 
+    display: inline-block; 
+    padding: 8px 14px; 
+    border-radius: 20px; 
+    border: 1px solid #28a745; 
+    color: #28a745; 
+    background: rgba(40, 167, 69, 0.15); 
+    font-weight: 700; 
+    font-size: 13px;
+}
+
+.delivered-list::-webkit-scrollbar { 
+    width: 8px; 
+}
+
+.delivered-list::-webkit-scrollbar-track { 
+    background: rgba(255, 255, 255, 0.1); 
+    border-radius: 4px;
+}
+
+.delivered-list::-webkit-scrollbar-thumb { 
+    background: linear-gradient(135deg, #FFD736, #e6c230); 
+    border-radius: 4px; 
+}
+
+.delivered-list::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(135deg, #e6c230, #d4b017);
+}
+
+@media (max-width: 768px) {
+    .delivered-reviews-wrap {
+        padding: 0 15px;
+    }
+    
+    .delivered-card .header {
+        padding: 15px 20px;
+    }
+    
+    .delivered-item { 
+        flex-direction: column; 
+        align-items: flex-start; 
+        gap: 15px;
+        padding: 15px 20px;
+    }
+    
+    .delivered-thumb {
+        width: 70px;
+        height: 70px;
+    }
+    
+    .review-cta { 
+        width: 100%; 
+        justify-content: flex-start;
+    }
+    
+    .btn-review {
+        padding: 10px 16px;
+        font-size: 13px;
+    }
 }
 
 .user-info h2 {
@@ -540,11 +1020,11 @@ h1 {
 
 /* Orders section */
 .user-orders {
-    background: #1a0a2e;
-    border: 1px solid #2d1b4e;
-    padding: 22px;
-    border-radius: 14px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+    background: #ffffff;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
     height: fit-content;
     max-height: 600px;
     overflow-y: auto;
@@ -733,16 +1213,8 @@ h1 {
 
 .order-status.cancelled { background: rgba(220,53,69,0.2); color:#dc3545; border-color:#dc3545; }
 
-.order-items {
-    background: #120722;
-    padding: 12px;
-    border-radius: 8px;
-    margin: 15px 0;
-    font-size: 0.95rem;
-    color: #e6e1ee;
-    border: 1px solid #2d1b4e;
-}
-.order-items strong { color: #F9F9F9; }
+.order-status.return_requested { background: rgba(255,193,7,0.2); color:#ffc107; border-color:#ffc107; }
+
 
 .delivery-info {
     background: linear-gradient(135deg, #d4edda, #c3e6cb);
@@ -773,16 +1245,7 @@ h1 {
     display: inline-block;
 }
 
-.btn-primary {
-    background: #007bff;
-    color: white;
-}
-
-.btn-primary:hover {
-    background: #0056b3;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 10px rgba(0, 123, 255, 0.3);
-}
+/* Removed duplicate btn-primary definition - using the dark purple one above */
 
 .btn-danger {
     background: #dc3545;
@@ -1172,27 +1635,27 @@ h1 {
 .status-items::-webkit-scrollbar,
 .delivered-products-scroll::-webkit-scrollbar,
 .user-orders::-webkit-scrollbar {
-    width: 6px;
+    width: 8px;
 }
 
 .status-items::-webkit-scrollbar-track,
 .delivered-products-scroll::-webkit-scrollbar-track,
 .user-orders::-webkit-scrollbar-track {
-    background: #f1f1f1;
-    border-radius: 3px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
 }
 
 .status-items::-webkit-scrollbar-thumb,
 .delivered-products-scroll::-webkit-scrollbar-thumb,
 .user-orders::-webkit-scrollbar-thumb {
-    background: #c1c1c1;
-    border-radius: 3px;
+    background: linear-gradient(135deg, #FFD736, #e6c230);
+    border-radius: 4px;
 }
 
 .status-items::-webkit-scrollbar-thumb:hover,
 .delivered-products-scroll::-webkit-scrollbar-thumb:hover,
 .user-orders::-webkit-scrollbar-thumb:hover {
-    background: #a8a8a8;
+    background: linear-gradient(135deg, #e6c230, #d4b017);
 }
 
 /* CSS Variables */
@@ -1230,12 +1693,474 @@ h1 {
     animation-delay: 0.2s;
 }
 
+/* Return/Refund Button Styles */
+.btn-return-active {
+    background: #495057;
+    color: #ffffff;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+    transition: all 0.3s ease;
+}
+
+.btn-return-active:hover {
+    background: #343a40;
+    transform: translateY(-1px);
+    color: #ffffff;
+    text-decoration: none;
+}
+
+.btn-return-expired {
+    background: #adb5bd;
+    color: #ffffff;
+    opacity: 0.7;
+    cursor: not-allowed;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-return-expired:hover {
+    background: #adb5bd;
+    transform: none;
+    cursor: not-allowed;
+}
+
+/* Return Expired Popup Styles */
+.return-expired-popup {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10000;
+    backdrop-filter: blur(5px);
+}
+
+.return-expired-content {
+    background: #ffffff;
+    padding: 40px;
+    border-radius: 15px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    max-width: 500px;
+    width: 90%;
+    text-align: center;
+    border: 3px solid #dc3545;
+    animation: popupSlideIn 0.3s ease-out;
+}
+
+@keyframes popupSlideIn {
+    from {
+        opacity: 0;
+        transform: scale(0.8) translateY(-50px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+.return-expired-icon {
+    font-size: 4rem;
+    color: #dc3545;
+    margin-bottom: 20px;
+    animation: shake 0.5s ease-in-out;
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+}
+
+.return-expired-title {
+    color: #dc3545;
+    font-size: 1.8rem;
+    font-weight: 700;
+    margin-bottom: 15px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.return-expired-message {
+    color: #130325;
+    font-size: 1.1rem;
+    line-height: 1.6;
+    margin-bottom: 25px;
+}
+
+.return-expired-button {
+    background: #dc3545;
+    color: white;
+    border: none;
+    padding: 12px 30px;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.return-expired-button:hover {
+    background: #c82333;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(220, 53, 69, 0.4);
+}
+
+/* Product Selection Popup */
+.product-selection-popup {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 10001;
+    backdrop-filter: blur(5px);
+}
+
+.product-selection-content {
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    max-width: 500px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+    animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+    from { transform: translateY(-50px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+.product-selection-header {
+    background: #130325;
+    color: #ffffff;
+    padding: 20px;
+    border-radius: 12px 12px 0 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.product-selection-header h3 {
+    margin: 0;
+    font-size: 1.3rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.product-selection-header h3 i {
+    color: #FFD736;
+}
+
+.close-popup {
+    background: none;
+    border: none;
+    color: #ffffff;
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 5px;
+    border-radius: 50%;
+    width: 35px;
+    height: 35px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+}
+
+.close-popup:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: scale(1.1);
+}
+
+.product-selection-body {
+    padding: 25px;
+}
+
+.product-selection-body p {
+    color: #495057;
+    font-size: 1rem;
+    margin-bottom: 20px;
+    font-weight: 500;
+}
+
+.product-checkboxes {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.product-checkbox-item {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 15px;
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.product-checkbox-item:hover {
+    border-color: #130325;
+    background: #f8f9fa;
+}
+
+.product-checkbox-item input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: #130325;
+    cursor: pointer;
+}
+
+.product-checkbox-item.selected {
+    border-color: #130325;
+    background: rgba(19, 3, 37, 0.05);
+}
+
+.product-checkbox-info {
+    flex: 1;
+}
+
+.product-checkbox-info h5 {
+    margin: 0 0 5px 0;
+    color: #130325;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.product-checkbox-info p {
+    margin: 0;
+    color: #6c757d;
+    font-size: 0.9rem;
+}
+
+.product-checkbox-image {
+    width: 60px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 2px solid #e9ecef;
+}
+
+.product-selection-footer {
+    padding: 20px 25px;
+    border-top: 1px solid #e9ecef;
+    display: flex;
+    gap: 15px;
+    justify-content: flex-end;
+}
+
+.product-selection-footer .btn {
+    padding: 10px 20px;
+    border-radius: 6px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.product-selection-footer .btn-secondary {
+    background: #6c757d;
+    color: #ffffff;
+}
+
+.product-selection-footer .btn-secondary:hover {
+    background: #5a6268;
+    transform: translateY(-1px);
+}
+
+.product-selection-footer .btn-primary {
+    background: #130325;
+    color: #ffffff;
+}
+
+.product-selection-footer .btn-primary:hover {
+    background: #0f0220;
+    transform: translateY(-1px);
+}
+
 .delivered-products {
     animation-delay: 0.4s;
+}
+
+/* Custom confirmation dialog styling */
+.confirm-dialog {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    backdrop-filter: blur(5px);
+}
+
+.confirm-content {
+    background: linear-gradient(135deg, #130325 0%, #2a0a4a 100%);
+    border: 2px solid #FFD736;
+    border-radius: 15px;
+    padding: 30px;
+    max-width: 400px;
+    width: 90%;
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    animation: confirmSlideIn 0.3s ease;
+}
+
+@keyframes confirmSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-30px) scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.confirm-title {
+    color: #FFD736;
+    font-size: 1.3rem;
+    font-weight: 700;
+    margin-bottom: 15px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.confirm-message {
+    color: #F9F9F9;
+    font-size: 1rem;
+    margin-bottom: 25px;
+    line-height: 1.5;
+}
+
+.confirm-buttons {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+}
+
+.confirm-btn {
+    padding: 12px 25px;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-width: 100px;
+}
+
+.confirm-btn-yes {
+    background: #dc3545;
+    color: white;
+    border: 2px solid #dc3545;
+}
+
+.confirm-btn-yes:hover {
+    background: #c82333;
+    border-color: #c82333;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(220, 53, 69, 0.4);
+}
+
+.confirm-btn-no {
+    background: #6c757d;
+    color: white;
+    border: 2px solid #6c757d;
+}
+
+.confirm-btn-no:hover {
+    background: #5a6268;
+    border-color: #5a6268;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(108, 117, 125, 0.4);
 }
 </style>
 
 <script>
+// Custom styled confirmation dialog function
+function openConfirm(message, onConfirm) {
+    // Create dialog overlay
+    const dialog = document.createElement('div');
+    dialog.className = 'confirm-dialog';
+    dialog.innerHTML = `
+        <div class="confirm-content">
+            <div class="confirm-title">Confirm Action</div>
+            <div class="confirm-message">${message}</div>
+            <div class="confirm-buttons">
+                <button class="confirm-btn confirm-btn-yes">Yes</button>
+                <button class="confirm-btn confirm-btn-no">No</button>
+            </div>
+        </div>
+    `;
+    
+    // Add to page
+    document.body.appendChild(dialog);
+    
+    // Handle button clicks
+    const yesBtn = dialog.querySelector('.confirm-btn-yes');
+    const noBtn = dialog.querySelector('.confirm-btn-no');
+    
+    yesBtn.addEventListener('click', () => {
+        document.body.removeChild(dialog);
+        onConfirm();
+    });
+    
+    noBtn.addEventListener('click', () => {
+        document.body.removeChild(dialog);
+    });
+    
+    // Handle escape key
+    const handleEscape = (e) => {
+        if (e.key === 'Escape') {
+            document.body.removeChild(dialog);
+            document.removeEventListener('keydown', handleEscape);
+        }
+    };
+    document.addEventListener('keydown', handleEscape);
+    
+    // Handle click outside
+    dialog.addEventListener('click', (e) => {
+        if (e.target === dialog) {
+            document.body.removeChild(dialog);
+            document.removeEventListener('keydown', handleEscape);
+        }
+    });
+}
+
 // Auto-dismiss alert notifications after 4 seconds
 document.addEventListener('DOMContentLoaded', function() {
     // Find all alert messages
@@ -1276,8 +2201,8 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
     function confirmCancelOrder(orderId) {
-    // Minimal confirmation for production
-    openConfirm('Are you sure you want to cancel order #' + orderId + '?', function(){
+    // Clean confirmation message
+    openConfirm('Cancel order #' + orderId + '?', function(){
         const form = document.querySelector('form[action*="cancel_order"][data-order-id="' + orderId + '"]');
         if (form) form.submit();
     });
@@ -1310,7 +2235,7 @@ class OrderManager {
 
             // Handle direct cancel form submissions from status grid
             if (e.target.type === 'submit' && e.target.textContent.includes('Cancel Order')) {
-                openConfirm('Are you sure you want to cancel this order? This action cannot be undone.', function(){
+                openConfirm('Cancel this order?', function(){
                     // proceed
                     e.target.closest('form')?.submit();
                 });
@@ -1351,35 +2276,248 @@ class OrderManager {
 // Initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
     new OrderManager();
+    
+    // Filter tabs functionality
+    const filterTabs = document.querySelectorAll('.filter-tab');
+    const orderCards = document.querySelectorAll('.order-card');
+    
+    filterTabs.forEach(tab => {
+        tab.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            // Remove active class from all tabs
+            filterTabs.forEach(t => t.classList.remove('active'));
+            
+            // Add active class to clicked tab
+            this.classList.add('active');
+            
+            const status = this.getAttribute('data-status');
+            
+            // Update URL to reflect the selected filter
+            const url = new URL(window.location);
+            url.searchParams.set('status', status);
+            window.history.pushState({}, '', url);
+            
+            // Reload the page to apply the filter on the server side
+            window.location.reload();
+        });
+    });
 });
-</script>
 
-<h1 class="page-title">My Orders</h1>
+function showReturnExpiredPopup() {
+    // Create popup HTML
+    const popupHTML = `
+        <div class="return-expired-popup" id="returnExpiredPopup">
+            <div class="return-expired-content">
+                <div class="return-expired-icon">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <h2 class="return-expired-title">Return Period Expired</h2>
+                <p class="return-expired-message">
+                    Sorry, the return/refund period for this order has expired. 
+                    Returns and refunds are only allowed within 7 days of delivery.
+                </p>
+                <button class="return-expired-button" onclick="closeReturnExpiredPopup()">
+                    I Understand
+                </button>
+            </div>
+        </div>
+    `;
+    
+    // Add popup to body
+    document.body.insertAdjacentHTML('beforeend', popupHTML);
+    
+    // Prevent body scroll
+    document.body.style.overflow = 'hidden';
+    
+    // Close popup when clicking outside
+    document.getElementById('returnExpiredPopup').addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeReturnExpiredPopup();
+        }
+    });
+    
+    // Close popup with Escape key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closeReturnExpiredPopup();
+        }
+    });
+}
+
+function closeReturnExpiredPopup() {
+    const popup = document.getElementById('returnExpiredPopup');
+    if (popup) {
+        popup.remove();
+        document.body.style.overflow = '';
+    }
+}
+
+// Product Selection Popup Functions
+let currentOrderId = null;
+let currentOrderItems = null;
+
+function showProductSelectionPopup(orderId) {
+    currentOrderId = orderId;
+    
+    // Find the order data from the page
+    const orderElement = document.querySelector(`[data-order-id="${orderId}"]`);
+    if (!orderElement) {
+        console.error('Order element not found');
+        return;
+    }
+    
+    // Get order items from the order element
+    const orderItems = [];
+    const itemElements = orderElement.querySelectorAll('.order-item');
+    
+    console.log('DEBUG - Found order item elements:', itemElements.length);
+    
+    itemElements.forEach((item, index) => {
+        const img = item.querySelector('img');
+        const nameElement = item.querySelector('.item-name');
+        const qtyElement = item.querySelector('.item-qty');
+        
+        console.log('DEBUG - Item', index, ':', {
+            hasImg: !!img,
+            hasName: !!nameElement,
+            hasQty: !!qtyElement,
+            productId: item.dataset.productId,
+            name: nameElement ? nameElement.textContent.trim() : 'no name'
+        });
+        
+        if (nameElement && qtyElement) {
+            // Get the actual product_id from the data attribute
+            const productId = item.dataset.productId;
+            if (productId) {
+                orderItems.push({
+                    product_id: productId,
+                    product_name: nameElement.textContent.trim(),
+                    quantity: qtyElement.textContent.replace('Qty: ', '').trim(),
+                    image_url: img ? img.src : ''
+                });
+            }
+        }
+    });
+    
+    console.log('DEBUG - Final order items:', orderItems);
+    currentOrderItems = orderItems;
+    
+    // Populate the popup
+    const checkboxesContainer = document.getElementById('productCheckboxes');
+    checkboxesContainer.innerHTML = '';
+    
+    orderItems.forEach((item, index) => {
+        const checkboxItem = document.createElement('div');
+        checkboxItem.className = 'product-checkbox-item';
+        checkboxItem.innerHTML = `
+            <input type="checkbox" id="product_${item.product_id}" value="${item.product_id}" checked>
+            <img src="${item.image_url}" alt="${item.product_name}" class="product-checkbox-image" onerror="this.style.display='none'">
+            <div class="product-checkbox-info">
+                <h5>${item.product_name}</h5>
+                <p>Quantity: ${item.quantity}</p>
+            </div>
+        `;
+        
+        // Add click handler for the entire item
+        checkboxItem.addEventListener('click', function(e) {
+            if (e.target.type !== 'checkbox') {
+                const checkbox = this.querySelector('input[type="checkbox"]');
+                checkbox.checked = !checkbox.checked;
+                updateItemSelection(this);
+            }
+        });
+        
+        // Add change handler for checkbox
+        const checkbox = checkboxItem.querySelector('input[type="checkbox"]');
+        checkbox.addEventListener('change', function() {
+            updateItemSelection(checkboxItem);
+        });
+        
+        checkboxesContainer.appendChild(checkboxItem);
+        updateItemSelection(checkboxItem);
+    });
+    
+    // Show the popup
+    const popup = document.getElementById('productSelectionPopup');
+    popup.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+    
+    // Close on background click
+    popup.addEventListener('click', function(e) {
+        if (e.target === popup) {
+            closeProductSelectionPopup();
+        }
+    });
+}
+
+function updateItemSelection(item) {
+    const checkbox = item.querySelector('input[type="checkbox"]');
+    if (checkbox.checked) {
+        item.classList.add('selected');
+    } else {
+        item.classList.remove('selected');
+    }
+}
+
+function closeProductSelectionPopup() {
+    const popup = document.getElementById('productSelectionPopup');
+    popup.style.display = 'none';
+    document.body.style.overflow = '';
+    currentOrderId = null;
+    currentOrderItems = null;
+}
+
+function confirmProductSelection() {
+    const checkboxes = document.querySelectorAll('#productCheckboxes input[type="checkbox"]:checked');
+    
+    console.log('DEBUG - Found checkboxes:', checkboxes.length);
+    console.log('DEBUG - Checkboxes:', checkboxes);
+    
+    if (checkboxes.length === 0) {
+        alert('Please select at least one product to return.');
+        return;
+    }
+    
+    // Get selected product IDs
+    const selectedProductIds = Array.from(checkboxes).map(cb => cb.value);
+    console.log('DEBUG - Selected Product IDs:', selectedProductIds);
+    console.log('DEBUG - Current Order ID:', currentOrderId);
+    
+    // Redirect to customer-returns.php with order_id and selected product IDs
+    const productIdsParam = selectedProductIds.join(',');
+    const redirectUrl = `customer-returns.php?order_id=${currentOrderId}&product_ids=${productIdsParam}`;
+    console.log('DEBUG - Redirect URL:', redirectUrl);
+    
+    window.location.href = redirectUrl;
+}
+</script>
 
 <!-- Display cancel message if exists -->
 <?php if (isset($cancelMessage)): ?>
     <?php echo $cancelMessage; ?>
 <?php endif; ?>
 
-<div class="dashboard-container">
-   <!-- Profile panel temporarily hidden; moved to Edit Profile page -->
-   <div class="user-info" style="display:none"></div>
-
-   <div class="user-orders">
-    <h2>Order History</h2>
-
-    <!-- Status filter tabs -->
-    <div class="order-filters" style="margin: 10px 0 20px 0; display:flex; gap:10px; flex-wrap:wrap;">
-        <?php
-        $statuses = ['all' => 'All', 'pending' => 'Pending', 'processing' => 'Processing', 'shipped' => 'Shipped', 'to receive' => 'To Receive', 'delivered' => 'Delivered', 'cancelled' => 'Cancelled'];
-        $activeStatus = isset($_GET['status']) ? strtolower($_GET['status']) : 'all';
-        foreach ($statuses as $key => $label) {
-            $isActive = ($activeStatus === $key) ? ' style="background:#FFD736;color:#130325;border:1px solid #FFD736;"' : '';
-            echo '<a href="user-dashboard.php?status=' . urlencode($key) . '" class="btn filter-tab" style="padding:6px 12px;border:1px solid #ddd;border-radius:16px;color:#130325;background:#fff;text-decoration:none;font-weight:800;text-transform:uppercase;"' . $isActive . '>' . htmlspecialchars($label) . '</a>';
-        }
-        ?>
-    </div>
+<div class="dashboard-layout">
+    <div class="dashboard-main">
+        <h1 class="page-title">My Orders</h1>
+        
+        <!-- Filter Container -->
+        <div class="filter-container">
+            <div class="filter-tabs">
+                <?php 
+                $currentFilter = isset($_GET['status']) ? strtolower(trim($_GET['status'])) : 'delivered';
+                ?>
+                <a href="#" class="filter-tab <?php echo $currentFilter === 'pending' ? 'active' : ''; ?>" data-status="pending">PENDING</a>
+                <a href="#" class="filter-tab <?php echo $currentFilter === 'processing' ? 'active' : ''; ?>" data-status="processing">TO SHIP</a>
+                <a href="#" class="filter-tab <?php echo $currentFilter === 'shipped' ? 'active' : ''; ?>" data-status="shipped">TO RECEIVE</a>
+                <a href="#" class="filter-tab <?php echo $currentFilter === 'delivered' ? 'active' : ''; ?>" data-status="delivered">COMPLETED</a>
+                <a href="#" class="filter-tab <?php echo $currentFilter === 'cancelled' ? 'active' : ''; ?>" data-status="cancelled">CANCELLED</a>
+                <a href="#" class="filter-tab <?php echo $currentFilter === 'return_requested' ? 'active' : ''; ?>" data-status="return_requested">REFUNDED/RETURNS</a>
+            </div>
+        </div>
     
+        <div class="user-orders" style="margin: 0 60px; border-radius: 8px; max-height: 600px; overflow-y: auto;">
     <?php if (empty($orders)): ?>
         <div class="no-orders">
             <p>You haven't placed any orders yet.</p>
@@ -1387,164 +2525,153 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
     <?php else: ?>
         <?php
-        $filter = isset($_GET['status']) ? strtolower(trim($_GET['status'])) : 'all';
-        foreach ($orders as $order):
+        $filter = isset($_GET['status']) ? strtolower(trim($_GET['status'])) : 'delivered';
+        $hasFilteredOrders = false;
+        
+        // First pass: check if there are any orders matching the filter
+        foreach ($orders as $order) {
             $orderStatusKey = strtolower($order['status']);
-            if ($filter !== 'all' && $filter !== $orderStatusKey) {
-                continue;
+            if ($filter === $orderStatusKey) {
+                $hasFilteredOrders = true;
+                break;
             }
-        ?>
+        }
+        
+        if (!$hasFilteredOrders): ?>
+            <div class="no-orders">
+                <p>No <?php echo ucfirst($filter); ?> orders found.</p>
+                <a href="products.php" class="btn btn-primary">Continue Shopping</a>
+            </div>
+        <?php else: ?>
+            <?php foreach ($orders as $order):
+                $orderStatusKey = strtolower($order['status']);
+                if ($filter !== $orderStatusKey) {
+                    continue;
+                }
+            ?>
             <div class="order-card" data-order-id="<?php echo $order['id']; ?>">
+                <!-- Header: Seller | Order Number | Status -->
                 <div class="order-header">
-                    <div class="order-number">Order #<?php echo str_pad($order['id'], 6, '0', STR_PAD_LEFT); ?></div>
-                    <div class="order-status-header">
-                        <span class="order-status <?php echo strtolower($order['status']); ?>">
-                            <?php echo ucfirst($order['status']); ?>
-                        </span>
+                    <div class="order-left">
+                        <?php 
+                        // Get seller info from first order item
+                        $sellerName = 'Unknown Shop';
+                        if (!empty($order['order_items'])) {
+                            try {
+                                $stmt = $pdo->prepare("SELECT u.first_name, u.last_name FROM products p JOIN users u ON p.seller_id = u.id WHERE p.id = ?");
+                                $stmt->execute([$order['order_items'][0]['product_id']]);
+                                $seller = $stmt->fetch(PDO::FETCH_ASSOC);
+                                if ($seller) {
+                                    $sellerName = $seller['first_name'] . ' ' . $seller['last_name'];
+                                }
+                            } catch (Exception $e) {
+                                $sellerName = 'Shop';
+                            }
+                        }
+                        ?>
+                        <div class="seller-info"><?php echo htmlspecialchars($sellerName); ?></div>
+                        <div class="order-number">Order #<?php echo str_pad($order['id'], 6, '0', STR_PAD_LEFT); ?></div>
                     </div>
+                    <span class="order-status status-<?php echo strtolower($order['status']); ?>">
+                        <?php echo ucfirst($order['status']); ?>
+                    </span>
                 </div>
                 
-                <div class="order-body">
-                    
-                    <div class="order-items-compact">
-                        <?php if (!empty($order['order_items'])): ?>
-                            <?php 
-                            $itemCount = count($order['order_items']);
-                            $displayItems = array_slice($order['order_items'], 0, 2);
-                            ?>
-                            <?php foreach ($displayItems as $item): ?>
-                                <div class="item-compact">
-                                    <img src="<?php echo htmlspecialchars($item['image_url']); ?>" 
-                                         alt="<?php echo htmlspecialchars($item['product_name']); ?>" 
-                                         class="item-thumb">
-                                    <div class="item-details">
-                                        <div class="item-name"><?php echo htmlspecialchars($item['product_name']); ?></div>
-                                        <div class="item-qty">Qty: <?php echo $item['quantity']; ?></div>
+                <!-- Items: PIC | NAME | QTY -->
+                <div class="order-items">
+                    <?php if (!empty($order['order_items'])): ?>
+                        <?php foreach ($order['order_items'] as $item): ?>
+                            <div class="order-item" data-product-id="<?php echo $item['product_id']; ?>">
+                                <img src="<?php echo htmlspecialchars($item['image_url']); ?>" 
+                                     alt="<?php echo htmlspecialchars($item['product_name']); ?>">
+                                <div class="order-item-info">
+                                    <div class="order-item-name item-name"><?php echo htmlspecialchars($item['product_name']); ?></div>
+                                    <div class="order-item-details">
+                                        <span class="item-qty">Qty: <?php echo $item['quantity']; ?></span>
                                     </div>
-                                    <div class="item-price">₱<?php echo number_format($item['quantity'] * $item['price'], 2); ?></div>
                                 </div>
-                            <?php endforeach; ?>
-                            <?php if ($itemCount > 2): ?>
-                                <div class="more-items">+<?php echo ($itemCount - 2); ?> more items</div>
+                            </div>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </div>
+                
+                <!-- Bottom: PRICE | BUTTONS -->
+                <div class="order-bottom">
+                    <div class="order-total">
+                        <div class="order-total-amount">₱<?php echo number_format($order['total_amount'], 2); ?></div>
+                    </div>
+                    
+                    <div class="order-actions">
+                        <?php if (strtolower($order['status']) === 'delivered'): ?>
+                            <!-- COMPLETED ORDERS: View Details, Return/Refund and Rate buttons -->
+                            <a href="order-confirmation.php?id=<?php echo $order['id']; ?>" class="btn btn-primary">
+                                <i class="fas fa-eye"></i> View Details
+                            </a>
+                            <?php 
+                            // Check if 1 week has passed since delivery for return/refund
+                            $deliveryDate = new DateTime($order['delivery_date'] ?? $order['created_at']);
+                            $currentDate = new DateTime();
+                            $daysSinceDelivery = $currentDate->diff($deliveryDate)->days;
+                            $canReturn = $daysSinceDelivery <= 7;
+                            ?>
+                <?php if ($canReturn): ?>
+                    <?php if (count($order['order_items']) > 1): ?>
+                        <button onclick="showProductSelectionPopup(<?php echo $order['id']; ?>)" class="btn btn-return-active">
+                            <i class="fas fa-undo"></i> Return/Refund
+                        </button>
+                    <?php else: ?>
+                        <a href="customer-returns.php?order_id=<?php echo $order['id']; ?>" class="btn btn-return-active">
+                            <i class="fas fa-undo"></i> Return/Refund
+                        </a>
+                    <?php endif; ?>
+                            <?php else: ?>
+                                <button onclick="showReturnExpiredPopup()" class="btn btn-return-expired" disabled>
+                                    <i class="fas fa-undo"></i> Return/Refund
+                                </button>
+                            <?php endif; ?>
+                            <?php 
+                            // Check if user has already reviewed this product
+                            $hasReviewed = hasUserReviewedProduct($pdo, $userId, $order['id']);
+                            ?>
+                            <?php if ($hasReviewed): ?>
+                                <a href="product-detail.php?id=<?php echo $order['order_items'][0]['product_id']; ?>" class="btn btn-warning">
+                                    <i class="fas fa-shopping-cart"></i> Buy Again
+                                </a>
+                            <?php else: ?>
+                                <a href="product-detail.php?id=<?php echo $order['order_items'][0]['product_id']; ?>#reviews-tab" class="btn btn-secondary">
+                                    <i class="fas fa-star"></i> Rate
+                                </a>
+                            <?php endif; ?>
+                        <?php elseif (strtolower($order['status']) === 'return_requested'): ?>
+                            <!-- RETURN REQUESTED ORDERS: View Details and Track Return buttons -->
+                            <a href="order-confirmation.php?id=<?php echo $order['id']; ?>" class="btn btn-primary">
+                                <i class="fas fa-eye"></i> View Details
+                            </a>
+                            <a href="customer-returns.php" class="btn btn-warning">
+                                <i class="fas fa-search"></i> Track Return
+                            </a>
+                        <?php else: ?>
+                            <!-- OTHER STATUSES: View Details and Cancel (if pending) -->
+                            <a href="order-confirmation.php?id=<?php echo $order['id']; ?>" class="btn btn-primary">
+                                <i class="fas fa-eye"></i> View Details
+                            </a>
+                            
+                            <?php if (strtolower($order['status']) === 'pending'): ?>
+                                <button type="button" class="btn btn-danger" onclick="openCancelModal(<?php echo $order['id']; ?>)">
+                                    <i class="fas fa-times"></i> Cancel Order
+                                </button>
                             <?php endif; ?>
                         <?php endif; ?>
                     </div>
-                    
-                    <?php if ($order['status'] === 'delivered' && !empty($order['delivery_date'])): ?>
-                        <div class="delivery-info">
-                            <strong>Delivered on <?php echo date('F j, Y \a\t g:i A', strtotime($order['delivery_date'])); ?></strong><br>
-                            <small>Your order has been successfully delivered. You can now leave reviews for the products.</small>
-                        </div>
-                    <?php endif; ?>
-                    
-                    <div class="order-actions">
-                        <a href="order-confirmation.php?id=<?php echo $order['id']; ?>" class="btn btn-primary">View Details</a>
-                        
-                        <?php if ($order['status'] === 'cancelled'): ?>
-                            <!-- No action button for cancelled orders -->
-                        <?php elseif (canCustomerCancelOrder($order)): ?>
-                            <button type="button" 
-                                    class="btn btn-danger btn-cancel-modal" 
-                                    data-order-id="<?php echo $order['id']; ?>"
-                                    data-order-number="#<?php echo str_pad($order['id'], 6, '0', STR_PAD_LEFT); ?>">
-                                Cancel Order
-                            </button>
-                        <?php else: ?>
-                            <a href="customer-returns.php" class="btn" style="background: #6c757d; color: white; text-decoration: none;">
-                                Return/Refund
-                            </a>
-                        <?php endif; ?>
-                    </div>
                 </div>
             </div>
-        <?php endforeach; ?>
+            <?php endforeach; ?>
+        <?php endif; ?>
     <?php endif; ?>
-</div>
-
-<!-- Delivered Products - Add Reviews Section (Restored & Restyled) -->
-<style>
-.delivered-reviews-wrap { max-width: 1600px; margin: 20px auto 10px auto; padding: 0 20px; }
-.delivered-card { background:#1a0a2e; border:1px solid #2d1b4e; border-radius:14px; overflow:hidden; box-shadow:0 10px 30px rgba(0,0,0,0.35); }
-.delivered-card .header { display:flex; align-items:center; justify-content:space-between; padding:16px 20px; border-bottom:1px solid rgba(255,215,54,0.25); }
-.delivered-card .title { color:#F9F9F9; font-size:18px; font-weight:800; letter-spacing:.3px; }
-.delivered-card .subtitle { color:#d7d1e2; font-size:13px; opacity:.9; }
-.delivered-list { max-height: 460px; overflow-y:auto; }
-.delivered-item { display:flex; gap:16px; align-items:flex-start; padding:14px 20px; border-bottom:1px solid rgba(255,255,255,0.08); }
-.delivered-item:last-child { border-bottom:none; }
-.delivered-thumb { width:60px; height:60px; border-radius:8px; border:1px solid rgba(255,215,54,0.35); object-fit:cover; background:#0e0620; flex-shrink:0; }
-.delivered-body { flex:1; min-width:0; }
-.delivered-name { color:#F9F9F9; font-weight:700; margin:0 0 6px 0; font-size:15px; }
-.delivered-meta { display:flex; gap:14px; flex-wrap:wrap; color:#d7d1e2; font-size:12.5px; margin-bottom:6px; }
-.delivered-meta .price { color:#FFD736; font-weight:800; }
-.delivered-meta .date { color:#bfb8cb; }
-.review-cta { display:flex; align-items:center; gap:10px; }
-.btn-review { background:linear-gradient(135deg,#FFD736,#f0c419); color:#130325; border:2px solid #FFD736; padding:10px 16px; border-radius:10px; font-weight:800; font-size:13px; text-decoration:none; display:inline-flex; align-items:center; gap:8px; transition: all 0.3s ease; }
-.btn-review:hover { background:linear-gradient(135deg,#e6c230,#d4b017); border-color:#e6c230; transform:translateY(-2px); box-shadow:0 8px 20px rgba(255,215,54,0.5); color:#130325; text-decoration:none; }
-.badge-reviewed { display:inline-block; padding:6px 10px; border-radius:999px; border:1px solid #28a745; color:#28a745; background:rgba(40,167,69,0.15); font-weight:800; font-size:12px; }
-
-.delivered-list::-webkit-scrollbar { width:8px; }
-.delivered-list::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); }
-.delivered-list::-webkit-scrollbar-thumb { background: linear-gradient(135deg,#FFD736,#f0c419); border-radius:6px; }
-
-@media (max-width: 640px){
-  .delivered-item { flex-direction:column; align-items:flex-start; }
-  .review-cta { width:100%; }
-}
-</style>
-
-<div class="delivered-reviews-wrap">
-    <div class="delivered-card">
-        <div class="header">
-            <div>
-                <div class="title">Delivered Products - Add Reviews</div>
-                <div class="subtitle">Review your recently delivered items</div>
-            </div>
-        </div>
-        <div class="delivered-list">
-            <?php if (empty($deliveredOrders)): ?>
-                <div class="delivered-item" style="justify-content:center;">
-                    <div class="delivered-body" style="text-align:center; color:#d7d1e2;">No delivered products yet. Complete an order to see products here for review.</div>
-                </div>
-            <?php else: ?>
-                <?php foreach ($deliveredOrders as $deliveredItem): ?>
-                    <div class="delivered-item">
-                        <img class="delivered-thumb" src="<?php echo htmlspecialchars($deliveredItem['image_url']); ?>" alt="<?php echo htmlspecialchars($deliveredItem['product_name']); ?>" onerror="this.src='assets/uploads/tempo_image.jpg'">
-                        <div class="delivered-body">
-                            <div class="delivered-name"><?php echo htmlspecialchars($deliveredItem['product_name']); ?></div>
-                            <div class="delivered-meta">
-                                <span>Qty: <?php echo (int)$deliveredItem['quantity']; ?></span>
-                                <span class="price">₱<?php echo number_format((float)$deliveredItem['price'], 2); ?></span>
-                                <span>Total: ₱<?php echo number_format((float)$deliveredItem['item_total'], 2); ?></span>
-                                <?php if (!empty($deliveredItem['delivery_date'])): ?>
-                                    <span class="date">Delivered: <?php echo date('M j, Y g:i A', strtotime($deliveredItem['delivery_date'])); ?></span>
-                                <?php endif; ?>
-                            </div>
-                            <div class="review-cta">
-                                <?php
-                                $alreadyReviewed = false;
-                                try {
-                                    if (isset($_SESSION['user_id'])) {
-                                        $rv = $pdo->prepare("SELECT 1 FROM product_reviews WHERE user_id = ? AND product_id = ? LIMIT 1");
-                                        $rv->execute([$_SESSION['user_id'], $deliveredItem['product_id']]);
-                                        $alreadyReviewed = (bool)$rv->fetchColumn();
-                                    }
-                                } catch (Exception $e) { $alreadyReviewed = false; }
-                                ?>
-                                <?php if ($alreadyReviewed): ?>
-                                    <span class="badge-reviewed">Reviewed</span>
-                                <?php else: ?>
-                                    <a href="product-detail.php?id=<?php echo $deliveredItem['product_id']; ?>#review" class="btn-review">
-                                        <i class="fas fa-star"></i> Add Review
-                                    </a>
-                                <?php endif; ?>
-                            </div>
-                        </div>
-                    </div>
-                <?php endforeach; ?>
-            <?php endif; ?>
         </div>
     </div>
 </div>
+
 
 <!-- Cancel Order Modal -->
 <div id="cancelModal" class="cancel-modal">
@@ -1585,3 +2712,29 @@ document.addEventListener('DOMContentLoaded', () => {
         </form>
     </div>
 </div>
+
+<!-- Product Selection Popup for Multiple Items -->
+<div class="product-selection-popup" id="productSelectionPopup">
+    <div class="product-selection-content">
+        <div class="product-selection-header">
+            <h3><i class="fas fa-shopping-bag"></i> Select Products to Return</h3>
+            <button type="button" class="close-popup" onclick="closeProductSelectionPopup()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <div class="product-selection-body">
+            <p>Which products would you like to request a refund/return for?</p>
+            <div class="product-checkboxes" id="productCheckboxes">
+                <!-- Products will be populated here by JavaScript -->
+            </div>
+        </div>
+        
+        <div class="product-selection-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeProductSelectionPopup()">Cancel</button>
+            <button type="button" class="btn btn-primary" onclick="confirmProductSelection()">Confirm</button>
+        </div>
+    </div>
+</div>
+
+</script>
