@@ -93,8 +93,8 @@ try {
     // Return success with redirect URL
     echo json_encode([
         'success' => true, 
-        'message' => 'Product added to cart',
-        'redirect_url' => 'cart.php',
+        'message' => 'Product added to buy now',
+        'redirect_url' => 'paymongo/multi-seller-checkout.php?buy_now=1',
         'item_name' => $product['name'],
         'total' => number_format($total, 2)
     ]);
