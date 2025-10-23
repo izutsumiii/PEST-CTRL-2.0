@@ -599,7 +599,6 @@ $pathPrefix = ($currentDir === 'paymongo') ? '../' : '';
                         <div class="notif-popper" id="notifPopper">
                             <div class="notif-header">
                                 <strong>Notifications</strong>
-                                <button class="clear-all-btn" onclick="clearAllNotifications()" title="Clear all from view">Clear All</button>
                             </div>
                             <div id="notifList"></div>
                             <div class="notif-footer">

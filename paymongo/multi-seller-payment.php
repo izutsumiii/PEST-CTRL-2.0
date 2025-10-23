@@ -10,7 +10,7 @@ if (!isLoggedIn()) {
 }
 
 $userId = $_SESSION['user_id'];
-$paymentTransactionId = $_GET['transaction_id'] ?? null;
+$paymentTransactionId = $_GET['transaction_id'] ?? ($_POST['transaction_id'] ?? null);
 
 if (!$paymentTransactionId) {
     header("Location: ../cart.php");
@@ -69,6 +69,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['process_payment'])) {
         // Process offline payment (simulate success)
         updatePaymentTransactionStatus($paymentTransactionId, 'completed', 'OFFLINE_PAYMENT');
+        
+        // Create seller notifications for successful payment
+        try {
+            require_once '../includes/seller_notification_functions.php';
+            $stmt = $pdo->prepare("SELECT o.id, p.seller_id FROM orders o JOIN order_items oi ON o.id = oi.order_id JOIN products p ON oi.product_id = p.id WHERE o.payment_transaction_id = ?");
+            $stmt->execute([$paymentTransactionId]);
+            $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            foreach ($orders as $order) {
+                $sellerMessage = "New order #" . str_pad($order['id'], 6, '0', STR_PAD_LEFT) . " has been placed!";
+                createSellerNotification($order['seller_id'], "New Order", $sellerMessage, "info");
+            }
+        } catch (Exception $e) {
+            error_log('Error creating seller notifications: ' . $e->getMessage());
+        }
+        
         header("Location: order-success.php?transaction_id=" . $paymentTransactionId);
         exit();
     }

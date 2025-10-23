@@ -172,6 +172,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['checkout'])) {
                         foreach ($orderIds as $orderId) {
                             $message = "Order #" . str_pad($orderId, 6, '0', STR_PAD_LEFT) . " has been placed successfully with Cash on Delivery (COD).";
                             createOrderNotification($userId, $orderId, $message, 'order_placed');
+                            
+                            // Create seller notification
+                            require_once '../includes/seller_notification_functions.php';
+                            $stmt = $pdo->prepare("SELECT p.seller_id FROM orders o JOIN order_items oi ON o.id = oi.order_id JOIN products p ON oi.product_id = p.id WHERE o.id = ? LIMIT 1");
+                            $stmt->execute([$orderId]);
+                            $sellerId = $stmt->fetchColumn();
+                            
+                            if ($sellerId) {
+                                $sellerMessage = "New order #" . str_pad($orderId, 6, '0', STR_PAD_LEFT) . " has been placed!";
+                                createSellerNotification($sellerId, "New Order", $sellerMessage, "info");
+                            }
                         }
                     }
                 } catch (Exception $e) {
