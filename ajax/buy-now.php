@@ -93,8 +93,8 @@ try {
     // Return success with redirect URL
     echo json_encode([
         'success' => true, 
-        'message' => 'Product prepared for checkout',
-        'redirect_url' => 'checkout.php?buy_now=1',
+        'message' => 'Product added to cart',
+        'redirect_url' => 'cart.php',
         'item_name' => $product['name'],
         'total' => number_format($total, 2)
     ]);
