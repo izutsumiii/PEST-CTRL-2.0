@@ -2604,7 +2604,7 @@ function confirmProductSelection() {
                     <div class="order-actions">
                         <?php if (strtolower($order['status']) === 'delivered'): ?>
                             <!-- COMPLETED ORDERS: View Details, Return/Refund and Rate buttons -->
-                            <a href="order-confirmation.php?id=<?php echo $order['id']; ?>" class="btn btn-primary">
+                            <a href="order-details.php?id=<?php echo $order['id']; ?>" class="btn btn-primary">
                                 <i class="fas fa-eye"></i> View Details
                             </a>
                             <?php 
@@ -2644,7 +2644,7 @@ function confirmProductSelection() {
                             <?php endif; ?>
                         <?php elseif (strtolower($order['status']) === 'return_requested'): ?>
                             <!-- RETURN REQUESTED ORDERS: View Details and Track Return buttons -->
-                            <a href="order-confirmation.php?id=<?php echo $order['id']; ?>" class="btn btn-primary">
+                            <a href="order-details.php?id=<?php echo $order['id']; ?>" class="btn btn-primary">
                                 <i class="fas fa-eye"></i> View Details
                             </a>
                             <a href="customer-returns.php" class="btn btn-warning">
@@ -2652,7 +2652,7 @@ function confirmProductSelection() {
                             </a>
                         <?php else: ?>
                             <!-- OTHER STATUSES: View Details and Cancel (if pending) -->
-                            <a href="order-confirmation.php?id=<?php echo $order['id']; ?>" class="btn btn-primary">
+                            <a href="order-details.php?id=<?php echo $order['id']; ?>" class="btn btn-primary">
                                 <i class="fas fa-eye"></i> View Details
                             </a>
                             

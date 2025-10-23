@@ -58,7 +58,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             echo json_encode([
                 'success' => true,
                 'checkout_session_id' => 'offline_' . $newTransactionId,
-                'checkout_url' => 'order-confirmation.php?transaction_id=' . $newTransactionId,
+                'checkout_url' => 'paymongo/order-success.php?transaction_id=' . $newTransactionId,
                 'message' => 'Offline payment processed successfully'
             ]);
             exit();

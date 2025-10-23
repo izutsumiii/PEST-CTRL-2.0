@@ -123,7 +123,7 @@ h1 {
     text-shadow: none;
 }
 
-.order-confirmation {
+.order-details {
     max-width: 1400px;
     margin: 0 60px;
     background: #ffffff;
@@ -516,7 +516,7 @@ h1 {
         font-size: 2rem;
     }
     
-    .order-confirmation {
+    .order-details {
         margin: 0 10px;
     }
     
@@ -574,7 +574,7 @@ h1 {
         display: none;
     }
     
-    .order-confirmation {
+    .order-details {
         box-shadow: none;
         border: 1px solid #ddd;
     }
@@ -592,7 +592,7 @@ h1 {
     </div>
 </div>
 
-<div class="order-confirmation">
+<div class="order-details">
     <!-- Status Card -->
     <div class="status-card">
         <div class="status-header">
