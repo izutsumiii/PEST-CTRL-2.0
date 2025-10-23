@@ -146,13 +146,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['checkout'])) {
         if ($result['success']) {
             // Route PayMongo payments to PayMongo checkout
             if (in_array($paymentMethod, ['card', 'gcash', 'paymaya', 'grab_pay', 'billease'])) {
+                error_log('Attempting PayMongo checkout for transaction: ' . $result['payment_transaction_id']);
                 $redirectUrl = createPayMongoCheckoutSession($result['payment_transaction_id'], $customerName, $customerEmail, $customerPhone, $shippingAddress, $groupedItems, $grandTotal, $paymentMethod);
                 if ($redirectUrl) {
+                    error_log('PayMongo redirect URL: ' . $redirectUrl);
                     header("Location: " . $redirectUrl);
                     exit();
                 } else {
-                    $errors[] = 'Failed to create PayMongo checkout session. Please check the error logs for details.';
-                    error_log('PayMongo checkout failed for transaction: ' . $result['payment_transaction_id']);
+                    // Fallback: redirect to payment page if PayMongo fails
+                    error_log('PayMongo checkout failed for transaction: ' . $result['payment_transaction_id'] . ' - redirecting to payment page');
+                    header("Location: multi-seller-payment.php?transaction_id=" . $result['payment_transaction_id']);
+                    exit();
                 }
             } else {
                 // COD payments - update payment status to completed and go directly to success page
