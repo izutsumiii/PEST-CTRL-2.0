@@ -122,7 +122,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     }
     exit();
 }
-
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['checkout'])) {
     $shippingAddress = trim($_POST['shipping_address'] ?? '');
     $paymentMethod = $_POST['payment_method'] ?? '';
@@ -179,13 +178,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['checkout'])) {
                             
                             // Create seller notification
                             require_once '../includes/seller_notification_functions.php';
-                            $stmt = $pdo->prepare("SELECT p.seller_id FROM orders o JOIN order_items oi ON o.id = oi.order_id JOIN products p ON oi.product_id = p.id WHERE o.id = ? LIMIT 1");
-                            $stmt->execute([$orderId]);
-                            $sellerId = $stmt->fetchColumn();
                             
-                            if ($sellerId) {
-                                $sellerMessage = "New order #" . str_pad($orderId, 6, '0', STR_PAD_LEFT) . " has been placed!";
-                                createSellerNotification($sellerId, "New Order", $sellerMessage, "info");
+                            // Get all sellers from this order with product details
+                            $stmt = $pdo->prepare("
+                                SELECT DISTINCT p.seller_id, u.username as seller_name,
+                                       GROUP_CONCAT(p.name SEPARATOR ', ') as product_names
+                                FROM order_items oi
+                                JOIN products p ON oi.product_id = p.id
+                                JOIN users u ON p.seller_id = u.id
+                                WHERE oi.order_id = ?
+                                GROUP BY p.seller_id, u.username
+                            ");
+                            $stmt->execute([$orderId]);
+                            $sellers = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                            
+                            // Notify each seller
+                            foreach ($sellers as $seller) {
+                                createSellerNotification(
+                                    $seller['seller_id'],
+                                    '🎉 New Order Received!',
+                                    'You have a new order #' . str_pad($orderId, 6, '0', STR_PAD_LEFT) . ' for: ' . $seller['product_names'] . '. Please review and process it.',
+                                    'success',
+                                    'view-orders.php'
+                                );
                             }
                         }
                     }
@@ -200,6 +215,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['checkout'])) {
             $errors[] = $result['message'];
         }
     }
+}
+
+// If cart is empty, redirect to cart page BEFORE sending any output
+if (empty($groupedItems)) {
+    header("Location: ../cart.php");
+    exit();
 }
 
 // If cart is empty, redirect to cart page BEFORE sending any output
