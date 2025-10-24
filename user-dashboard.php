@@ -125,6 +125,32 @@ function sanitizeInput($input) {
     return htmlspecialchars(trim($input), ENT_QUOTES, 'UTF-8');
 }
 
+// Function to get return request details for an order
+function getOrderReturnDetails($orderId) {
+    global $pdo;
+    
+    try {
+        $stmt = $pdo->prepare("
+            SELECT rr.*, 
+                   GROUP_CONCAT(DISTINCT CONCAT(p.name, ' (Qty: ', rri.quantity, ')') SEPARATOR ', ') as returned_items,
+                   COUNT(DISTINCT rri.product_id) as items_count
+            FROM return_requests rr
+            LEFT JOIN return_request_items rri ON rr.id = rri.return_request_id
+            LEFT JOIN products p ON rri.product_id = p.id
+            WHERE rr.order_id = ?
+            GROUP BY rr.id
+            ORDER BY rr.created_at DESC
+            LIMIT 1
+        ");
+        $stmt->execute([$orderId]);
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+        error_log("Error fetching return details: " . $e->getMessage());
+        return null;
+    }
+}
+
+
 // ADD THIS MISSING FUNCTION
 function getOrdersByStatus($status) {
     global $pdo, $userId;
@@ -2518,24 +2544,33 @@ function confirmProductSelection() {
         </div>
     
         <div class="user-orders" style="margin: 0 60px; border-radius: 8px; max-height: 600px; overflow-y: auto;">
-    <?php if (empty($orders)): ?>
-        <div class="no-orders">
-            <p>You haven't placed any orders yet.</p>
-            <a href="products.php" class="btn btn-primary">Start Shopping</a>
-        </div>
-    <?php else: ?>
-        <?php
-        $filter = isset($_GET['status']) ? strtolower(trim($_GET['status'])) : 'delivered';
-        $hasFilteredOrders = false;
-        
-        // First pass: check if there are any orders matching the filter
-        foreach ($orders as $order) {
-            $orderStatusKey = strtolower($order['status']);
-            if ($filter === $orderStatusKey) {
-                $hasFilteredOrders = true;
-                break;
+        <?php if (empty($orders)): ?>
+            <div class="no-orders">
+                <p>You haven't placed any orders yet.</p>
+                <a href="products.php" class="btn btn-primary">Start Shopping</a>
+            </div>
+        <?php else: ?>
+            <?php
+            $filter = isset($_GET['status']) ? strtolower(trim($_GET['status'])) : 'delivered';
+            $hasFilteredOrders = false;
+            
+            // First pass: check if there are any orders matching the filter
+            foreach ($orders as $order) {
+                $orderStatusKey = strtolower($order['status']);
+                
+                // Special handling for return_requested - check both order status and if return request exists
+                if ($filter === 'return_requested') {
+                    // Check if this order has a return request
+                    $returnCheck = getOrderReturnDetails($order['id']);
+                    if ($returnCheck !== null) {
+                        $hasFilteredOrders = true;
+                        break;
+                    }
+                } elseif ($filter === $orderStatusKey) {
+                    $hasFilteredOrders = true;
+                    break;
+                }
             }
-        }
         
         if (!$hasFilteredOrders): ?>
             <div class="no-orders">
@@ -2545,10 +2580,18 @@ function confirmProductSelection() {
         <?php else: ?>
             <?php foreach ($orders as $order):
                 $orderStatusKey = strtolower($order['status']);
-                if ($filter !== $orderStatusKey) {
+                
+                // Special handling for return_requested filter
+                if ($filter === 'return_requested') {
+                    $returnCheck = getOrderReturnDetails($order['id']);
+                    if ($returnCheck === null) {
+                        continue; // Skip orders without return requests
+                    }
+                } elseif ($filter !== $orderStatusKey) {
                     continue;
                 }
             ?>
+            
             <div class="order-card" data-order-id="<?php echo $order['id']; ?>">
                 <!-- Header: Seller | Order Number | Status -->
                 <div class="order-header">
@@ -2642,8 +2685,29 @@ function confirmProductSelection() {
                                     <i class="fas fa-star"></i> Rate
                                 </a>
                             <?php endif; ?>
-                        <?php elseif (strtolower($order['status']) === 'return_requested'): ?>
-                            <!-- RETURN REQUESTED ORDERS: View Details and Track Return buttons -->
+                            <?php elseif (strtolower($order['status']) === 'return_requested'): ?>
+                            <!-- RETURN REQUESTED ORDERS: Show return details -->
+                            <?php 
+                            $returnDetails = getOrderReturnDetails($order['id']);
+                            if ($returnDetails): 
+                            ?>
+                                <div style="background: #fff3cd; padding: 12px; border-radius: 6px; margin: 10px 0; border-left: 4px solid #ffc107;">
+                                    <div style="font-weight: 600; color: #856404; margin-bottom: 5px;">
+                                        <i class="fas fa-undo"></i> Return Request Status: 
+                                        <span style="text-transform: uppercase;"><?php echo htmlspecialchars($returnDetails['status']); ?></span>
+                                    </div>
+                                    <div style="color: #856404; font-size: 0.9rem; margin-bottom: 5px;">
+                                        <strong>Returned Items:</strong> <?php echo htmlspecialchars($returnDetails['returned_items']); ?>
+                                    </div>
+                                    <div style="color: #856404; font-size: 0.9rem; margin-bottom: 5px;">
+                                        <strong>Reason:</strong> <?php echo htmlspecialchars($returnDetails['reason']); ?>
+                                    </div>
+                                    <div style="color: #856404; font-size: 0.85rem;">
+                                        <strong>Requested on:</strong> <?php echo date('M d, Y g:i A', strtotime($returnDetails['created_at'])); ?>
+                                    </div>
+                                </div>
+                            <?php endif; ?>
+                            
                             <a href="order-details.php?id=<?php echo $order['id']; ?>" class="btn btn-primary">
                                 <i class="fas fa-eye"></i> View Details
                             </a>
