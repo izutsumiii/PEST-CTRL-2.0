@@ -1522,7 +1522,7 @@ function createOrderNotification($userId, $orderId, $message, $type = 'order_upd
         $stmt->execute([$userId, $orderId, $message, $type]);
         
         return true;
-    } catch (Exception $e) {
+    } catch (Exception$e) {
         error_log('Failed to create notification: ' . $e->getMessage());
         return false;
     }
