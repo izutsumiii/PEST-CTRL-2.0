@@ -358,6 +358,7 @@ $stmt->execute([$customerId]);
                             $customerInfo = $stmt->fetch(PDO::FETCH_ASSOC);
 
                             // Create app notification for seller
+                            // Create app notification for seller
                             if ($sellerInfo) {
                                 $stmt = $pdo->prepare("
                                     INSERT INTO order_status_history (order_id, status, notes, updated_by, created_at) 
@@ -365,8 +366,16 @@ $stmt->execute([$customerId]);
                                 ");
                                 $notificationMessage = "New return request for Order #" . str_pad($orderId, 6, '0', STR_PAD_LEFT) . " - " . htmlspecialchars($sellerInfo['product_name']) . ". Please review and respond.";
                                 $stmt->execute([$orderId, $notificationMessage, $sellerInfo['seller_id']]);
+                                
+                                // Create seller notification for return request
+                                require_once 'includes/seller_notification_functions.php';
+                                createReturnRequestNotification(
+                                    $sellerInfo['seller_id'],
+                                    $returnRequestId,
+                                    $orderId,
+                                    $sellerInfo['product_name']
+                                );
                             }
-
                             $pdo->commit();
 
                             // Send email notification to customer only
