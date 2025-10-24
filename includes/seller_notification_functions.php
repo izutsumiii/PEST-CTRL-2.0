@@ -1,5 +1,5 @@
 <?php
-require_once 'config/database.php';
+require_once __DIR__ . '/../config/database.php';
 
 /**
  * Create a notification for a seller
@@ -130,5 +130,57 @@ function checkSellerLowStock($sellerId) {
         error_log("Error checking seller low stock: " . $e->getMessage());
         return 0;
     }
+}
+// Add this function to create low stock notifications
+function createLowStockNotification($sellerId, $productId, $productName, $stockQuantity) {
+    global $pdo;
+    
+    $title = "Low Stock Alert";
+    $message = "Product '{$productName}' is running low on stock. Only {$stockQuantity} items remaining.";
+    $type = "warning";
+    $actionUrl = "edit-product.php?id={$productId}";
+    
+    // Check if notification already exists for this product
+    $stmt = $pdo->prepare("SELECT id FROM seller_notifications 
+                          WHERE seller_id = ? AND type = 'warning' 
+                          AND action_url = ? AND is_read = 0");
+    $stmt->execute([$sellerId, $actionUrl]);
+    
+    if (!$stmt->fetch()) {
+        $stmt = $pdo->prepare("INSERT INTO seller_notifications 
+                              (seller_id, title, message, type, action_url, created_at) 
+                              VALUES (?, ?, ?, ?, ?, NOW())");
+        $stmt->execute([$sellerId, $title, $message, $type, $actionUrl]);
+    }
+}
+
+// Add this function to create new order notifications
+function createNewOrderNotification($sellerId, $orderId, $customerName, $productName) {
+    global $pdo;
+    
+    $title = "New Order Received";
+    $message = "New order #" . str_pad($orderId, 6, '0', STR_PAD_LEFT) . " from {$customerName} for '{$productName}'.";
+    $type = "success";
+    $actionUrl = "seller-orders.php?order_id={$orderId}";
+    
+    $stmt = $pdo->prepare("INSERT INTO seller_notifications 
+                          (seller_id, title, message, type, action_url, created_at) 
+                          VALUES (?, ?, ?, ?, ?, NOW())");
+    $stmt->execute([$sellerId, $title, $message, $type, $actionUrl]);
+}
+
+// Add this function to create return request notifications
+function createReturnRequestNotification($sellerId, $returnId, $orderId, $productName) {
+    global $pdo;
+    
+    $title = "New Return Request";
+    $message = "New return request for '{$productName}' from Order #" . str_pad($orderId, 6, '0', STR_PAD_LEFT) . ". Please review and take action.";
+    $type = "warning";
+    $actionUrl = "seller-returns.php?return_id={$returnId}";
+    
+    $stmt = $pdo->prepare("INSERT INTO seller_notifications 
+                          (seller_id, title, message, type, action_url, created_at) 
+                          VALUES (?, ?, ?, ?, ?, NOW())");
+    $stmt->execute([$sellerId, $title, $message, $type, $actionUrl]);
 }
 ?>
