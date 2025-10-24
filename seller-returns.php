@@ -31,15 +31,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($action === 'approve') {
                 // Get return request details for notifications
                 $stmt = $pdo->prepare("
-                    SELECT rr.*, o.id as order_id, u.first_name, u.last_name, u.email as customer_email,
-                           p.name as product_name, s.first_name as seller_first_name, s.last_name as seller_last_name
-                    FROM return_requests rr
-                    JOIN orders o ON rr.order_id = o.id
-                    JOIN users u ON rr.user_id = u.id
-                    JOIN products p ON rr.product_id = p.id
-                    JOIN users s ON p.seller_id = s.id
-                    WHERE rr.id = ? AND rr.seller_id = ?
-                ");
+                SELECT rr.*, o.id as order_id, u.first_name, u.last_name, u.email as customer_email,
+                       p.name as product_name, s.first_name as seller_first_name, s.last_name as seller_last_name
+                FROM return_requests rr
+                JOIN orders o ON rr.order_id = o.id
+                JOIN users u ON rr.customer_id = u.id
+                JOIN products p ON rr.product_id = p.id
+                JOIN users s ON p.seller_id = s.id
+                WHERE rr.id = ? AND rr.seller_id = ?
+            ");
                 $stmt->execute([$returnId, $sellerId]);
                 $returnDetails = $stmt->fetch(PDO::FETCH_ASSOC);
                 
@@ -57,13 +57,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $stmt->execute([$returnId]);
                     
                     // Create app notification for customer
+                    // Create app notification for customer
+                    // Create app notification for customer in order_status_history
                     $stmt = $pdo->prepare("
-                        INSERT INTO order_status_history (order_id, user_id, status, message, created_at) 
-                        VALUES (?, ?, 'return_approved', ?, NOW())
+                        INSERT INTO order_status_history (order_id, status, notes, created_at) 
+                        VALUES (?, 'return_approved', ?, NOW())
                     ");
                     $notificationMessage = "Your return request for Order #" . str_pad($returnDetails['order_id'], 6, '0', STR_PAD_LEFT) . " has been approved. Refund is being processed.";
-                    $stmt->execute([$returnDetails['order_id'], $returnDetails['user_id'], $notificationMessage]);
-                    
+                    $stmt->execute([$returnDetails['order_id'], $notificationMessage]);
                     // Send email notification to customer
                     $mail = new PHPMailer(true);
                     try {
@@ -161,6 +162,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 }
+// After return request is successfully created
 
 // Get return requests for this seller
 $stmt = $pdo->prepare("
