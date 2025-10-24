@@ -1348,11 +1348,6 @@ body {
                                                                 title="Complete Refund">
                                                             <i class="fas fa-check"></i>
                                                         </button>
-                                                        <button class="btn-icon btn-danger-icon" 
-                                                                onclick="rejectReturn(<?php echo $request['id']; ?>)"
-                                                                title="Reject">
-                                                            <i class="fas fa-times"></i>
-                                                        </button>
                                                     </div>
                                                 <?php endif; ?>
                                                 
