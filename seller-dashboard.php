@@ -1,9 +1,9 @@
 <?php
 require_once 'includes/seller_header.php';
 require_once 'config/database.php';
+require_once 'includes/seller_notification_functions.php';
 //this is seller dashboard.php
 requireSeller();
-
 $userId = $_SESSION['user_id'];
 
 // 1. Total Products (unchanged)
@@ -130,6 +130,12 @@ foreach ($statusResults as $status) {
 $stmt = $pdo->prepare("SELECT * FROM products WHERE seller_id = ? AND stock_quantity < 10 ORDER BY stock_quantity ASC");
 $stmt->execute([$userId]);
 $lowStockProducts = $stmt->fetchAll(PDO::FETCH_ASSOC);
+// Create notifications for low stock products
+foreach ($lowStockProducts as $product) {
+    if ($product['stock_quantity'] <= 10) {
+        createLowStockNotification($userId, $product['id'], $product['name'], $product['stock_quantity']);
+    }
+}
 
 // Validation: Confirm revenue calculation accuracy
 $calculatedExpected = $confirmedRevenue + $pendingRevenue;
