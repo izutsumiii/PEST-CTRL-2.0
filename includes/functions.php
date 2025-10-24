@@ -1298,7 +1298,7 @@ function processMultiSellerCheckout($shippingAddress, $paymentMethod, $customerN
         
         $createdOrders = [];
         
-        // 2. Create separate orders for each seller
+       // 2. Create separate orders for each seller
         foreach ($groupedItems as $sellerId => $sellerGroup) {
             // Create order for this seller
             $stmt = $pdo->prepare("
@@ -1312,7 +1312,15 @@ function processMultiSellerCheckout($shippingAddress, $paymentMethod, $customerN
                 $shippingAddress, $paymentMethod
             ]);
             $orderId = $pdo->lastInsertId();
-            
+             // CREATE SELLER NOTIFICATION FOR NEW ORDER
+            require_once __DIR__ . '/seller_notification_functions.php';
+            createSellerNotification(
+                $sellerId,
+                '🎉 New Order Received!',
+                'You have a new order #' . str_pad($orderId, 6, '0', STR_PAD_LEFT) . ' totaling ₱' . number_format($sellerGroup['subtotal'], 2) . '. Please review and process it.',
+                'success',
+                'view-orders.php'
+            );
             $createdOrders[] = [
                 'order_id' => $orderId,
                 'seller_id' => $sellerId,
