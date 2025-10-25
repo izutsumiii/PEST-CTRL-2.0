@@ -68,13 +68,42 @@ function getAllChildCategories($pdo, $parentIds) {
     }
     return [];
 }
+// Get selected categories FIRST
+$selectedCategories = [];
+if (isset($_GET['categories']) && is_array($_GET['categories'])) {
+    $selectedCategories = array_map('intval', $_GET['categories']);
+} elseif (isset($_GET['category']) && $_GET['category'] > 0) {
+    $selectedCategories = [intval($_GET['category'])];
+}
 
+// Build complete category list including children
 if (!empty($selectedCategories)) {
     $allCategoryIds = array_merge($selectedCategories, getAllChildCategories($pdo, $selectedCategories));
     $filters['categories'] = array_unique($allCategoryIds);
 } else {
     $filters['categories'] = [];
 }
+
+// NOW fetch products with the updated filters
+if (function_exists('searchProductsWithRatingEnhanced')) {
+    $products = searchProductsWithRatingEnhanced($search, $filters);
+    $totalCount = function_exists('countProductsWithRatingEnhanced') ? countProductsWithRatingEnhanced($search, $filters) : count(searchProductsWithRating($search, $filters));
+} else {
+    // Fallback: Manual filtering if function doesn't support categories
+    $allProducts = searchProductsWithRating($search, $filters);
+    
+    // Filter by categories if selected
+    if (!empty($filters['categories'])) {
+        $allProducts = array_filter($allProducts, function($product) use ($filters) {
+            return in_array($product['category_id'], $filters['categories']);
+        });
+    }
+    
+    $totalCount = count($allProducts);
+    $offset = ($page - 1) * $perPage;
+    $products = array_slice($allProducts, $offset, $perPage);
+}
+$totalPages = max(1, (int)ceil($totalCount / $perPage));
 
 if (!function_exists('resolveProductImageUrl')) {
     function resolveProductImageUrl($url) {
@@ -88,6 +117,37 @@ if (!function_exists('resolveProductImageUrl')) {
 ?>
 
 <style>
+    .category-item {
+    margin: 5px 0;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 0;
+}
+
+.category-item label {
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.75rem;
+    color: #130325;
+    flex: 1;
+    padding: 2px 4px;
+    border-radius: 4px;
+    transition: background 0.2s;
+}
+
+.category-item label:hover {
+    background: rgba(255, 215, 54, 0.1);
+}
+
+.category-name {
+    color: #130325;
+    font-weight: 600;
+    font-size: 0.8rem;
+    padding: 4px 0;
+}
 /* EXACT MATCH TO INDEX.PHP STYLING */
 
 /* Body background - Light like index.php */
@@ -853,29 +913,33 @@ body {
                             $indent = $level * 20;
                             $isMainCategory = $category['parent_id'] == 0;
                             
+                            // Clean category name - remove emojis and decode HTML entities
+                            $displayName = preg_replace('/^[\x{1F300}-\x{1FAFF}\x{2600}-\x{27BF}\x{FE0F}\x{200D}\s]+/u', '', (string)$category['name']);
+                            $displayName = html_entity_decode($displayName, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+                            $displayName = trim($displayName);
+                            
                             echo '<div class="category-item" style="margin-left: ' . $indent . 'px;">';
                             
                             if ($hasChildren) {
                                 echo '<span id="toggle-' . $category['id'] . '" class="category-toggle" onclick="toggleCategoryChildren(' . $category['id'] . ')">▶</span>';
+                            } else {
+                                // Add spacing for items without children to align with those that have the toggle
+                                echo '<span style="display: inline-block; width: 20px;"></span>';
                             }
                             
                             if ($isMainCategory) {
-                                echo '<span class="category-name">';
-                                $displayName = preg_replace('/^[\x{1F300}-\x{1FAFF}\x{2600}-\x{27BF}\x{FE0F}\x{200D}\s]+/u', '', (string)$category['name']);
-                                $displayName = html_entity_decode($displayName, ENT_QUOTES, 'UTF-8');
+                                echo '<span class="category-name" style="font-weight: 600; cursor: pointer;" onclick="toggleCategoryChildren(' . $category['id'] . ')">';
                                 echo htmlspecialchars($displayName);
                                 echo '</span>';
                             } else {
-                                echo '<label>';
+                                echo '<label style="cursor: pointer; flex: 1;">';
                                 echo '<input type="checkbox" ';
-                                echo 'name="category_checkboxes[]" ';
+                                echo 'name="categories[]" ';
                                 echo 'value="' . $category['id'] . '" ';
                                 echo 'onchange="handleCategorySelection(this)" ';
                                 if ($isSelected) echo 'checked ';
                                 echo 'data-parent="' . $category['parent_id'] . '" ';
-                                echo '>';
-                                $displayName = preg_replace('/^[\x{1F300}-\x{1FAFF}\x{2600}-\x{27BF}\x{FE0F}\x{200D}\s]+/u', '', (string)$category['name']);
-                                $displayName = html_entity_decode($displayName, ENT_QUOTES, 'UTF-8');
+                                echo 'style="margin-right: 6px;">';
                                 echo htmlspecialchars($displayName);
                                 echo '</label>';
                             }
@@ -883,11 +947,24 @@ body {
                             echo '</div>';
                             
                             if ($hasChildren) {
-                                echo '<div id="children-' . $category['id'] . '" class="category-children" style="display: ' . ($isSelected ? 'block' : 'none') . ';">';
+                                echo '<div id="children-' . $category['id'] . '" class="category-children" style="display: ' . ($isSelected || hasSelectedChild($category['children'], $selectedCategories) ? 'block' : 'none') . ';">';
                                 renderCategoryTree($category['children'], $selectedCategories, $level + 1);
                                 echo '</div>';
                             }
                         }
+                    }
+                    
+                    // Helper function to check if any child is selected
+                    function hasSelectedChild($children, $selectedCategories) {
+                        foreach ($children as $child) {
+                            if (in_array($child['id'], $selectedCategories)) {
+                                return true;
+                            }
+                            if (!empty($child['children']) && hasSelectedChild($child['children'], $selectedCategories)) {
+                                return true;
+                            }
+                        }
+                        return false;
                     }
                     
                     $categoryTree = buildCategoryTree($categories);
@@ -912,8 +989,9 @@ body {
                     <div class="rating-options">
                         <?php for ($i = 1; $i <= 5; $i++): ?>
                             <label>
-                                <input type="radio" name="min_rating" value="<?php echo $i; ?>" 
-                                    <?php echo $minRating == $i ? 'checked' : ''; ?>>
+                            <input type="radio" name="min_rating" value="<?php echo $i; ?>" 
+                            <?php echo $minRating == $i ? 'checked' : ''; ?>
+                            onchange="this.form.submit()">
                                 <span class="rating-stars">
                                     <?php echo str_repeat('<span class=\'star-filled\'>★</span>', $i)
                                         . str_repeat('<span class=\'star-empty\'>☆</span>', 5 - $i); ?>
@@ -921,8 +999,9 @@ body {
                             </label>
                         <?php endfor; ?>
                         <label>
-                            <input type="radio" name="min_rating" value="0" 
-                                <?php echo $minRating == 0 ? 'checked' : ''; ?>>
+                        <input type="radio" name="min_rating" value="0" 
+                        <?php echo $minRating == 0 ? 'checked' : ''; ?>
+                        onchange="this.form.submit()">
                             Any Rating
                         </label>
                     </div>
@@ -982,7 +1061,7 @@ body {
                 <?php endif; ?>
                 
                 <?php if ($inStock): ?>
-                    <span class="filter-tag">In Stock Only</span>
+                   
                 <?php endif; ?>
             </div>
             
@@ -1054,11 +1133,8 @@ body {
         </div>
     </div>
 </div>
-
 <script>
 // Category hierarchy management
-let selectedCategories = new Set();
-
 function toggleCategoryChildren(categoryId) {
     const childrenDiv = document.getElementById(`children-${categoryId}`);
     const toggleIcon = document.getElementById(`toggle-${categoryId}`);
@@ -1075,36 +1151,64 @@ function toggleCategoryChildren(categoryId) {
 }
 
 function handleCategorySelection(checkbox) {
-    const categoryId = checkbox.value;
+    // Get the form
+    const form = checkbox.closest('form');
+    if (!form) return;
     
-    if (checkbox.checked) {
-        selectedCategories.add(categoryId);
-    } else {
-        selectedCategories.delete(categoryId);
-        const children = document.querySelectorAll(`[data-parent="${categoryId}"]`);
-        children.forEach(child => {
-            child.checked = false;
-            selectedCategories.delete(child.value);
-        });
+    // Get all checked category checkboxes
+    const checkedBoxes = form.querySelectorAll('input[name="categories[]"]:checked');
+    
+    // Create URL parameters
+    const url = new URL(window.location.href);
+    
+    // Remove existing category parameters
+    url.searchParams.delete('categories[]');
+    
+    // Add all checked categories
+    checkedBoxes.forEach(box => {
+        url.searchParams.append('categories[]', box.value);
+    });
+    
+    // Preserve search parameter
+    const searchInput = form.querySelector('input[name="search"]');
+    if (searchInput && searchInput.value) {
+        url.searchParams.set('search', searchInput.value);
     }
+    
+    // Preserve other filter parameters
+    const minPrice = form.querySelector('input[name="min_price"]');
+    const maxPrice = form.querySelector('input[name="max_price"]');
+    const minRating = form.querySelector('input[name="min_rating"]:checked');
+    
+    if (minPrice && minPrice.value) {
+        url.searchParams.set('min_price', minPrice.value);
+    }
+    if (maxPrice && maxPrice.value) {
+        url.searchParams.set('max_price', maxPrice.value);
+    }
+    if (minRating && minRating.value) {
+        url.searchParams.set('min_rating', minRating.value);
+    }
+    
+    // Redirect to new URL
+    window.location.href = url.toString();
 }
 
+// Initialize category tree on page load
 document.addEventListener('DOMContentLoaded', function() {
-    const filterForm = document.querySelector('.filters form');
-    if (filterForm) {
-        filterForm.addEventListener('submit', function(e) {
-            const oldInputs = filterForm.querySelectorAll('input[name="categories[]"]');
-            oldInputs.forEach(input => input.remove());
-            
-            selectedCategories.forEach(catId => {
-                const input = document.createElement('input');
-                input.type = 'hidden';
-                input.name = 'categories[]';
-                input.value = catId;
-                filterForm.appendChild(input);
-            });
-        });
-    }
+    // Open parent categories if any child is selected
+    const selectedCheckboxes = document.querySelectorAll('input[name="categories[]"]:checked');
+    selectedCheckboxes.forEach(checkbox => {
+        const parentId = checkbox.getAttribute('data-parent');
+        if (parentId) {
+            const childrenDiv = document.getElementById(`children-${parentId}`);
+            const toggleIcon = document.getElementById(`toggle-${parentId}`);
+            if (childrenDiv) {
+                childrenDiv.style.display = 'block';
+                if (toggleIcon) toggleIcon.textContent = '▼';
+            }
+        }
+    });
 });
 
 // Compare functionality
