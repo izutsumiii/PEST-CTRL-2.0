@@ -34,7 +34,7 @@ $pathPrefix = ($currentDir === 'paymongo') ? '../' : '';
             display: flex;
             align-items: center;
             gap: 16px;
-            padding: 12px 18px;
+            padding: 0px 18px;
             justify-content: space-between;
         }
         
@@ -467,7 +467,7 @@ $pathPrefix = ($currentDir === 'paymongo') ? '../' : '';
             background: #130325;
             border-top: 1px solid #2d1b4e;
             border-bottom: 1px solid #2d1b4e;
-            padding: 10px 0;
+            padding: 0px 0;
         }
         
         .categories-container {
