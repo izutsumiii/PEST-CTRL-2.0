@@ -228,19 +228,46 @@ $pathPrefix = ($currentDir === 'paymongo') ? '../' : '';
             cursor: pointer;
         }
         
-        .notif-popper {
-            position: absolute;
-            top: 100%;
-            right: 0;
-            width: 340px;
-            background: #ffffff;
-            border: 1px solid rgba(0, 0, 0, 0.1);
-            border-radius: 10px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
-            display: none;
-            z-index: 1200;
-            padding: 10px;
-        }
+.notif-popper {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    width: 340px;
+    max-height: 500px;
+    background: #ffffff;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 10px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+    display: none;
+    z-index: 1200;
+    padding: 10px;
+    overflow-y: auto;
+}
+
+/* Custom scrollbar styles for notif-popper */
+.notif-popper::-webkit-scrollbar {
+    width: 8px;
+}
+
+.notif-popper::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+.notif-popper::-webkit-scrollbar-thumb {
+    background: #FFD736;
+    border-radius: 10px;
+}
+
+.notif-popper::-webkit-scrollbar-thumb:hover {
+    background: #e6c230;
+}
+
+/* For Firefox */
+.notif-popper {
+    scrollbar-width: thin;
+    scrollbar-color: #FFD736 #f1f1f1;
+}
         
         .notif-popper.show { display: block; }
         .notif-item-ui { display:flex; gap:10px; padding:10px; border-radius:8px; border:1px solid rgba(0,0,0,0.1); background: rgba(248,249,250,0.5); margin: 6px 0; color:#130325; text-decoration:none; }
@@ -566,6 +593,27 @@ $pathPrefix = ($currentDir === 'paymongo') ? '../' : '';
                 display: none;
             }
         }
+        #notifList {
+    max-height: 380px;
+    overflow-y: auto;
+}
+
+#notifList::-webkit-scrollbar {
+    width: 6px;
+}
+
+#notifList::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+#notifList::-webkit-scrollbar-thumb {
+    background: #FFD736;
+    border-radius: 10px;
+}
+
+#notifList::-webkit-scrollbar-thumb:hover {
+    background: #e6c230;
+}
     </style>
 </head>
 <body>
@@ -769,73 +817,83 @@ $pathPrefix = ($currentDir === 'paymongo') ? '../' : '';
             if (!bell || !pop || !list) return;
             function closePop(e){ if (!pop.contains(e.target) && e.target !== bell && !bell.contains(e.target)) pop.classList.remove('show'); }
             bell.addEventListener('click', function(){
-                if (pop.classList.contains('show')) { pop.classList.remove('show'); return; }
-                const notifUrl = '<?php echo $pathPrefix; ?>customer-notifications.php?as=json';
-                fetch(notifUrl, { credentials: 'same-origin' })
-                    .then(r => r.json())
-                    .then(data => {
-                        list.innerHTML = '';
-                        
-                        // Check if user is not logged in
-                        if (data && data.success === false && data.message === 'Not logged in') {
-                            list.innerHTML = '<div class="notif-empty">Please log in to view notifications.</div>';
-                            pop.classList.add('show');
-                            setTimeout(()=> document.addEventListener('click', closePop, { once:true }), 0);
-                            return;
-                        }
-                        
-                        const items = (data && data.items) ? data.items.slice(0,6) : [];
-                        // Show total count of all notifications
-                        updateNotificationBadge(items.length);
-                        
-                        if (!items.length) {
-                            list.innerHTML = '<div class="notif-empty">No notifications yet.</div>';
-                        } else {
-                            items.forEach(it => {
-                                const url = '<?php echo $pathPrefix; ?>user-dashboard.php#order-' + it.order_id;
-                                const item = document.createElement('div');
-                                item.className = 'notif-item-ui';
-                                item.style.position = 'relative';
-                                
-                                let content = '';
-                                if (it.status === 'notification') {
-                                    // This is a custom notification
-                                    content = '<div class="icon"><i class="fas fa-info-circle"></i></div>'+
-                                             '<div style="flex:1;"><div style="font-weight:700; color:#130325;">' + it.message + '</div>'+
-                                             '<div style="opacity:0.9; font-size:12px; color:#130325;">' + it.updated_at_human + '</div></div>';
-                                } else {
-                                    // This is an order status update
-                                    content = '<div class="icon"><i class="fas fa-bell"></i></div>'+
-                                             '<div style="flex:1;"><div style="font-weight:700; color:#130325;">Order #' + it.order_id + ' update</div>'+
-                                             '<div style="opacity:0.9; font-size:12px; color:#130325;">Status: ' + it.status + ' • ' + it.updated_at_human + '</div></div>';
-                                }
-                                
-                                // Add X button for deleting notifications
-                                content += '<button class="notif-delete-btn" onclick="deleteNotification(' + it.order_id + ', this); event.stopPropagation();" title="Delete notification">' +
-                                          '<i class="fas fa-times"></i></button>';
-                                
-                                item.innerHTML = content;
-                                
-                                // Add click handler for the main content (not the X button)
-                                item.addEventListener('click', function(e) {
-                                    if (!e.target.closest('.notif-delete-btn')) {
-                                        window.location.href = url;
-                                    }
-                                });
-                                
-                                list.appendChild(item);
-                            });
-                        }
-                        pop.classList.add('show');
-                        setTimeout(()=> document.addEventListener('click', closePop, { once:true }), 0);
-                    })
-                    .catch((error)=>{
-                        console.error('Notification fetch error:', error);
-                        list.innerHTML = '<div class="notif-empty">Please log in to view notifications.</div>';
-                        pop.classList.add('show');
-                        setTimeout(()=> document.addEventListener('click', closePop, { once:true }), 0);
-                    });
+    if (pop.classList.contains('show')) { pop.classList.remove('show'); return; }
+    
+    // Mark all notifications as read when bell is clicked
+    fetch('<?php echo $pathPrefix; ?>ajax/mark-all-notifications-read.php', {
+        method: 'POST',
+        credentials: 'same-origin'
+    })
+    .then(() => {
+        // Update badge to 0 immediately
+        updateNotificationBadge(0);
+        
+        // Then fetch and display notifications
+        const notifUrl = '<?php echo $pathPrefix; ?>customer-notifications.php?as=json';
+        return fetch(notifUrl, { credentials: 'same-origin' });
+    })
+    .then(r => r.json())
+    .then(data => {
+        list.innerHTML = '';
+        
+        // Check if user is not logged in
+        if (data && data.success === false && data.message === 'Not logged in') {
+            list.innerHTML = '<div class="notif-empty">Please log in to view notifications.</div>';
+            pop.classList.add('show');
+            setTimeout(()=> document.addEventListener('click', closePop, { once:true }), 0);
+            return;
+        }
+        
+        const items = (data && data.items) ? data.items.slice(0,6) : [];
+        
+        if (!items.length) {
+            list.innerHTML = '<div class="notif-empty">No notifications yet.</div>';
+        } else {
+            items.forEach(it => {
+                const url = '<?php echo $pathPrefix; ?>user-dashboard.php#order-' + it.order_id;
+                const item = document.createElement('div');
+                item.className = 'notif-item-ui';
+                item.style.position = 'relative';
+                
+                let content = '';
+                if (it.status === 'notification') {
+                    // This is a custom notification
+                    content = '<div class="icon"><i class="fas fa-info-circle"></i></div>'+
+                             '<div style="flex:1;"><div style="font-weight:700; color:#130325;">' + it.message + '</div>'+
+                             '<div style="opacity:0.9; font-size:12px; color:#130325;">' + it.updated_at_human + '</div></div>';
+                } else {
+                    // This is an order status update
+                    content = '<div class="icon"><i class="fas fa-bell"></i></div>'+
+                             '<div style="flex:1;"><div style="font-weight:700; color:#130325;">Order #' + it.order_id + ' update</div>'+
+                             '<div style="opacity:0.9; font-size:12px; color:#130325;">Status: ' + it.status + ' • ' + it.updated_at_human + '</div></div>';
+                }
+                
+                // Add X button for deleting notifications
+                content += '<button class="notif-delete-btn" onclick="deleteNotification(' + it.order_id + ', this, ' + (it.status === 'notification' ? 'true' : 'false') + '); event.stopPropagation();" title="Delete notification">' +
+                          '<i class="fas fa-times"></i></button>';
+                
+                item.innerHTML = content;
+                
+                // Add click handler for the main content (not the X button)
+                item.addEventListener('click', function(e) {
+                    if (!e.target.closest('.notif-delete-btn')) {
+                        window.location.href = url;
+                    }
+                });
+                
+                list.appendChild(item);
             });
+        }
+        pop.classList.add('show');
+        setTimeout(()=> document.addEventListener('click', closePop, { once:true }), 0);
+    })
+    .catch((error)=>{
+        console.error('Notification fetch error:', error);
+        list.innerHTML = '<div class="notif-empty">Please log in to view notifications.</div>';
+        pop.classList.add('show');
+        setTimeout(()=> document.addEventListener('click', closePop, { once:true }), 0);
+    });
+});
         })();
         
         // Notification badge and delete functions
@@ -853,50 +911,56 @@ $pathPrefix = ($currentDir === 'paymongo') ? '../' : '';
             }
         }
         
-        function deleteNotification(orderId, button) {
-            // Show loading state
-            button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-            button.disabled = true;
-            
-            // Make AJAX request to delete notification
-            fetch('<?php echo $pathPrefix; ?>ajax/delete-notification.php', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    order_id: orderId
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    // Remove the notification item from the list
-                    const notificationItem = button.closest('.notif-item-ui');
-                    if (notificationItem) {
-                        notificationItem.style.opacity = '0';
-                        notificationItem.style.transform = 'translateX(100%)';
-                        setTimeout(() => {
-                            notificationItem.remove();
-                            // Update badge count
-                            const remainingItems = document.querySelectorAll('.notif-item-ui').length;
-                            updateNotificationBadge(remainingItems);
-                        }, 300);
-                    }
-                } else {
-                    // Show error and restore button
-                    button.innerHTML = '<i class="fas fa-times"></i>';
-                    button.disabled = false;
-                    alert('Error deleting notification: ' + (data.message || 'Unknown error'));
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                button.innerHTML = '<i class="fas fa-times"></i>';
-                button.disabled = false;
-                alert('Error deleting notification');
-            });
+        function deleteNotification(orderId, button, isCustomNotification) {
+    // Show loading state
+    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    button.disabled = true;
+    
+    // Make AJAX request to delete notification
+    fetch('<?php echo $pathPrefix; ?>ajax/delete-notification.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            order_id: orderId,
+            is_custom: isCustomNotification
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Remove the notification item from the list
+            const notificationItem = button.closest('.notif-item-ui');
+            if (notificationItem) {
+                notificationItem.style.opacity = '0';
+                notificationItem.style.transform = 'translateX(100%)';
+                setTimeout(() => {
+                    notificationItem.remove();
+                    // Refresh notification count from server
+                    fetch('<?php echo $pathPrefix; ?>customer-notifications.php?as=json')
+                        .then(r => r.json())
+                        .then(data => {
+                            if (data && data.success) {
+                                updateNotificationBadge(data.unread_count || 0);
+                            }
+                        });
+                }, 300);
+            }
+        } else {
+            // Show error and restore button
+            button.innerHTML = '<i class="fas fa-times"></i>';
+            button.disabled = false;
+            alert('Error deleting notification: ' + (data.message || 'Unknown error'));
         }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        button.innerHTML = '<i class="fas fa-times"></i>';
+        button.disabled = false;
+        alert('Error deleting notification');
+    });
+}
         
         function clearAllNotifications() {
             const list = document.getElementById('notifList');
@@ -907,14 +971,16 @@ $pathPrefix = ($currentDir === 'paymongo') ? '../' : '';
         }
         
         // Load notification count on page load
+        // Load notification count on page load
         document.addEventListener('DOMContentLoaded', function() {
             if (document.getElementById('notif-badge')) {
                 fetch('<?php echo $pathPrefix; ?>customer-notifications.php?as=json')
                     .then(r => r.json())
                     .then(data => {
-                        if (data && data.items) {
-                            // Show total count of all notifications
-                            updateNotificationBadge(data.items.length);
+                        if (data && data.success) {
+                            // Show only UNREAD count from server
+                            const unreadCount = data.unread_count || 0;
+                            updateNotificationBadge(unreadCount);
                         }
                     })
                     .catch(error => {
