@@ -23,25 +23,61 @@ if (isset($_POST['update_status'])) {
     $stmt->execute([$orderId, $userId]);
     $order = $stmt->fetch(PDO::FETCH_ASSOC);
     
-    if ($order) {
-        $currentStatus = $order['status'];
-        $allowedTransitions = getAllowedStatusTransitions($currentStatus);
+    $stmt = $pdo->prepare("UPDATE orders SET status = ? WHERE id = ?");
+$result = $stmt->execute([$newStatus, $orderId]);
+
+if ($result) {
+    $_SESSION['order_message'] = ['type' => 'success', 'text' => 'Order #' . str_pad($orderId, 6, '0', STR_PAD_LEFT) . ' updated to ' . ucfirst($newStatus)];
+    
+    // Create notification for customer
+    try {
+        // Get the customer user_id from the order
+        $stmt = $pdo->prepare("SELECT user_id FROM orders WHERE id = ?");
+        $stmt->execute([$orderId]);
+        $orderData = $stmt->fetch(PDO::FETCH_ASSOC);
         
-        if (!in_array($newStatus, $allowedTransitions)) {
-            $_SESSION['order_message'] = ['type' => 'error', 'text' => 'Invalid status transition from ' . ucfirst($currentStatus) . ' to ' . ucfirst($newStatus)];
-        }
-        elseif ($currentStatus === 'pending' && $newStatus === 'processing' && isWithinGracePeriod($order['created_at'], $pdo)) {
-            $remaining = getRemainingGracePeriod($order['created_at'], $pdo);
-            $_SESSION['order_message'] = ['type' => 'error', 'text' => 'Order in grace period. Wait ' . $remaining['minutes'] . 'm ' . $remaining['seconds'] . 's'];
-        }
-        else {
-            $stmt = $pdo->prepare("UPDATE orders SET status = ? WHERE id = ?");
-            $result = $stmt->execute([$newStatus, $orderId]);
+        if ($orderData && $orderData['user_id']) {
+            $customerId = $orderData['user_id'];
             
-            if ($result) {
-                $_SESSION['order_message'] = ['type' => 'success', 'text' => 'Order #' . str_pad($orderId, 6, '0', STR_PAD_LEFT) . ' updated to ' . ucfirst($newStatus)];
-            }
+            // Create notification message based on status
+            $statusMessages = [
+                'pending' => 'Your order has been received and is pending processing.',
+                'processing' => 'Your order is now being processed.',
+                'shipped' => 'Great news! Your order has been shipped.',
+                'delivered' => 'Your order has been delivered. Thank you for your purchase!',
+                'cancelled' => 'Your order has been cancelled.',
+                'refunded' => 'Your order has been refunded.'
+            ];
+            
+            $message = $statusMessages[$newStatus] ?? "Your order status has been updated to: $newStatus";
+            
+            // Insert notification into notifications table
+            $stmt = $pdo->prepare("INSERT INTO notifications (user_id, order_id, message, type, created_at) 
+                                  VALUES (?, ?, ?, 'info', NOW())");
+            $stmt->execute([$customerId, $orderId, $message]);
         }
+    } catch (Exception $e) {
+        // Log error but don't stop execution
+        error_log("Failed to create customer notification: " . $e->getMessage());
+    }
+
+if ($result && in_array($newStatus, ['processing', 'shipped', 'delivered'])) {
+    require_once 'includes/seller_notification_functions.php';
+    
+    $statusMessages = [
+        'processing' => '✅ Order #' . str_pad($orderId, 6, '0', STR_PAD_LEFT) . ' moved to Processing',
+        'shipped' => '🚚 Order #' . str_pad($orderId, 6, '0', STR_PAD_LEFT) . ' has been shipped',
+        'delivered' => '📦 Order #' . str_pad($orderId, 6, '0', STR_PAD_LEFT) . ' was delivered'
+    ];
+    
+    createSellerNotification(
+        $userId,
+        'Order Status Updated',
+        $statusMessages[$newStatus] ?? 'Order status changed',
+        'info',
+        'view-orders.php'
+    );
+}
     }
     header("Location: view-orders.php");
     exit();
