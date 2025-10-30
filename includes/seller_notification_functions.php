@@ -169,18 +169,39 @@ function createNewOrderNotification($sellerId, $orderId, $customerName, $product
     $stmt->execute([$sellerId, $title, $message, $type, $actionUrl]);
 }
 
-// Add this function to create return request notifications
-function createReturnRequestNotification($sellerId, $returnId, $orderId, $productName) {
+// Seller notification helper functions
+
+function createReturnRequestNotification($sellerId, $returnRequestId, $orderId, $productName) {
     global $pdo;
     
-    $title = "New Return Request";
-    $message = "New return request for '{$productName}' from Order #" . str_pad($orderId, 6, '0', STR_PAD_LEFT) . ". Please review and take action.";
-    $type = "warning";
-    $actionUrl = "seller-returns.php?return_id={$returnId}";
-    
-    $stmt = $pdo->prepare("INSERT INTO seller_notifications 
-                          (seller_id, title, message, type, action_url, created_at) 
-                          VALUES (?, ?, ?, ?, ?, NOW())");
-    $stmt->execute([$sellerId, $title, $message, $type, $actionUrl]);
+    try {
+        // Create notification in seller_notifications table (if exists)
+        $checkTable = $pdo->query("SHOW TABLES LIKE 'seller_notifications'");
+        
+        if ($checkTable->rowCount() > 0) {
+            $stmt = $pdo->prepare("
+                INSERT INTO seller_notifications 
+                (seller_id, type, title, message, reference_id, reference_type, is_read, created_at)
+                VALUES (?, 'return_request', ?, ?, ?, 'return_request', 0, NOW())
+            ");
+            
+            $title = "New Return Request";
+            $message = "Customer requested return for Order #" . str_pad($orderId, 6, '0', STR_PAD_LEFT) . " - " . htmlspecialchars($productName);
+            
+            $stmt->execute([
+                $sellerId,
+                $title,
+                $message,
+                $returnRequestId
+            ]);
+            
+            return true;
+        }
+        
+        return false;
+    } catch (Exception $e) {
+        error_log("Notification creation error: " . $e->getMessage());
+        return false;
+    }
 }
 ?>
