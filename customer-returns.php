@@ -183,11 +183,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_return'])) {
                                 throw new Exception('Product not found for this order');
                             }
                             
-                            // Get seller_id from the product
+                            // Get seller_id from the product - FIXED
                             $stmt = $pdo->prepare("SELECT seller_id FROM products WHERE id = ?");
                             $stmt->execute([$productId]);
                             $sellerId = $stmt->fetchColumn();
-                            
                             if (!$sellerId) {
                                 throw new Exception('Seller not found for this product');
                             }
@@ -359,6 +358,7 @@ $stmt->execute([$customerId]);
 
                             // Create app notification for seller
                             // Create app notification for seller
+                         
                             if ($sellerInfo) {
                                 $stmt = $pdo->prepare("
                                     INSERT INTO order_status_history (order_id, status, notes, updated_by, created_at) 
@@ -368,14 +368,19 @@ $stmt->execute([$customerId]);
                                 $stmt->execute([$orderId, $notificationMessage, $sellerInfo['seller_id']]);
                                 
                                 // Create seller notification for return request
-                                require_once 'includes/seller_notification_functions.php';
-                                createReturnRequestNotification(
-                                    $sellerInfo['seller_id'],
-                                    $returnRequestId,
-                                    $orderId,
-                                    $sellerInfo['product_name']
-                                );
-                            }
+                                if (file_exists('includes/seller_notification_functions.php')) {
+                                    require_once 'includes/seller_notification_functions.php';
+                                    if (function_exists('createReturnRequestNotification')) {
+                                        createReturnRequestNotification(
+                                            $sellerInfo['seller_id'],
+                                            $returnRequestId,
+                                            $orderId,
+                                            $sellerInfo['product_name']
+                                        );
+                                    }
+                                }
+                            }  // <-- ADD THIS CLOSING BRACE
+
                             $pdo->commit();
 
                             // Send email notification to customer only
