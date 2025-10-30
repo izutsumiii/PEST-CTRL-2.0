@@ -32,7 +32,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 // Get return request details for notifications
                 $stmt = $pdo->prepare("
                 SELECT rr.*, o.id as order_id, u.first_name, u.last_name, u.email as customer_email,
-                       p.name as product_name, s.first_name as seller_first_name, s.last_name as seller_last_name
+                    p.name as product_name, s.first_name as seller_first_name, s.last_name as seller_last_name
                 FROM return_requests rr
                 JOIN orders o ON rr.order_id = o.id
                 JOIN users u ON rr.customer_id = u.id
@@ -52,12 +52,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $result = $stmt->execute([$sellerId, $returnId, $sellerId]);
                 
                 if ($result) {
-                    // Update order refund status
-                    $stmt = $pdo->prepare("UPDATE orders SET refund_status = 'processing' WHERE id = (SELECT order_id FROM return_requests WHERE id = ?)");
-                    $stmt->execute([$returnId]);
+                    // Update order status to return_approved
+                    $stmt = $pdo->prepare("UPDATE orders SET status = 'return_approved', refund_status = 'processing' WHERE id = ?");
+                    $stmt->execute([$returnDetails['order_id']]);
                     
-                    // Create app notification for customer
-                    // Create app notification for customer
                     // Create app notification for customer in order_status_history
                     $stmt = $pdo->prepare("
                         INSERT INTO order_status_history (order_id, status, notes, created_at) 
@@ -65,7 +63,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     ");
                     $notificationMessage = "Your return request for Order #" . str_pad($returnDetails['order_id'], 6, '0', STR_PAD_LEFT) . " has been approved. Refund is being processed.";
                     $stmt->execute([$returnDetails['order_id'], $notificationMessage]);
-                    // Send email notification to customer
+                    
+                
                     $mail = new PHPMailer(true);
                     try {
                         $mail->isSMTP();
@@ -116,44 +115,87 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     
                     $message = "Return request approved successfully. Customer has been notified.";
                 }
-            } elseif ($action === 'reject') {
+            } 
+            
+            elseif ($action === 'reject') {
                 $rejectionReason = $_POST['rejection_reason'] ?? '';
+                
+                // Get return request details
+                $stmt = $pdo->prepare("SELECT order_id FROM return_requests WHERE id = ? AND seller_id = ?");
+                $stmt->execute([$returnId, $sellerId]);
+                $returnDetails = $stmt->fetch(PDO::FETCH_ASSOC);
+                
+                if (!$returnDetails) {
+                    throw new Exception("Return request not found or access denied.");
+                }
                 
                 // Reject return request
                 $stmt = $pdo->prepare("UPDATE return_requests SET status = 'rejected', rejection_reason = ?, processed_at = NOW(), processed_by = ? WHERE id = ? AND seller_id = ?");
                 $result = $stmt->execute([$rejectionReason, $sellerId, $returnId, $sellerId]);
                 
                 if ($result) {
+                    // Update order status to return_rejected
+                    $stmt = $pdo->prepare("UPDATE orders SET status = 'return_rejected' WHERE id = ?");
+                    $stmt->execute([$returnDetails['order_id']]);
+                    
+                    // Create notification in order_status_history
+                    $stmt = $pdo->prepare("
+                        INSERT INTO order_status_history (order_id, status, notes, created_at) 
+                        VALUES (?, 'return_rejected', ?, NOW())
+                    ");
+                    $notificationMessage = "Your return request has been rejected. Reason: " . $rejectionReason;
+                    $stmt->execute([$returnDetails['order_id'], $notificationMessage]);
+                    
                     $message = "Return request rejected.";
                 }
-            } elseif ($action === 'complete_refund') {
-                // Complete the refund process
-                $stmt = $pdo->prepare("UPDATE return_requests SET status = 'completed', processed_at = NOW(), processed_by = ? WHERE id = ? AND seller_id = ?");
-                $result = $stmt->execute([$sellerId, $returnId, $sellerId]);
-                
-                if ($result) {
-                    // Update order refund status
-                    $stmt = $pdo->prepare("UPDATE orders SET refund_status = 'completed' WHERE id = (SELECT order_id FROM return_requests WHERE id = ?)");
-                    $stmt->execute([$returnId]);
-                    
-                    // Restore product stock
-                    $stmt = $pdo->prepare("
-                        SELECT oi.product_id, oi.quantity 
-                        FROM order_items oi 
-                        JOIN return_requests rr ON oi.order_id = rr.order_id 
-                        WHERE rr.id = ?
-                    ");
-                    $stmt->execute([$returnId]);
-                    $orderItems = $stmt->fetchAll(PDO::FETCH_ASSOC);
-                    
-                    foreach ($orderItems as $item) {
-                        $stmt = $pdo->prepare("UPDATE products SET stock_quantity = stock_quantity + ? WHERE id = ?");
-                        $stmt->execute([$item['quantity'], $item['product_id']]);
-                    }
-                    
-                    $message = "Refund completed and stock restored.";
-                }
             }
+            
+            
+           elseif ($action === 'complete_refund') {
+            // Get return request details
+            $stmt = $pdo->prepare("SELECT order_id FROM return_requests WHERE id = ? AND seller_id = ?");
+            $stmt->execute([$returnId, $sellerId]);  
+            $returnDetails = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if (!$returnDetails) {
+                throw new Exception("Return request not found or access denied.");
+            }
+            
+            // Complete the refund process
+            $stmt = $pdo->prepare("UPDATE return_requests SET status = 'completed', processed_at = NOW(), processed_by = ? WHERE id = ? AND seller_id = ?");
+            $result = $stmt->execute([$sellerId, $returnId, $sellerId]);
+            
+            if ($result) {
+                // Update order status to return_completed
+                $stmt = $pdo->prepare("UPDATE orders SET status = 'return_completed', refund_status = 'completed' WHERE id = ?");
+                $stmt->execute([$returnDetails['order_id']]);
+                
+                // Restore product stock
+                $stmt = $pdo->prepare("
+                    SELECT oi.product_id, oi.quantity 
+                    FROM order_items oi 
+                    JOIN return_requests rr ON oi.order_id = rr.order_id 
+                    WHERE rr.id = ?
+                ");
+                $stmt->execute([$returnId]);
+                $orderItems = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                
+                foreach ($orderItems as $item) {
+                    $stmt = $pdo->prepare("UPDATE products SET stock_quantity = stock_quantity + ? WHERE id = ?");
+                    $stmt->execute([$item['quantity'], $item['product_id']]);
+                }
+                
+                // Create notification
+                $stmt = $pdo->prepare("
+                    INSERT INTO order_status_history (order_id, status, notes, created_at) 
+                    VALUES (?, 'return_completed', ?, NOW())
+                ");
+                $notificationMessage = "Your refund has been completed successfully.";
+                $stmt->execute([$returnDetails['order_id'], $notificationMessage]);
+                
+                $message = "Refund completed and stock restored.";
+            }
+        }
             
             $pdo->commit();
         } catch (Exception $e) {
@@ -164,18 +206,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 // After return request is successfully created
 
-// Get return requests for this seller
 $stmt = $pdo->prepare("
     SELECT 
         rr.*,
         o.id as order_id,
         o.total_amount,
         o.created_at as order_date,
-        u.username as customer_name,
+        CONCAT(u.first_name, ' ', u.last_name) as customer_name,
         u.email as customer_email,
         p.name as product_name,
         p.image_url as product_image,
-        oi.quantity,
+        COALESCE(rr.quantity, oi.quantity) as quantity,
         oi.price as item_price
     FROM return_requests rr
     JOIN orders o ON rr.order_id = o.id
