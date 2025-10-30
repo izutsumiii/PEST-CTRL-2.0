@@ -280,16 +280,16 @@ function validateCartForCheckout() {
 /* -----------------------------
    PRODUCT MANAGEMENT FUNCTIONS
 ------------------------------ */
-
-// Add product (auto active)
 function addProduct($name, $description, $price, $categoryId, $sellerId, $stockQuantity, $imageUrl) {
     global $pdo;
+    
+    // Ensure AUTO_INCREMENT is set on products table
+    ensureAutoIncrementPrimary('products');
     
     $stmt = $pdo->prepare("INSERT INTO products (name, description, price, category_id, seller_id, stock_quantity, image_url, status) 
                           VALUES (?, ?, ?, ?, ?, ?, ?, 'active')");
     return $stmt->execute([$name, $description, $price, $categoryId, $sellerId, $stockQuantity, $imageUrl]);
 }
-
 // Update product
 function updateProduct($productId, $name, $description, $price, $categoryId, $stockQuantity, $status) {
     global $pdo;
@@ -1522,7 +1522,7 @@ function createOrderNotification($userId, $orderId, $message, $type = 'order_upd
         $stmt->execute([$userId, $orderId, $message, $type]);
         
         return true;
-    } catch (Exception$e) {
+    } catch (Exception $e) {
         error_log('Failed to create notification: ' . $e->getMessage());
         return false;
     }
