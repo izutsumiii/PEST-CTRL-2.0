@@ -4,7 +4,7 @@ require_once 'includes/header.php';
 require_once 'config/database.php';
 
 // spacer below fixed header (add ~8px more)
-echo '<div style="height:41px"></div>';
+echo '<div style="height:0px"></div>';
 
 requireLogin();
 // Include PHPMailer
@@ -125,6 +125,29 @@ function sanitizeInput($input) {
     return htmlspecialchars(trim($input), ENT_QUOTES, 'UTF-8');
 }
 
+// Function to get return request status with detailed info
+function getReturnRequestStatus($orderId) {
+    global $pdo;
+    
+    try {
+        $stmt = $pdo->prepare("
+            SELECT rr.*, 
+                   GROUP_CONCAT(DISTINCT p.name SEPARATOR ', ') as returned_products
+            FROM return_requests rr
+            LEFT JOIN return_request_items rri ON rr.id = rri.return_request_id
+            LEFT JOIN products p ON rri.product_id = p.id
+            WHERE rr.order_id = ?
+            GROUP BY rr.id
+            ORDER BY rr.created_at DESC
+            LIMIT 1
+        ");
+        $stmt->execute([$orderId]);
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+        error_log("Error fetching return request status: " . $e->getMessage());
+        return null;
+    }
+}
 // Function to get return request details for an order
 function getOrderReturnDetails($orderId) {
     global $pdo;
@@ -435,6 +458,39 @@ $shippedOrders = getOrdersByStatus('shipped');
 $cancelledOrders = getOrdersByStatus('cancelled');
 $orders = getUserOrders();
 $deliveredOrders = getDeliveredOrders();
+
+// Get orders with return requests for the return_requested filter
+$returnRequestedOrders = [];
+try {
+    $stmt = $pdo->prepare("
+        SELECT DISTINCT o.*, 
+               GROUP_CONCAT(CONCAT(p.name, ' (x', oi.quantity, ')') SEPARATOR ', ') as items
+        FROM orders o
+        INNER JOIN return_requests rr ON o.id = rr.order_id
+        LEFT JOIN order_items oi ON o.id = oi.order_id
+        LEFT JOIN products p ON oi.product_id = p.id
+        WHERE o.user_id = ?
+        GROUP BY o.id
+        ORDER BY rr.created_at DESC
+    ");
+    $stmt->execute([$userId]);
+    $returnRequestedOrders = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    // Get detailed order items with images for each return requested order
+    foreach ($returnRequestedOrders as &$order) {
+        $stmt = $pdo->prepare("
+            SELECT oi.*, p.name as product_name, p.image_url, p.price as product_price
+            FROM order_items oi
+            JOIN products p ON oi.product_id = p.id
+            WHERE oi.order_id = ?
+            ORDER BY oi.id
+        ");
+        $stmt->execute([$order['id']]);
+        $order['order_items'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+} catch (PDOException $e) {
+    error_log("Error fetching return requested orders: " . $e->getMessage());
+}
 
 // Get user info
 $stmt = $pdo->prepare("SELECT * FROM users WHERE id = ?");
@@ -2035,7 +2091,23 @@ body {
 .delivered-products {
     animation-delay: 0.4s;
 }
+.order-status.return_approved { 
+    background: rgba(0,123,255,0.2); 
+    color:#007bff; 
+    border-color:#007bff; 
+}
 
+.order-status.return_rejected { 
+    background: rgba(220,53,69,0.2); 
+    color:#dc3545; 
+    border-color:#dc3545; 
+}
+
+.order-status.return_completed { 
+    background: rgba(40,167,69,0.2); 
+    color:#28a745; 
+    border-color:#28a745; 
+}
 /* Custom confirmation dialog styling */
 .confirm-dialog {
     position: fixed;
@@ -2133,6 +2205,83 @@ body {
     border-color: #5a6268;
     transform: translateY(-2px);
     box-shadow: 0 6px 20px rgba(108, 117, 125, 0.4);
+}
+
+/* Return Status Badge Styles */
+.return-status-indicator {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 215, 54, 0.2);
+    border-radius: 8px;
+    padding: 12px;
+    margin: 10px 0;
+}
+
+.return-status-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.return-status-header i {
+    color: #FFD736;
+    font-size: 1.1rem;
+}
+
+.return-status-title {
+    font-weight: 600;
+    color: #F9F9F9;
+    font-size: 0.95rem;
+}
+
+.return-status-details {
+    padding-left: 24px;
+    font-size: 0.85rem;
+    color: rgba(249, 249, 249, 0.8);
+}
+
+.return-status-details div {
+    margin: 4px 0;
+}
+
+.return-status-details strong {
+    color: #FFD736;
+    margin-right: 6px;
+}
+
+.status-badge-large {
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: inline-block;
+    margin: 4px 0;
+}
+
+.status-return-pending {
+    background: rgba(255, 193, 7, 0.2);
+    color: #ffc107;
+    border: 1px solid rgba(255, 193, 7, 0.4);
+}
+
+.status-return-approved {
+    background: rgba(40, 167, 69, 0.2);
+    color: #28a745;
+    border: 1px solid rgba(40, 167, 69, 0.4);
+}
+
+.status-return-rejected {
+    background: rgba(220, 53, 69, 0.2);
+    color: #dc3545;
+    border: 1px solid rgba(220, 53, 69, 0.4);
+}
+
+.status-return-completed {
+    background: rgba(23, 162, 184, 0.2);
+    color: #17a2b8;
+    border: 1px solid rgba(23, 162, 184, 0.4);
 }
 </style>
 
@@ -2550,47 +2699,41 @@ function confirmProductSelection() {
                 <a href="products.php" class="btn btn-primary">Start Shopping</a>
             </div>
         <?php else: ?>
-            <?php
-            $filter = isset($_GET['status']) ? strtolower(trim($_GET['status'])) : 'delivered';
-            $hasFilteredOrders = false;
-            
-            // First pass: check if there are any orders matching the filter
-            foreach ($orders as $order) {
-                $orderStatusKey = strtolower($order['status']);
-                
-                // Special handling for return_requested - check both order status and if return request exists
+                <?php
+                $filter = isset($_GET['status']) ? strtolower(trim($_GET['status'])) : 'delivered';
+                $hasFilteredOrders = false;
+
+                // First pass: check if there are any orders matching the filter
                 if ($filter === 'return_requested') {
-                    // Check if this order has a return request
-                    $returnCheck = getOrderReturnDetails($order['id']);
-                    if ($returnCheck !== null) {
-                        $hasFilteredOrders = true;
-                        break;
+                    $hasFilteredOrders = !empty($returnRequestedOrders);
+                } else {
+                    foreach ($orders as $order) {
+                        $orderStatusKey = strtolower($order['status']);
+                        if ($filter === $orderStatusKey) {
+                            $hasFilteredOrders = true;
+                            break;
+                        }
                     }
-                } elseif ($filter === $orderStatusKey) {
-                    $hasFilteredOrders = true;
-                    break;
                 }
-            }
-        
+                
         if (!$hasFilteredOrders): ?>
             <div class="no-orders">
                 <p>No <?php echo ucfirst($filter); ?> orders found.</p>
                 <a href="products.php" class="btn btn-primary">Continue Shopping</a>
             </div>
-        <?php else: ?>
-            <?php foreach ($orders as $order):
-                $orderStatusKey = strtolower($order['status']);
-                
-                // Special handling for return_requested filter
-                if ($filter === 'return_requested') {
-                    $returnCheck = getOrderReturnDetails($order['id']);
-                    if ($returnCheck === null) {
-                        continue; // Skip orders without return requests
+            <?php else: ?>
+                <?php 
+                // Use different order source for return_requested filter
+                $displayOrders = ($filter === 'return_requested') ? $returnRequestedOrders : $orders;
+
+                foreach ($displayOrders as $order):
+                    $orderStatusKey = strtolower($order['status']);
+                    
+                    // For non-return_requested filters, skip if status doesn't match
+                    if ($filter !== 'return_requested' && $filter !== $orderStatusKey) {
+                        continue;
                     }
-                } elseif ($filter !== $orderStatusKey) {
-                    continue;
-                }
-            ?>
+                ?>
             
             <div class="order-card" data-order-id="<?php echo $order['id']; ?>">
                 <!-- Header: Seller | Order Number | Status -->
@@ -2685,40 +2828,86 @@ function confirmProductSelection() {
                                     <i class="fas fa-star"></i> Rate
                                 </a>
                             <?php endif; ?>
-                            <?php elseif (strtolower($order['status']) === 'return_requested'): ?>
-                            <!-- RETURN REQUESTED ORDERS: Show return details -->
-                            <?php 
-                            $returnDetails = getOrderReturnDetails($order['id']);
-                            if ($returnDetails): 
-                            ?>
-                                <div style="background: #fff3cd; padding: 12px; border-radius: 6px; margin: 10px 0; border-left: 4px solid #ffc107;">
-                                    <div style="font-weight: 600; color: #856404; margin-bottom: 5px;">
-                                        <i class="fas fa-undo"></i> Return Request Status: 
-                                        <span style="text-transform: uppercase;"><?php echo htmlspecialchars($returnDetails['status']); ?></span>
-                                    </div>
-                                    <div style="color: #856404; font-size: 0.9rem; margin-bottom: 5px;">
-                                        <strong>Returned Items:</strong> <?php echo htmlspecialchars($returnDetails['returned_items']); ?>
-                                    </div>
-                                    <div style="color: #856404; font-size: 0.9rem; margin-bottom: 5px;">
-                                        <strong>Reason:</strong> <?php echo htmlspecialchars($returnDetails['reason']); ?>
-                                    </div>
-                                    <div style="color: #856404; font-size: 0.85rem;">
-                                        <strong>Requested on:</strong> <?php echo date('M d, Y g:i A', strtotime($returnDetails['created_at'])); ?>
-                                    </div>
-                                </div>
-                            <?php endif; ?>
-                            
-                            <a href="order-details.php?id=<?php echo $order['id']; ?>" class="btn btn-primary">
-                                <i class="fas fa-eye"></i> View Details
-                            </a>
-                            <a href="customer-returns.php" class="btn btn-warning">
-                                <i class="fas fa-search"></i> Track Return
-                            </a>
-                        <?php else: ?>
-                            <!-- OTHER STATUSES: View Details and Cancel (if pending) -->
-                            <a href="order-details.php?id=<?php echo $order['id']; ?>" class="btn btn-primary">
-                                <i class="fas fa-eye"></i> View Details
-                            </a>
+                                <?php elseif (strtolower($order['status']) === 'return_requested' || 
+                                    strtolower($order['status']) === 'return_approved' || 
+                                    strtolower($order['status']) === 'return_rejected' || 
+                                    strtolower($order['status']) === 'return_completed'): ?>
+                                    <!-- RETURN REQUESTED ORDERS: Show detailed return status -->
+                                    <?php 
+                                    $returnStatus = getReturnRequestStatus($order['id']);
+                                    if ($returnStatus): 
+                                    ?>
+                                        <div class="return-status-indicator">
+                                            <div class="return-status-header">
+                                                <i class="fas fa-info-circle"></i>
+                                                <span class="return-status-title">Return/Refund Request Status</span>
+                                            </div>
+                                            
+                                            <div class="return-status-details">
+                                                <div>
+                                                    <strong>Status:</strong>
+                                                    <span class="status-badge-large status-return-<?php echo htmlspecialchars($returnStatus['status']); ?>">
+                                                        <?php 
+                                                        $statusLabels = [
+                                                            'pending' => 'Pending Review',
+                                                            'approved' => 'Approved - Processing Refund',
+                                                            'rejected' => 'Rejected',
+                                                            'completed' => 'Refund Completed'
+                                                        ];
+                                                        echo $statusLabels[$returnStatus['status']] ?? ucfirst($returnStatus['status']);
+                                                        ?>
+                                                    </span>
+                                                </div>
+                                                
+                                                <div>
+                                                    <strong>Requested:</strong> <?php echo date('M d, Y g:i A', strtotime($returnStatus['created_at'])); ?>
+                                                </div>
+                                                
+                                                <?php if ($returnStatus['returned_products']): ?>
+                                                <div>
+                                                    <strong>Products:</strong> <?php echo htmlspecialchars($returnStatus['returned_products']); ?>
+                                                </div>
+                                                <?php endif; ?>
+                                                
+                                                <?php if ($returnStatus['reason']): ?>
+                                                <div>
+                                                    <strong>Reason:</strong> <?php echo htmlspecialchars($returnStatus['reason']); ?>
+                                                </div>
+                                                <?php endif; ?>
+                                                
+                                                <?php if ($returnStatus['status'] === 'rejected' && $returnStatus['rejection_reason']): ?>
+                                                <div style="color: #dc3545; margin-top: 8px; padding: 8px; background: rgba(220, 53, 69, 0.1); border-radius: 4px;">
+                                                    <strong>Rejection Reason:</strong> <?php echo htmlspecialchars($returnStatus['rejection_reason']); ?>
+                                                </div>
+                                                <?php endif; ?>
+                                                
+                                                <?php if ($returnStatus['processed_at']): ?>
+                                                <div>
+                                                    <strong>Processed:</strong> <?php echo date('M d, Y g:i A', strtotime($returnStatus['processed_at'])); ?>
+                                                </div>
+                                                <?php endif; ?>
+                                                
+                                                <?php if ($returnStatus['status'] === 'approved'): ?>
+                                                <div style="color: #28a745; margin-top: 8px; padding: 8px; background: rgba(40, 167, 69, 0.1); border-radius: 4px;">
+                                                    <i class="fas fa-check-circle"></i> Your refund is being processed and will be completed within 3-5 business days.
+                                                </div>
+                                                <?php endif; ?>
+                                                
+                                                <?php if ($returnStatus['status'] === 'completed'): ?>
+                                                <div style="color: #17a2b8; margin-top: 8px; padding: 8px; background: rgba(23, 162, 184, 0.1); border-radius: 4px;">
+                                                    <i class="fas fa-check-circle"></i> Your refund has been completed successfully!
+                                                </div>
+                                                <?php endif; ?>
+                                            </div>
+                                        </div>
+                                    <?php endif; ?>
+                                    
+                                    <a href="order-details.php?id=<?php echo $order['id']; ?>" class="btn btn-primary">
+                                        <i class="fas fa-eye"></i> View Details
+                                    </a>
+                                    <a href="customer-returns.php" class="btn btn-warning">
+                                        <i class="fas fa-search"></i> Track Return
+                                    </a>
                             
                             <?php if (strtolower($order['status']) === 'pending'): ?>
                                 <button type="button" class="btn btn-danger" onclick="openCancelModal(<?php echo $order['id']; ?>)">
