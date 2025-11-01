@@ -175,30 +175,23 @@ function createReturnRequestNotification($sellerId, $returnRequestId, $orderId, 
     global $pdo;
     
     try {
-        // Create notification in seller_notifications table (if exists)
-        $checkTable = $pdo->query("SHOW TABLES LIKE 'seller_notifications'");
+        $stmt = $pdo->prepare("
+            INSERT INTO seller_notifications 
+            (seller_id, type, title, message, action_url, is_read, created_at)
+            VALUES (?, ?, ?, ?, ?, 0, NOW())
+        ");
         
-        if ($checkTable->rowCount() > 0) {
-            $stmt = $pdo->prepare("
-                INSERT INTO seller_notifications 
-                (seller_id, type, title, message, reference_id, reference_type, is_read, created_at)
-                VALUES (?, 'return_request', ?, ?, ?, 'return_request', 0, NOW())
-            ");
-            
-            $title = "New Return Request";
-            $message = "Customer requested return for Order #" . str_pad($orderId, 6, '0', STR_PAD_LEFT) . " - " . htmlspecialchars($productName);
-            
-            $stmt->execute([
-                $sellerId,
-                $title,
-                $message,
-                $returnRequestId
-            ]);
-            
-            return true;
-        }
+        $title = "New Return Request";
+        $message = "Customer requested return for Order #" . str_pad($orderId, 6, '0', STR_PAD_LEFT) . " - " . htmlspecialchars($productName);
+        $actionUrl = "seller-returns.php?return_id=" . $returnRequestId;
         
-        return false;
+        return $stmt->execute([
+            $sellerId,
+            'warning',
+            $title,
+            $message,
+            $actionUrl
+        ]);
     } catch (Exception $e) {
         error_log("Notification creation error: " . $e->getMessage());
         return false;
