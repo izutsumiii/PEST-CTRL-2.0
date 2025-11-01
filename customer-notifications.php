@@ -70,44 +70,47 @@ if (isset($_GET['as']) && $_GET['as'] === 'json') {
     requireLogin();
     $userId = $_SESSION['user_id'];
 }
-
-// Pull recent order status updates and notifications for this user
-$stmt = $pdo->prepare("SELECT o.id as order_id, o.status, o.created_at, o.updated_at,
-                             COALESCE(pt.payment_status, '') as payment_status,
-                             IF(nr.id IS NULL, 0, 1) as is_read
-                        FROM orders o
-                        LEFT JOIN payment_transactions pt ON pt.id = o.payment_transaction_id
-                        LEFT JOIN hidden_notifications hn ON hn.user_id = o.user_id AND hn.order_id = o.id
-                        LEFT JOIN notification_reads nr ON nr.user_id = o.user_id 
-                            AND nr.order_id = o.id 
-                            AND nr.notification_type = 'order_update'
-                        WHERE o.user_id = ? AND hn.id IS NULL
-                        ORDER BY o.updated_at DESC, o.created_at DESC");
+// Combined query - get order updates WITH custom messages joined
+// Group by order_id to show only ONE notification per order (the most recent)
+$stmt = $pdo->prepare("
+    SELECT 
+        o.id as order_id, 
+        o.status, 
+        o.created_at, 
+        o.updated_at,
+        COALESCE(pt.payment_status, '') as payment_status,
+        IF(nr.id IS NULL OR GREATEST(COALESCE(o.updated_at, o.created_at), COALESCE(rr.processed_at, o.created_at), COALESCE(n.created_at, o.created_at)) > nr.read_at, 0, 1) as is_read,
+        rr.status as return_status,
+        rr.processed_at as return_updated_at,
+        n.message,
+        n.type,
+        GREATEST(
+            COALESCE(o.updated_at, o.created_at), 
+            COALESCE(rr.processed_at, o.created_at),
+            COALESCE(n.created_at, o.created_at)
+        ) as sort_date
+    FROM orders o
+    LEFT JOIN payment_transactions pt ON pt.id = o.payment_transaction_id
+    LEFT JOIN hidden_notifications hn ON hn.user_id = o.user_id AND hn.order_id = o.id
+    LEFT JOIN notification_reads nr ON nr.user_id = o.user_id 
+        AND nr.order_id = o.id 
+        AND nr.notification_type = 'order_update'
+    LEFT JOIN return_requests rr ON rr.order_id = o.id
+    LEFT JOIN (
+        SELECT order_id, user_id, message, type, created_at
+        FROM notifications
+        WHERE (order_id, created_at) IN (
+            SELECT order_id, MAX(created_at)
+            FROM notifications
+            GROUP BY order_id
+        )
+    ) n ON n.order_id = o.id AND n.user_id = o.user_id
+    WHERE o.user_id = ? AND hn.id IS NULL
+    GROUP BY o.id
+    ORDER BY sort_date DESC
+");
 $stmt->execute([$userId]);
-$orderEvents = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-// Get notifications from notifications table
-// Get notifications from notifications table
-$stmt = $pdo->prepare("SELECT n.order_id, n.message, n.type, n.created_at as updated_at,
-                              IF(nr.id IS NULL, 0, 1) as is_read
-                        FROM notifications n
-                        LEFT JOIN notification_reads nr ON nr.user_id = n.user_id 
-                            AND nr.order_id = n.order_id 
-                            AND nr.notification_type = 'custom'
-                        WHERE n.user_id = ? 
-                        ORDER BY n.created_at DESC");
-$stmt->execute([$userId]);
-$notifications = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-// Combine and sort all events
-$allEvents = array_merge($orderEvents, $notifications);
-usort($allEvents, function($a, $b) {
-    $timeA = strtotime($a['updated_at'] ?: $a['created_at']);
-    $timeB = strtotime($b['updated_at'] ?: $b['created_at']);
-    return $timeB - $timeA;
-});
-$events = $allEvents;
-
+$events = $stmt->fetchAll(PDO::FETCH_ASSOC);
 // JSON mode for header popup
 if (isset($_GET['as']) && $_GET['as'] === 'json') {
     // Clear any previous output and turn off all error reporting
@@ -144,16 +147,23 @@ if (isset($_GET['as']) && $_GET['as'] === 'json') {
                 ];
             } else {
                 // This is an order event
+                $mostRecentUpdate = $e['updated_at'] ?: $e['created_at'];
+                if (!empty($e['return_updated_at']) && strtotime($e['return_updated_at']) > strtotime($mostRecentUpdate)) {
+                    $mostRecentUpdate = $e['return_updated_at'];
+                }
+                
                 $items[] = [
                     'order_id' => (int)$e['order_id'],
                     'status' => (string)$e['status'],
                     'payment_status' => (string)$e['payment_status'],
-                    'updated_at' => $e['updated_at'] ?: $e['created_at'],
-                    'updated_at_human' => date('M d, Y h:i A', strtotime($e['updated_at'] ?: $e['created_at'])),
+                    'return_status' => !empty($e['return_status']) ? (string)$e['return_status'] : null,
+                    'updated_at' => $mostRecentUpdate,
+                    'updated_at_human' => date('M d, Y h:i A', strtotime($mostRecentUpdate)),
                     'is_read' => $isRead
                 ];
             }
         }
+        error_log('Unread notification items: ' . print_r(array_filter($items, function($x){return empty($x['is_read']);}), 1));
         echo json_encode(['success' => true, 'items' => $items, 'unread_count' => $unreadCount]);
     } catch (Exception $e) {
         echo json_encode(['success' => false, 'message' => 'Error loading notifications', 'items' => []]);
@@ -180,9 +190,39 @@ function statusBadge($status) {
 ?>
 
 <style>
+
+/* Notification animation for new items */
+@keyframes slideInNotification {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.notif-item.new-notification {
+  animation: slideInNotification 0.3s ease-out;
+}
+
+/* Pulse effect for unread notifications */
+.notif-item[style*="border-left"] {
+  animation: subtlePulse 2s ease-in-out infinite;
+}
+
+@keyframes subtlePulse {
+  0%, 100% {
+    box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+  }
+  50% {
+    box-shadow: 0 2px 15px rgba(255,215,54,0.3);
+  }
+}
+
   html, body { background:#f8f9fa !important; }
   main { background:#f8f9fa !important; }
-  main h1 { text-shadow: none !important; }
   .notif-item { background:#ffffff !important; }
   .notif-item a { background:#ffffff !important; }
   .notif-item a:hover { background:#ffffff !important; }
@@ -200,12 +240,12 @@ function statusBadge($status) {
     position: absolute;
     top: 12px;
     right: 8px;
-    background: transparent;
-    border: none;
+    background: rgba(220, 53, 69, 0.2);
+    border: 1px solid rgba(220, 53, 69, 0.4);
     color: #dc3545;
     width: 28px;
     height: 28px;
-    border-radius: 0;
+    border-radius: 4px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -216,10 +256,9 @@ function statusBadge($status) {
   }
   
   .notif-delete-btn-page:hover {
-    background: transparent;
-    border: none;
-    color: #b02a37;
-    transform: scale(1.15);
+    background: rgba(220, 53, 69, 0.4);
+    border-color: #dc3545;
+    transform: scale(1.1);
   }
   
   /* Custom confirmation dialog styles */
@@ -324,10 +363,10 @@ function statusBadge($status) {
     box-shadow: 0 6px 20px rgba(108, 117, 125, 0.4);
   }
 </style>
-<main style="background:#f8f9fa; min-height:100vh; padding: 40px 0 60px 0;">
+<main style="background:#f8f9fa; min-height:100vh; padding: 80px 0 60px 0;">
   <div style="max-width: 1400px; margin: 0 auto; padding: 0 60px;">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
-      <h1 style="color:#130325; margin:0; text-shadow: none;">Notifications (<?php echo count($events); ?> total)</h1>
+      <h1 style="color:#130325; margin:0;">Notifications (<?php echo count($events); ?> total)</h1>
       <?php if (!empty($events)): ?>
         <form method="POST" style="margin:0;" id="deleteAllForm">
             <input type="hidden" name="delete_notifications" value="1">
@@ -367,33 +406,62 @@ function statusBadge($status) {
     <?php endif; ?>
 
     <?php if (empty($events)): ?>
-      <div style="background:#ffffff; border:1px solid rgba(0,0,0,0.1); color:#130325; border-radius:8px; padding:20px; text-align:center;">No notifications yet.</div>
+      <div style="background:#ffffff; border:1px solid rgba(0,0,0,0.1); color:#130325; border-radius:8px; padding:20px; text-align:center; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">No notifications yet.</div>
     <?php else: ?>
       <div class="notif-list" style="display:flex; flex-direction:column; gap:12px;">
         <?php foreach ($events as $e): ?>
           <div class="notif-item" style="position: relative;">
-            <a href="user-dashboard.php#order-<?php echo (int)$e['order_id']; ?>" style="text-decoration:none; display: block;">
-              <div style="display:flex; gap:12px; align-items:center; background:#ffffff; border:1px solid rgba(0,0,0,0.1); padding:14px; border-radius:10px;">
+          <?php
+// Determine correct filter based on status
+$status = strtolower($e['status']);
+$filterStatus = $status; // default
+
+// Map order status to dashboard filter
+switch($status) {
+    case 'pending':
+        $filterStatus = 'pending';
+        break;
+    case 'processing':
+        $filterStatus = 'processing';
+        break;
+    case 'shipped':
+        $filterStatus = 'shipped';
+        break;
+    case 'delivered':
+        $filterStatus = 'delivered';
+        break;
+    case 'cancelled':
+        $filterStatus = 'cancelled';
+        break;
+}
+
+// If there's a return status, always redirect to return_requested
+if (!empty($e['return_status'])) {
+    $filterStatus = 'return_requested';
+}
+?>
+<a href="user-dashboard.php?status=<?php echo $filterStatus; ?>" style="text-decoration:none; display: block;">              <div style="display:flex; gap:12px; align-items:center; background:#ffffff; border:1px solid rgba(0,0,0,0.1); padding:14px; border-radius:10px; box-shadow: 0 2px 10px rgba(0,0,0,0.15);">
                 <div style="width:36px; height:36px; display:flex; align-items:center; justify-content:center; background:rgba(255,215,54,0.15); color:#FFD736; border-radius:8px;">
                   <i class="fas fa-bell"></i>
                 </div>
                 <div style="flex:1;">
-                  <?php if (isset($e['message'])): ?>
-                    <!-- Custom notification -->
-                    <div style="color:#130325; font-weight:700;"><?php echo htmlspecialchars($e['message']); ?></div>
-                    <div style="color:#130325; opacity:0.9; font-size:0.9rem;">
-                      Order #<?php echo (int)$e['order_id']; ?>
-                    </div>
-                  <?php else: ?>
-                    <!-- Order status update -->
-                    <div style="color:#130325; font-weight:700;">Order #<?php echo (int)$e['order_id']; ?> update</div>
-                    <div style="color:#130325; opacity:0.9; font-size:0.9rem;">
-                      Status: <?php echo statusBadge($e['status'] ?? 'unknown'); ?>
-                      <?php if (!empty($e['payment_status'])): ?>
-                        <span style="margin-left:8px; opacity:0.9;">Payment: <?php echo htmlspecialchars($e['payment_status']); ?></span>
-                      <?php endif; ?>
-                    </div>
-                  <?php endif; ?>
+  <div style="color:#130325; font-weight:700;">
+    <?php if (isset($e['message']) && !empty($e['message'])): ?>
+      <?php echo htmlspecialchars($e['message']); ?>
+    <?php else: ?>
+      Order #<?php echo (int)$e['order_id']; ?> update
+    <?php endif; ?>
+  </div>
+  <div style="color:#130325; opacity:0.9; font-size:0.9rem;">
+    Order #<?php echo (int)$e['order_id']; ?> • Status: <?php echo statusBadge($e['status'] ?? 'unknown'); ?>
+    <?php if (!empty($e['return_status'])): ?>
+      <span style="margin-left:8px; opacity:0.9;">Return: <?php echo statusBadge($e['return_status']); ?></span>
+    <?php endif; ?>
+    <?php if (!empty($e['payment_status']) && strtolower($e['payment_status']) !== 'pending'): ?>
+  <span style="margin-left:8px; opacity:0.9;">Payment: <?php echo htmlspecialchars($e['payment_status']); ?></span>
+<?php endif; ?>
+  </div>
+            
                 </div>
                 <div style="color:#130325; opacity:0.8; font-size:0.85rem; white-space:nowrap; margin-right: 40px;">
                   <?php echo htmlspecialchars(date('M d, Y h:i A', strtotime($e['updated_at'] ?: $e['created_at']))); ?>
@@ -414,9 +482,14 @@ function statusBadge($status) {
 <?php require_once 'includes/footer.php'; ?>
 
 <script>
+// Real-time notifications update - State variables
+let lastUpdateTime = null;
+let refreshInterval = null;
+let connectionStatus = 'connected';
+let failedAttempts = 0;
+
 // Custom styled confirmation dialog function
 function openConfirm(message, onConfirm) {
-    // Create dialog overlay
     const dialog = document.createElement('div');
     dialog.className = 'confirm-dialog';
     dialog.innerHTML = `
@@ -430,10 +503,8 @@ function openConfirm(message, onConfirm) {
         </div>
     `;
     
-    // Add to page
     document.body.appendChild(dialog);
     
-    // Handle button clicks
     const yesBtn = dialog.querySelector('.confirm-btn-yes');
     const noBtn = dialog.querySelector('.confirm-btn-no');
     
@@ -446,7 +517,6 @@ function openConfirm(message, onConfirm) {
         document.body.removeChild(dialog);
     });
     
-    // Handle escape key
     const handleEscape = (e) => {
         if (e.key === 'Escape') {
             document.body.removeChild(dialog);
@@ -455,7 +525,6 @@ function openConfirm(message, onConfirm) {
     };
     document.addEventListener('keydown', handleEscape);
     
-    // Handle click outside
     dialog.addEventListener('click', (e) => {
         if (e.target === dialog) {
             document.body.removeChild(dialog);
@@ -470,20 +539,34 @@ function confirmDeleteAll() {
     });
 }
 
-// Real-time notifications update
-let lastUpdateTime = null;
-let refreshInterval = null;
-
+// Main notification update function
 function updateNotifications() {
     fetch('customer-notifications.php?as=json')
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
         .then(data => {
             if (data.success && data.items) {
                 updateNotificationsDisplay(data.items, data.unread_count);
+                
+                // Reset failed attempts on success
+                failedAttempts = 0;
+                connectionStatus = 'connected';
             }
         })
         .catch(error => {
             console.error('Error fetching notifications:', error);
+            failedAttempts++;
+            
+            // If multiple failures, slow down polling
+            if (failedAttempts > 3) {
+                stopRealTimeUpdates();
+                // Restart with slower interval (10 seconds)
+                refreshInterval = setInterval(updateNotifications, 10000);
+            }
         });
 }
 
@@ -510,17 +593,19 @@ function updateNotificationsDisplay(items, unreadCount) {
     // Update page title count
     const header = document.querySelector('h1');
     if (header) {
-        header.textContent = `Notifications (${items.length} total${unreadCount > 0 ? ', ' + unreadCount + ' unread' : ''})`;
+        const totalText = items.length === 1 ? '1 total' : `${items.length} total`;
+        const unreadText = unreadCount > 0 ? `, ${unreadCount} unread` : '';
+        header.textContent = `Notifications (${totalText}${unreadText})`;
+    }
+
+    // Show/hide clear all button based on notifications
+    const deleteAllForm = document.getElementById('deleteAllForm');
+    if (deleteAllForm) {
+        deleteAllForm.style.display = items.length > 0 ? 'block' : 'none';
     }
     
     if (items.length === 0) {
-        notifList.innerHTML = '<div style="background:#ffffff; border:1px solid rgba(0,0,0,0.1); color:#130325; border-radius:8px; padding:20px; text-align:center;">No notifications yet.</div>';
-        
-        // Hide clear all button if no notifications
-        const deleteAllForm = document.querySelector('form[method="POST"]');
-        if (deleteAllForm) {
-            deleteAllForm.style.display = 'none';
-        }
+        notifList.innerHTML = '<div style="background:#ffffff; border:1px solid rgba(0,0,0,0.1); color:#130325; border-radius:8px; padding:20px; text-align:center; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">No notifications yet.</div>';
         return;
     }
     
@@ -542,21 +627,61 @@ function createNotificationElement(item) {
     }
     
     const notifDiv = document.createElement('a');
-    notifDiv.href = `user-dashboard.php#order-${item.order_id}`;
-    notifDiv.style.textDecoration = 'none';
-    notifDiv.style.display = 'block';
+// Determine correct filter based on status
+// Determine correct filter based on status
+let filterStatus = item.status.toLowerCase();
+
+// Map order status to dashboard filter
+switch(filterStatus) {
+    case 'pending':
+        filterStatus = 'pending';
+        break;
+    case 'processing':
+        filterStatus = 'processing';
+        break;
+    case 'shipped':
+        filterStatus = 'shipped';
+        break;
+    case 'delivered':
+        filterStatus = 'delivered';
+        break;
+    case 'cancelled':
+        filterStatus = 'cancelled';
+        break;
+    case 'notification':
+        // For custom notifications, determine based on message or default
+        filterStatus = 'delivered';
+        break;
+}
+
+// If there's a return status, always redirect to return_requested
+if (item.return_status) {
+    filterStatus = 'return_requested';
+}
+
+// Create the link element instead of using onclick
+notifDiv.href = `user-dashboard.php?status=${filterStatus}`;
+notifDiv.style.textDecoration = 'none';
+notifDiv.style.display = 'block';
+
+// Mark as read when clicked
+notifDiv.onclick = function(e) {
+    e.preventDefault(); // Prevent default link behavior
     
-    // Mark as read when clicked
-    notifDiv.onclick = function(e) {
-        if (!item.is_read) {
-            markNotificationAsRead(item.order_id, item.status === 'notification');
-        }
-    };
+    if (!item.is_read) {
+        markNotificationAsRead(item.order_id, item.status === 'notification');
+    }
+    
+    // Redirect to the correct status page with a small delay to allow read marking
+    setTimeout(function() {
+        window.location.href = `user-dashboard.php?status=${filterStatus}`;
+    }, 100);
+};
     
     let content = '';
     if (item.status === 'notification') {
         content = `
-            <div style="display:flex; gap:12px; align-items:center; background:#ffffff; border:1px solid rgba(0,0,0,0.1); padding:14px; border-radius:10px;">
+            <div style="display:flex; gap:12px; align-items:center; background:#ffffff; border:1px solid rgba(0,0,0,0.1); padding:14px; border-radius:10px; box-shadow: 0 2px 10px rgba(0,0,0,0.15);">
                 <div style="width:36px; height:36px; display:flex; align-items:center; justify-content:center; background:rgba(255,215,54,0.15); color:#FFD736; border-radius:8px;">
                     <i class="fas fa-info-circle"></i>
                 </div>
@@ -570,7 +695,7 @@ function createNotificationElement(item) {
     } else {
         const statusBadge = getStatusBadge(item.status);
         content = `
-            <div style="display:flex; gap:12px; align-items:center; background:#ffffff; border:1px solid rgba(0,0,0,0.1); padding:14px; border-radius:10px;">
+            <div style="display:flex; gap:12px; align-items:center; background:#ffffff; border:1px solid rgba(0,0,0,0.1); padding:14px; border-radius:10px; box-shadow: 0 2px 10px rgba(0,0,0,0.15);">
                 <div style="width:36px; height:36px; display:flex; align-items:center; justify-content:center; background:rgba(255,215,54,0.15); color:#FFD736; border-radius:8px;">
                     <i class="fas fa-bell"></i>
                 </div>
@@ -578,7 +703,7 @@ function createNotificationElement(item) {
                     <div style="color:#130325; font-weight:700;">Order #${item.order_id} update</div>
                     <div style="color:#130325; opacity:0.9; font-size:0.9rem;">
                         Status: ${statusBadge}
-                        ${item.payment_status ? `<span style="margin-left:8px; opacity:0.9;">Payment: ${escapeHtml(item.payment_status)}</span>` : ''}
+                        ${item.payment_status && item.payment_status.toLowerCase() !== 'pending' ? `<span style="margin-left:8px; opacity:0.9;">Payment: ${escapeHtml(item.payment_status)}</span>` : ''}
                     </div>
                 </div>
                 <div style="color:#130325; opacity:0.8; font-size:0.85rem; white-space:nowrap; margin-right: 40px;">${item.updated_at_human}</div>
@@ -626,33 +751,34 @@ function getStatusBadge(status) {
 
 // Function to mark notification as read
 function markNotificationAsRead(orderId, isCustomNotification) {
-    fetch('ajax/mark-notification-read.php', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            order_id: orderId,
-            is_custom: isCustomNotification
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            // Update badge count immediately - both on page and in header
-            setTimeout(() => {
-                updateNotifications();
-                // Also update the header badge
-                updateHeaderBadge();
-            }, 500);
-        }
-    })
-    .catch(error => {
-        console.error('Error marking notification as read:', error);
+    const data = JSON.stringify({
+        order_id: orderId,
+        is_custom: isCustomNotification
     });
+    
+    // Try sendBeacon first (more reliable for navigation scenarios)
+    if (navigator.sendBeacon) {
+        const blob = new Blob([data], { type: 'application/json' });
+        navigator.sendBeacon('ajax/mark-notification-read.php', blob);
+    } else {
+        // Fallback to fetch for older browsers
+        fetch('ajax/mark-notification-read.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: data,
+            keepalive: true
+        }).catch(error => {
+            console.error('Error marking notification as read:', error);
+        });
+    }
+    
+    // Update UI immediately without waiting for response
+    updateHeaderBadge();
 }
 
-// Add this new function to update the header badge
+// Update the header badge
 function updateHeaderBadge() {
     fetch('customer-notifications.php?as=json')
         .then(response => response.json())
@@ -708,10 +834,28 @@ function deleteNotificationFromPage(orderId, button, isCustomNotification) {
                 setTimeout(() => {
                     notificationItem.remove();
                     
-                    // Restart real-time updates after deletion to get fresh count
+                    // Check if there are no more notifications
+                    const remainingNotifs = document.querySelectorAll('.notif-item');
+                    if (remainingNotifs.length === 0) {
+                        const notifList = document.querySelector('.notif-list');
+                        if (notifList) {
+                            notifList.innerHTML = '<div style="background:#ffffff; border:1px solid rgba(0,0,0,0.1); color:#130325; border-radius:8px; padding:20px; text-align:center; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">No notifications yet.</div>';
+                        }
+                        
+                        // Hide clear all button
+                        const deleteAllForm = document.getElementById('deleteAllForm');
+                        if (deleteAllForm) {
+                            deleteAllForm.style.display = 'none';
+                        }
+                    }
+                    
+                    // Force immediate update
+                    updateNotifications();
+                    updateHeaderBadge();
+                    
+                    // Restart real-time updates
                     setTimeout(() => {
                         startRealTimeUpdates();
-                        updateNotifications();
                     }, 500);
                 }, 300);
             }
@@ -722,9 +866,7 @@ function deleteNotificationFromPage(orderId, button, isCustomNotification) {
             alert('Error deleting notification: ' + (data.message || 'Unknown error'));
             
             // Restart real-time updates even on error
-            setTimeout(() => {
-                startRealTimeUpdates();
-            }, 1000);
+            startRealTimeUpdates();
         }
     })
     .catch(error => {
@@ -741,15 +883,16 @@ function deleteNotificationFromPage(orderId, button, isCustomNotification) {
 }
 
 function startRealTimeUpdates() {
-    // Update every 5 seconds
-    refreshInterval = setInterval(updateNotifications, 5000);
+    // Clear any existing interval first
+    if (refreshInterval) {
+        clearInterval(refreshInterval);
+    }
     
-    // Also update when page becomes visible again
-    document.addEventListener('visibilitychange', function() {
-        if (!document.hidden) {
-            updateNotifications();
-        }
-    });
+    // Update every 3 seconds for more responsive updates
+    refreshInterval = setInterval(updateNotifications, 3000);
+    
+    // Initial update
+    updateNotifications();
 }
 
 function stopRealTimeUpdates() {
@@ -759,6 +902,13 @@ function stopRealTimeUpdates() {
     }
 }
 
+// Add visibility change handler
+document.addEventListener('visibilitychange', function() {
+    if (!document.hidden) {
+        updateNotifications();
+    }
+});
+
 // Start real-time updates when page loads
 document.addEventListener('DOMContentLoaded', function() {
     startRealTimeUpdates();
@@ -766,6 +916,5 @@ document.addEventListener('DOMContentLoaded', function() {
     // Stop updates when page is unloaded
     window.addEventListener('beforeunload', stopRealTimeUpdates);
 });
+
 </script>
-
-
