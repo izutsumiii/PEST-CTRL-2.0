@@ -217,97 +217,76 @@ $stmt = $pdo->prepare("
         p.name as product_name,
         p.image_url as product_image,
         COALESCE(rr.quantity, oi.quantity) as quantity,
-        COALESCE(oi.price, p.price) as item_price
+        oi.price as item_price
     FROM return_requests rr
     JOIN orders o ON rr.order_id = o.id
     JOIN users u ON o.user_id = u.id
-    JOIN products p ON rr.product_id = p.id
-    LEFT JOIN order_items oi ON o.id = oi.order_id AND rr.product_id = oi.product_id
-    WHERE rr.seller_id = ? AND rr.product_id > 0 AND p.id IS NOT NULL
+    JOIN order_items oi ON o.id = oi.order_id
+    JOIN products p ON oi.product_id = p.id
+    WHERE rr.seller_id = ?
     ORDER BY rr.created_at DESC
 ");
-try {
-    $stmt->execute([$sellerId]);
-    $returnRequests = $stmt->fetchAll(PDO::FETCH_ASSOC);
-} catch (PDOException $e) {
-    error_log("Error fetching return requests: " . $e->getMessage());
-    $returnRequests = [];
-}
+$stmt->execute([$sellerId]);
+$returnRequests = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// Get statistics - use the EXACT same query logic as the display query
-// This ensures stats match what's actually displayed
+// Get statistics
 $statsStmt = $pdo->prepare("
     SELECT 
         COUNT(*) as total_requests,
-        SUM(CASE WHEN rr.status = 'pending' THEN 1 ELSE 0 END) as pending_requests,
-        SUM(CASE WHEN rr.status = 'approved' THEN 1 ELSE 0 END) as approved_requests,
-        SUM(CASE WHEN rr.status = 'rejected' THEN 1 ELSE 0 END) as rejected_requests,
-        SUM(CASE WHEN rr.status = 'completed' THEN 1 ELSE 0 END) as completed_requests
-    FROM return_requests rr
-    JOIN orders o ON rr.order_id = o.id
-    JOIN users u ON o.user_id = u.id
-    JOIN products p ON rr.product_id = p.id
-    LEFT JOIN order_items oi ON o.id = oi.order_id AND rr.product_id = oi.product_id
-    WHERE rr.seller_id = ? AND rr.product_id > 0 AND p.id IS NOT NULL
+        SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending_requests,
+        SUM(CASE WHEN status = 'approved' THEN 1 ELSE 0 END) as approved_requests,
+        SUM(CASE WHEN status = 'rejected' THEN 1 ELSE 0 END) as rejected_requests,
+        SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed_requests
+    FROM return_requests 
+    WHERE seller_id = ?
 ");
-try {
-    $statsStmt->execute([$sellerId]);
-    $stats = $statsStmt->fetch(PDO::FETCH_ASSOC);
-} catch (PDOException $e) {
-    error_log("Error fetching return request statistics: " . $e->getMessage());
-    $stats = [];
-}
+$statsStmt->execute([$sellerId]);
+$stats = $statsStmt->fetch(PDO::FETCH_ASSOC);
 
-// Set default numbers if no data exists (handle NULL from SUM/CASE)
-$stats['total_requests'] = (int)($stats['total_requests'] ?? 0);
-$stats['pending_requests'] = (int)($stats['pending_requests'] ?? 0);
-$stats['approved_requests'] = (int)($stats['approved_requests'] ?? 0);
-$stats['rejected_requests'] = (int)($stats['rejected_requests'] ?? 0);
-$stats['completed_requests'] = (int)($stats['completed_requests'] ?? 0);
+// Set default numbers if no data exists
+$stats['total_requests'] = $stats['total_requests'] ?? 0;
+$stats['pending_requests'] = $stats['pending_requests'] ?? 0;
+$stats['approved_requests'] = $stats['approved_requests'] ?? 0;
+$stats['completed_requests'] = $stats['completed_requests'] ?? 0;
 
 include 'includes/seller_header.php';
 ?>
 
 <style>
 /* Body and Main Container */
-html, body {
-    background: #f0f2f5 !important;
-    margin: 0;
-    padding: 0;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+body {
+    background: #130325;
+    min-height: 100vh;
+    color: #F9F9F9;
 }
 
 .main-content {
-    background: #f0f2f5;
+    background: #130325;
     min-height: 100vh;
-    padding: 0 0 60px 0;
-    margin-left: 0 !important;
-    margin-top: 0 !important;
-    width: 100%;
+    padding: 20px 0 40px 0;
+    margin-left: 70px;
+    width: calc(100% - 140px);
 }
 
 .content-wrapper {
     max-width: 1400px;
-    margin: 0 auto;
-    padding: 0 30px 40px 30px;
+    margin: 0 0 0 0;
+    padding: 0 20px 0 5px;
+    margin-top: -40px;
 }
 
 /* Page Header */
 .page-header {
     margin-bottom: 30px;
-    margin-top: 0;
-    padding-bottom: 0;
-    border-bottom: none;
+    padding-bottom: 15px;
+    border-bottom: 2px solid rgba(255, 215, 54, 0.3);
 }
 
 .page-title {
-    color: #130325;
-    font-size: 32px;
+    color: #F9F9F9;
+    font-size: 1.5rem;
     font-weight: 700;
-    margin: 0 0 28px 0;
-    padding: 0;
-    text-shadow: none !important;
-    letter-spacing: -0.5px;
+    margin: 0;
     display: flex;
     align-items: center;
     gap: 12px;
@@ -320,9 +299,8 @@ html, body {
 
 /* Alert Messages */
 .alert {
-    background: #ffffff;
-    border: 1px solid rgba(0,0,0,0.1);
     border-radius: 8px;
+    border: none;
     padding: 12px 16px;
     margin-bottom: 20px;
     display: flex;
@@ -330,7 +308,6 @@ html, body {
     gap: 10px;
     font-weight: 500;
     animation: slideDown 0.3s ease;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 
 @keyframes slideDown {
@@ -339,15 +316,15 @@ html, body {
 }
 
 .alert-success {
-    background: #ffffff;
-    color: #10b981;
-    border-color: rgba(16, 185, 129, 0.3);
+    background: rgba(40, 167, 69, 0.15);
+    color: #28a745;
+    border: 1px solid rgba(40, 167, 69, 0.3);
 }
 
 .alert-danger {
-    background: #ffffff;
+    background: rgba(220, 53, 69, 0.15);
     color: #dc3545;
-    border-color: rgba(220, 53, 69, 0.3);
+    border: 1px solid rgba(220, 53, 69, 0.3);
 }
 
 .alert i {
@@ -377,77 +354,66 @@ html, body {
 }
 
 .stats-card {
-    background: #ffffff;
-    border: 1px solid rgba(0,0,0,0.1);
+    background: #1a0a2e;
+    border: 1px solid #2d1b4e;
     border-left: 4px solid #007bff;
     border-radius: 8px;
-    padding: 20px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     transition: all 0.3s ease;
-    min-height: 80px;
+    min-height: 60px;
 }
 
 .stats-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    border-left-color: #FFD736;
+    transform: translateY(-5px);
+    border-color: #FFD736;
+    box-shadow: 0 10px 30px rgba(255, 215, 54, 0.2);
 }
 
-.stats-card.pending {
-    border-left-color: #ffc107;
-}
-
-.stats-card.approved {
-    border-left-color: #28a745;
-}
-
-.stats-card.completed {
-    border-left-color: #17a2b8;
-}
 
 .stats-content h3 {
-    font-size: 2rem;
+    font-size: 1.8rem;
     font-weight: 700;
-    margin: 0 0 4px 0;
-    color: #130325;
+    margin: 0 0 2px 0;
+    color: #F9F9F9;
     text-align: center;
 }
 
 .stats-content p {
     margin: 0;
-    color: #6b7280;
+    color: rgba(249, 249, 249, 0.7);
     font-weight: 500;
     font-size: 0.85rem;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    text-align: center;
 }
 
 /* Card Container */
 .card {
-    background: #ffffff;
-    border: 1px solid rgba(0,0,0,0.1);
-    border-radius: 8px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    background: #1a0a2e;
+    border: 1px solid #2d1b4e;
+    border-radius: 10px;
+    box-shadow: 0 3px 15px rgba(0, 0, 0, 0.3);
     margin-bottom: 20px;
     overflow: hidden;
 }
 
 .card-header {
-    background: #f8f9fa;
+    background: #130325;
     padding: 15px 20px;
-    border-bottom: 2px solid #e5e7eb;
+    border-bottom: 1px solid rgba(255, 215, 54, 0.3);
 }
 
 .card-title {
     margin: 0;
     font-size: 1.2rem;
-    font-weight: 700;
-    color: #130325;
+    font-weight: 600;
+    color: #F9F9F9;
     display: flex;
     align-items: center;
     gap: 8px;
-    text-shadow: none !important;
 }
 
 .card-title i {
@@ -455,7 +421,7 @@ html, body {
 }
 
 .card-body {
-    padding: 24px;
+    padding: 20px;
 }
 
 /* Table Styling */
@@ -467,52 +433,48 @@ html, body {
 .table {
     width: 100%;
     margin-bottom: 0;
-    border-collapse: collapse;
-    font-size: 14px;
-}
-
-.table thead {
-    background: #130325;
-    border-bottom: 2px solid #FFD736;
+    border-collapse: separate;
+    border-spacing: 0;
 }
 
 .table thead th {
-    background: #130325;
-    color: #ffffff;
-    font-weight: 700;
+    background: rgba(19, 3, 37, 0.8);
+    color: #FFD736;
+    font-weight: 600;
     text-transform: uppercase;
-    font-size: 13px;
-    padding: 12px 16px;
+    font-size: 0.8rem;
+    padding: 12px 10px;
     border: none;
     letter-spacing: 0.5px;
     white-space: nowrap;
 }
 
 .table tbody td {
-    padding: 14px 16px;
+    padding: 12px 10px;
     vertical-align: middle;
-    border-bottom: 1px solid #f0f0f0;
-    color: #130325;
-    background: #ffffff;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    color: #F9F9F9;
+    background: #1a0a2e;
 }
 
 .table tbody tr {
-    transition: all 0.2s ease;
+    transition: all 0.3s ease;
 }
 
 .table tbody tr:hover {
     background: rgba(255, 215, 54, 0.05);
+    transform: translateX(5px);
 }
 
 /* Customer Info */
 .customer-info strong {
-    color: #130325;
+    color: #F9F9F9;
     font-weight: 600;
     font-size: 0.95rem;
 }
 
 .customer-info small {
-    color: #6b7280;
+    color: rgba(249, 249, 249, 0.6);
     font-size: 0.8rem;
 }
 
@@ -528,11 +490,11 @@ html, body {
     height: 50px;
     object-fit: cover;
     border-radius: 8px;
-    border: 1px solid #e5e7eb;
+    border: 2px solid rgba(255, 215, 54, 0.3);
 }
 
 .product-details strong {
-    color: #130325;
+    color: #F9F9F9;
     font-weight: 600;
     font-size: 0.95rem;
     display: block;
@@ -540,43 +502,43 @@ html, body {
 }
 
 .product-details small {
-    color: #6b7280;
+    color: rgba(249, 249, 249, 0.6);
     font-size: 0.8rem;
 }
 
 /* Status Badges */
 .status-badge {
-    padding: 4px 10px;
-    border-radius: 4px;
-    font-size: 12px;
-    font-weight: 600;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.5px;
     display: inline-block;
 }
 
 .status-pending {
-    background: rgba(255, 193, 7, 0.15);
-    color: #f59e0b;
-    border: 1px solid rgba(255, 193, 7, 0.3);
+    background: rgba(255, 193, 7, 0.2);
+    color: #ffc107;
+    border: 1px solid rgba(255, 193, 7, 0.4);
 }
 
 .status-approved {
-    background: rgba(40, 167, 69, 0.15);
-    color: #10b981;
-    border: 1px solid rgba(40, 167, 69, 0.3);
+    background: rgba(40, 167, 69, 0.2);
+    color: #28a745;
+    border: 1px solid rgba(40, 167, 69, 0.4);
 }
 
 .status-rejected {
-    background: rgba(220, 53, 69, 0.15);
+    background: rgba(220, 53, 69, 0.2);
     color: #dc3545;
-    border: 1px solid rgba(220, 53, 69, 0.3);
+    border: 1px solid rgba(220, 53, 69, 0.4);
 }
 
 .status-completed {
-    background: rgba(23, 162, 184, 0.15);
+    background: rgba(23, 162, 184, 0.2);
     color: #17a2b8;
-    border: 1px solid rgba(23, 162, 184, 0.3);
+    border: 1px solid rgba(23, 162, 184, 0.4);
 }
 
 /* Action Buttons */
@@ -652,24 +614,24 @@ html, body {
 .empty-state {
     text-align: center;
     padding: 60px 20px;
-    color: #6b7280;
+    color: rgba(249, 249, 249, 0.6);
 }
 
 .empty-state i {
     font-size: 5rem;
     margin-bottom: 20px;
-    color: #d1d5db;
+    color: rgba(255, 215, 54, 0.3);
 }
 
 .empty-state h4 {
-    color: #130325;
+    color: #F9F9F9;
     margin-bottom: 10px;
     font-size: 1.5rem;
     font-weight: 700;
 }
 
 .empty-state p {
-    color: #6b7280;
+    color: rgba(249, 249, 249, 0.6);
     font-size: 1rem;
 }
 
@@ -680,7 +642,7 @@ html, body {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    color: #130325;
+    color: rgba(249, 249, 249, 0.8);
 }
 
 /* Modal Styling */
@@ -700,17 +662,17 @@ html, body {
 /* Details Modal Specific Styling */
 .return-details .table {
     background: transparent;
-    color: #130325;
+    color: #F9F9F9;
 }
 
 .return-details .table td {
-    border-color: #e5e7eb;
+    border-color: rgba(255, 255, 255, 0.1);
     padding: 8px 12px;
 }
 
 .return-details .table td:first-child {
-    color: #130325;
-    font-weight: 600;
+    color: #FFD736;
+    font-weight: 500;
 }
 
 .product-info {
@@ -718,9 +680,9 @@ html, body {
     align-items: center;
     gap: 15px;
     padding: 15px;
-    background: #f8f9fa;
+    background: rgba(255, 255, 255, 0.05);
     border-radius: 8px;
-    border: 1px solid #e5e7eb;
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .product-details {
@@ -729,20 +691,19 @@ html, body {
 
 .issue-details {
     padding: 15px;
-    background: #f8f9fa;
+    background: rgba(255, 255, 255, 0.05);
     border-radius: 8px;
-    border: 1px solid #e5e7eb;
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .description-box {
-    background: #ffffff;
+    background: rgba(0, 0, 0, 0.3);
     padding: 12px;
     border-radius: 6px;
     border-left: 3px solid #FFD736;
     margin-top: 8px;
     white-space: pre-wrap;
     font-style: italic;
-    color: #130325;
 }
 
 /* Compact Layout Styles */
@@ -751,9 +712,9 @@ html, body {
     align-items: center;
     gap: 10px;
     padding: 10px;
-    background: #f8f9fa;
+    background: rgba(255, 255, 255, 0.05);
     border-radius: 6px;
-    border: 1px solid #e5e7eb;
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .product-image-compact {
@@ -766,20 +727,18 @@ html, body {
 .product-details-compact {
     flex: 1;
     font-size: 0.9rem;
-    color: #130325;
 }
 
 .issue-details-compact {
     padding: 10px;
-    background: #f8f9fa;
+    background: rgba(255, 255, 255, 0.05);
     border-radius: 6px;
-    border: 1px solid #e5e7eb;
+    border: 1px solid rgba(255, 255, 255, 0.1);
     font-size: 0.9rem;
-    color: #130325;
 }
 
 .description-box-compact {
-    background: #ffffff;
+    background: rgba(0, 0, 0, 0.3);
     padding: 8px;
     border-radius: 4px;
     border-left: 2px solid #FFD736;
@@ -789,7 +748,6 @@ html, body {
     font-size: 0.85rem;
     max-height: 80px;
     overflow-y: auto;
-    color: #130325;
 }
 
 .photos-container {
@@ -797,9 +755,9 @@ html, body {
     grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
     gap: 15px;
     padding: 15px;
-    background: #f8f9fa;
+    background: rgba(255, 255, 255, 0.05);
     border-radius: 8px;
-    border: 1px solid #e5e7eb;
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .photo-item {
@@ -819,7 +777,7 @@ html, body {
     height: 120px;
     object-fit: cover;
     border-radius: 8px;
-    border: 2px solid #e5e7eb;
+    border: 2px solid rgba(255, 255, 255, 0.1);
 }
 
 .return-photo:hover {
@@ -897,9 +855,9 @@ html, body {
     flex-direction: column;
     gap: 4px;
     padding: 8px;
-    background: #f8f9fa;
+    background: rgba(255, 255, 255, 0.05);
     border-radius: 6px;
-    border: 1px solid #e5e7eb;
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .info-grid div {
@@ -907,7 +865,7 @@ html, body {
     justify-content: space-between;
     align-items: center;
     padding: 2px 0;
-    border-bottom: 1px solid #e5e7eb;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .info-grid div:last-child {
@@ -915,10 +873,9 @@ html, body {
 }
 
 .info-grid strong {
-    color: #130325;
+    color: #FFD736;
     font-size: 0.8rem;
     min-width: 40px;
-    font-weight: 600;
 }
 
 .product-info-ultra-compact {
@@ -926,9 +883,9 @@ html, body {
     align-items: center;
     gap: 8px;
     padding: 8px;
-    background: #f8f9fa;
+    background: rgba(255, 255, 255, 0.05);
     border-radius: 6px;
-    border: 1px solid #e5e7eb;
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .product-image-ultra-compact {
@@ -946,11 +903,10 @@ html, body {
 
 .issue-details-ultra-compact {
     padding: 8px;
-    background: #f8f9fa;
+    background: rgba(255, 255, 255, 0.05);
     border-radius: 6px;
-    border: 1px solid #e5e7eb;
+    border: 1px solid rgba(255, 255, 255, 0.1);
     font-size: 0.8rem;
-    color: #130325;
 }
 
 .issue-details-ultra-compact div {
@@ -962,7 +918,7 @@ html, body {
 }
 
 .description-box-ultra-compact {
-    background: #ffffff;
+    background: rgba(0, 0, 0, 0.3);
     padding: 6px;
     border-radius: 4px;
     border-left: 2px solid #FFD736;
@@ -972,7 +928,6 @@ html, body {
     font-size: 0.75rem;
     max-height: 60px;
     overflow-y: auto;
-    color: #130325;
 }
 
 .photos-container-wide {
@@ -980,9 +935,9 @@ html, body {
     grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
     gap: 8px;
     padding: 8px;
-    background: #f8f9fa;
+    background: rgba(255, 255, 255, 0.05);
     border-radius: 6px;
-    border: 1px solid #e5e7eb;
+    border: 1px solid rgba(255, 255, 255, 0.1);
     max-height: 120px;
     overflow-y: auto;
 }
@@ -997,81 +952,74 @@ html, body {
     height: 60px;
     object-fit: cover;
     border-radius: 4px;
-    border: 1px solid #e5e7eb;
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 /* New Action Buttons Layout */
 .action-buttons-new {
     display: flex;
     flex-direction: column;
-    align-items: flex-start;
+    align-items: center;
     gap: 8px;
 }
 
 .action-icons {
     display: flex;
     gap: 8px;
-    justify-content: flex-start;
+    justify-content: center;
 }
 
 .btn-icon {
-    width: auto;
-    min-width: 100px;
-    height: auto;
-    padding: 8px 14px;
+    width: 32px;
+    height: 32px;
     border: none;
-    border-radius: 6px;
-    display: inline-flex;
+    border-radius: 4px;
+    display: flex;
     align-items: center;
     justify-content: center;
-    gap: 6px;
     cursor: pointer;
-    transition: all 0.2s ease;
-    font-size: 13px;
-    font-weight: 600;
-    white-space: nowrap;
+    transition: all 0.3s ease;
+    font-size: 14px;
 }
 
 .btn-success-icon {
-    background: #28a745;
-    color: #ffffff;
+    background: #007bff;
+    color: white;
 }
 
 .btn-success-icon:hover {
-    background: #218838;
-    transform: scale(1.05);
+    background: #0056b3;
+    transform: scale(1.1);
 }
 
 .btn-danger-icon {
     background: #dc3545;
-    color: #ffffff;
+    color: white;
 }
 
 .btn-danger-icon:hover {
     background: #c82333;
-    transform: scale(1.05);
+    transform: scale(1.1);
 }
 
 .btn-details {
     background: #FFD736;
     color: #130325;
     border: none;
-    border-radius: 6px;
-    padding: 8px 14px;
-    font-size: 13px;
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-size: 0.65rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
-    text-transform: none;
-    letter-spacing: normal;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
 }
 
 .btn-details:hover {
-    background: #f5d026;
-    transform: scale(1.05);
+    background: #FFA500;
+    color: #130325;
+    transform: translateY(-1px);
 }
 
 .modal.show {
@@ -1087,18 +1035,18 @@ html, body {
 }
 
 .modal-content {
-    background: #ffffff;
-    border: 1px solid rgba(0,0,0,0.1);
+    background: #1a0a2e;
+    border: 1px solid #2d1b4e;
     border-radius: 10px;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
     position: relative;
     z-index: 10001;
 }
 
 .modal-header {
-    background: #f8f9fa;
-    color: #130325;
-    border-bottom: 1px solid #e5e7eb;
+    background: #130325;
+    color: #F9F9F9;
+    border-bottom: 1px solid rgba(255, 215, 54, 0.3);
     padding: 15px 50px 15px 20px;
     border-radius: 10px 10px 0 0;
     position: relative;
@@ -1107,7 +1055,7 @@ html, body {
 .modal-title {
     font-weight: 600;
     font-size: 1.1rem;
-    color: #130325;
+    color: #F9F9F9;
 }
 
 .modal-body {
@@ -1115,69 +1063,69 @@ html, body {
 }
 
 .modal-footer {
-    border-top: 1px solid #e5e7eb;
+    border-top: 1px solid rgba(255, 215, 54, 0.2);
     padding: 15px 20px;
-    background: #f8f9fa;
+    background: #130325;
 }
 
 /* Form Styling */
 .form-label {
     font-weight: 500;
-    color: #130325;
+    color: #F9F9F9;
     margin-bottom: 6px;
     font-size: 0.9rem;
 }
 
 .form-select,
 .form-control {
-    background: #ffffff;
-    border: 1px solid #ddd;
+    background: #1a0a2e;
+    border: 1px solid rgba(255, 215, 54, 0.3);
     border-radius: 6px;
     padding: 10px 12px;
     font-size: 0.9rem;
-    color: #130325;
-    transition: all 0.2s ease;
+    color: #F9F9F9;
+    transition: all 0.3s ease;
 }
 
 .form-select:focus,
 .form-control:focus {
-    background: #ffffff;
+    background: rgba(19, 3, 37, 0.9);
     border-color: #FFD736;
-    box-shadow: 0 0 0 2px rgba(255, 215, 54, 0.2);
+    box-shadow: 0 0 0 0.2rem rgba(255, 215, 54, 0.25);
     outline: none;
-    color: #130325;
+    color: #F9F9F9;
 }
 
 .form-select option {
-    background: #ffffff;
-    color: #130325;
+    background: #130325;
+    color: #F9F9F9;
     padding: 8px;
 }
 
 /* Modal Close Button Override */
 .modal-header .btn-close {
-    background: transparent;
+    background: #dc3545;
     border: none;
     border-radius: 4px;
     width: 30px;
     height: 30px;
     opacity: 1;
-    color: #dc3545;
-    font-size: 1.2rem;
+    color: #fff;
+    font-size: 1rem;
     font-weight: bold;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.2s ease;
+    transition: all 0.3s ease;
     position: absolute;
     top: 10px;
     right: 10px;
 }
 
 .modal-header .btn-close:hover {
-    background: transparent;
-    color: #c82333;
-    transform: scale(1.15);
+    background: #c82333;
+    color: #fff;
+    transform: scale(1.1);
 }
 
 /* Responsive Design */
@@ -1194,13 +1142,14 @@ html, body {
 
 @media (max-width: 768px) {
     .main-content {
-        padding: 20px 0 60px 0;
+        padding: 30px 0;
         width: 100%;
-        margin-left: 0 !important;
+        margin-left: 0;
     }
     
     .content-wrapper {
-        padding: 20px 15px;
+        margin-left: 0 0 0 0;
+        padding: 0 15px 0 5px;
     }
     
     .stats-grid {
@@ -1426,13 +1375,11 @@ html, body {
                                                                 onclick="approveReturn(<?php echo $request['id']; ?>)"
                                                                 title="Approve">
                                                             <i class="fas fa-check"></i>
-                                                            <span>Approve</span>
                                                         </button>
                                                         <button class="btn-icon btn-danger-icon" 
                                                                 onclick="rejectReturn(<?php echo $request['id']; ?>)"
                                                                 title="Reject">
                                                             <i class="fas fa-times"></i>
-                                                            <span>Reject</span>
                                                         </button>
                                                     </div>
                                                 <?php elseif ($request['status'] === 'approved'): ?>
@@ -1440,16 +1387,14 @@ html, body {
                                                         <button class="btn-icon btn-success-icon" 
                                                                 onclick="completeRefund(<?php echo $request['id']; ?>)"
                                                                 title="Complete Refund">
-                                                            <i class="fas fa-check-circle"></i>
-                                                            <span>Complete Refund</span>
+                                                            <i class="fas fa-check"></i>
                                                         </button>
                                                     </div>
                                                 <?php endif; ?>
                                                 
                                                 <button class="btn-details" 
                                                         onclick="viewDetails(<?php echo $request['id']; ?>)">
-                                                    <i class="fas fa-eye"></i>
-                                                    <span>View Details</span>
+                                                    VIEW DETAILS
                                                 </button>
                                             </div>
                                         </td>
