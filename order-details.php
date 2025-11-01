@@ -80,7 +80,7 @@ body {
 main {
     background: #f8f9fa;
     min-height: 100vh;
-    padding: 80px 0 60px 0;
+    padding: 30px 0 40px 0;
 }
 
 .page-header {
@@ -509,7 +509,7 @@ h1 {
 /* Responsive Design */
 @media (max-width: 768px) {
     main {
-        padding: 100px 10px 40px 10px;
+        padding: 70px 10px 30px 10px;
     }
     
     h1 {
@@ -687,7 +687,7 @@ h1 {
             <i class="fas fa-download"></i> Download Invoice
         </button>
         
-        <?php if ($order['status'] === 'pending' || $order['status'] === 'processing'): ?>
+        <?php if ($order['status'] === 'pending'): ?>
             <button onclick="cancelOrder(<?php echo $order['id']; ?>)" class="action-btn btn-cancel">
                 <i class="fas fa-times"></i> Cancel Order
             </button>

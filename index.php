@@ -547,7 +547,8 @@ section.featured-products .product-card .rating-text {
 .btn-cart-icon {
     background: #FFD736;
     color: #130325;
-    border: 2px solid #130325;
+    border: 2px solid #FFD736; /* match yellow */
+    border-radius: 6px; /* slight rounding */
     padding: 6px;
     cursor: pointer;
     font-size: 12px;
@@ -561,8 +562,9 @@ section.featured-products .product-card .rating-text {
 }
 
 .btn-cart-icon:hover {
-    background: #130325;
-    color: #FFD736;
+    background: #ffde62; /* lighter yellow hover */
+    border-color: #FFD736;
+    color: #130325;
     transform: translateY(-2px);
 }
 

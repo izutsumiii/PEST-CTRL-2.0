@@ -151,7 +151,7 @@ body {
 
 main {
     background: transparent !important;
-    padding: 20px 0 120px 0 !important;
+    padding: 8px 0 80px 0 !important; /* reduce top spacing */
     margin: 0 !important;
 }
 
@@ -188,7 +188,7 @@ main {
 
 /* Main Product Grid */
 .product-main {
-    margin: 40px 0 40px 0;
+    margin: 16px 0 32px 0; /* pull content up */
 }
 
 /* Image Gallery */
@@ -557,7 +557,7 @@ main {
     color: #130325;
     border: 2px solid #130325;
     padding: 12px 16px;
-    border-radius: 0;
+    border-radius: 6px; /* minimal rounding */
     font-size: 14px;
     font-weight: 600;
     text-transform: uppercase;
@@ -584,7 +584,7 @@ main {
     color: white;
     border: none;
     padding: 12px 24px;
-    border-radius: 0;
+    border-radius: 6px; /* minimal rounding */
     font-size: 14px;
     font-weight: 600;
     text-transform: uppercase;
@@ -735,6 +735,10 @@ main {
     color: #130325;
     font-weight: 700;
 }
+
+.seller-name-row { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+.btn-visit { padding:6px 14px; min-width: 96px; font-size:0.85rem; border-radius:6px; background:transparent; color:#130325; border:1px solid #130325; font-weight:600; cursor:pointer; }
+.btn-visit:hover { background:#130325; color:#ffffff; }
 
 .seller-type {
     margin: 5px 0 0 0;
@@ -1149,10 +1153,10 @@ main {
     background: linear-gradient(135deg, #FFD736 0%, #f0c419 100%);
     color: #130325;
     border: none;
-    padding: 12px 30px;
-    border-radius: 8px;
-    font-size: 15px;
-    font-weight: 800;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 700;
     cursor: pointer;
     transition: all 0.3s ease;
 }
@@ -1331,12 +1335,15 @@ main {
 
         <!-- Seller Section -->
         <div class="seller-section">
-            <div class="seller-profile">
+                <div class="seller-profile">
                 <div class="seller-avatar">
                     <i class="fas fa-store"></i>
                 </div>
                 <div class="seller-info">
-                    <h3 class="seller-name"><?php echo htmlspecialchars($sellerDisplayName); ?></h3>
+                    <div class="seller-name-row">
+                        <h3 class="seller-name"><?php echo htmlspecialchars($sellerDisplayName); ?></h3>
+                        <button class="btn-visit" onclick="window.location.href='seller.php?seller_id=<?php echo (int)$product['seller_id']; ?>'">Visit</button>
+                    </div>
                     <p class="seller-type">Verified Seller</p>
                 </div>
             </div>
@@ -1460,7 +1467,7 @@ main {
                             </div>
                             
                             <button type="submit" name="submit_review" class="btn-submit-review">
-                                <i class="fas fa-paper-plane"></i> Submit Review
+                                <i class="fas fa-paper-plane"></i> Submit
                             </button>
                         </form>
                     <?php endif; ?>

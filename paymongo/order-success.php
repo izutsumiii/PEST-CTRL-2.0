@@ -90,8 +90,7 @@ try {
     exit();
 }
 
-// Include header
-require_once '../includes/header.php';
+// Header already included at top of file
 ?>
 
 <style>

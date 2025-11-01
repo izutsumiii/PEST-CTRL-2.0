@@ -1314,6 +1314,13 @@ body {
     margin-top: 15px;
 }
 
+/* Make dashboard action buttons (View Details, Buy Again, Cancel, etc.) more compact */
+.order-bottom .order-actions .btn {
+    padding: 6px 12px !important;
+    font-size: 0.85rem !important;
+    border-radius: 6px !important;
+}
+
 .btn {
     padding: 10px 20px;
     border: none;
@@ -1593,15 +1600,15 @@ body {
 }
 
 .cancel-modal-content {
-    background: white;
+    background: #ffffff;
     margin: 10% auto;
-    padding: 30px;
-    border-radius: 15px;
-    width: 90%;
-    max-width: 500px;
+    padding: 18px 20px;
+    border-radius: 10px;
+    width: 92%;
+    max-width: 420px;
     position: relative;
-    animation: modalSlideIn 0.3s ease;
-    box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+    animation: modalSlideIn 0.22s ease;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.18);
 }
 
 @keyframes modalSlideIn {
@@ -1615,45 +1622,66 @@ body {
     }
 }
 
-.close-modal {
+.modal-close {
     position: absolute;
-    right: 15px;
-    top: 15px;
-    background: none;
+    right: 10px;
+    top: 10px;
+    left: auto;
+    background: transparent;
     border: none;
-    font-size: 2rem;
+    font-size: 18px;
+    line-height: 1;
     cursor: pointer;
-    color: #ccc;
-    transition: all 0.2s ease;
-    width: 40px;
-    height: 40px;
-    display: flex;
+    color: #dc3545;
+    transition: color 0.15s ease, transform 0.15s ease;
+    width: 28px;
+    height: 28px;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
-    border-radius: 50%;
+    border-radius: 0;
+    padding: 0;
 }
 
-.close-modal:hover {
-    color: #e74c3c;
-    background: #f8f9fa;
+.modal-close:hover {
+    color: #b02a37;
+    background: transparent;
+    border: none;
+    transform: scale(1.15);
 }
 
 .cancel-modal-content h3 {
-    font-size: 1.5rem;
-    margin-bottom: 15px;
-    color: #2c3e50;
+    font-size: 1.1rem;
+    margin-bottom: 10px;
+    color: #111827;
 }
 
 .cancel-modal-content p {
-    margin-bottom: 15px;
-    color: #495057;
+    margin-bottom: 10px;
+    color: #374151;
+    font-size: 0.92rem;
 }
 
 .cancel-modal-buttons {
     display: flex;
-    gap: 15px;
-    justify-content: center;
-    margin-top: 25px;
+    gap: 10px;
+    justify-content: flex-end;
+    margin-top: 16px;
+}
+
+/* Minimal buttons inside the cancel modal */
+.cancel-modal-content .btn {
+    padding: 6px 12px;
+    font-size: 0.85rem;
+    border-radius: 6px;
+}
+
+.cancel-modal-content .btn-danger {
+    padding: 6px 12px;
+}
+
+.cancel-modal-content .btn-primary {
+    padding: 6px 12px;
 }
 
 /* Responsive Design */
@@ -2404,7 +2432,7 @@ class OrderManager {
             }
 
             // Handle close modal clicks
-            if (e.target.classList.contains('close-modal') || e.target === document.getElementById('cancelModal')) {
+            if (e.target.classList.contains('close-modal') || e.target.classList.contains('modal-close') || e.target === document.getElementById('cancelModal')) {
                 this.closeCancelModal();
             }
 
@@ -2478,6 +2506,22 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 });
+
+// Fallback global to support inline onclick in pending cards
+function openCancelModal(orderId) {
+    const idEl = document.getElementById('cancelOrderId');
+    const numEl = document.getElementById('cancelOrderNumber');
+    const modal = document.getElementById('cancelModal');
+    if (idEl) idEl.value = orderId;
+    if (numEl) {
+        const formatted = String(orderId).padStart(6, '0');
+        numEl.textContent = '#' + formatted;
+    }
+    if (modal) {
+        modal.style.display = 'block';
+        document.body.style.overflow = 'hidden';
+    }
+}
 
 function showReturnExpiredPopup() {
     // Create popup HTML
@@ -2828,7 +2872,7 @@ function confirmProductSelection() {
                                     <i class="fas fa-star"></i> Rate
                                 </a>
                             <?php endif; ?>
-                                <?php elseif (strtolower($order['status']) === 'return_requested' || 
+                        <?php elseif (strtolower($order['status']) === 'return_requested' || 
                                     strtolower($order['status']) === 'return_approved' || 
                                     strtolower($order['status']) === 'return_rejected' || 
                                     strtolower($order['status']) === 'return_completed'): ?>
@@ -2908,11 +2952,22 @@ function confirmProductSelection() {
                                     <a href="customer-returns.php" class="btn btn-warning">
                                         <i class="fas fa-search"></i> Track Return
                                     </a>
-                            
+                        <?php else: ?>
                             <?php if (strtolower($order['status']) === 'pending'): ?>
+                                <a href="order-details.php?id=<?php echo $order['id']; ?>" class="btn btn-primary">
+                                    <i class="fas fa-eye"></i> View Details
+                                </a>
                                 <button type="button" class="btn btn-danger" onclick="openCancelModal(<?php echo $order['id']; ?>)">
                                     <i class="fas fa-times"></i> Cancel Order
                                 </button>
+                            <?php elseif (strtolower($order['status']) === 'processing' || strtolower($order['status']) === 'shipped'): ?>
+                                <a href="order-details.php?id=<?php echo $order['id']; ?>" class="btn btn-primary">
+                                    <i class="fas fa-eye"></i> View Details
+                                </a>
+                            <?php elseif (strtolower($order['status']) === 'cancelled'): ?>
+                                <a href="order-details.php?id=<?php echo $order['id']; ?>" class="btn btn-primary">
+                                    <i class="fas fa-eye"></i> View Details
+                                </a>
                             <?php endif; ?>
                         <?php endif; ?>
                     </div>
@@ -2929,7 +2984,7 @@ function confirmProductSelection() {
 <!-- Cancel Order Modal -->
 <div id="cancelModal" class="cancel-modal">
     <div class="cancel-modal-content">
-        <button class="close-modal" type="button">&times;</button>
+        <button class="modal-close" type="button">&times;</button>
         <h3>Cancel Order</h3>
         <p>Please tell us why you're cancelling order <strong id="cancelOrderNumber">#000000</strong></p>
         
@@ -2954,7 +3009,7 @@ function confirmProductSelection() {
                 </small>
             </div>
             
-            <p style="color: #dc3545; font-weight: 600; margin: 20px 0; padding: 15px; background: #f8d7da; border-radius: 6px; border-left: 4px solid #dc3545;">
+            <p style="color:#b91c1c; font-weight:600; margin:12px 0; padding:10px 12px; background:#fee2e2; border-radius:8px; border-left:3px solid #ef4444; font-size:0.9rem;">
                 ⚠️ This action cannot be undone. Once cancelled, you'll need to place a new order.
             </p>
             

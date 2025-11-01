@@ -1014,20 +1014,36 @@ section.featured-products .view-details-link,
 
 /* Compare checkbox container on product cards: dark background */
 .product-card .product-checkbox {
-    background: var(--primary-dark) !important;
-    color: var(--primary-light) !important;
-    border: 1px solid var(--accent-yellow) !important;
+    position: absolute !important;
+    top: 6px !important;
+    right: 6px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+    padding: 2px 6px !important;
+    background: rgba(0, 0, 0, 0.4) !important; /* darker translucent for better legibility */
+    color: #ffffff !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    border-radius: 6px !important;
     box-shadow: 0 2px 6px rgba(0,0,0,0.25) !important;
+    z-index: 2 !important;
 }
 
 .product-card .product-checkbox label,
 .product-card .product-checkbox span {
-    color: var(--primary-light) !important;
+    color: #ffffff !important;
+    font-size: 11px !important;
+    line-height: 1 !important;
 }
 
 .product-card .product-checkbox:hover {
-    background: rgba(19, 3, 37, 0.95) !important;
-    border-color: var(--accent-yellow) !important;
+    background: rgba(0, 0, 0, 0.5) !important;
+    border-color: rgba(255, 255, 255, 0.3) !important;
+}
+
+/* Make the checkbox control smaller to reduce visual footprint */
+.product-card .product-checkbox input[type="checkbox"] {
+    transform: scale(0.8) !important;
 }
 
 /* Products page tweaks: larger reviews text, smaller stock text */

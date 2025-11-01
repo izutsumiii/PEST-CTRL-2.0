@@ -129,7 +129,7 @@ function statusBadge($status, $bg, $fg) {
   }
 </style>
 
-<main style="background:#f8f9fa; min-height:100vh; padding: 80px 0 60px 0;">
+<main style="background:#f8f9fa; min-height:100vh; padding: 40px 0 60px 0;">
   <div style="max-width: 1200px; margin: 0 auto; padding: 0 20px;">
     
     <!-- Header with back arrow and title -->
@@ -396,7 +396,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 @media (max-width: 768px) {
     main {
-        padding: 70px 0 60px 0 !important;
+        padding: 40px 0 60px 0 !important;
     }
     
     div[style*="grid-template-columns"] {

@@ -93,7 +93,7 @@ if (!empty($selectedIds)) {
         if (empty($sg['items'])) {
             unset($groupedItems[$sid]);
         }
-    }
+    }                       
     unset($sg);
 }
 
@@ -233,7 +233,7 @@ if (empty($groupedItems)) {
 require_once '../includes/header.php';
 ?>
 
-<main style="background: #ffffff; min-height: 100vh; padding: 20px;">
+<main style="background: #ffffff; min-height: 100vh; padding: 0 20px 20px 20px;">
 <div class="checkout-container">
     <h1>Checkout</h1>
 
@@ -516,7 +516,7 @@ body {
 .checkout-container { 
     max-width: 1200px; 
     margin: 0 auto; 
-    padding: 20px; 
+    padding: 10px 20px 20px 20px; 
 }
 
 h1 { 

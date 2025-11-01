@@ -761,6 +761,39 @@ $periodLabels = [
             z-index: 10001;
         }
 
+        .modal-content * {
+            color: #130325 !important;
+        }
+
+        /* Fix notification dropdown text colors */
+        .notification-dropdown * {
+            color: #1f2937 !important;
+        }
+
+        .notification-header h6 {
+            color: #1f2937 !important;
+        }
+
+        .notification-title {
+            color: #1f2937 !important;
+        }
+
+        .notification-message {
+            color: #6b7280 !important;
+        }
+
+        .notification-time {
+            color: #9ca3af !important;
+        }
+
+        .notification-item span {
+            color: #1f2937 !important;
+        }
+
+        .notification-footer a {
+            color: #1f2937 !important;
+        }
+
         .modal-header {
             background: rgb(230, 230, 230);
             color: #333;
@@ -773,13 +806,27 @@ $periodLabels = [
         .modal-title {
             font-weight: 600;
             font-size: 1.1rem;
-            color: #333;
+            color: #130325 !important;
             margin: 0;
         }
 
         .modal-body {
             padding: 20px;
             background: rgb(230, 230, 230);
+        }
+
+        .modal-body .form-label {
+            color: #130325 !important;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .modal-body .form-select {
+            color: #130325 !important;
+        }
+
+        .modal-body .error-message {
+            color: #130325 !important;
         }
 
         .modal-footer {
@@ -789,9 +836,14 @@ $periodLabels = [
             border-radius: 0 0 12px 12px;
         }
 
+        .modal-footer .btn-cancel,
+        .modal-footer .btn-export {
+            color: #130325 !important;
+        }
+
         .form-label {
             font-weight: 500;
-            color: #333;
+            color: #130325 !important;
             margin-bottom: 8px;
             font-size: 0.9rem;
         }
@@ -802,7 +854,7 @@ $periodLabels = [
             border-radius: 8px;
             padding: 10px 12px;
             font-size: 0.9rem;
-            color: #333;
+            color: #130325 !important;
             transition: all 0.3s ease;
             width: 100%;
         }
@@ -812,12 +864,12 @@ $periodLabels = [
             border-color: #007bff;
             box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
             outline: none;
-            color: #333;
+            color: #130325 !important;
         }
 
         .form-select option {
             background: #ffffff;
-            color: #333;
+            color: #130325 !important;
             padding: 8px;
         }
 

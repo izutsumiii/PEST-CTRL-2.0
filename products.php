@@ -15,6 +15,16 @@ $inStock = isset($_GET['in_stock']) ? true : false;
 $sort = isset($_GET['sort']) ? sanitizeInput($_GET['sort']) : 'created_at';
 $order = isset($_GET['order']) ? sanitizeInput($_GET['order']) : 'DESC';
 
+// If the user picked a specific star value (1-4) but no max_rating, treat it as an exact bucket [X, X+1)
+if ($minRating > 0 && $minRating < 5 && !isset($_GET['max_rating'])) {
+    $maxRating = min(5, $minRating + 0.999);
+}
+// If 5 stars selected and no max provided, cap to 5 exactly
+if ($minRating >= 5 && !isset($_GET['max_rating'])) {
+    $minRating = 5;
+    $maxRating = 5;
+}
+
 $page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
 $perPage = isset($_GET['per_page']) ? max(1, min(60, intval($_GET['per_page']))) : 24;
 
@@ -185,7 +195,7 @@ body {
     min-width: 0;
     grid-column: 2;
     grid-row: 1;
-    margin-top: 80px;
+    margin-top: 20px;
 }
 
 .products-list h2 {
@@ -358,7 +368,8 @@ body {
 .btn-cart-icon {
     background: #FFD736 !important;
     color: #130325 !important;
-    border: 2px solid #130325 !important;
+    border: 2px solid #FFD736 !important; /* match yellow */
+    border-radius: 6px !important; /* slight rounding */
     padding: 6px !important;
     cursor: pointer !important;
     font-size: 12px !important;
@@ -372,8 +383,9 @@ body {
 }
 
 .btn-cart-icon:hover {
-    background: #130325 !important;
-    color: #FFD736 !important;
+    background: #ffde62 !important; /* lighter yellow hover */
+    border-color: #FFD736 !important;
+    color: #130325 !important;
     transform: translateY(-2px) !important;
 }
 
@@ -524,7 +536,7 @@ body {
 }
 
 .rating-filter {
-    background: rgba(255, 215, 54, 0.05);
+    background: rgba(19, 3, 37, 0.08); /* dark purple transparent */
     padding: 8px;
     border-radius: 0;
 }
@@ -552,7 +564,7 @@ body {
 }
 
 .rating-stars .star-empty {
-    color: rgba(255, 255, 255, 0.3);
+    color: #2d1b4e; /* dark purple for better contrast */
 }
 
 .filter-group label {
@@ -579,9 +591,9 @@ body {
 .filter-group button {
     background: #130325;
     color: white;
-    border: none;
+    border: 2px solid #130325; /* match background */
     padding: 8px 16px;
-    border-radius: 0;
+    border-radius: 6px; /* slight rounding */
     font-size: 0.9rem;
     font-weight: 700;
     cursor: pointer;
@@ -602,8 +614,8 @@ body {
     text-decoration: none;
     font-size: 0.9rem;
     padding: 8px 16px;
-    border: none;
-    border-radius: 0;
+    border: 2px solid #130325; /* match background */
+    border-radius: 6px; /* slight rounding */
     background: #130325;
     font-weight: 700;
     text-transform: uppercase;
@@ -623,6 +635,8 @@ body {
     padding: 15px 20px;
     margin-bottom: 20px;
     box-shadow: 0 2px 8px rgba(19, 3, 37, 0.1);
+    border: 2px solid #f0f2f5; /* match background */
+    border-radius: 8px; /* slight rounding */
 }
 
 .sorting-wrapper {
@@ -643,13 +657,13 @@ body {
 .order-select {
     background: #130325;
     color: white;
-    border: none;
+    border: 2px solid #130325; /* match background */
     padding: 8px 12px;
-    border-radius: 0;
+    border-radius: 6px; /* slight rounding */
     font-size: 0.9rem;
     font-weight: 600;
     cursor: pointer;
-    min-width: 120px;
+    min-width: 160px; /* widened for better readability */
 }
 
 .sort-select:focus,
@@ -1053,7 +1067,11 @@ body {
             
             <div class="applied-filters">
                 <?php if ($minRating > 0): ?>
-                    <span class="filter-tag">Rating: <?php echo $minRating; ?>+ stars</span>
+                    <?php if ($minRating >= 5): ?>
+                        <span class="filter-tag">Rating: 5 stars</span>
+                    <?php else: ?>
+                        <span class="filter-tag">Rating: <?php echo (int)$minRating; ?>–<?php echo (int)$minRating + 1; ?> stars</span>
+                    <?php endif; ?>
                 <?php endif; ?>
                 
                 <?php if ($minReviews > 0): ?>

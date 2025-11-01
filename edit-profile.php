@@ -4,8 +4,7 @@ require_once 'config/database.php';
 ?>
 <?php
 
-// spacer below fixed header
-echo '<div style="height:40px"></div>';
+// remove spacer; align content closer to fixed header
 
 requireLogin();
 
@@ -76,18 +75,113 @@ html, body {
     margin: 0;
     padding: 0;
     min-height: 100vh;
-    background: #130325 !important;
+    background: #F9F9F9 !important; /* light background */
 }
 
 /* Main container styling */
 main {
     background: transparent !important;
     margin: 0 !important;
-    padding: 8px 0 100px 0 !important;
-    min-height: calc(100vh - 80px) !important;
+    padding: 0 0 60px 0 !important;
+    min-height: calc(100vh - 60px) !important;
 }
 
 /* Edit Profile Styles - aligned with multi-seller checkout design */
+
+.profile-header {
+    max-width: 1000px;
+    margin: 10px auto 20px auto;
+    padding: 20px;
+    background: #ffffff;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 12px;
+    box-shadow: none; /* remove shadow */
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.profile-avatar {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    border: 3px solid #130325;
+    background: #F3F3F3;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #130325;
+    font-weight: 800;
+    font-size: 1.1rem;
+}
+
+.profile-meta {
+    display: flex;
+    flex-direction: column;
+}
+
+.profile-name {
+    color: #130325;
+    font-size: 1.1rem;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.profile-email {
+    color: #6b7280;
+    font-size: 0.9rem;
+}
+
+/* Compact header action buttons */
+#editAccountBtn,
+#changePasswordBtn {
+    padding: 6px 12px !important;
+    font-size: 0.85rem !important;
+    border-radius: 6px !important;
+}
+
+/* Action toggle (single icon button) */
+.action-toggle-btn {
+    background: #FFD736;
+    color: #130325;
+    border: 2px solid #FFD736;
+    border-radius: 8px;
+    width: 36px;
+    height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.profile-actions-menu {
+    position: absolute;
+    right: 0;
+    top: 42px;
+    background: #ffffff;
+    border: 1px solid rgba(0,0,0,0.1);
+    border-radius: 8px;
+    box-shadow: 0 8px 16px rgba(0,0,0,0.08);
+    padding: 6px;
+    min-width: 180px;
+    z-index: 1000;
+    display: none;
+}
+
+.profile-actions-menu button {
+    width: 100%;
+    background: transparent;
+    color: #130325;
+    border: none;
+    text-align: left;
+    padding: 8px 10px;
+    border-radius: 6px;
+    font-size: 0.9rem;
+}
+
+.profile-actions-menu button:hover {
+    background: #F0F2F5;
+}
 
 .profile-editor h1,
 .profile-editor h2,
@@ -104,27 +198,27 @@ main {
     grid-template-columns: 1fr 1fr;
     gap: 40px;
     max-width: 1000px;
-    margin: 20px auto;
+    margin: 0 auto 20px auto;
     padding: 0 20px;
 }
 
 /* Section styling */
 .personal-info,
 .password-change {
-    background: var(--primary-dark);
+    background: #ffffff;
     padding: 25px;
     border-radius: 8px;
-    box-shadow: 0 4px 20px var(--shadow-light);
-    border: 1px solid var(--accent-yellow);
+    box-shadow: none; /* remove shadow */
+    border: 1px solid rgba(0,0,0,0.1);
 }
 
 .personal-info h2,
 .password-change h2 {
-    color: var(--primary-light);
+    color: #130325;
     margin-bottom: 20px;
     font-size: 1.5rem;
     padding-bottom: 10px;
-    border-bottom: 2px solid var(--accent-yellow);
+    border-bottom: 2px solid #F0F2F5;
 }
 
 /* Form styling (scoped to profile editor to avoid affecting header search) */
@@ -142,7 +236,7 @@ main {
 /* Label styling */
 .profile-editor label {
     margin-bottom: 5px;
-    color: var(--primary-light);
+    color: #130325;
     font-weight: 500;
     font-size: 1rem;
 }
@@ -217,16 +311,18 @@ main {
 
 .account-summary { 
     display: grid; 
-    gap: 10px; 
+    grid-template-columns: repeat(2, minmax(260px, 1fr));
+    gap: 12px 20px; 
 }
 
 .summary-row { 
     display: flex; 
     justify-content: space-between; 
     gap: 10px; 
-    color: var(--primary-light); 
+    color: #130325; 
     padding: 8px 0;
-    border-bottom: 1px solid rgba(255, 215, 54, 0.2);
+    border-bottom: 1px solid #F0F2F5;
+    background: #ffffff;
 }
 
 .summary-row:last-child {
@@ -234,7 +330,7 @@ main {
 }
 
 .summary-row strong { 
-    color: var(--accent-yellow); 
+    color: #374151; 
 }
 
 .account-actions { 
@@ -262,13 +358,13 @@ main {
 }
 
 .hint { 
-    color: var(--primary-light); 
-    opacity: 0.8; 
+    color: #130325; /* dark purple text */
+    opacity: 1; 
     font-size: 0.9rem; 
     margin-top: 8px; 
     text-align: center;
     padding: 15px;
-    background: rgba(255, 215, 54, 0.1);
+    background: rgba(19, 3, 37, 0.08); /* transparent dark purple background */
     border-radius: 4px;
 }
 
@@ -298,9 +394,9 @@ main {
 
 /* Page title styling */
 h1 {
-    color: var(--primary-light) !important;
-    text-align: center;
-    margin: 0 auto 30px auto !important;
+    color: #130325 !important; /* dark for readability */
+    text-align: left;
+    margin: 0 0 16px 0 !important; /* top-left placement */
     font-size: 2.5rem;
     font-weight: 700;
 }
@@ -365,8 +461,30 @@ h1 {
 </style>
 
 <main>
-<div style="max-width: 1200px; margin: 0 auto; padding: 20px;">
+<div style="max-width: 1200px; margin: 0 auto; padding: 10px 20px;">
 <h1>My Account</h1>
+
+<div class="profile-header">
+    <div class="profile-avatar">
+        <?php 
+            $initials = strtoupper(substr($user['first_name'] ?? 'U', 0, 1) . substr($user['last_name'] ?? 'S', 0, 1));
+            echo htmlspecialchars($initials);
+        ?>
+    </div>
+    <div class="profile-meta">
+        <div class="profile-name"><?php echo htmlspecialchars(trim(($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? '')) ?: ($user['username'] ?? 'User')); ?></div>
+        <div class="profile-email"><?php echo htmlspecialchars($user['email'] ?? ''); ?></div>
+    </div>
+    <div style="margin-left:auto; position: relative;">
+        <button id="actionsToggle" type="button" class="action-toggle-btn" title="Actions">
+            <i class="fas fa-edit"></i>
+        </button>
+        <div id="actionsMenu" class="profile-actions-menu">
+            <button id="editAccountBtn" type="button"><i class="fas fa-user-cog" style="margin-right:8px;"></i>Edit Account</button>
+            <button id="changePasswordBtn" type="button"><i class="fas fa-key" style="margin-right:8px;"></i>Change Password</button>
+        </div>
+    </div>
+</div>
 
 <div class="profile-editor">
     <div class="personal-info">
@@ -378,7 +496,7 @@ h1 {
             <div class="summary-row"><strong>Phone:</strong> <span><?php echo htmlspecialchars($user['phone'] ?? ''); ?></span></div>
             <div class="summary-row"><strong>Address:</strong> <span><?php echo htmlspecialchars($user['address'] ?? ''); ?></span></div>
         </div>
-        <div class="account-actions">
+        <div class="account-actions" style="display:none;">
             <button id="editAccountBtn" type="button">Edit Account</button>
             <button id="changePasswordBtn" type="button">Change Password</button>
         </div>
@@ -452,19 +570,25 @@ document.addEventListener('DOMContentLoaded', function() {
     const cancelEdit = document.getElementById('cancelEditBtn');
     const cancelPw = document.getElementById('cancelPwBtn');
     const pwHint = document.getElementById('passwordHint');
+    const actionsToggle = document.getElementById('actionsToggle');
+    const actionsMenu = document.getElementById('actionsMenu');
 
     if (editBtn && editForm) {
         editBtn.addEventListener('click', function() {
-            const isVisible = editForm.style.display !== 'none';
-            editForm.style.display = isVisible ? 'none' : 'block';
+            editForm.style.display = (editForm.style.display !== 'none') ? 'none' : 'block';
+            pwForm.style.display = 'none';
+            if (pwHint) pwHint.style.display = 'block';
+            if (actionsMenu) actionsMenu.style.display = 'none';
         });
     }
     
     if (changePwBtn && pwForm && pwHint) {
         changePwBtn.addEventListener('click', function() {
-            const isVisible = pwForm.style.display !== 'none';
-            pwForm.style.display = isVisible ? 'none' : 'block';
-            pwHint.style.display = isVisible ? 'block' : 'none';
+            const show = pwForm.style.display === 'none';
+            pwForm.style.display = show ? 'block' : 'none';
+            pwHint.style.display = show ? 'none' : 'block';
+            editForm.style.display = 'none';
+            if (actionsMenu) actionsMenu.style.display = 'none';
         });
     }
     
@@ -478,6 +602,19 @@ document.addEventListener('DOMContentLoaded', function() {
         cancelPw.addEventListener('click', function(){ 
             pwForm.style.display = 'none'; 
             pwHint.style.display = 'block'; 
+        });
+    }
+
+    // Toggle actions menu
+    if (actionsToggle && actionsMenu) {
+        actionsToggle.addEventListener('click', function(e) {
+            e.stopPropagation();
+            actionsMenu.style.display = (actionsMenu.style.display === 'block') ? 'none' : 'block';
+        });
+        document.addEventListener('click', function(e) {
+            if (!actionsMenu.contains(e.target) && e.target !== actionsToggle) {
+                actionsMenu.style.display = 'none';
+            }
         });
     }
 

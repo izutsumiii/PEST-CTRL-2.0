@@ -12,7 +12,7 @@ if (!isLoggedIn()) {
 require_once 'includes/header.php';
 
 // spacer below fixed header
-echo '<div style="height:40px"></div>';
+echo '<div style="height:20px"></div>';
 
 // Handle add to cart from product detail page
 if (isset($_POST['add_to_cart'])) {
@@ -83,9 +83,13 @@ $cartTotal = getMultiSellerCartTotal();
                 <tbody>
                     <?php foreach ($groupedCart as $sellerId => $sellerGroup): ?>
                         <tr>
-                            <td colspan="6" style="background:#130325;font-weight:700;color:#ffffff;">
-                                Seller: <?php echo htmlspecialchars($sellerGroup['seller_display_name']); ?>
-                                <span style="font-weight:400;color:#cccccc;">(<?php echo $sellerGroup['item_count']; ?> items)</span>
+                            <td colspan="6" style="background:#130325;font-weight:700;color:#ffffff;text-align:left;">
+                                <a href="seller.php?seller_id=<?php echo (int)$sellerId; ?>" style="color:#ffffff;text-decoration:none;display:inline-flex;align-items:center;gap:8px;">
+                                    <i class="fas fa-store"></i>
+                                    <?php echo htmlspecialchars($sellerGroup['seller_display_name']); ?>
+                                    <i class="fas fa-chevron-right" style="font-size:12px;"></i>
+                                </a>
+                                <span style="font-weight:400;color:#cccccc;margin-left:15px;">(<?php echo $sellerGroup['item_count']; ?> items)</span>
                             </td>
                         </tr>
                         <?php foreach ($sellerGroup['items'] as $item): ?>
@@ -165,7 +169,7 @@ body {
 h1 {
     color: #130325 !important;
     text-align: left;
-    margin: 20px 0 20px 60px;
+    margin: 10px 0 20px 60px;
     font-size: 1.8rem;
 }
 
@@ -246,6 +250,20 @@ h1 {
 }
 .select-item:focus-visible { outline: 2px solid #130325; outline-offset: 2px; }
 .cart-table th:first-child, .cart-table td:first-child { border-right: 1px solid rgba(0, 0, 0, 0.1); }
+
+/* Seller link styles */
+.cart-table td a[href*="seller.php"] {
+    transition: all 0.3s ease;
+}
+
+.cart-table td a[href*="seller.php"]:hover {
+    color: #FFD736 !important;
+    text-decoration: underline;
+}
+
+.cart-table td a[href*="seller.php"]:hover .fas.fa-chevron-right {
+    transform: translateX(3px);
+}
 
 @media (max-width: 768px) {
     .cart-table-container { padding: 0 15px; }
@@ -362,10 +380,10 @@ h1 {
 }
 
 .btn-remove {
-    background: #dc3545;
-    color: #ffffff;
+    background: transparent;
+    color: #dc3545;
     border: none;
-    border-radius: 4px;
+    border-radius: 0;
     width: 36px;
     height: 36px;
     font-size: 18px;
@@ -374,13 +392,13 @@ h1 {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    transition: transform 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+    transition: transform 0.2s ease, color 0.2s ease;
 }
 
 .btn-remove:hover {
-    background: #c82333;
-    transform: scale(1.06);
-    box-shadow: 0 2px 8px rgba(220, 53, 69, 0.35);
+    background: transparent;
+    color: #b02a37;
+    transform: scale(1.15);
 }
 
 .btn-update {

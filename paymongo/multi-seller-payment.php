@@ -91,7 +91,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // Include header after all redirects are handled
-require_once 'includes/header.php';
+require_once '../includes/header.php';
 ?>
 
 <style>
@@ -393,4 +393,4 @@ document.querySelectorAll('.payment-method').forEach(method => {
 });
 </script>
 
-<?php require_once 'includes/footer.php'; ?>
+<?php require_once '../includes/footer.php'; ?>

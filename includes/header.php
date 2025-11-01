@@ -325,25 +325,27 @@ $pathPrefix = ($currentDir === 'paymongo') ? '../' : '';
             position: absolute;
             top: 8px;
             right: 8px;
-            background: rgba(220, 53, 69, 0.2);
-            border: 1px solid rgba(220, 53, 69, 0.4);
+            background: transparent;
+            border: none;
             color: #dc3545;
             width: 24px;
             height: 24px;
-            border-radius: 50%;
+            border-radius: 0;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            font-size: 10px;
+            font-size: 14px;
             transition: all 0.3s ease;
             z-index: 10;
+            padding: 0;
         }
         
         .notif-delete-btn:hover {
-            background: rgba(220, 53, 69, 0.4);
-            border-color: #dc3545;
-            transform: scale(1.1);
+            background: transparent;
+            border: none;
+            color: #b02a37;
+            transform: scale(1.15);
         }
         
         .cart-link {
@@ -614,6 +616,113 @@ $pathPrefix = ($currentDir === 'paymongo') ? '../' : '';
 #notifList::-webkit-scrollbar-thumb:hover {
     background: #e6c230;
 }
+
+/* Custom confirmation dialog styling for logout - matching cancel modal design */
+.confirm-dialog {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    background: rgba(0, 0, 0, 0.6) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    z-index: 10000 !important;
+    backdrop-filter: blur(5px) !important;
+}
+
+.confirm-content {
+    background: #ffffff !important;
+    margin: 10% auto !important;
+    padding: 18px 20px !important;
+    border-radius: 10px !important;
+    width: 92% !important;
+    max-width: 420px !important;
+    position: relative !important;
+    text-align: left !important;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.18) !important;
+    animation: confirmSlideIn 0.22s ease !important;
+    border: none !important;
+}
+
+@keyframes confirmSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-50px) scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.confirm-content .confirm-title {
+    color: #111827 !important;
+    font-size: 1.1rem !important;
+    font-weight: 600 !important;
+    margin-bottom: 10px !important;
+    text-transform: none !important;
+    letter-spacing: normal !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+}
+
+.confirm-content .confirm-title i {
+    color: #dc3545 !important;
+    font-size: 1.2rem !important;
+}
+
+.confirm-content .confirm-message {
+    color: #374151 !important;
+    font-size: 0.92rem !important;
+    margin-bottom: 20px !important;
+    line-height: 1.5 !important;
+}
+
+.confirm-content .confirm-buttons {
+    display: flex !important;
+    gap: 10px !important;
+    justify-content: flex-end !important;
+    margin-top: 16px !important;
+    text-align: right !important;
+}
+
+.confirm-content .confirm-btn {
+    padding: 6px 12px !important;
+    border: none !important;
+    border-radius: 6px !important;
+    font-size: 0.85rem !important;
+    font-weight: 600 !important;
+    text-transform: none !important;
+    letter-spacing: normal !important;
+    cursor: pointer !important;
+    transition: all 0.15s ease !important;
+    min-width: auto !important;
+}
+
+.confirm-content .confirm-btn-yes {
+    background: #dc3545 !important;
+    color: white !important;
+    border: none !important;
+}
+
+.confirm-content .confirm-btn-yes:hover {
+    background: #c82333 !important;
+    transform: translateY(-1px) !important;
+}
+
+.confirm-content .confirm-btn-no {
+    background: #6c757d !important;
+    color: white !important;
+    border: none !important;
+}
+
+.confirm-content .confirm-btn-no:hover {
+    background: #5a6268 !important;
+    transform: translateY(-1px) !important;
+}
     </style>
 </head>
 <body>
@@ -692,7 +801,7 @@ $pathPrefix = ($currentDir === 'paymongo') ? '../' : '';
                                             <a class="dropdown-item" href="<?php echo $pathPrefix; ?>customer-notifications.php">Notifications</a>
                                         <?php endif; ?>
                                         <a class="dropdown-item" href="<?php echo $pathPrefix; ?>edit-profile.php">My Account</a>
-                                        <a class="dropdown-item" href="<?php echo $pathPrefix; ?>logout.php">Logout</a>
+                                        <a class="dropdown-item" href="#" onclick="confirmLogout('<?php echo $pathPrefix; ?>logout.php'); return false;">Logout</a>
                                     </div>
                     </div>
                 <?php else: ?>
@@ -778,7 +887,7 @@ $pathPrefix = ($currentDir === 'paymongo') ? '../' : '';
                 <?php endif; ?>
                 <a href="<?php echo $pathPrefix; ?>edit-profile.php">Edit Profile</a>
                 <a href="<?php echo $pathPrefix; ?>customer-notifications.php">Notifications</a>
-                <a href="<?php echo $pathPrefix; ?>logout.php">Logout</a>
+                <a href="#" onclick="confirmLogout('<?php echo $pathPrefix; ?>logout.php'); return false;">Logout</a>
             <?php else: ?>
                 <a href="<?php echo $pathPrefix; ?>login.php">Login</a>
                 <a href="<?php echo $pathPrefix; ?>register.php">Register</a>
@@ -988,6 +1097,63 @@ $pathPrefix = ($currentDir === 'paymongo') ? '../' : '';
                     });
             }
         });
+
+// Custom styled confirmation dialog function
+function openConfirm(message, onConfirm) {
+    // Create dialog overlay
+    const dialog = document.createElement('div');
+    dialog.className = 'confirm-dialog';
+    dialog.innerHTML = `
+        <div class="confirm-content">
+            <div class="confirm-title"><i class="fas fa-exclamation-triangle"></i> Confirm Action</div>
+            <div class="confirm-message">${message}</div>
+            <div class="confirm-buttons">
+                <button class="confirm-btn confirm-btn-no">No</button>
+                <button class="confirm-btn confirm-btn-yes">Yes</button>
+            </div>
+        </div>
+    `;
+    
+    // Add to page
+    document.body.appendChild(dialog);
+    
+    // Handle button clicks
+    const yesBtn = dialog.querySelector('.confirm-btn-yes');
+    const noBtn = dialog.querySelector('.confirm-btn-no');
+    
+    yesBtn.addEventListener('click', () => {
+        document.body.removeChild(dialog);
+        if (onConfirm) onConfirm();
+    });
+    
+    noBtn.addEventListener('click', () => {
+        document.body.removeChild(dialog);
+    });
+    
+    // Handle escape key
+    const handleEscape = (e) => {
+        if (e.key === 'Escape') {
+            document.body.removeChild(dialog);
+            document.removeEventListener('keydown', handleEscape);
+        }
+    };
+    document.addEventListener('keydown', handleEscape);
+    
+    // Handle click outside
+    dialog.addEventListener('click', (e) => {
+        if (e.target === dialog) {
+            document.body.removeChild(dialog);
+            document.removeEventListener('keydown', handleEscape);
+        }
+    });
+}
+
+// Logout confirmation function
+function confirmLogout(logoutUrl) {
+    openConfirm('Are you sure you want to logout?', function() {
+        window.location.href = logoutUrl;
+    });
+}
     </script>
 
     <main>

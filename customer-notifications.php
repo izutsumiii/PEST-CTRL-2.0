@@ -182,6 +182,7 @@ function statusBadge($status) {
 <style>
   html, body { background:#f8f9fa !important; }
   main { background:#f8f9fa !important; }
+  main h1 { text-shadow: none !important; }
   .notif-item { background:#ffffff !important; }
   .notif-item a { background:#ffffff !important; }
   .notif-item a:hover { background:#ffffff !important; }
@@ -199,12 +200,12 @@ function statusBadge($status) {
     position: absolute;
     top: 12px;
     right: 8px;
-    background: rgba(220, 53, 69, 0.2);
-    border: 1px solid rgba(220, 53, 69, 0.4);
+    background: transparent;
+    border: none;
     color: #dc3545;
     width: 28px;
     height: 28px;
-    border-radius: 4px;
+    border-radius: 0;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -215,9 +216,10 @@ function statusBadge($status) {
   }
   
   .notif-delete-btn-page:hover {
-    background: rgba(220, 53, 69, 0.4);
-    border-color: #dc3545;
-    transform: scale(1.1);
+    background: transparent;
+    border: none;
+    color: #b02a37;
+    transform: scale(1.15);
   }
   
   /* Custom confirmation dialog styles */
@@ -322,10 +324,10 @@ function statusBadge($status) {
     box-shadow: 0 6px 20px rgba(108, 117, 125, 0.4);
   }
 </style>
-<main style="background:#f8f9fa; min-height:100vh; padding: 80px 0 60px 0;">
+<main style="background:#f8f9fa; min-height:100vh; padding: 40px 0 60px 0;">
   <div style="max-width: 1400px; margin: 0 auto; padding: 0 60px;">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
-      <h1 style="color:#130325; margin:0;">Notifications (<?php echo count($events); ?> total)</h1>
+      <h1 style="color:#130325; margin:0; text-shadow: none;">Notifications (<?php echo count($events); ?> total)</h1>
       <?php if (!empty($events)): ?>
         <form method="POST" style="margin:0;" id="deleteAllForm">
             <input type="hidden" name="delete_notifications" value="1">
@@ -365,13 +367,13 @@ function statusBadge($status) {
     <?php endif; ?>
 
     <?php if (empty($events)): ?>
-      <div style="background:#ffffff; border:1px solid rgba(0,0,0,0.1); color:#130325; border-radius:8px; padding:20px; text-align:center; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">No notifications yet.</div>
+      <div style="background:#ffffff; border:1px solid rgba(0,0,0,0.1); color:#130325; border-radius:8px; padding:20px; text-align:center;">No notifications yet.</div>
     <?php else: ?>
       <div class="notif-list" style="display:flex; flex-direction:column; gap:12px;">
         <?php foreach ($events as $e): ?>
           <div class="notif-item" style="position: relative;">
             <a href="user-dashboard.php#order-<?php echo (int)$e['order_id']; ?>" style="text-decoration:none; display: block;">
-              <div style="display:flex; gap:12px; align-items:center; background:#ffffff; border:1px solid rgba(0,0,0,0.1); padding:14px; border-radius:10px; box-shadow: 0 2px 10px rgba(0,0,0,0.15);">
+              <div style="display:flex; gap:12px; align-items:center; background:#ffffff; border:1px solid rgba(0,0,0,0.1); padding:14px; border-radius:10px;">
                 <div style="width:36px; height:36px; display:flex; align-items:center; justify-content:center; background:rgba(255,215,54,0.15); color:#FFD736; border-radius:8px;">
                   <i class="fas fa-bell"></i>
                 </div>
@@ -512,7 +514,7 @@ function updateNotificationsDisplay(items, unreadCount) {
     }
     
     if (items.length === 0) {
-        notifList.innerHTML = '<div style="background:#ffffff; border:1px solid rgba(0,0,0,0.1); color:#130325; border-radius:8px; padding:20px; text-align:center; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">No notifications yet.</div>';
+        notifList.innerHTML = '<div style="background:#ffffff; border:1px solid rgba(0,0,0,0.1); color:#130325; border-radius:8px; padding:20px; text-align:center;">No notifications yet.</div>';
         
         // Hide clear all button if no notifications
         const deleteAllForm = document.querySelector('form[method="POST"]');
@@ -554,7 +556,7 @@ function createNotificationElement(item) {
     let content = '';
     if (item.status === 'notification') {
         content = `
-            <div style="display:flex; gap:12px; align-items:center; background:#ffffff; border:1px solid rgba(0,0,0,0.1); padding:14px; border-radius:10px; box-shadow: 0 2px 10px rgba(0,0,0,0.15);">
+            <div style="display:flex; gap:12px; align-items:center; background:#ffffff; border:1px solid rgba(0,0,0,0.1); padding:14px; border-radius:10px;">
                 <div style="width:36px; height:36px; display:flex; align-items:center; justify-content:center; background:rgba(255,215,54,0.15); color:#FFD736; border-radius:8px;">
                     <i class="fas fa-info-circle"></i>
                 </div>
@@ -568,7 +570,7 @@ function createNotificationElement(item) {
     } else {
         const statusBadge = getStatusBadge(item.status);
         content = `
-            <div style="display:flex; gap:12px; align-items:center; background:#ffffff; border:1px solid rgba(0,0,0,0.1); padding:14px; border-radius:10px; box-shadow: 0 2px 10px rgba(0,0,0,0.15);">
+            <div style="display:flex; gap:12px; align-items:center; background:#ffffff; border:1px solid rgba(0,0,0,0.1); padding:14px; border-radius:10px;">
                 <div style="width:36px; height:36px; display:flex; align-items:center; justify-content:center; background:rgba(255,215,54,0.15); color:#FFD736; border-radius:8px;">
                     <i class="fas fa-bell"></i>
                 </div>
