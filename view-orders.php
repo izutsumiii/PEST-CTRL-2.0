@@ -218,111 +218,347 @@ require_once 'includes/seller_header.php';
 ?>
 
 <style>
-html, body { background:#130325 !important; margin:0; padding:0; }
-main { background:transparent !important; margin-left: 120px !important; padding: 20px 30px 60px 30px !important; min-height: calc(100vh - 60px) !important; transition: margin-left 0.3s ease; margin-top: -20px !important; }
+html, body { 
+    background: #f0f2f5 !important; 
+    margin: 0; 
+    padding: 0; 
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+main { 
+    background: #f0f2f5 !important; 
+    margin-left: 120px !important; 
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+    padding-top: 0 !important;
+    padding-bottom: 40px !important;
+    padding-left: 30px !important;
+    padding-right: 30px !important;
+    min-height: calc(100vh - 60px) !important; 
+    transition: margin-left 0.3s ease !important;
+}
 main.sidebar-collapsed { margin-left: 0px !important; }
-h1 { color:#F9F9F9 !important; font-family:var(--font-primary) !important; font-size:24px !important; font-weight:700 !important; text-align:left !important; margin:0 0 15px 0 !important; padding-left:20px !important; background:none !important; text-shadow:none !important; }
+
+h1 { 
+    color: #130325 !important; 
+    font-size: 32px !important; 
+    font-weight: 700 !important; 
+    margin: 0 !important;
+    margin-bottom: 28px !important;
+    padding: 0 !important; 
+    text-shadow: none !important;
+}
 
 .notification-toast {
     position: fixed;
     top: 100px;
     right: 20px;
-    max-width: 400px;
-    background: #1a0a2e;
-    border: 1px solid rgba(255,215,54,0.5);
-    border-left: 4px solid #FFD736;
-    border-radius: 10px;
-    padding: 16px 20px;
-    color: #F9F9F9;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+    max-width: 450px;
+    min-width: 350px;
+    background: #ffffff;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 16px;
+    padding: 20px 24px;
+    color: #130325;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
     z-index: 10000;
-    animation: slideInRight 0.3s ease;
+    animation: slideInRight 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    font-family: var(--font-primary, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
 }
 
-.notification-toast.success { border-left-color: #28a745; }
-.notification-toast.error { border-left-color: #dc3545; }
+.notification-toast::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    border-radius: 16px 16px 0 0;
+    background: linear-gradient(90deg, #FFD736, #FFA500);
+}
+
+.notification-toast.success {
+    background: #ffffff;
+    border-color: rgba(40, 167, 69, 0.3);
+    border-top: 4px solid #28a745;
+}
+
+.notification-toast.success::before {
+    background: linear-gradient(90deg, #28a745, #20c997);
+}
+
+.notification-toast.error {
+    background: #ffffff;
+    border-color: rgba(220, 53, 69, 0.3);
+    border-top: 4px solid #dc3545;
+}
+
+.notification-toast.error::before {
+    background: linear-gradient(90deg, #dc3545, #fd7e14);
+}
 
 @keyframes slideInRight {
-    from { transform: translateX(400px); opacity: 0; }
-    to { transform: translateX(0); opacity: 1; }
+    0% { 
+        transform: translateX(100%) scale(0.8); 
+        opacity: 0; 
+    }
+    50% {
+        transform: translateX(-10px) scale(1.02);
+        opacity: 0.8;
+    }
+    100% { 
+        transform: translateX(0) scale(1); 
+        opacity: 1; 
+    }
+}
+
+@keyframes slideOutRight {
+    0% { 
+        transform: translateX(0) scale(1); 
+        opacity: 1; 
+    }
+    100% { 
+        transform: translateX(100%) scale(0.8); 
+        opacity: 0; 
+    }
+}
+
+.notification-toast.slide-out {
+    animation: slideOutRight 0.3s ease forwards;
+}
+
+.notification-toast .toast-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    flex-shrink: 0;
+    background: rgba(255, 215, 54, 0.15);
+}
+
+.notification-toast.success .toast-icon {
+    background: rgba(40, 167, 69, 0.15);
+    color: #28a745;
+}
+
+.notification-toast.error .toast-icon {
+    background: rgba(220, 53, 69, 0.15);
+    color: #dc3545;
+}
+
+.notification-toast .toast-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.notification-toast .toast-title {
+    font-size: 16px;
+    font-weight: 700;
+    margin: 0 0 4px 0;
+    color: #130325;
+    line-height: 1.3;
+}
+
+.notification-toast .toast-message {
+    font-size: 14px;
+    margin: 0;
+    color: #130325;
+    opacity: 0.8;
+    line-height: 1.4;
+}
+
+.notification-toast .toast-close {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: none;
+    border: none;
+    color: #130325;
+    opacity: 0.6;
+    font-size: 18px;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.notification-toast .toast-close:hover {
+    background: rgba(255, 215, 54, 0.15);
+    color: #130325;
+    opacity: 1;
+    transform: scale(1.1);
 }
 
 .orders-container {
     max-width: 1600px;
     margin: 0 auto;
-    margin-top: -20px !important;
 }
 
-.orders-container h1 {
-    color: #F9F9F9 !important;
-    font-family: var(--font-primary) !important;
-    font-size: 24px !important;
-    font-weight: 700 !important;
-    text-align: left !important;
-    margin: 0 0 15px 0 !important;
-    padding-left: 20px !important;
-    background: none !important;
-    text-shadow: none !important;
+.search-card {
+    background: #ffffff;
+    border: 1px solid rgba(0,0,0,0.1);
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 30px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 
-.orders-container > p {
-    color: #ffffff;
-    text-align: center;
-    opacity: 0.95;
-    margin: 0 0 30px 0;
+.search-wrapper {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.search-input-group {
+    display: flex;
+    gap: 8px;
+    flex: 1;
+}
+
+.search-bar {
+    flex: 1;
+    padding: 12px 14px;
+    background: #ffffff;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    color: #130325;
+    font-size: 14px;
+    transition: all 0.2s ease;
+}
+
+.search-bar:focus {
+    outline: none;
+    border-color: #FFD736;
+    box-shadow: 0 0 0 2px rgba(255,215,54,0.2);
+}
+
+.search-bar::placeholder {
+    color: #999;
+}
+
+.search-btn {
+    padding: 12px 16px;
+    background: #FFD736;
+    color: #130325;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.search-btn:hover {
+    background: #f5d026;
+}
+
+.orders-table-container {
+    background: #ffffff;
+    border: 1px solid rgba(0,0,0,0.1);
+    border-radius: 8px;
+    padding: 24px;
+    margin-top: 0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 
 .table-wrapper {
-    background: #1a0a2e;
-    border: 1px solid #2d1b4e;
-    border-radius: 12px;
-    overflow: hidden;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    overflow-x: auto;
 }
 
 .orders-table {
     width: 100%;
     border-collapse: collapse;
+    font-size: 14px;
 }
 
 .orders-table thead {
-    background: rgba(255,215,54,0.1);
+    background: #130325;
     border-bottom: 2px solid #FFD736;
 }
 
 .orders-table th {
-    padding: 16px 12px;
+    padding: 12px 16px;
     text-align: left;
-    color: #FFD736;
     font-weight: 700;
+    color: #ffffff;
     font-size: 13px;
     text-transform: uppercase;
     letter-spacing: 0.5px;
+    position: relative;
+    user-select: none;
+    cursor: pointer;
+    transition: background 0.2s ease;
+    padding-right: 32px;
+}
+
+.orders-table th.sortable {
+    cursor: pointer;
+}
+
+.orders-table th.sortable:hover {
+    background: rgba(255, 215, 54, 0.2);
+}
+
+.sort-indicator {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 10px;
+    color: #FFD736;
+    transition: all 0.2s ease;
+}
+
+.sort-indicator::before {
+    content: '↕';
+    display: block;
+}
+
+.sort-indicator.asc::before {
+    content: '↑';
+    color: #FFD736;
+}
+
+.sort-indicator.desc::before {
+    content: '↓';
+    color: #FFD736;
 }
 
 .orders-table td {
-    padding: 16px 12px;
-    color: #F9F9F9;
-    border-bottom: 1px solid rgba(255,255,255,0.1);
+    padding: 14px 16px;
+    color: #130325;
+    border-bottom: 1px solid #f0f0f0;
     vertical-align: top;
 }
 
 .orders-table tbody tr {
-    transition: all 0.2s ease;
+    border-bottom: 1px solid #f0f0f0;
+    transition: background 0.2s ease;
 }
 
 .orders-table tbody tr:hover {
-    background: rgba(255,215,54,0.05);
+    background: rgba(255, 215, 54, 0.05);
 }
 
 .order-id {
-    color: #FFD736;
+    color: #130325;
     font-weight: 700;
-    font-size: 16px;
+    font-size: 15px;
 }
 
 .customer-name {
-    color: #F9F9F9;
+    color: #130325;
     font-weight: 600;
 }
 
@@ -334,51 +570,53 @@ h1 { color:#F9F9F9 !important; font-family:var(--font-primary) !important; font-
 
 .product-item {
     padding: 4px 0;
-    color: #F9F9F9;
+    color: #130325;
     opacity: 0.9;
+    font-size: 13px;
 }
 
 .product-item strong {
-    color: #FFD736;
+    color: #130325;
+    font-weight: 600;
 }
 
 .total-amount {
-    color: #FFD736;
+    color: #130325;
     font-weight: 700;
-    font-size: 18px;
+    font-size: 16px;
 }
 
 .order-status {
     display: inline-block;
-    padding: 6px 14px;
-    border-radius: 20px;
+    padding: 4px 10px;
+    border-radius: 4px;
     font-weight: 600;
     font-size: 12px;
     text-transform: uppercase;
 }
 
-.status-pending { background: rgba(255,193,7,0.2); color: #ffc107; border: 1px solid #ffc107; }
-.status-processing { background: rgba(0,123,255,0.2); color: #007bff; border: 1px solid #007bff; }
-.status-shipped { background: rgba(23,162,184,0.2); color: #17a2b8; border: 1px solid #17a2b8; }
-.status-delivered { background: rgba(40,167,69,0.2); color: #28a745; border: 1px solid #28a745; }
-.status-cancelled { background: rgba(220,53,69,0.2); color: #dc3545; border: 1px solid #dc3545; }
+.status-pending { background: rgba(255,193,7,0.15); color: #ffc107; }
+.status-processing { background: rgba(0,123,255,0.15); color: #007bff; }
+.status-shipped { background: rgba(23,162,184,0.15); color: #17a2b8; }
+.status-delivered { background: rgba(40,167,69,0.15); color: #28a745; }
+.status-cancelled { background: rgba(220,53,69,0.15); color: #dc3545; }
 
 .order-date {
-    color: #F9F9F9;
+    color: #130325;
     opacity: 0.8;
-    font-size: 14px;
+    font-size: 13px;
 }
 
 .actions-cell {
-    min-width: 200px;
+    min-width: 150px;
     text-align: center;
 }
 
 .grace-period-timer {
     background: rgba(255,193,7,0.15);
     border: 1px solid #ffc107;
-    padding: 10px 12px;
-    border-radius: 8px;
+    padding: 8px 12px;
+    border-radius: 4px;
     text-align: center;
     color: #ffc107;
     font-weight: 600;
@@ -390,36 +628,40 @@ h1 { color:#F9F9F9 !important; font-family:var(--font-primary) !important; font-
     background: rgba(0,123,255,0.15);
     border: 1px solid #007bff;
     color: #007bff;
-    padding: 6px 14px;
-    border-radius: 20px;
-    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-weight: 600;
+    font-size: 11px;
     text-transform: uppercase;
     display: inline-block;
+    margin-bottom: 10px;
 }
 
 .action-buttons {
     display: flex;
-    flex-direction: row;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
     gap: 8px;
 }
 
 .action-btn {
-    width: 36px;
-    height: 36px;
-    padding: 0;
+    width: auto;
+    min-width: 120px;
+    padding: 8px 14px;
     border: none;
-    border-radius: 8px;
+    border-radius: 4px;
     font-weight: 600;
-    font-size: 14px;
+    font-size: 13px;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.2s ease;
     text-align: center;
     text-decoration: none;
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    gap: 6px;
+    white-space: nowrap;
 }
 
 .btn-process {
@@ -429,8 +671,27 @@ h1 { color:#F9F9F9 !important; font-family:var(--font-primary) !important; font-
 
 .btn-process:hover {
     background: #0056b3;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(0,123,255,0.4);
+    transform: scale(1.1);
+}
+
+.btn-ship {
+    background: #17a2b8;
+    color: white;
+}
+
+.btn-ship:hover {
+    background: #138496;
+    transform: scale(1.1);
+}
+
+.btn-delivered {
+    background: #28a745;
+    color: white;
+}
+
+.btn-delivered:hover {
+    background: #218838;
+    transform: scale(1.1);
 }
 
 .btn-cancel {
@@ -440,15 +701,14 @@ h1 { color:#F9F9F9 !important; font-family:var(--font-primary) !important; font-
 
 .btn-cancel:hover {
     background: #c82333;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(220,53,69,0.4);
+    transform: scale(1.1);
 }
 
 /* Custom Confirmation Modal */
 .custom-confirm-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.8);
+    background: rgba(0, 0, 0, 0.6);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -461,117 +721,113 @@ h1 { color:#F9F9F9 !important; font-family:var(--font-primary) !important; font-
 .custom-confirm-overlay.show { opacity: 1; visibility: visible; }
 
 .custom-confirm-dialog {
-    background: linear-gradient(135deg, #1a0a2e 0%, #130325 100%);
-    border: 2px solid #FFD736;
-    border-radius: 12px;
-    padding: 22px;
+    background: #ffffff;
+    border-radius: 10px;
+    padding: 18px 20px;
     width: 92%;
     max-width: 420px;
-    box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.18);
 }
 
-.custom-confirm-title { color: #FFD736; font-weight: 800; font-size: 18px; margin: 0 0 10px 0; }
-.custom-confirm-message { color: #F9F9F9; opacity: 0.9; font-size: 14px; margin-bottom: 16px; }
-.custom-confirm-buttons { display: flex; gap: 10px; justify-content: flex-end; }
-.custom-confirm-btn { padding: 10px 14px; border-radius: 8px; font-weight: 800; border: 2px solid transparent; cursor: pointer; }
-.custom-confirm-btn.cancel { background: rgba(108,117,125,0.15); color: #adb5bd; border-color: #6c757d; }
-.custom-confirm-btn.confirm { background: linear-gradient(135deg, #dc3545, #c82333); color: #fff; border-color: #dc3545; }
-.custom-confirm-btn.primary { background: linear-gradient(135deg, #FFD736, #FFD736); color: #130325; border-color: #FFD736; }
+.custom-confirm-title { color: #111827; font-weight: 600; font-size: 1.1rem; margin: 0 0 10px 0; text-transform: none; letter-spacing: normal; }
+.custom-confirm-message { color: #374151; font-size: 0.92rem; margin-bottom: 20px; line-height: 1.5; }
+.custom-confirm-buttons { display: flex; gap: 10px; justify-content: flex-end; margin-top: 16px; }
+.custom-confirm-btn { padding: 6px 12px; border-radius: 6px; font-size: 0.85rem; font-weight: 600; text-transform: none; letter-spacing: normal; border: none; cursor: pointer; }
+.custom-confirm-btn.cancel { background: #6c757d; color: white; }
+.custom-confirm-btn.confirm { background: #dc3545; color: white; }
+.custom-confirm-btn.primary { background: #FFD736; color: #130325; }
+.custom-confirm-btn.primary:hover { background: #f5d026; }
+.custom-confirm-btn.cancel:hover { background: #5a6268; }
+.custom-confirm-btn.confirm:hover { background: #c82333; }
 
-.status-form {
-    margin-top: 8px;
-}
 
-.status-form label {
-    display: block;
-    color: #FFD736;
-    font-weight: 600;
-    font-size: 12px;
-    margin-bottom: 6px;
-}
-
-.status-select {
-    width: 100%;
-    padding: 8px;
-    background: #ffffff;
-    color: #130325;
-    border: 1px solid #FFD736;
-    border-radius: 6px;
-    font-weight: 600;
-    font-size: 12px;
-    cursor: pointer;
-}
-
-.status-select:focus {
-    outline: none;
-    box-shadow: 0 0 0 3px rgba(255,215,54,0.3);
-}
-
-.no-orders {
-    background: #1a0a2e;
-    border: 1px solid #2d1b4e;
-    color: #F9F9F9;
-    border-radius: 12px;
-    padding: 60px 20px;
+.no-orders-message {
     text-align: center;
-}
-
-.no-orders i {
-    font-size: 64px;
-    color: #FFD736;
-    margin-bottom: 20px;
-    display: block;
-}
-
-@media (max-width: 1200px) {
-    .orders-table { font-size: 12px; }
-    .orders-table th, .orders-table td { padding: 12px 8px; }
+    padding: 40px;
+    color: #6b7280;
+    font-size: 14px;
 }
 
 @media (max-width: 768px) {
-    main { padding: 70px 10px 60px 10px !important; }
+    main { padding: 30px 24px 60px 24px !important; }
+    .orders-table-container { padding: 20px; }
+    .orders-table { font-size: 12px; }
+    .orders-table th, .orders-table td { padding: 10px 12px; }
     .table-wrapper { overflow-x: auto; }
-    .orders-table { min-width: 1000px; }
 }
 </style>
 
 <main>
 <div class="orders-container">
     <?php if (isset($_SESSION['order_message'])): ?>
-        <div class="notification-toast <?php echo $_SESSION['order_message']['type']; ?>">
-            <?php echo htmlspecialchars($_SESSION['order_message']['text']); ?>
+        <div class="notification-toast <?php echo $_SESSION['order_message']['type']; ?>" id="notificationToast">
+            <div class="toast-icon">
+                <?php if ($_SESSION['order_message']['type'] === 'success'): ?>
+                    <i class="fas fa-check-circle"></i>
+                <?php else: ?>
+                    <i class="fas fa-exclamation-circle"></i>
+                <?php endif; ?>
+            </div>
+            <div class="toast-content">
+                <div class="toast-title">
+                    <?php echo $_SESSION['order_message']['type'] === 'success' ? 'Success!' : 'Error!'; ?>
+                </div>
+                <div class="toast-message">
+                    <?php echo htmlspecialchars($_SESSION['order_message']['text']); ?>
+                </div>
+            </div>
+            <button class="toast-close" onclick="closeNotification()">
+                <i class="fas fa-times"></i>
+            </button>
         </div>
         <?php unset($_SESSION['order_message']); ?>
     <?php endif; ?>
 
     <h1>Order Management</h1>
 
-<?php if (empty($groupedOrders)): ?>
-        <div class="no-orders">
-            <i class="fas fa-inbox"></i>
-            <p style="font-size: 18px; margin: 0;">No orders found.</p>
+    <div class="search-card">
+        <div class="search-wrapper">
+            <div class="search-input-group">
+                <input type="text" class="search-bar" id="orderSearch" placeholder="Search by Order ID, Customer, Status, or Product..." onkeyup="filterOrders()">
+                <button class="search-btn" onclick="filterOrders()" title="Search">
+                    <i class="fas fa-search"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <?php if (empty($groupedOrders)): ?>
+        <div class="orders-table-container">
+            <div class="no-orders-message">
+                <p>No orders found.</p>
+            </div>
         </div>
 <?php else: ?>
-        <div class="table-wrapper">
-<table class="orders-table">
-    <thead>
-        <tr>
-            <th>Order ID</th>
-            <th>Customer</th>
-            <th>Products</th>
-            <th>Total</th>
-            <th>Status</th>
-            <th>Date</th>
-                        <th>Actions</th>
-        </tr>
-    </thead>
-    <tbody>
-                    <?php foreach ($groupedOrders as $order): 
+        <div class="orders-table-container">
+            <div class="table-wrapper">
+                <table class="orders-table" id="orders-table">
+                    <thead>
+                        <tr>
+                            <th class="sortable" data-column="id">Order ID<span class="sort-indicator"></span></th>
+                            <th class="sortable" data-column="customer">Customer<span class="sort-indicator"></span></th>
+                            <th>Products</th>
+                            <th class="sortable" data-column="total">Total<span class="sort-indicator"></span></th>
+                            <th class="sortable" data-column="status">Status<span class="sort-indicator"></span></th>
+                            <th class="sortable" data-column="date">Date<span class="sort-indicator"></span></th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($groupedOrders as $order):
             $withinGracePeriod = isWithinGracePeriod($order['created_at'], $pdo);
             $remainingTime = $withinGracePeriod ? getRemainingGracePeriod($order['created_at'], $pdo) : null;
-                        $statusClass = 'status-' . $order['status'];
+            $statusClass = 'status-' . $order['status'];
             ?>
-            <tr>
+            <tr data-id="<?php echo $order['order_id']; ?>" 
+                data-customer="<?php echo htmlspecialchars(strtolower($order['customer_name'])); ?>" 
+                data-total="<?php echo (float)$order['total_amount']; ?>" 
+                data-status="<?php echo strtolower($order['status']); ?>" 
+                data-date="<?php echo strtotime($order['created_at']); ?>">
                             <td>
                                 <span class="order-id">#<?php echo str_pad($order['order_id'], 6, '0', STR_PAD_LEFT); ?></span>
                             </td>
@@ -634,57 +890,87 @@ h1 { color:#F9F9F9 !important; font-family:var(--font-primary) !important; font-
                                                 <input type="hidden" name="order_id" value="<?php echo $order['order_id']; ?>">
                                                 <input type="hidden" name="status" value="processing">
                                                 <input type="hidden" name="update_status" value="1">
-                                                <button type="submit" class="action-btn btn-process" title="Process">
+                                                <button type="submit" class="action-btn btn-process">
                                                     <i class="fas fa-check"></i>
+                                                    <span>Process</span>
                                                 </button>
                                             </form>
                                             <form method="POST" onsubmit="return confirmStatusChange('cancelled');">
-                <input type="hidden" name="order_id" value="<?php echo $order['order_id']; ?>">
+                                                <input type="hidden" name="order_id" value="<?php echo $order['order_id']; ?>">
                                                 <input type="hidden" name="status" value="cancelled">
-                <input type="hidden" name="update_status" value="1">
-                                                <button type="submit" class="action-btn btn-cancel" title="Cancel">
+                                                <input type="hidden" name="update_status" value="1">
+                                                <button type="submit" class="action-btn btn-cancel">
                                                     <i class="fas fa-times"></i>
+                                                    <span>Cancel</span>
                                                 </button>
-            </form>
+                                            </form>
                                         </div>
         <?php endif; ?>
-                                <?php elseif (in_array($order['status'], ['processing', 'shipped'])): ?>
-                                    <form method="POST" class="status-form" onsubmit="return confirmStatusChange(this.querySelector('select').value);">
-            <input type="hidden" name="order_id" value="<?php echo $order['order_id']; ?>">
-                                        <input type="hidden" name="update_status" value="1">
-                                        <label>Update Status:</label>
-                                        <select name="status" class="status-select" onchange="this.form.submit()">
-                                            <option value="">Select...</option>
-                                            <?php if ($order['status'] === 'processing'): ?>
-                <option value="shipped">Ship</option>
-                <option value="cancelled">Cancel</option>
-    <?php elseif ($order['status'] === 'shipped'): ?>
-                <option value="delivered">Delivered</option>
-                                            <?php endif; ?>
-            </select>
-        </form>
+                                <?php elseif ($order['status'] === 'processing'): ?>
+                                    <div class="action-buttons">
+                                        <form method="POST" onsubmit="return confirmStatusChange('shipped');">
+                                            <input type="hidden" name="order_id" value="<?php echo $order['order_id']; ?>">
+                                            <input type="hidden" name="status" value="shipped">
+                                            <input type="hidden" name="update_status" value="1">
+                                            <button type="submit" class="action-btn btn-ship">
+                                                <i class="fas fa-truck"></i>
+                                                <span>Ship</span>
+                                            </button>
+                                        </form>
+                                        <form method="POST" onsubmit="return confirmStatusChange('cancelled');">
+                                            <input type="hidden" name="order_id" value="<?php echo $order['order_id']; ?>">
+                                            <input type="hidden" name="status" value="cancelled">
+                                            <input type="hidden" name="update_status" value="1">
+                                            <button type="submit" class="action-btn btn-cancel">
+                                                <i class="fas fa-times"></i>
+                                                <span>Cancel</span>
+                                            </button>
+                                        </form>
+                                    </div>
+                                <?php elseif ($order['status'] === 'shipped'): ?>
+                                    <div class="action-buttons">
+                                        <form method="POST" onsubmit="return confirmStatusChange('delivered');">
+                                            <input type="hidden" name="order_id" value="<?php echo $order['order_id']; ?>">
+                                            <input type="hidden" name="status" value="delivered">
+                                            <input type="hidden" name="update_status" value="1">
+                                            <button type="submit" class="action-btn btn-delivered">
+                                                <i class="fas fa-check-circle"></i>
+                                                <span>Delivered</span>
+                                            </button>
+                                        </form>
+                                    </div>
                                 <?php else: ?>
                                     <span style="color: #999; font-style: italic; font-size: 12px;">No actions</span>
     <?php endif; ?>
 </td>
                         </tr>
-        <?php endforeach; ?>
-    </tbody>
-</table>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
         </div>
 <?php endif; ?>
 </div>
 </main>
 
 <script>
+// Close notification function
+function closeNotification() {
+    const toast = document.getElementById('notificationToast');
+    if (toast) {
+        toast.classList.add('slide-out');
+        setTimeout(function() {
+            toast.remove();
+        }, 300);
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     const toast = document.querySelector('.notification-toast');
     if (toast) {
         setTimeout(function() {
-            toast.style.transition = 'opacity 0.5s ease';
-            toast.style.opacity = '0';
-            setTimeout(function() { toast.remove(); }, 500);
-        }, 4000);
+            closeNotification();
+        }, 5000);
     }
 
     const main = document.querySelector('main');
@@ -731,21 +1017,132 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }, true);
 
-    // Intercept status dropdown direct submit behavior; replace with modal confirmation first
-    document.querySelectorAll('select[name="status"]').forEach(function(sel){
-        // Remove inline onchange submit if present
-        try { sel.onchange = null; } catch (err) {}
-        sel.addEventListener('change', function(ev){
-            ev.preventDefault();
-            const form = sel.form;
-            if (!form) return;
-            const val = sel.value;
-            if (!val) return;
-            Promise.resolve(confirmStatusChange(val)).then(function(ok){
-                if (ok) form.submit();
+    // Search functionality
+    window.filterOrders = function() {
+        const searchTerm = document.getElementById('orderSearch').value.toLowerCase();
+        const orderRows = document.querySelectorAll('.orders-table tbody tr');
+        
+        orderRows.forEach(row => {
+            const orderId = row.querySelector('.order-id')?.textContent.toLowerCase() || '';
+            const customerName = row.querySelector('.customer-name')?.textContent.toLowerCase() || '';
+            const statusBadge = row.querySelector('.order-status')?.textContent.toLowerCase() || '';
+            const productItems = row.querySelectorAll('.product-item strong');
+            const productNames = Array.from(productItems).map(item => item.textContent.toLowerCase()).join(' ');
+            
+            const matchesSearch = orderId.includes(searchTerm) || 
+                                 customerName.includes(searchTerm) || 
+                                 statusBadge.includes(searchTerm) ||
+                                 productNames.includes(searchTerm);
+            
+            if (matchesSearch) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    };
+    
+    // Table sorting functionality
+    const table = document.getElementById('orders-table');
+    if (table) {
+        const tbody = table.querySelector('tbody');
+        const sortableHeaders = document.querySelectorAll('.orders-table th.sortable');
+        let currentSort = null;
+        let currentOrder = 'desc';
+        
+        // Store original rows data
+        const rows = Array.from(tbody.querySelectorAll('tr'));
+        const rowsData = rows.map(row => {
+            return {
+                element: row,
+                id: parseInt(row.getAttribute('data-id')) || 0,
+                customer: row.getAttribute('data-customer') || '',
+                total: parseFloat(row.getAttribute('data-total')) || 0,
+                status: row.getAttribute('data-status') || '',
+                date: parseInt(row.getAttribute('data-date')) || 0
+            };
+        });
+        
+        function updateSortIndicators(activeColumn, order) {
+            sortableHeaders.forEach(header => {
+                const indicator = header.querySelector('.sort-indicator');
+                const column = header.getAttribute('data-column');
+                
+                // Remove all sort classes
+                indicator.classList.remove('asc', 'desc');
+                
+                // Add active sort class
+                if (column === activeColumn) {
+                    indicator.classList.add(order);
+                }
+            });
+        }
+        
+        function sortTable(column, order) {
+            const sortedData = [...rowsData].sort((a, b) => {
+                let aVal, bVal;
+                
+                switch(column) {
+                    case 'id':
+                        aVal = a.id;
+                        bVal = b.id;
+                        break;
+                    case 'customer':
+                        aVal = a.customer;
+                        bVal = b.customer;
+                        break;
+                    case 'total':
+                        aVal = a.total;
+                        bVal = b.total;
+                        break;
+                    case 'status':
+                        aVal = a.status;
+                        bVal = b.status;
+                        break;
+                    case 'date':
+                        aVal = a.date;
+                        bVal = b.date;
+                        break;
+                    default:
+                        return 0;
+                }
+                
+                if (aVal < bVal) return order === 'asc' ? -1 : 1;
+                if (aVal > bVal) return order === 'asc' ? 1 : -1;
+                return 0;
+            });
+            
+            // Clear tbody
+            tbody.innerHTML = '';
+            
+            // Append sorted rows
+            sortedData.forEach(data => {
+                tbody.appendChild(data.element);
+            });
+            
+            // Update indicators
+            updateSortIndicators(column, order);
+            
+            currentSort = column;
+            currentOrder = order;
+        }
+        
+        // Add click handlers
+        sortableHeaders.forEach(header => {
+            header.addEventListener('click', function() {
+                const column = this.getAttribute('data-column');
+                let newOrder = 'asc';
+                
+                // If clicking the same column, toggle order
+                if (column === currentSort) {
+                    newOrder = currentOrder === 'asc' ? 'desc' : 'asc';
+                }
+                
+                // Sort table without reload
+                sortTable(column, newOrder);
             });
         });
-    });
+    }
 });
 </script>
 <script>

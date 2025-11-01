@@ -9,40 +9,205 @@ $userId = $_SESSION['user_id'];
 // Now include the header (which will output HTML)
 require_once 'includes/seller_header.php';
 
-// Apply seller dashboard theme to analytics
+// Apply modern minimal design theme
 echo '<style>
-body{background:#130325 !important;color:#FFFFFF !important;}
-main{margin-left:240px;color:#FFFFFF !important;}
-.section{background:rgba(255,255,255,0.1);padding:20px;border-radius:8px;box-shadow:0 2px 4px rgba(0,0,0,0.3);color:#FFFFFF !important;backdrop-filter:blur(10px)}
-.stat-card{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:16px;color:#FFFFFF !important;}
-.period-badge{background:rgba(255,215,54,0.12);border:1px solid #FFD736;color:#FFD736;padding:2px 8px;border-radius:999px;font-size:12px;font-weight:600}
-.orders-table-container{overflow-x:auto;margin-bottom:15px;border:1px solid rgba(255,255,255,0.2);border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.3);background:rgba(255,255,255,0.05)}
-.orders-table{width:100%;border-collapse:collapse;font-size:.875rem;color:#FFFFFF !important;}
-.orders-table thead{background:rgba(255,255,255,0.1);position:sticky;top:0;z-index:10}
-.orders-table th{padding:12px 12px;text-align:left;font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:#FFD736;border-bottom:2px solid rgba(255,255,255,0.2)}
-.orders-table td{padding:12px;border-bottom:1px solid rgba(255,255,255,0.1);color:#FFFFFF !important;}
-.orders-table tbody tr{background:rgba(255,255,255,0.03);transition:all .15s ease-in-out}
-.orders-table tbody tr:hover{background:#1a0a2e !important;transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,0,0,0.3)}
-/* Override header styling */
-h1{color:#FFFFFF !important;font-family:var(--font-primary) !important;font-size:24px !important;font-weight:700 !important;text-align:left !important;margin:0 0 15px 0 !important;padding-left:20px !important;background:none !important;text-shadow:none !important;}
-h2{color:#FFFFFF !important;font-family:var(--font-primary) !important;font-size:24px !important;font-weight:700 !important;text-align:left !important;margin:0 0 15px 0 !important;padding-left:20px !important;}
-h3{color:#FFFFFF !important;}
-h4{color:#FFFFFF !important;}
-h5{color:#FFFFFF !important;}
-h6{color:#FFFFFF !important;}
-p{color:#FFFFFF !important;}
-span{color:#FFFFFF !important;}
-div{color:#FFFFFF !important;}
-/* Much more aggressive reduction in top spacing for main content */
-main{padding-top:0 !important;margin-top:0px !important;}
-.container{margin-top:-20px !important;padding-top:0 !important;}
-.py-8{padding-top:0 !important;padding-bottom:2rem !important;}
-.mb-8{margin-top:-20px !important;}
-/* Ensure all text is white */
-*{color:#FFFFFF !important;}
-/* Exception for specific elements that should keep their colors */
-.period-badge{color:#FFD736 !important;}
-.orders-table th{color:#FFD736 !important;}
+html, body {
+    background: #f0f2f5 !important;
+    color: #130325 !important;
+    font-family: -apple-system, BlinkMacSystemFont, \'Segoe UI\', Roboto, \'Helvetica Neue\', Arial, sans-serif;
+    font-size: 14px;
+}
+main {
+    margin-left: 240px;
+    margin-top: 0 !important;
+    padding: 24px 30px 40px 30px !important;
+    background: transparent !important;
+    transition: margin-left 0.3s ease !important;
+}
+
+/* JavaScript will set inline style for margin-left, but this is the default */
+.section {
+    background: #ffffff !important;
+    padding: 24px !important;
+    border-radius: 8px !important;
+    border: 1px solid rgba(0, 0, 0, 0.1) !important;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1) !important;
+    color: #130325 !important;
+}
+.stat-card {
+    background: #ffffff !important;
+    border: 1px solid rgba(0, 0, 0, 0.1) !important;
+    border-radius: 8px !important;
+    padding: 16px !important;
+    color: #130325 !important;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1) !important;
+}
+.period-badge {
+    background: rgba(255, 215, 54, 0.15) !important;
+    border: 1px solid #FFD736 !important;
+    color: #130325 !important;
+    padding: 4px 10px !important;
+    border-radius: 999px !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    display: inline-block !important;
+}
+.orders-table-container {
+    overflow-x: auto !important;
+    margin-bottom: 15px !important;
+    border: 1px solid rgba(0, 0, 0, 0.1) !important;
+    border-radius: 8px !important;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1) !important;
+    background: #ffffff !important;
+}
+.orders-table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    font-size: 13px !important;
+    color: #130325 !important;
+}
+.orders-table thead {
+    background: #130325 !important;
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 10 !important;
+    border-bottom: 2px solid #FFD736 !important;
+}
+.orders-table th {
+    padding: 12px !important;
+    text-align: left !important;
+    font-size: 13px !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
+    color: #ffffff !important;
+}
+.orders-table td {
+    padding: 12px !important;
+    border-bottom: 1px solid #f0f0f0 !important;
+    color: #130325 !important;
+    background: #ffffff !important;
+}
+.orders-table tbody tr {
+    background: #ffffff !important;
+    transition: all 0.15s ease-in-out !important;
+}
+.orders-table tbody tr:hover {
+    background: rgba(255, 215, 54, 0.05) !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05) !important;
+}
+h1 {
+    color: #130325 !important;
+    font-size: 32px !important;
+    font-weight: 700 !important;
+    text-align: left !important;
+    margin: 0 0 28px 0 !important;
+    padding: 0 !important;
+    text-shadow: none !important;
+}
+h2 {
+    color: #130325 !important;
+    font-size: 20px !important;
+    font-weight: 700 !important;
+    text-align: left !important;
+    margin: 0 0 20px 0 !important;
+    text-shadow: none !important;
+}
+h3 {
+    color: #130325 !important;
+    font-size: 16px !important;
+    font-weight: 600 !important;
+}
+p, span, div {
+    color: #130325 !important;
+}
+
+/* KEEP SIDEBAR TEXT WHITE - Override dark color for sidebar */
+.sidebar,
+.sidebar *,
+.sidebar a,
+.sidebar .nav-links > a,
+.sidebar .nav-dropdown-toggle,
+.sidebar .section-title,
+.sidebar .user-name,
+.sidebar .user-role,
+.sidebar .sidebar-logo a,
+.sidebar .user-profile-section,
+.sidebar .user-profile-info {
+    color: #F9F9F9 !important;
+}
+
+.sidebar .sidebar-logo a {
+    color: #FFD736 !important;
+}
+
+.sidebar .nav-links > a.active,
+.sidebar .nav-links > a:hover,
+.sidebar .nav-dropdown-toggle:hover {
+    color: #FFD736 !important;
+}
+
+.sidebar .user-role {
+    color: rgba(249, 249, 249, 0.7) !important;
+}
+
+.sidebar .section-title {
+    color: #9ca3af !important;
+}
+
+/* KEEP SELLER HEADER TEXT WHITE - Override dark color for header */
+.invisible-header,
+.invisible-header *,
+.invisible-header span,
+.invisible-header .header-user-info,
+.invisible-header .header-user-info span,
+.invisible-header .header-user-avatar,
+.invisible-header .header-user,
+.invisible-header .header-hamburger,
+.invisible-header .header-hamburger i,
+.invisible-header .notification-bell,
+.invisible-header .notification-bell i,
+.invisible-header button,
+.invisible-header a,
+.invisible-header div {
+    color: #F9F9F9 !important;
+}
+
+.invisible-header .header-hamburger,
+.invisible-header .header-hamburger i {
+    color: #FFD736 !important;
+}
+
+.invisible-header .header-hamburger:hover,
+.invisible-header .header-hamburger:hover i {
+    color: #F9F9F9 !important;
+}
+
+.invisible-header .header-user-info:hover {
+    color: #FFD736 !important;
+}
+
+.invisible-header .header-user-info:hover span {
+    color: #FFD736 !important;
+}
+
+.invisible-header .notification-bell i {
+    color: #ffffff !important;
+}
+
+.invisible-header .header-user-avatar {
+    color: #130325 !important;
+}
+
+main {
+    padding-top: 0 !important;
+    margin-top: 0 !important;
+}
+.container {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+}
 </style>';
 
 
@@ -338,56 +503,57 @@ $periodLabels = [
     
     <style>
         body {
-            background: linear-gradient(135deg, #130325 0%, #1a0a2e 100%);
+            background: #f0f2f5 !important;
             min-height: 100vh;
-            color: #F9F9F9;
-            font-size: 0.9em;
+            color: #130325 !important;
+            font-size: 14px;
         }
         
         .time-period-selector {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: #ffffff !important;
+            border: 1px solid rgba(0, 0, 0, 0.1) !important;
             border-radius: 8px;
-            padding: 20px;
-            margin-bottom: 45px;
+            padding: 20px !important;
+            margin-bottom: 24px !important;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1) !important;
         }
         
         .period-dropdown {
-            padding: 12px 16px;
-            background: rgba(255,255,255,0.1);
-            border: 1px solid rgba(255,215,54,0.3);
+            padding: 10px 14px !important;
+            background: #ffffff !important;
+            border: 1px solid #ddd !important;
             border-radius: 8px;
-            color: #F9F9F9;
-            font-size: 14px;
+            color: #130325 !important;
+            font-size: 13px !important;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: all 0.2s ease;
             min-width: 160px;
+            font-weight: 500;
         }
         
         .period-dropdown:hover {
-            border-color: #FFD736;
-            box-shadow: 0 0 0 3px rgba(255,215,54,0.2);
+            border-color: #FFD736 !important;
+            box-shadow: 0 0 0 3px rgba(255,215,54,0.1) !important;
         }
         
         .period-dropdown:focus {
             outline: none;
-            border-color: #FFD736;
-            box-shadow: 0 0 0 3px rgba(255,215,54,0.2);
+            border-color: #FFD736 !important;
+            box-shadow: 0 0 0 3px rgba(255,215,54,0.1) !important;
         }
         
         .period-dropdown option {
-            background: #1a0a2e;
-            color: #F9F9F9;
+            background: #ffffff !important;
+            color: #130325 !important;
         }
         
         /* Custom Date Range Picker Styles */
         .custom-date-range {
-            background: rgba(255,255,255,0.1);
-            border: 1px solid rgba(255,215,54,0.3);
+            background: #ffffff !important;
+            border: 1px solid rgba(0, 0, 0, 0.1) !important;
             border-radius: 8px;
             padding: 8px;
-            transition: all 0.3s ease;
+            transition: all 0.2s ease;
         }
         
         .date-inputs {
@@ -398,46 +564,46 @@ $periodLabels = [
         }
         
         .date-input {
-            padding: 8px 12px;
-            background: rgba(255,255,255,0.1);
-            border: 1px solid rgba(255,215,54,0.3);
+            padding: 8px 12px !important;
+            background: #ffffff !important;
+            border: 1px solid #ddd !important;
             border-radius: 6px;
-            color: #F9F9F9;
+            color: #130325 !important;
             font-size: 13px;
-            transition: all 0.3s ease;
+            transition: all 0.2s ease;
             min-width: 100px;
             height: 36px;
         }
         
         /* Custom date input styling */
         .date-input::-webkit-calendar-picker-indicator {
-            filter: invert(1);
+            filter: none !important;
             opacity: 0.7;
         }
         
         .date-input::-webkit-datetime-edit-text {
-            color: #FFD736;
+            color: #130325 !important;
         }
         
         .date-input::-webkit-datetime-edit-month-field,
         .date-input::-webkit-datetime-edit-day-field,
         .date-input::-webkit-datetime-edit-year-field {
-            color: #F9F9F9;
+            color: #130325 !important;
         }
         
         .date-input:focus {
             outline: none;
-            border-color: #FFD736;
-            box-shadow: 0 0 0 3px rgba(255,215,54,0.2);
-            background: rgba(255,255,255,0.15);
+            border-color: #FFD736 !important;
+            box-shadow: 0 0 0 3px rgba(255,215,54,0.1) !important;
+            background: #ffffff !important;
         }
         
         .date-input::placeholder {
-            color: rgba(249,249,249,0.5);
+            color: #9ca3af !important;
         }
         
         .date-separator {
-            color: #FFD736;
+            color: #130325 !important;
             font-weight: 600;
             font-size: 13px;
         }
@@ -487,122 +653,85 @@ $periodLabels = [
         
         .period-info {
             margin-top: 10px;
-            font-size: 14px;
-            color: rgba(255, 255, 255, 0.7);
+            font-size: 13px;
+            color: #6b7280 !important;
         }
         
         .stat-card {
-            background: rgba(255, 255, 255, 0.1);
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            background: #ffffff !important;
+            padding: 16px !important;
+            border-radius: 8px !important;
+            border: 1px solid rgba(0, 0, 0, 0.1) !important;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1) !important;
             text-align: center;
-            border-left: 4px solid #007bff;
-            color: #F9F9F9;
-            backdrop-filter: blur(10px);
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .stat-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 2px;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
-            transform: translateX(-100%);
-            transition: transform 0.8s ease;
-        }
-        
-        .stat-card:hover::before {
-            transform: translateX(100%);
+            border-left: 4px solid #FFD736;
+            color: #130325 !important;
+            transition: all 0.2s ease;
         }
         
         .stat-card:hover {
-            transform: translateY(-8px);
-            box-shadow: 0 12px 24px rgba(0,0,0,0.15);
+            transform: translateY(-2px);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
         
         /* New KPI Card Styles */
         .kpi-card {
-            background: rgba(255, 255, 255, 0.08);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            border-radius: 12px;
-            padding: 20px;
+            background: #ffffff !important;
+            border: 1px solid rgba(0, 0, 0, 0.1) !important;
+            border-radius: 8px;
+            padding: 18px !important;
             text-align: center;
-            color: #F9F9F9;
-            backdrop-filter: blur(10px);
-            transition: all 0.3s ease;
+            color: #130325 !important;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1) !important;
+            transition: all 0.2s ease;
             position: relative;
             overflow: hidden;
-            min-height: 140px;
+            min-height: 110px !important;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
         }
         
-        .kpi-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 3px;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
-            transform: translateX(-100%);
-            transition: transform 0.8s ease;
-        }
-        
-        .kpi-card:hover::before {
-            transform: translateX(100%);
-        }
-        
         .kpi-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 15px 30px rgba(0,0,0,0.2);
-            border-color: rgba(255, 255, 255, 0.25);
+            transform: translateY(-2px);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border-color: rgba(0, 0, 0, 0.15);
         }
         
         .kpi-header {
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 8px;
-            margin-bottom: 12px;
+            gap: 6px;
+            margin-bottom: 8px;
         }
         
         .kpi-header i {
-            font-size: 1.2em;
+            font-size: 16px;
         }
         
         .kpi-header h3 {
-            font-size: 0.9em;
+            font-size: 12px !important;
             font-weight: 600;
-            color: rgba(255, 255, 255, 0.8);
+            color: #6b7280 !important;
             margin: 0;
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
         
         .kpi-value {
-            font-size: 1.8em;
-            font-weight: bold;
-            margin: 8px 0;
-            background: linear-gradient(135deg, #fff, #e0e7ff);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            font-size: 22px !important;
+            font-weight: 700 !important;
+            margin: 8px 0 !important;
+            color: #130325 !important;
             line-height: 1.2;
         }
         
         .kpi-subtitle {
-            font-size: 0.75em;
-            color: rgba(255, 255, 255, 0.6);
-            margin-bottom: 8px;
-            font-weight: 500;
+            font-size: 12px !important;
+            color: #6b7280 !important;
+            margin-bottom: 4px !important;
+            font-weight: 400;
         }
         
         /* Widened KPI Card */
@@ -617,26 +746,10 @@ $periodLabels = [
         }
         
         .stat-value {
-            font-size: 2.2em;
-            font-weight: bold;
-            margin: 15px 0;
-            background: linear-gradient(135deg, #fff, #e0e7ff);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-        
-        .period-badge {
-            display: inline-block;
-            background: rgba(0, 123, 255, 0.2);
-            color: #60a5fa;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-top: 8px;
+            font-size: 20px !important;
+            font-weight: 700 !important;
+            margin: 10px 0 !important;
+            color: #130325 !important;
         }
 
         /* Export Section Styling */
@@ -697,36 +810,40 @@ $periodLabels = [
 
         /* Download Icon Button */
         .download-icon-btn {
-            background: linear-gradient(135deg, #FFD736, #FFA500);
-            border: none;
-            border-radius: 6px;
-            padding: 6px 12px;
-            height: 32px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-weight: 600;
-            font-size: 0.8rem;
+            background: #FFD736 !important;
+            border: none !important;
+            border-radius: 8px !important;
+            padding: 10px 18px !important;
+            height: auto !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            gap: 8px !important;
+            cursor: pointer !important;
+            transition: all 0.2s ease !important;
+            font-weight: 600 !important;
+            font-size: 13px !important;
+            color: #130325 !important;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05) !important;
         }
 
         .download-icon-btn:hover {
-            background: linear-gradient(135deg, #FFA500, #FF8C00);
-            transform: translateY(-2px);
+            background: #f5d026 !important;
+            transform: translateY(-1px) !important;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+        }
+
+        .download-icon-btn:active {
+            transform: translateY(0) !important;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05) !important;
         }
 
         .download-icon-btn i {
-            color: #130325;
-            font-size: 1rem;
+            color: #130325 !important;
+            font-size: 14px !important;
         }
 
-        .download-icon-btn {
-            color: #130325;
-        }
-
-        /* Export Modal Styling */
+        /* Export Modal Styling - Matching seller-dashboard.php */
         .modal {
             position: fixed !important;
             top: 0 !important;
@@ -739,11 +856,11 @@ $periodLabels = [
             align-items: center !important;
             justify-content: center !important;
         }
-
+        
         .modal.show {
             display: flex !important;
         }
-
+        
         .modal-dialog {
             max-width: 400px;
             width: 90%;
@@ -751,199 +868,154 @@ $periodLabels = [
             position: relative;
             z-index: 10000;
         }
-
+        
         .modal-content {
-            background:rgb(230, 230, 230);
-            border: none;
-            border-radius: 12px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+            background: rgb(230, 230, 230) !important; /* Off-white */
+            border: none !important;
+            border-radius: 12px !important;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15) !important;
             position: relative;
             z-index: 10001;
         }
-
-        .modal-content * {
-            color: #130325 !important;
-        }
-
-        /* Fix notification dropdown text colors */
-        .notification-dropdown * {
-            color: #1f2937 !important;
-        }
-
-        .notification-header h6 {
-            color: #1f2937 !important;
-        }
-
-        .notification-title {
-            color: #1f2937 !important;
-        }
-
-        .notification-message {
-            color: #6b7280 !important;
-        }
-
-        .notification-time {
-            color: #9ca3af !important;
-        }
-
-        .notification-item span {
-            color: #1f2937 !important;
-        }
-
-        .notification-footer a {
-            color: #1f2937 !important;
-        }
-
+        
         .modal-header {
-            background: rgb(230, 230, 230);
-            color: #333;
-            border-bottom: 1px solid #e5e5e5;
-            padding: 20px 20px 15px 20px;
-            border-radius: 12px 12px 0 0;
-            position: relative;
+            background: rgb(230, 230, 230) !important; /* Off-white */
+            color: #333 !important;
+            border-bottom: 1px solid #e5e5e5 !important;
+            padding: 20px 20px 15px 20px !important;
+            border-radius: 12px 12px 0 0 !important;
+            position: relative !important;
         }
-
+        
         .modal-title {
-            font-weight: 600;
-            font-size: 1.1rem;
-            color: #130325 !important;
-            margin: 0;
+            font-weight: 600 !important;
+            font-size: 1.1rem !important;
+            color: #333 !important;
+            margin: 0 !important;
         }
-
+        
         .modal-body {
-            padding: 20px;
-            background: rgb(230, 230, 230);
+            padding: 20px !important;
+            background: rgb(230, 230, 230) !important; /* Off-white */
         }
-
-        .modal-body .form-label {
-            color: #130325 !important;
-            font-weight: 600;
-            margin-bottom: 8px;
-        }
-
-        .modal-body .form-select {
-            color: #130325 !important;
-        }
-
-        .modal-body .error-message {
-            color: #130325 !important;
-        }
-
+        
         .modal-footer {
-            border-top: 1px solid #e5e5e5;
-            padding: 15px 20px;
-            background: rgb(230, 230, 230);
-            border-radius: 0 0 12px 12px;
+            border-top: 1px solid #e5e5e5 !important;
+            padding: 15px 20px !important;
+            background: rgb(230, 230, 230) !important; /* Off-white */
+            border-radius: 0 0 12px 12px !important;
         }
-
-        .modal-footer .btn-cancel,
-        .modal-footer .btn-export {
-            color: #130325 !important;
-        }
-
+        
         .form-label {
-            font-weight: 500;
-            color: #130325 !important;
-            margin-bottom: 8px;
-            font-size: 0.9rem;
+            font-weight: 500 !important;
+            color: #333 !important;
+            margin-bottom: 8px !important;
+            font-size: 0.9rem !important;
         }
-
+        
         .form-select {
-            background: #ffffff;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            padding: 10px 12px;
-            font-size: 0.9rem;
-            color: #130325 !important;
-            transition: all 0.3s ease;
-            width: 100%;
+            background: rgb(230, 230, 230) !important; /* Off-white */
+            border: 1px solid #ddd !important;
+            border-radius: 8px !important;
+            padding: 10px 12px !important;
+            font-size: 0.9rem !important;
+            color: #333 !important;
+            transition: all 0.3s ease !important;
+            width: 100% !important;
         }
-
+        
         .form-select:focus {
-            background: #ffffff;
-            border-color: #007bff;
-            box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
-            outline: none;
-            color: #130325 !important;
+            background: rgb(230, 230, 230) !important; /* Off-white */
+            border-color: #007bff !important;
+            box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25) !important;
+            outline: none !important;
+            color: #333 !important;
         }
-
+        
         .form-select option {
-            background: #ffffff;
-            color: #130325 !important;
-            padding: 8px;
+            background: rgb(230, 230, 230) !important; /* Off-white */
+            color: #333 !important;
+            padding: 8px !important;
         }
-
+        
         .btn-close {
-            background: #dc3545;
-            border: none;
-            border-radius: 6px;
-            width: 28px;
-            height: 28px;
-            opacity: 1;
-            color: #fff;
-            font-size: 0.9rem;
-            font-weight: bold;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.3s ease;
-            position: absolute;
-            top: 15px;
-            right: 15px;
+            background: transparent !important;
+            border: none !important;
+            border-radius: 0 !important;
+            width: auto !important;
+            height: auto !important;
+            opacity: 1 !important;
+            color: #dc3545 !important;
+            font-size: 24px !important;
+            font-weight: bold !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            transition: all 0.2s ease !important;
+            position: absolute !important;
+            top: 15px !important;
+            right: 15px !important;
+            padding: 0 !important;
+            cursor: pointer !important;
         }
-
+        
         .btn-close:hover {
-            background: #c82333;
-            color: #fff;
+            background: transparent !important;
+            color: #c82333 !important;
+            transform: scale(1.15) !important;
+        }
+        
+        .btn-close:active {
+            transform: scale(1.05) !important;
         }
 
         .btn-cancel {
-            background: #dc3545;
-            color: #ffffff;
-            border: none;
-            border-radius: 8px;
-            padding: 8px 16px;
-            font-size: 0.9rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.3s ease;
+            background: #dc3545 !important;
+            color: #ffffff !important;
+            border: none !important;
+            border-radius: 8px !important;
+            padding: 8px 16px !important;
+            font-size: 0.9rem !important;
+            font-weight: 500 !important;
+            cursor: pointer !important;
+            transition: all 0.3s ease !important;
         }
-
+        
         .btn-cancel:hover {
-            background: #c82333;
+            background: #c82333 !important;
         }
-
+        
         .btn-export {
-            background: #FFD736;
-            color: #130325;
-            border: none;
-            border-radius: 8px;
-            padding: 8px 16px;
-            font-size: 0.9rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
+            background: #FFD736 !important;
+            color: #130325 !important;
+            border: none !important;
+            border-radius: 8px !important;
+            padding: 8px 16px !important;
+            font-size: 0.9rem !important;
+            font-weight: 600 !important;
+            cursor: pointer !important;
+            transition: all 0.3s ease !important;
         }
-
+        
         .btn-export:hover {
-            background: #FFA500;
+            background: #FFA500 !important;
         }
-
+        
         .error-message {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            color: #dc3545;
-            font-size: 0.85rem;
-            margin-top: 8px;
-            padding: 8px 12px;
-            background: rgba(220, 53, 69, 0.1);
-            border: 1px solid rgba(220, 53, 69, 0.3);
-            border-radius: 6px;
+            display: flex !important;
+            align-items: center !important;
+            gap: 8px !important;
+            color: #dc3545 !important;
+            font-size: 0.85rem !important;
+            margin-top: 8px !important;
+            padding: 8px 12px !important;
+            background: rgba(220, 53, 69, 0.1) !important;
+            border: 1px solid rgba(220, 53, 69, 0.3) !important;
+            border-radius: 6px !important;
         }
-
+        
         .error-message i {
-            font-size: 0.9rem;
+            font-size: 0.9rem !important;
         }
         
         .loading-overlay {
@@ -989,7 +1061,7 @@ $periodLabels = [
     </div>
 
     <div class="container mx-auto px-4 py-8">
-        <h1 class="text-4xl font-bold text-center mb-8 bg-gradient-to-r from-blue-400 to-purple-600 bg-clip-text text-transparent">
+        <h1 style="color: #130325; font-size: 32px; font-weight: 700; margin: 0 0 24px 0; text-align: left; text-shadow: none !important;">
             Sales Analytics
         </h1>
 
@@ -1070,7 +1142,7 @@ $periodLabels = [
         </div>
 
         <!-- Growth Analytics -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             <!-- Revenue Growth Rate - DOUBLE WIDTH -->
             <div class="kpi-card kpi-card-wide" data-aos="fade-up" data-aos-delay="100">
                 <div class="kpi-header">
@@ -1118,7 +1190,7 @@ $periodLabels = [
         </div>
 
         <!-- Performance Metrics -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             <!-- Customer Retention Rate -->
             <div class="kpi-card" data-aos="fade-up" data-aos-delay="400">
                 <div class="kpi-header">
@@ -1165,9 +1237,9 @@ $periodLabels = [
         </div>
 
         <!-- Order Status Overview -->
-        <div class="bg-white bg-opacity-10 backdrop-blur-lg rounded-lg shadow p-6 mb-8" data-aos="fade-up">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-2xl font-bold text-gray-100">
+        <div class="bg-white rounded-lg shadow-sm p-4 mb-6" style="border: 1px solid rgba(0,0,0,0.1);" data-aos="fade-up">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg font-bold" style="color: #130325;">
                     Order Status Overview
                     <span class="period-badge ml-3"><?php echo $periodLabels[$selectedPeriod]; ?></span>
                 </h2>
@@ -1176,83 +1248,89 @@ $periodLabels = [
                 </button>
             </div>
             <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                <div class="status-card bg-blue-50 bg-opacity-20 rounded-lg p-4 text-center">
-                    <span class="text-3xl font-bold text-blue-400 block"><?php echo $statusCounts['pending']; ?></span>
-                    <span class="text-gray-300 text-sm">Pending</span>
+                <div class="status-card bg-blue-50 rounded-lg p-3 text-center" style="border: 1px solid rgba(0,0,0,0.1);">
+                    <span class="text-xl font-bold block" style="color: #1e40af;"><?php echo $statusCounts['pending']; ?></span>
+                    <span class="text-xs" style="color: #6b7280;">Pending</span>
                 </div>
-                <div class="status-card bg-yellow-50 bg-opacity-20 rounded-lg p-4 text-center">
-                    <span class="text-3xl font-bold text-yellow-400 block"><?php echo $statusCounts['processing']; ?></span>
-                    <span class="text-gray-300 text-sm">Processing</span>
+                <div class="status-card bg-yellow-50 rounded-lg p-3 text-center" style="border: 1px solid rgba(0,0,0,0.1);">
+                    <span class="text-xl font-bold block" style="color: #d97706;"><?php echo $statusCounts['processing']; ?></span>
+                    <span class="text-xs" style="color: #6b7280;">Processing</span>
                 </div>
-                <div class="status-card bg-purple-50 bg-opacity-20 rounded-lg p-4 text-center">
-                    <span class="text-3xl font-bold text-purple-400 block"><?php echo $statusCounts['shipped']; ?></span>
-                    <span class="text-gray-300 text-sm">Shipped</span>
+                <div class="status-card bg-purple-50 rounded-lg p-3 text-center" style="border: 1px solid rgba(0,0,0,0.1);">
+                    <span class="text-xl font-bold block" style="color: #7c3aed;"><?php echo $statusCounts['shipped']; ?></span>
+                    <span class="text-xs" style="color: #6b7280;">Shipped</span>
                 </div>
-                <div class="status-card bg-green-50 bg-opacity-20 rounded-lg p-4 text-center">
-                    <span class="text-3xl font-bold text-green-400 block"><?php echo $statusCounts['delivered']; ?></span>
-                    <span class="text-gray-300 text-sm">Delivered</span>
+                <div class="status-card bg-green-50 rounded-lg p-3 text-center" style="border: 1px solid rgba(0,0,0,0.1);">
+                    <span class="text-xl font-bold block" style="color: #059669;"><?php echo $statusCounts['delivered']; ?></span>
+                    <span class="text-xs" style="color: #6b7280;">Delivered</span>
                 </div>
-                <div class="status-card bg-red-50 bg-opacity-20 rounded-lg p-4 text-center">
-                    <span class="text-3xl font-bold text-red-400 block"><?php echo $statusCounts['cancelled']; ?></span>
-                    <span class="text-gray-300 text-sm">Cancelled</span>
+                <div class="status-card bg-red-50 rounded-lg p-3 text-center" style="border: 1px solid rgba(0,0,0,0.1);">
+                    <span class="text-xl font-bold block" style="color: #dc2626;"><?php echo $statusCounts['cancelled']; ?></span>
+                    <span class="text-xs" style="color: #6b7280;">Cancelled</span>
                 </div>
-                <div class="status-card bg-orange-50 bg-opacity-20 rounded-lg p-4 text-center">
-                    <span class="text-3xl font-bold text-orange-400 block"><?php echo $statusCounts['refunded']; ?></span>
-                    <span class="text-gray-300 text-sm">Refunded</span>
+                <div class="status-card bg-orange-50 rounded-lg p-3 text-center" style="border: 1px solid rgba(0,0,0,0.1);">
+                    <span class="text-xl font-bold block" style="color: #ea580c;"><?php echo $statusCounts['refunded']; ?></span>
+                    <span class="text-xs" style="color: #6b7280;">Refunded</span>
                 </div>
             </div>
         </div>
 
         <!-- Charts Section -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-            <div class="bg-white bg-opacity-10 backdrop-blur-lg rounded-lg shadow p-6" data-aos="fade-up" data-aos-delay="100">
-                <h2 class="text-2xl font-bold text-gray-100 mb-4">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            <div class="bg-white rounded-lg shadow-sm p-4" style="border: 1px solid rgba(0,0,0,0.1);" data-aos="fade-up" data-aos-delay="100">
+                <h2 class="text-lg font-bold mb-3" style="color: #130325;">
                     Revenue Trend
                     <span class="period-badge ml-3"><?php echo $periodLabels[$selectedPeriod]; ?></span>
                 </h2>
-                <canvas id="revenueChart"></canvas>
+                <div style="height: 280px; position: relative;">
+                    <canvas id="revenueChart"></canvas>
+                </div>
             </div>
 
-            <div class="bg-white bg-opacity-10 backdrop-blur-lg rounded-lg shadow p-6" data-aos="fade-up" data-aos-delay="200">
-                <h2 class="text-2xl font-bold text-gray-100 mb-4">
+            <div class="bg-white rounded-lg shadow-sm p-4" style="border: 1px solid rgba(0,0,0,0.1);" data-aos="fade-up" data-aos-delay="200">
+                <h2 class="text-lg font-bold mb-3" style="color: #130325;">
                     Top Products
                     <span class="period-badge ml-3"><?php echo $periodLabels[$selectedPeriod]; ?></span>
                 </h2>
-                <canvas id="productsChart"></canvas>
+                <div style="height: 280px; position: relative;">
+                    <canvas id="productsChart"></canvas>
+                </div>
             </div>
         </div>
 
         <!-- Detailed Analytics Grid -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-            <div class="bg-white bg-opacity-10 backdrop-blur-lg rounded-lg shadow p-6" data-aos="fade-up" data-aos-delay="300">
-                <h2 class="text-xl font-bold text-gray-100 mb-4">Payment Methods</h2>
-                <canvas id="paymentMethodsChart"></canvas>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            <div class="bg-white rounded-lg shadow-sm p-4" style="border: 1px solid rgba(0,0,0,0.1);" data-aos="fade-up" data-aos-delay="300">
+                <h2 class="text-base font-bold mb-3" style="color: #130325;">Payment Methods</h2>
+                <div style="height: 240px; position: relative;">
+                    <canvas id="paymentMethodsChart"></canvas>
+                </div>
             </div>
 
-            <div class="bg-white bg-opacity-10 backdrop-blur-lg rounded-lg shadow p-6" data-aos="fade-up" data-aos-delay="400">
-                <h2 class="text-xl font-bold text-gray-100 mb-4">Performance Metrics</h2>
-                <div class="space-y-4">
-                    <div class="flex justify-between items-center p-3 bg-white bg-opacity-5 rounded-lg">
-                        <span class="text-gray-300">Conversion Rate</span>
-                        <span class="text-xl font-bold text-green-400">
+            <div class="bg-white rounded-lg shadow-sm p-4" style="border: 1px solid rgba(0,0,0,0.1);" data-aos="fade-up" data-aos-delay="400">
+                <h2 class="text-base font-bold mb-3" style="color: #130325;">Performance Metrics</h2>
+                <div class="space-y-3">
+                    <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg" style="border: 1px solid rgba(0,0,0,0.05);">
+                        <span style="color: #6b7280; font-size: 13px;">Conversion Rate</span>
+                        <span class="text-base font-bold" style="color: #059669;">
                             <?php echo $totalProducts > 0 ? number_format(($totalSales / $totalProducts) * 100, 1) : 0; ?>%
                         </span>
                     </div>
-                    <div class="flex justify-between items-center p-3 bg-white bg-opacity-5 rounded-lg">
-                        <span class="text-gray-300">Revenue per Product</span>
-                        <span class="text-xl font-bold text-blue-400">
+                    <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg" style="border: 1px solid rgba(0,0,0,0.05);">
+                        <span style="color: #6b7280; font-size: 13px;">Revenue per Product</span>
+                        <span class="text-base font-bold" style="color: #1e40af;">
                             ₱<?php echo $totalProducts > 0 ? number_format($expectedRevenue / $totalProducts, 2) : 0; ?>
                         </span>
                     </div>
-                    <div class="flex justify-between items-center p-3 bg-white bg-opacity-5 rounded-lg">
-                        <span class="text-gray-300">Items per Order</span>
-                        <span class="text-xl font-bold text-purple-400">
+                    <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg" style="border: 1px solid rgba(0,0,0,0.05);">
+                        <span style="color: #6b7280; font-size: 13px;">Items per Order</span>
+                        <span class="text-base font-bold" style="color: #7c3aed;">
                             <?php echo $uniqueOrders > 0 ? number_format($totalSales / $uniqueOrders, 1) : 0; ?>
                         </span>
                     </div>
-                    <div class="flex justify-between items-center p-3 bg-white bg-opacity-5 rounded-lg">
-                        <span class="text-gray-300">Fulfillment Rate</span>
-                        <span class="text-xl font-bold text-yellow-400">
+                    <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg" style="border: 1px solid rgba(0,0,0,0.05);">
+                        <span style="color: #6b7280; font-size: 13px;">Fulfillment Rate</span>
+                        <span class="text-base font-bold" style="color: #d97706;">
                             <?php 
                             $totalOrders = array_sum($statusCounts);
                             echo $totalOrders > 0 ? number_format(($statusCounts['delivered'] / $totalOrders) * 100, 1) : 0; 
@@ -1263,30 +1341,30 @@ $periodLabels = [
             </div>
 
             <!-- Returns Analysis - SEPARATE CARD -->
-            <div class="bg-white bg-opacity-10 backdrop-blur-lg rounded-lg shadow p-6" data-aos="fade-up" data-aos-delay="600">
-                <h2 class="text-xl font-bold text-gray-100 mb-4">Returns Analysis</h2>
-                <div class="space-y-4">
-                    <div class="flex justify-between items-center p-3 bg-white bg-opacity-5 rounded-lg">
-                        <span class="text-gray-300">Return Rate</span>
-                        <span class="text-xl font-bold text-orange-400">
+            <div class="bg-white rounded-lg shadow-sm p-4" style="border: 1px solid rgba(0,0,0,0.1);" data-aos="fade-up" data-aos-delay="600">
+                <h2 class="text-base font-bold mb-3" style="color: #130325;">Returns Analysis</h2>
+                <div class="space-y-3">
+                    <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg" style="border: 1px solid rgba(0,0,0,0.05);">
+                        <span style="color: #6b7280; font-size: 13px;">Return Rate</span>
+                        <span class="text-base font-bold" style="color: #ea580c;">
                             <?php echo number_format($returnRate, 1); ?>%
                         </span>
                     </div>
-                    <div class="flex justify-between items-center p-3 bg-white bg-opacity-5 rounded-lg">
-                        <span class="text-gray-300">Pending Returns</span>
-                        <span class="text-xl font-bold text-yellow-400">
+                    <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg" style="border: 1px solid rgba(0,0,0,0.05);">
+                        <span style="color: #6b7280; font-size: 13px;">Pending Returns</span>
+                        <span class="text-base font-bold" style="color: #d97706;">
                             <?php echo $returnStats['pending_returns'] ?? 0; ?>
                         </span>
                     </div>
-                    <div class="flex justify-between items-center p-3 bg-white bg-opacity-5 rounded-lg">
-                        <span class="text-gray-300">Approved Refunds</span>
-                        <span class="text-xl font-bold text-green-400">
+                    <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg" style="border: 1px solid rgba(0,0,0,0.05);">
+                        <span style="color: #6b7280; font-size: 13px;">Approved Refunds</span>
+                        <span class="text-base font-bold" style="color: #059669;">
                             ₱<?php echo number_format($periodRefundAmount, 2); ?>
                         </span>
                     </div>
-                    <div class="flex justify-between items-center p-3 bg-white bg-opacity-5 rounded-lg">
-                        <span class="text-gray-300">Approval Rate</span>
-                        <span class="text-xl font-bold text-blue-400">
+                    <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg" style="border: 1px solid rgba(0,0,0,0.05);">
+                        <span style="color: #6b7280; font-size: 13px;">Approval Rate</span>
+                        <span class="text-base font-bold" style="color: #1e40af;">
                             <?php 
                             $totalProcessed = ($returnStats['approved_returns'] ?? 0) + ($returnStats['rejected_returns'] ?? 0);
                             $approvalRate = $totalProcessed > 0 ? (($returnStats['approved_returns'] ?? 0) / $totalProcessed) * 100 : 0;
@@ -1302,73 +1380,75 @@ $periodLabels = [
                 </div>
             </div>
             
-            <div class="bg-white bg-opacity-10 backdrop-blur-lg rounded-lg shadow p-6" data-aos="fade-up" data-aos-delay="500">
-                <h2 class="text-xl font-bold text-gray-100 mb-4">Order Status Flow</h2>
-                <canvas id="statusFlowChart"></canvas>
+            <div class="bg-white rounded-lg shadow-sm p-4" style="border: 1px solid rgba(0,0,0,0.1);" data-aos="fade-up" data-aos-delay="500">
+                <h2 class="text-base font-bold mb-3" style="color: #130325;">Order Status Flow</h2>
+                <div style="height: 240px; position: relative;">
+                    <canvas id="statusFlowChart"></canvas>
+                </div>
             </div>
         </div>
 
         <!-- Sales Summary Table -->
-        <div class="bg-white bg-opacity-10 backdrop-blur-lg rounded-lg shadow p-6 mb-8" data-aos="fade-up" data-aos-delay="600">
-            <h2 class="text-2xl font-bold text-gray-100 mb-6">
+        <div class="bg-white rounded-lg shadow p-6 mb-8" style="border: 1px solid rgba(0,0,0,0.1);" data-aos="fade-up" data-aos-delay="600">
+            <h2 class="text-2xl font-bold mb-6" style="color: #130325 !important;">
                 Sales Summary
                 <span class="period-badge ml-3"><?php echo $periodLabels[$selectedPeriod]; ?></span>
             </h2>
             <div class="overflow-x-auto">
                 <table class="w-full text-left">
                     <thead>
-                        <tr class="border-b border-gray-600">
-                            <th class="pb-3 text-gray-300 font-semibold">Metric</th>
-                            <th class="pb-3 text-gray-300 font-semibold text-right">Value</th>
-                            <th class="pb-3 text-gray-300 font-semibold text-right">Percentage</th>
+                        <tr class="border-b" style="border-color: #e5e7eb;">
+                            <th class="pb-3 font-semibold" style="color: #130325 !important;">Metric</th>
+                            <th class="pb-3 font-semibold text-right" style="color: #130325 !important;">Value</th>
+                            <th class="pb-3 font-semibold text-right" style="color: #130325 !important;">Percentage</th>
                         </tr>
                     </thead>
-                    <tbody class="text-gray-200">
-                        <tr class="border-b border-gray-700 hover:bg-white hover:bg-opacity-5 transition-colors">
-                            <td class="py-3">Expected Revenue</td>
-                            <td class="py-3 text-right font-bold text-blue-400">₱<?php echo number_format($expectedRevenue, 2); ?></td>
-                            <td class="py-3 text-right">100%</td>
+                    <tbody style="color: #130325 !important;">
+                        <tr class="border-b hover:bg-gray-50 transition-colors" style="border-color: #e5e7eb;">
+                            <td class="py-3" style="color: #130325 !important;">Expected Revenue</td>
+                            <td class="py-3 text-right font-bold" style="color: #1e40af !important;">₱<?php echo number_format($expectedRevenue, 2); ?></td>
+                            <td class="py-3 text-right" style="color: #130325 !important;">100%</td>
                         </tr>
-                        <tr class="border-b border-gray-700 hover:bg-white hover:bg-opacity-5 transition-colors">
-                            <td class="py-3 pl-4">↳ Confirmed</td>
-                            <td class="py-3 text-right font-bold text-green-400">₱<?php echo number_format($confirmedRevenue, 2); ?></td>
-                            <td class="py-3 text-right">
+                        <tr class="border-b hover:bg-gray-50 transition-colors" style="border-color: #e5e7eb;">
+                            <td class="py-3 pl-4" style="color: #130325 !important;">↳ Confirmed</td>
+                            <td class="py-3 text-right font-bold" style="color: #059669 !important;">₱<?php echo number_format($confirmedRevenue, 2); ?></td>
+                            <td class="py-3 text-right" style="color: #130325 !important;">
                                 <?php echo $expectedRevenue > 0 ? number_format(($confirmedRevenue / $expectedRevenue) * 100, 1) : 0; ?>%
                             </td>
                         </tr>
-                        <tr class="border-b border-gray-700 hover:bg-white hover:bg-opacity-5 transition-colors">
-                            <td class="py-3 pl-4">↳ Pending</td>
-                            <td class="py-3 text-right font-bold text-yellow-400">₱<?php echo number_format($pendingRevenue, 2); ?></td>
-                            <td class="py-3 text-right">
+                        <tr class="border-b hover:bg-gray-50 transition-colors" style="border-color: #e5e7eb;">
+                            <td class="py-3 pl-4" style="color: #130325 !important;">↳ Pending</td>
+                            <td class="py-3 text-right font-bold" style="color: #d97706 !important;">₱<?php echo number_format($pendingRevenue, 2); ?></td>
+                            <td class="py-3 text-right" style="color: #130325 !important;">
                                 <?php echo $expectedRevenue > 0 ? number_format(($pendingRevenue / $expectedRevenue) * 100, 1) : 0; ?>%
                             </td>
                         </tr>
-                        <tr class="border-b border-gray-700 hover:bg-white hover:bg-opacity-5 transition-colors">
-                            <td class="py-3">Total Orders</td>
-                            <td class="py-3 text-right font-bold"><?php echo number_format($uniqueOrders); ?></td>
-                            <td class="py-3 text-right">-</td>
+                        <tr class="border-b hover:bg-gray-50 transition-colors" style="border-color: #e5e7eb;">
+                            <td class="py-3" style="color: #130325 !important;">Total Orders</td>
+                            <td class="py-3 text-right font-bold" style="color: #130325 !important;"><?php echo number_format($uniqueOrders); ?></td>
+                            <td class="py-3 text-right" style="color: #130325 !important;">-</td>
                         </tr>
-                        <tr class="border-b border-gray-700 hover:bg-white hover:bg-opacity-5 transition-colors">
-                            <td class="py-3">Average Order Value</td>
-                            <td class="py-3 text-right font-bold text-purple-400">₱<?php echo number_format($avgOrderValue, 2); ?></td>
-                            <td class="py-3 text-right">-</td>
+                        <tr class="border-b hover:bg-gray-50 transition-colors" style="border-color: #e5e7eb;">
+                            <td class="py-3" style="color: #130325 !important;">Average Order Value</td>
+                            <td class="py-3 text-right font-bold" style="color: #7c3aed !important;">₱<?php echo number_format($avgOrderValue, 2); ?></td>
+                            <td class="py-3 text-right" style="color: #130325 !important;">-</td>
                         </tr>
-                        <tr class="hover:bg-white hover:bg-opacity-5 transition-colors">
-                            <td class="py-3">Total Items Sold</td>
-                            <td class="py-3 text-right font-bold text-red-400"><?php echo number_format($totalSales); ?></td>
-                            <td class="py-3 text-right">-</td>
+                        <tr class="hover:bg-gray-50 transition-colors">
+                            <td class="py-3" style="color: #130325 !important;">Total Items Sold</td>
+                            <td class="py-3 text-right font-bold" style="color: #dc2626 !important;"><?php echo number_format($totalSales); ?></td>
+                            <td class="py-3 text-right" style="color: #130325 !important;">-</td>
                         </tr>
-                        <tr class="border-b border-gray-700 hover:bg-white hover:bg-opacity-5 transition-colors">
-                            <td class="py-3">Refunded Amount</td>
-                            <td class="py-3 text-right font-bold text-orange-400">₱<?php echo number_format($periodRefundAmount, 2); ?></td>
-                            <td class="py-3 text-right">
+                        <tr class="border-b hover:bg-gray-50 transition-colors" style="border-color: #e5e7eb;">
+                            <td class="py-3" style="color: #130325 !important;">Refunded Amount</td>
+                            <td class="py-3 text-right font-bold" style="color: #ea580c !important;">₱<?php echo number_format($periodRefundAmount, 2); ?></td>
+                            <td class="py-3 text-right" style="color: #130325 !important;">
                                 <?php echo $expectedRevenue > 0 ? number_format(($periodRefundAmount / $expectedRevenue) * 100, 1) : 0; ?>%
                             </td>
                         </tr>
-                        <tr class="border-b border-gray-700 hover:bg-white hover:bg-opacity-5 transition-colors">
-                            <td class="py-3">Net Revenue (After Returns)</td>
-                            <td class="py-3 text-right font-bold text-purple-400">₱<?php echo number_format($confirmedRevenue - $periodRefundAmount, 2); ?></td>
-                            <td class="py-3 text-right">
+                        <tr class="border-b hover:bg-gray-50 transition-colors" style="border-color: #e5e7eb;">
+                            <td class="py-3" style="color: #130325 !important;">Net Revenue (After Returns)</td>
+                            <td class="py-3 text-right font-bold" style="color: #7c3aed !important;">₱<?php echo number_format($confirmedRevenue - $periodRefundAmount, 2); ?></td>
+                            <td class="py-3 text-right" style="color: #130325 !important;">
                                 <?php echo $expectedRevenue > 0 ? number_format((($confirmedRevenue - $periodRefundAmount) / $expectedRevenue) * 100, 1) : 0; ?>%
                             </td>
                         </tr>
@@ -1384,7 +1464,9 @@ $periodLabels = [
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">Export Data</h5>
-                    <button type="button" class="btn-close" onclick="closeExportModal()" aria-label="Close">×</button>
+                    <button type="button" class="btn-close" onclick="closeExportModal()" aria-label="Close">
+                        <i class="fas fa-times" style="font-size: 20px;"></i>
+                    </button>
                 </div>
                 <div class="modal-body">
                     <div class="mb-3">
@@ -1417,8 +1499,8 @@ $periodLabels = [
         });
 
         // Chart.js default configuration
-        Chart.defaults.color = '#F9F9F9';
-        Chart.defaults.borderColor = 'rgba(255, 255, 255, 0.1)';
+        Chart.defaults.color = '#130325';
+        Chart.defaults.borderColor = 'rgba(0, 0, 0, 0.1)';
 
           <?php
      $chartLabels = [];
@@ -1581,11 +1663,16 @@ $periodLabels = [
             },
             options: {
                 responsive: true,
-                maintainAspectRatio: true,
+                maintainAspectRatio: false,
                 plugins: {
                     legend: {
                         display: true,
-                        position: 'top'
+                        position: 'top',
+                        labels: {
+                            font: {
+                                size: 11
+                            }
+                        }
                     },
                     tooltip: {
                         mode: 'index',
@@ -1606,9 +1693,12 @@ $periodLabels = [
                     y: {
                         beginAtZero: true,
                         grid: {
-                            color: 'rgba(255, 255, 255, 0.1)'
+                            color: 'rgba(0, 0, 0, 0.05)'
                         },
                         ticks: {
+                            font: {
+                                size: 10
+                            },
                             callback: function(value) {
                                 return '₱' + value.toFixed(0);
                             }
@@ -1616,7 +1706,12 @@ $periodLabels = [
                     },
                     x: {
                         grid: {
-                            color: 'rgba(255, 255, 255, 0.1)'
+                            color: 'rgba(0, 0, 0, 0.05)'
+                        },
+                        ticks: {
+                            font: {
+                                size: 10
+                            }
                         }
                     }
                 }
@@ -1651,7 +1746,7 @@ $periodLabels = [
             },
             options: {
                 responsive: true,
-                maintainAspectRatio: true,
+                maintainAspectRatio: false,
                 plugins: {
                     legend: {
                         display: false
@@ -1668,17 +1763,23 @@ $periodLabels = [
                     y: {
                         beginAtZero: true,
                         grid: {
-                            color: 'rgba(255, 255, 255, 0.1)'
+                            color: 'rgba(0, 0, 0, 0.05)'
                         },
                         ticks: {
+                            font: {
+                                size: 10
+                            },
                             stepSize: 1
                         }
                     },
                     x: {
                         grid: {
-                            color: 'rgba(255, 255, 255, 0.1)'
+                            color: 'rgba(0, 0, 0, 0.05)'
                         },
                         ticks: {
+                            font: {
+                                size: 10
+                            },
                             maxRotation: 45,
                             minRotation: 45
                         }
@@ -1761,10 +1862,15 @@ $periodLabels = [
             },
             options: {
                 responsive: true,
-                maintainAspectRatio: true,
+                maintainAspectRatio: false,
                 plugins: {
                     legend: {
-                        position: 'bottom'
+                        position: 'bottom',
+                        labels: {
+                            font: {
+                                size: 11
+                            }
+                        }
                     },
                     tooltip: {
                         callbacks: {
@@ -1817,7 +1923,7 @@ $periodLabels = [
             },
             options: {
                 responsive: true,
-                maintainAspectRatio: true,
+                maintainAspectRatio: false,
                 plugins: {
                     legend: {
                         position: 'bottom',
@@ -1893,19 +1999,47 @@ $periodLabels = [
             return `${day} W${weekNumber}`;
         }
         
-        // Update date inputs on page load
+        // Update date inputs on page load and ensure sidebar main content adjustment
         document.addEventListener('DOMContentLoaded', function() {
+            // Ensure main content adjusts to sidebar state
+            const sidebar = document.getElementById('sellerSidebar');
+            const main = document.querySelector('main');
+            if (sidebar && main) {
+                const isCollapsed = localStorage.getItem('sellerSidebarCollapsed') === 'true';
+                if (isCollapsed) {
+                    main.style.marginLeft = '70px';
+                } else {
+                    main.style.marginLeft = '240px';
+                }
+                
+                // Override toggleSellerSidebar to ensure it works
+                const originalToggle = window.toggleSellerSidebar;
+                if (originalToggle) {
+                    window.toggleSellerSidebar = function() {
+                        originalToggle();
+                        // Ensure it's set after toggle
+                        setTimeout(() => {
+                            if (sidebar.classList.contains('collapsed')) {
+                                main.style.marginLeft = '70px';
+                            } else {
+                                main.style.marginLeft = '240px';
+                            }
+                        }, 10);
+                    };
+                }
+            }
+            
             const startDateInput = document.getElementById('startDate');
             const endDateInput = document.getElementById('endDate');
             
             // Set default dates if not already set
-            if (!startDateInput.value) {
+            if (startDateInput && !startDateInput.value) {
                 const today = new Date();
                 const sixMonthsAgo = new Date(today.getFullYear(), today.getMonth() - 6, today.getDate());
                 startDateInput.value = sixMonthsAgo.toISOString().split('T')[0];
             }
             
-            if (!endDateInput.value) {
+            if (endDateInput && !endDateInput.value) {
                 const today = new Date();
                 endDateInput.value = today.toISOString().split('T')[0];
             }
@@ -2039,60 +2173,97 @@ $periodLabels = [
         function exportToCSV() {
             const period = '<?php echo $periodLabels[$selectedPeriod]; ?>';
             const filename = `Sales_Analytics_${period.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.csv`;
+            const generatedDate = new Date().toLocaleString('en-US', { 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric', 
+                hour: '2-digit', 
+                minute: '2-digit' 
+            });
             
-            // Prepare CSV data
-            let csv = 'Sales Analytics Report - Growth Analysis\n';
-            csv += `Period: ${period}\n`;
-            csv += `Generated: ${new Date().toLocaleString()}\n\n`;
+            // Prepare CSV data with professional formatting
+            let csv = '';
             
-            // Growth Analytics
-            csv += 'GROWTH ANALYTICS\n';
+            // Header Section
+            csv += 'PEST-CTRL SALES ANALYTICS REPORT\n';
+            csv += '===========================================\n';
+            csv += `Report Period: ${period}\n`;
+            csv += `Generated On: ${generatedDate}\n`;
+            csv += `Report Type: Sales Performance Analysis\n`;
+            csv += '\n';
+            csv += '===========================================\n\n';
+            
+            // Growth Analytics Section
+            csv += 'SECTION 1: GROWTH ANALYTICS\n';
+            csv += '-------------------------------------------\n';
             csv += 'Metric,Current Period,Previous Period,Growth Rate\n';
             csv += `Revenue,₱<?php echo number_format($confirmedRevenue, 2); ?>,₱<?php echo number_format($previousConfirmedRevenue, 2); ?>,<?php echo $revenueGrowthRate >= 0 ? '+' : ''; ?><?php echo number_format($revenueGrowthRate, 1); ?>%\n`;
-            csv += `Orders,<?php echo number_format($uniqueOrders); ?>,<?php echo number_format($previousUniqueOrders); ?>,<?php echo $orderGrowthRate >= 0 ? '+' : ''; ?><?php echo number_format($orderGrowthRate, 1); ?>%\n`;
-            csv += `Items Sold,<?php echo number_format($totalSales); ?>,<?php echo number_format($previousTotalSales); ?>,<?php echo $salesGrowthRate >= 0 ? '+' : ''; ?><?php echo number_format($salesGrowthRate, 1); ?>%\n\n`;
+            csv += `Total Orders,<?php echo number_format($uniqueOrders); ?>,<?php echo number_format($previousUniqueOrders); ?>,<?php echo $orderGrowthRate >= 0 ? '+' : ''; ?><?php echo number_format($orderGrowthRate, 1); ?>%\n`;
+            csv += `Items Sold,<?php echo number_format($totalSales); ?>,<?php echo number_format($previousTotalSales); ?>,<?php echo $salesGrowthRate >= 0 ? '+' : ''; ?><?php echo number_format($salesGrowthRate, 1); ?>%\n`;
+            csv += '\n';
             
-            // Performance Metrics
-            csv += 'PERFORMANCE METRICS\n';
+            // Performance Metrics Section
+            csv += 'SECTION 2: PERFORMANCE METRICS\n';
+            csv += '-------------------------------------------\n';
             csv += 'Metric,Value,Description\n';
-            csv += `Customer Retention Rate,<?php echo number_format($customerRetentionRate, 1); ?>%,<?php echo $repeatCustomers; ?> repeat customers\n`;
-            csv += `Order Completion Rate,<?php echo number_format($orderCompletionRate, 1); ?>%,<?php echo $statusCounts['delivered']; ?> delivered\n`;
-            csv += `Return Rate,<?php echo number_format($returnRate, 1); ?>%,<?php echo $returnStats['total_returns'] ?? 0; ?> returns\n`;
-            csv += `Average Order Value,₱<?php echo number_format($avgOrderValue, 2); ?>,Per order\n\n`;
+            csv += `Customer Retention Rate,<?php echo number_format($customerRetentionRate, 1); ?>%,<?php echo $repeatCustomers; ?> repeat customers identified\n`;
+            csv += `Order Completion Rate,<?php echo number_format($orderCompletionRate, 1); ?>%,<?php echo $statusCounts['delivered']; ?> orders successfully delivered\n`;
+            csv += `Return Rate,<?php echo number_format($returnRate, 1); ?>%,<?php echo $returnStats['total_returns'] ?? 0; ?> total return requests\n`;
+            csv += `Average Order Value,₱<?php echo number_format($avgOrderValue, 2); ?>,Average value per completed order\n`;
+            csv += '\n';
             
-            // Revenue Breakdown
-            csv += 'REVENUE BREAKDOWN\n';
-            csv += 'Type,Amount,Percentage\n';
+            // Revenue Breakdown Section
+            csv += 'SECTION 3: REVENUE BREAKDOWN\n';
+            csv += '-------------------------------------------\n';
+            csv += 'Revenue Type,Amount (PHP),Percentage of Total\n';
             csv += `Confirmed Revenue,₱<?php echo number_format($confirmedRevenue, 2); ?>,<?php echo $expectedRevenue > 0 ? number_format(($confirmedRevenue / $expectedRevenue) * 100, 1) : 0; ?>%\n`;
             csv += `Pending Revenue,₱<?php echo number_format($pendingRevenue, 2); ?>,<?php echo $expectedRevenue > 0 ? number_format(($pendingRevenue / $expectedRevenue) * 100, 1) : 0; ?>%\n`;
             csv += `Refunded Amount,₱<?php echo number_format($periodRefundAmount, 2); ?>,<?php echo $expectedRevenue > 0 ? number_format(($periodRefundAmount / $expectedRevenue) * 100, 1) : 0; ?>%\n`;
-            csv += `Net Revenue,₱<?php echo number_format($netConfirmedRevenue, 2); ?>,<?php echo $expectedRevenue > 0 ? number_format(($netConfirmedRevenue / $expectedRevenue) * 100, 1) : 0; ?>%\n\n`;
+            csv += `Net Revenue,₱<?php echo number_format($netConfirmedRevenue, 2); ?>,<?php echo $expectedRevenue > 0 ? number_format(($netConfirmedRevenue / $expectedRevenue) * 100, 1) : 0; ?>%\n`;
+            csv += `Total Expected Revenue,₱<?php echo number_format($expectedRevenue, 2); ?>,100.0%\n`;
+            csv += '\n';
             
-            // Order Status
-            csv += 'ORDER STATUS\n';
-            csv += 'Status,Count\n';
-            csv += `Pending,<?php echo $statusCounts['pending']; ?>\n`;
-            csv += `Processing,<?php echo $statusCounts['processing']; ?>\n`;
-            csv += `Shipped,<?php echo $statusCounts['shipped']; ?>\n`;
-            csv += `Delivered,<?php echo $statusCounts['delivered']; ?>\n`;
-            csv += `Cancelled,<?php echo $statusCounts['cancelled']; ?>\n`;
-            csv += `Refunded,<?php echo $statusCounts['refunded']; ?>\n\n`;
-            
-            // Top Products
-            csv += 'TOP SELLING PRODUCTS\n';
-            csv += 'Product Name,Units Sold\n';
-            <?php foreach ($topProducts as $product): ?>
-            csv += '<?php echo addslashes($product['name']); ?>,<?php echo $product['total_sold']; ?>\n';
+            // Order Status Section
+            csv += 'SECTION 4: ORDER STATUS DISTRIBUTION\n';
+            csv += '-------------------------------------------\n';
+            csv += 'Order Status,Count,Percentage\n';
+            const totalOrders = <?php echo array_sum($statusCounts); ?>;
+            <?php 
+            $totalOrdersForCSV = array_sum($statusCounts);
+            foreach ($statusCounts as $status => $count): 
+                $percentage = $totalOrdersForCSV > 0 ? ($count / $totalOrdersForCSV) * 100 : 0;
+            ?>
+            csv += `<?php echo ucfirst($status); ?>,<?php echo $count; ?>,<?php echo number_format($percentage, 1); ?>%\n`;
             <?php endforeach; ?>
+            csv += `Total Orders,<?php echo $totalOrdersForCSV; ?>,100.0%\n`;
+            csv += '\n';
             
-            // Return Statistics
-            csv += '\nRETURN STATISTICS\n';
+            // Top Products Section
+            csv += 'SECTION 5: TOP SELLING PRODUCTS\n';
+            csv += '-------------------------------------------\n';
+            csv += 'Rank,Product Name,Units Sold\n';
+            <?php foreach ($topProducts as $index => $product): ?>
+            csv += `<?php echo $index + 1; ?>,<?php echo addslashes($product['name']); ?>,<?php echo $product['total_sold']; ?>\n`;
+            <?php endforeach; ?>
+            csv += '\n';
+            
+            // Return Statistics Section
+            csv += 'SECTION 6: RETURN & REFUND STATISTICS\n';
+            csv += '-------------------------------------------\n';
             csv += 'Metric,Value\n';
-            csv += `Total Returns,<?php echo $returnStats['total_returns'] ?? 0; ?>\n`;
+            csv += `Total Return Requests,<?php echo $returnStats['total_returns'] ?? 0; ?>\n`;
             csv += `Pending Returns,<?php echo $returnStats['pending_returns'] ?? 0; ?>\n`;
             csv += `Approved Returns,<?php echo $returnStats['approved_returns'] ?? 0; ?>\n`;
             csv += `Rejected Returns,<?php echo $returnStats['rejected_returns'] ?? 0; ?>\n`;
             csv += `Return Rate,<?php echo number_format($returnRate, 1); ?>%\n`;
+            csv += `Total Refunded Amount,₱<?php echo number_format($periodRefundAmount, 2); ?>\n`;
+            csv += '\n';
+            
+            // Footer
+            csv += '===========================================\n';
+            csv += 'END OF REPORT\n';
+            csv += `This report was automatically generated by PEST-CTRL Sales Analytics System.\n`;
+            csv += `For inquiries, please contact support.\n`;
             
             // Download CSV
             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -2114,180 +2285,259 @@ $periodLabels = [
             
             const period = '<?php echo $periodLabels[$selectedPeriod]; ?>';
             
-            // Create the content using actual DOM element
+            // Create the content using actual DOM element with professional styling
             const content = document.createElement('div');
-            content.style.cssText = 'font-family: Arial, sans-serif; padding: 40px; color: #1a0a2e; background: white;';
+            content.style.cssText = 'font-family: "Segoe UI", Arial, sans-serif; padding: 0; color: #130325; background: white; line-height: 1.6;';
+            
+            const generatedDate = new Date().toLocaleString('en-US', { 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric', 
+                hour: '2-digit', 
+                minute: '2-digit' 
+            });
             
             content.innerHTML = `
-                <div style="text-align: center; margin-bottom: 30px;">
-                    <h1 style="color: #130325; margin-bottom: 10px; font-size: 28px;">Sales Analytics Report - Growth Analysis</h1>
-                    <p style="color: #666; font-size: 14px;">Period: ${period}</p>
-                    <p style="color: #666; font-size: 14px;">Generated: ${new Date().toLocaleString()}</p>
+                <!-- Header Section -->
+                <div style="background: linear-gradient(135deg, #130325 0%, #1a0a2e 100%); padding: 40px 30px; margin-bottom: 40px; border-bottom: 4px solid #FFD736;">
+                    <div style="text-align: center; color: white;">
+                        <h1 style="color: #FFD736; margin: 0 0 15px 0; font-size: 32px; font-weight: 700; letter-spacing: 1px;">PEST-CTRL</h1>
+                        <h2 style="color: #ffffff; margin: 0 0 20px 0; font-size: 24px; font-weight: 600;">SALES ANALYTICS REPORT</h2>
+                        <div style="border-top: 1px solid rgba(255, 215, 54, 0.3); padding-top: 20px; margin-top: 20px;">
+                            <p style="color: #F9F9F9; font-size: 14px; margin: 5px 0; font-weight: 500;">Report Period: <span style="color: #FFD736;">${period}</span></p>
+                            <p style="color: #F9F9F9; font-size: 14px; margin: 5px 0; font-weight: 500;">Generated: <span style="color: #FFD736;">${generatedDate}</span></p>
+                            <p style="color: #F9F9F9; font-size: 14px; margin: 5px 0; font-weight: 500;">Report Type: <span style="color: #FFD736;">Sales Performance Analysis</span></p>
+                        </div>
+                    </div>
                 </div>
                 
-                <div style="margin-bottom: 30px; page-break-inside: avoid;">
-                    <h2 style="color: #130325; border-bottom: 2px solid #FFD736; padding-bottom: 10px; font-size: 20px;">Growth Analytics</h2>
-                    <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
-                        <tr style="background: #f3f4f6;">
-                            <td style="padding: 10px; border: 1px solid #ddd; font-size: 13px;"><strong>Metric</strong></td>
-                            <td style="padding: 10px; border: 1px solid #ddd; font-size: 13px; text-align: center;"><strong>Current Period</strong></td>
-                            <td style="padding: 10px; border: 1px solid #ddd; font-size: 13px; text-align: center;"><strong>Previous Period</strong></td>
-                            <td style="padding: 10px; border: 1px solid #ddd; font-size: 13px; text-align: center;"><strong>Growth Rate</strong></td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 10px; border: 1px solid #ddd; font-size: 13px;"><strong>Revenue</strong></td>
-                            <td style="padding: 10px; border: 1px solid #ddd; font-size: 13px; text-align: right;">₱<?php echo number_format($confirmedRevenue, 2); ?></td>
-                            <td style="padding: 10px; border: 1px solid #ddd; font-size: 13px; text-align: right;">₱<?php echo number_format($previousConfirmedRevenue, 2); ?></td>
-                            <td style="padding: 10px; border: 1px solid #ddd; font-size: 13px; text-align: right; color: <?php echo $revenueGrowthRate >= 0 ? '#10b981' : '#ef4444'; ?>;"><?php echo $revenueGrowthRate >= 0 ? '+' : ''; ?><?php echo number_format($revenueGrowthRate, 1); ?>%</td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 10px; border: 1px solid #ddd; font-size: 13px;"><strong>Orders</strong></td>
-                            <td style="padding: 10px; border: 1px solid #ddd; font-size: 13px; text-align: right;"><?php echo number_format($uniqueOrders); ?></td>
-                            <td style="padding: 10px; border: 1px solid #ddd; font-size: 13px; text-align: right;"><?php echo number_format($previousUniqueOrders); ?></td>
-                            <td style="padding: 10px; border: 1px solid #ddd; font-size: 13px; text-align: right; color: <?php echo $orderGrowthRate >= 0 ? '#10b981' : '#ef4444'; ?>;"><?php echo $orderGrowthRate >= 0 ? '+' : ''; ?><?php echo number_format($orderGrowthRate, 1); ?>%</td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 10px; border: 1px solid #ddd; font-size: 13px;"><strong>Items Sold</strong></td>
-                            <td style="padding: 10px; border: 1px solid #ddd; font-size: 13px; text-align: right;"><?php echo number_format($totalSales); ?></td>
-                            <td style="padding: 10px; border: 1px solid #ddd; font-size: 13px; text-align: right;"><?php echo number_format($previousTotalSales); ?></td>
-                            <td style="padding: 10px; border: 1px solid #ddd; font-size: 13px; text-align: right; color: <?php echo $salesGrowthRate >= 0 ? '#10b981' : '#ef4444'; ?>;"><?php echo $salesGrowthRate >= 0 ? '+' : ''; ?><?php echo number_format($salesGrowthRate, 1); ?>%</td>
-                        </tr>
-                    </table>
-                </div>
+                <!-- Document Body -->
+                <div style="padding: 0 40px 40px 40px;">
                 
-                <div style="margin-bottom: 30px; page-break-inside: avoid;">
-                    <h2 style="color: #130325; border-bottom: 2px solid #FFD736; padding-bottom: 10px; font-size: 20px;">Performance Metrics</h2>
-                    <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
-                        <tr style="background: #f3f4f6;">
-                            <td style="padding: 10px; border: 1px solid #ddd; font-size: 13px;"><strong>Metric</strong></td>
-                            <td style="padding: 10px; border: 1px solid #ddd; font-size: 13px; text-align: right;"><strong>Value</strong></td>
-                            <td style="padding: 10px; border: 1px solid #ddd; font-size: 13px; text-align: center;"><strong>Description</strong></td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 10px; border: 1px solid #ddd; font-size: 13px;"><strong>Customer Retention Rate</strong></td>
-                            <td style="padding: 10px; border: 1px solid #ddd; font-size: 13px; text-align: right;"><?php echo number_format($customerRetentionRate, 1); ?>%</td>
-                            <td style="padding: 10px; border: 1px solid #ddd; font-size: 13px; text-align: center;"><?php echo $repeatCustomers; ?> repeat customers</td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 10px; border: 1px solid #ddd; font-size: 13px;"><strong>Order Completion Rate</strong></td>
-                            <td style="padding: 10px; border: 1px solid #ddd; font-size: 13px; text-align: right;"><?php echo number_format($orderCompletionRate, 1); ?>%</td>
-                            <td style="padding: 10px; border: 1px solid #ddd; font-size: 13px; text-align: center;"><?php echo $statusCounts['delivered']; ?> delivered</td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 10px; border: 1px solid #ddd; font-size: 13px;"><strong>Return Rate</strong></td>
-                            <td style="padding: 10px; border: 1px solid #ddd; font-size: 13px; text-align: right;"><?php echo number_format($returnRate, 1); ?>%</td>
-                            <td style="padding: 10px; border: 1px solid #ddd; font-size: 13px; text-align: center;"><?php echo $returnStats['total_returns'] ?? 0; ?> returns</td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 10px; border: 1px solid #ddd; font-size: 13px;"><strong>Average Order Value</strong></td>
-                            <td style="padding: 10px; border: 1px solid #ddd; font-size: 13px; text-align: right;">₱<?php echo number_format($avgOrderValue, 2); ?></td>
-                            <td style="padding: 10px; border: 1px solid #ddd; font-size: 13px; text-align: center;">Per order</td>
-                        </tr>
-                    </table>
-                </div>
-                
-                <div style="margin-bottom: 30px; page-break-inside: avoid;">
-                    <h2 style="color: #130325; border-bottom: 2px solid #FFD736; padding-bottom: 10px; font-size: 20px;">Revenue Breakdown</h2>
-                    <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
-                        <tr style="background: #f3f4f6;">
-                            <td style="padding: 10px; border: 1px solid #ddd; font-size: 13px;"><strong>Type</strong></td>
-                            <td style="padding: 10px; border: 1px solid #ddd; font-size: 13px; text-align: right;"><strong>Amount</strong></td>
-                            <td style="padding: 10px; border: 1px solid #ddd; font-size: 13px; text-align: right;"><strong>Percentage</strong></td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 10px; border: 1px solid #ddd; font-size: 13px;"><strong>Confirmed Revenue</strong></td>
-                            <td style="padding: 10px; border: 1px solid #ddd; font-size: 13px; text-align: right;">₱<?php echo number_format($confirmedRevenue, 2); ?></td>
-                            <td style="padding: 10px; border: 1px solid #ddd; font-size: 13px; text-align: right;"><?php echo $expectedRevenue > 0 ? number_format(($confirmedRevenue / $expectedRevenue) * 100, 1) : 0; ?>%</td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 10px; border: 1px solid #ddd; font-size: 13px;"><strong>Net Confirmed Revenue</strong></td>
-                            <td style="padding: 10px; border: 1px solid #ddd; font-size: 13px; text-align: right;">₱<?php echo number_format($netConfirmedRevenue, 2); ?></td>
-                        </tr>
-                        <tr style="background: #f3f4f6;">
-                            <td style="padding: 10px; border: 1px solid #ddd; font-size: 13px;"><strong>Pending Revenue</strong></td>
-                            <td style="padding: 10px; border: 1px solid #ddd; font-size: 13px; text-align: right;">₱<?php echo number_format($pendingRevenue, 2); ?></td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 10px; border: 1px solid #ddd; font-size: 13px;"><strong>Total Orders</strong></td>
-                            <td style="padding: 10px; border: 1px solid #ddd; font-size: 13px; text-align: right;"><?php echo $uniqueOrders; ?></td>
-                        </tr>
-                        <tr style="background: #f3f4f6;">
-                            <td style="padding: 10px; border: 1px solid #ddd; font-size: 13px;"><strong>Items Sold</strong></td>
-                            <td style="padding: 10px; border: 1px solid #ddd; font-size: 13px; text-align: right;"><?php echo $totalSales; ?></td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 10px; border: 1px solid #ddd; font-size: 13px;"><strong>Average Order Value</strong></td>
-                            <td style="padding: 10px; border: 1px solid #ddd; font-size: 13px; text-align: right;">₱<?php echo number_format($avgOrderValue, 2); ?></td>
-                        </tr>
-                    </table>
-                </div>
-                
-                <div style="margin-bottom: 30px; page-break-inside: avoid;">
-                    <h2 style="color: #130325; border-bottom: 2px solid #FFD736; padding-bottom: 10px; font-size: 20px;">Order Status</h2>
-                    <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
-                        <tr style="background: #f3f4f6;">
-                            <td style="padding: 10px; border: 1px solid #ddd; font-size: 13px;"><strong>Pending</strong></td>
-                            <td style="padding: 10px; border: 1px solid #ddd; font-size: 13px; text-align: right;"><?php echo $statusCounts['pending']; ?></td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 10px; border: 1px solid #ddd; font-size: 13px;"><strong>Processing</strong></td>
-                            <td style="padding: 10px; border: 1px solid #ddd; font-size: 13px; text-align: right;"><?php echo $statusCounts['processing']; ?></td>
-                        </tr>
-                        <tr style="background: #f3f4f6;">
-                            <td style="padding: 10px; border: 1px solid #ddd; font-size: 13px;"><strong>Shipped</strong></td>
-                            <td style="padding: 10px; border: 1px solid #ddd; font-size: 13px; text-align: right;"><?php echo $statusCounts['shipped']; ?></td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 10px; border: 1px solid #ddd; font-size: 13px;"><strong>Delivered</strong></td>
-                            <td style="padding: 10px; border: 1px solid #ddd; font-size: 13px; text-align: right;"><?php echo $statusCounts['delivered']; ?></td>
-                        </tr>
-                        <tr style="background: #f3f4f6;">
-                            <td style="padding: 10px; border: 1px solid #ddd; font-size: 13px;"><strong>Cancelled</strong></td>
-                            <td style="padding: 10px; border: 1px solid #ddd; font-size: 13px; text-align: right;"><?php echo $statusCounts['cancelled']; ?></td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 10px; border: 1px solid #ddd; font-size: 13px;"><strong>Refunded</strong></td>
-                            <td style="padding: 10px; border: 1px solid #ddd; font-size: 13px; text-align: right;"><?php echo $statusCounts['refunded']; ?></td>
-                        </tr>
-                    </table>
-                </div>
-                
-                <div style="page-break-inside: avoid;">
-                    <h2 style="color: #130325; border-bottom: 2px solid #FFD736; padding-bottom: 10px; font-size: 20px;">Top Products</h2>
-                    <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
+                <!-- Section 1: Growth Analytics -->
+                <div style="margin-bottom: 35px; page-break-inside: avoid;">
+                    <div style="background: #130325; padding: 12px 20px; margin-bottom: 20px; border-left: 4px solid #FFD736;">
+                        <h2 style="color: #FFD736; margin: 0; font-size: 20px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Section 1: Growth Analytics</h2>
+                    </div>
+                    <table style="width: 100%; border-collapse: collapse; margin-top: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
                         <thead>
                             <tr style="background: #130325;">
-                                <th style="padding: 10px; border: 1px solid #ddd; text-align: left; color: white; font-size: 13px;">Product</th>
-                                <th style="padding: 10px; border: 1px solid #ddd; text-align: right; color: white; font-size: 13px;">Units Sold</th>
+                                <th style="padding: 14px 16px; border: 1px solid #e5e7eb; color: #FFD736; font-size: 13px; font-weight: 700; text-align: left; text-transform: uppercase; letter-spacing: 0.5px;">Metric</th>
+                                <th style="padding: 14px 16px; border: 1px solid #e5e7eb; color: #FFD736; font-size: 13px; font-weight: 700; text-align: right; text-transform: uppercase; letter-spacing: 0.5px;">Current Period</th>
+                                <th style="padding: 14px 16px; border: 1px solid #e5e7eb; color: #FFD736; font-size: 13px; font-weight: 700; text-align: right; text-transform: uppercase; letter-spacing: 0.5px;">Previous Period</th>
+                                <th style="padding: 14px 16px; border: 1px solid #e5e7eb; color: #FFD736; font-size: 13px; font-weight: 700; text-align: right; text-transform: uppercase; letter-spacing: 0.5px;">Growth Rate</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr style="background: #ffffff;">
+                                <td style="padding: 12px 16px; border: 1px solid #e5e7eb; font-size: 14px; font-weight: 600; color: #130325;">Revenue</td>
+                                <td style="padding: 12px 16px; border: 1px solid #e5e7eb; font-size: 14px; text-align: right; color: #130325; font-weight: 600;">₱<?php echo number_format($confirmedRevenue, 2); ?></td>
+                                <td style="padding: 12px 16px; border: 1px solid #e5e7eb; font-size: 14px; text-align: right; color: #6b7280;">₱<?php echo number_format($previousConfirmedRevenue, 2); ?></td>
+                                <td style="padding: 12px 16px; border: 1px solid #e5e7eb; font-size: 14px; text-align: right; color: <?php echo $revenueGrowthRate >= 0 ? '#059669' : '#dc2626'; ?>; font-weight: 700;"><?php echo $revenueGrowthRate >= 0 ? '+' : ''; ?><?php echo number_format($revenueGrowthRate, 1); ?>%</td>
+                            </tr>
+                            <tr style="background: #f9fafb;">
+                                <td style="padding: 12px 16px; border: 1px solid #e5e7eb; font-size: 14px; font-weight: 600; color: #130325;">Total Orders</td>
+                                <td style="padding: 12px 16px; border: 1px solid #e5e7eb; font-size: 14px; text-align: right; color: #130325; font-weight: 600;"><?php echo number_format($uniqueOrders); ?></td>
+                                <td style="padding: 12px 16px; border: 1px solid #e5e7eb; font-size: 14px; text-align: right; color: #6b7280;"><?php echo number_format($previousUniqueOrders); ?></td>
+                                <td style="padding: 12px 16px; border: 1px solid #e5e7eb; font-size: 14px; text-align: right; color: <?php echo $orderGrowthRate >= 0 ? '#059669' : '#dc2626'; ?>; font-weight: 700;"><?php echo $orderGrowthRate >= 0 ? '+' : ''; ?><?php echo number_format($orderGrowthRate, 1); ?>%</td>
+                            </tr>
+                            <tr style="background: #ffffff;">
+                                <td style="padding: 12px 16px; border: 1px solid #e5e7eb; font-size: 14px; font-weight: 600; color: #130325;">Items Sold</td>
+                                <td style="padding: 12px 16px; border: 1px solid #e5e7eb; font-size: 14px; text-align: right; color: #130325; font-weight: 600;"><?php echo number_format($totalSales); ?></td>
+                                <td style="padding: 12px 16px; border: 1px solid #e5e7eb; font-size: 14px; text-align: right; color: #6b7280;"><?php echo number_format($previousTotalSales); ?></td>
+                                <td style="padding: 12px 16px; border: 1px solid #e5e7eb; font-size: 14px; text-align: right; color: <?php echo $salesGrowthRate >= 0 ? '#059669' : '#dc2626'; ?>; font-weight: 700;"><?php echo $salesGrowthRate >= 0 ? '+' : ''; ?><?php echo number_format($salesGrowthRate, 1); ?>%</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Section 2: Performance Metrics -->
+                <div style="margin-bottom: 35px; page-break-inside: avoid;">
+                    <div style="background: #130325; padding: 12px 20px; margin-bottom: 20px; border-left: 4px solid #FFD736;">
+                        <h2 style="color: #FFD736; margin: 0; font-size: 20px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Section 2: Performance Metrics</h2>
+                    </div>
+                    <table style="width: 100%; border-collapse: collapse; margin-top: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                        <thead>
+                            <tr style="background: #130325;">
+                                <th style="padding: 14px 16px; border: 1px solid #e5e7eb; color: #FFD736; font-size: 13px; font-weight: 700; text-align: left; text-transform: uppercase; letter-spacing: 0.5px;">Metric</th>
+                                <th style="padding: 14px 16px; border: 1px solid #e5e7eb; color: #FFD736; font-size: 13px; font-weight: 700; text-align: right; text-transform: uppercase; letter-spacing: 0.5px;">Value</th>
+                                <th style="padding: 14px 16px; border: 1px solid #e5e7eb; color: #FFD736; font-size: 13px; font-weight: 700; text-align: left; text-transform: uppercase; letter-spacing: 0.5px;">Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr style="background: #ffffff;">
+                                <td style="padding: 12px 16px; border: 1px solid #e5e7eb; font-size: 14px; font-weight: 600; color: #130325;">Customer Retention Rate</td>
+                                <td style="padding: 12px 16px; border: 1px solid #e5e7eb; font-size: 14px; text-align: right; color: #130325; font-weight: 600;"><?php echo number_format($customerRetentionRate, 1); ?>%</td>
+                                <td style="padding: 12px 16px; border: 1px solid #e5e7eb; font-size: 13px; color: #6b7280;"><?php echo $repeatCustomers; ?> repeat customers identified</td>
+                            </tr>
+                            <tr style="background: #f9fafb;">
+                                <td style="padding: 12px 16px; border: 1px solid #e5e7eb; font-size: 14px; font-weight: 600; color: #130325;">Order Completion Rate</td>
+                                <td style="padding: 12px 16px; border: 1px solid #e5e7eb; font-size: 14px; text-align: right; color: #130325; font-weight: 600;"><?php echo number_format($orderCompletionRate, 1); ?>%</td>
+                                <td style="padding: 12px 16px; border: 1px solid #e5e7eb; font-size: 13px; color: #6b7280;"><?php echo $statusCounts['delivered']; ?> orders successfully delivered</td>
+                            </tr>
+                            <tr style="background: #ffffff;">
+                                <td style="padding: 12px 16px; border: 1px solid #e5e7eb; font-size: 14px; font-weight: 600; color: #130325;">Return Rate</td>
+                                <td style="padding: 12px 16px; border: 1px solid #e5e7eb; font-size: 14px; text-align: right; color: #130325; font-weight: 600;"><?php echo number_format($returnRate, 1); ?>%</td>
+                                <td style="padding: 12px 16px; border: 1px solid #e5e7eb; font-size: 13px; color: #6b7280;"><?php echo $returnStats['total_returns'] ?? 0; ?> total return requests</td>
+                            </tr>
+                            <tr style="background: #f9fafb;">
+                                <td style="padding: 12px 16px; border: 1px solid #e5e7eb; font-size: 14px; font-weight: 600; color: #130325;">Average Order Value</td>
+                                <td style="padding: 12px 16px; border: 1px solid #e5e7eb; font-size: 14px; text-align: right; color: #130325; font-weight: 600;">₱<?php echo number_format($avgOrderValue, 2); ?></td>
+                                <td style="padding: 12px 16px; border: 1px solid #e5e7eb; font-size: 13px; color: #6b7280;">Average value per completed order</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Section 3: Revenue Breakdown -->
+                <div style="margin-bottom: 35px; page-break-inside: avoid;">
+                    <div style="background: #130325; padding: 12px 20px; margin-bottom: 20px; border-left: 4px solid #FFD736;">
+                        <h2 style="color: #FFD736; margin: 0; font-size: 20px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Section 3: Revenue Breakdown</h2>
+                    </div>
+                    <table style="width: 100%; border-collapse: collapse; margin-top: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                        <thead>
+                            <tr style="background: #130325;">
+                                <th style="padding: 14px 16px; border: 1px solid #e5e7eb; color: #FFD736; font-size: 13px; font-weight: 700; text-align: left; text-transform: uppercase; letter-spacing: 0.5px;">Revenue Type</th>
+                                <th style="padding: 14px 16px; border: 1px solid #e5e7eb; color: #FFD736; font-size: 13px; font-weight: 700; text-align: right; text-transform: uppercase; letter-spacing: 0.5px;">Amount (PHP)</th>
+                                <th style="padding: 14px 16px; border: 1px solid #e5e7eb; color: #FFD736; font-size: 13px; font-weight: 700; text-align: right; text-transform: uppercase; letter-spacing: 0.5px;">Percentage</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr style="background: #ffffff;">
+                                <td style="padding: 12px 16px; border: 1px solid #e5e7eb; font-size: 14px; font-weight: 600; color: #130325;">Confirmed Revenue</td>
+                                <td style="padding: 12px 16px; border: 1px solid #e5e7eb; font-size: 14px; text-align: right; color: #130325; font-weight: 600;">₱<?php echo number_format($confirmedRevenue, 2); ?></td>
+                                <td style="padding: 12px 16px; border: 1px solid #e5e7eb; font-size: 14px; text-align: right; color: #6b7280;"><?php echo $expectedRevenue > 0 ? number_format(($confirmedRevenue / $expectedRevenue) * 100, 1) : 0; ?>%</td>
+                            </tr>
+                            <tr style="background: #f9fafb;">
+                                <td style="padding: 12px 16px; border: 1px solid #e5e7eb; font-size: 14px; font-weight: 600; color: #130325;">Net Confirmed Revenue</td>
+                                <td style="padding: 12px 16px; border: 1px solid #e5e7eb; font-size: 14px; text-align: right; color: #130325; font-weight: 600;">₱<?php echo number_format($netConfirmedRevenue, 2); ?></td>
+                                <td style="padding: 12px 16px; border: 1px solid #e5e7eb; font-size: 14px; text-align: right; color: #6b7280;"><?php echo $expectedRevenue > 0 ? number_format(($netConfirmedRevenue / $expectedRevenue) * 100, 1) : 0; ?>%</td>
+                            </tr>
+                            <tr style="background: #ffffff;">
+                                <td style="padding: 12px 16px; border: 1px solid #e5e7eb; font-size: 14px; font-weight: 600; color: #130325;">Pending Revenue</td>
+                                <td style="padding: 12px 16px; border: 1px solid #e5e7eb; font-size: 14px; text-align: right; color: #130325; font-weight: 600;">₱<?php echo number_format($pendingRevenue, 2); ?></td>
+                                <td style="padding: 12px 16px; border: 1px solid #e5e7eb; font-size: 14px; text-align: right; color: #6b7280;"><?php echo $expectedRevenue > 0 ? number_format(($pendingRevenue / $expectedRevenue) * 100, 1) : 0; ?>%</td>
+                            </tr>
+                            <tr style="background: #f9fafb;">
+                                <td style="padding: 12px 16px; border: 1px solid #e5e7eb; font-size: 14px; font-weight: 600; color: #130325;">Total Expected Revenue</td>
+                                <td style="padding: 12px 16px; border: 1px solid #e5e7eb; font-size: 14px; text-align: right; color: #130325; font-weight: 700;">₱<?php echo number_format($expectedRevenue, 2); ?></td>
+                                <td style="padding: 12px 16px; border: 1px solid #e5e7eb; font-size: 14px; text-align: right; color: #130325; font-weight: 700;">100.0%</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Section 4: Order Status Distribution -->
+                <div style="margin-bottom: 35px; page-break-inside: avoid;">
+                    <div style="background: #130325; padding: 12px 20px; margin-bottom: 20px; border-left: 4px solid #FFD736;">
+                        <h2 style="color: #FFD736; margin: 0; font-size: 20px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Section 4: Order Status Distribution</h2>
+                    </div>
+                    <table style="width: 100%; border-collapse: collapse; margin-top: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                        <thead>
+                            <tr style="background: #130325;">
+                                <th style="padding: 14px 16px; border: 1px solid #e5e7eb; color: #FFD736; font-size: 13px; font-weight: 700; text-align: left; text-transform: uppercase; letter-spacing: 0.5px;">Order Status</th>
+                                <th style="padding: 14px 16px; border: 1px solid #e5e7eb; color: #FFD736; font-size: 13px; font-weight: 700; text-align: right; text-transform: uppercase; letter-spacing: 0.5px;">Count</th>
+                                <th style="padding: 14px 16px; border: 1px solid #e5e7eb; color: #FFD736; font-size: 13px; font-weight: 700; text-align: right; text-transform: uppercase; letter-spacing: 0.5px;">Percentage</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php 
+                            $totalOrdersForPDF = array_sum($statusCounts);
+                            $rowIndex = 0;
+                            foreach ($statusCounts as $status => $count): 
+                                $percentage = $totalOrdersForPDF > 0 ? ($count / $totalOrdersForPDF) * 100 : 0;
+                                $bgColor = $rowIndex % 2 == 0 ? '#ffffff' : '#f9fafb';
+                            ?>
+                            <tr style="background: <?php echo $bgColor; ?>;">
+                                <td style="padding: 12px 16px; border: 1px solid #e5e7eb; font-size: 14px; font-weight: 600; color: #130325; text-transform: capitalize;"><?php echo ucfirst($status); ?></td>
+                                <td style="padding: 12px 16px; border: 1px solid #e5e7eb; font-size: 14px; text-align: right; color: #130325; font-weight: 600;"><?php echo $count; ?></td>
+                                <td style="padding: 12px 16px; border: 1px solid #e5e7eb; font-size: 14px; text-align: right; color: #6b7280;"><?php echo number_format($percentage, 1); ?>%</td>
+                            </tr>
+                            <?php 
+                            $rowIndex++;
+                            endforeach; 
+                            ?>
+                            <tr style="background: #f0f2f5; border-top: 2px solid #130325;">
+                                <td style="padding: 12px 16px; border: 1px solid #e5e7eb; font-size: 14px; font-weight: 700; color: #130325;">TOTAL ORDERS</td>
+                                <td style="padding: 12px 16px; border: 1px solid #e5e7eb; font-size: 14px; text-align: right; color: #130325; font-weight: 700;"><?php echo $totalOrdersForPDF; ?></td>
+                                <td style="padding: 12px 16px; border: 1px solid #e5e7eb; font-size: 14px; text-align: right; color: #130325; font-weight: 700;">100.0%</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Section 5: Top Selling Products -->
+                <div style="margin-bottom: 35px; page-break-inside: avoid;">
+                    <div style="background: #130325; padding: 12px 20px; margin-bottom: 20px; border-left: 4px solid #FFD736;">
+                        <h2 style="color: #FFD736; margin: 0; font-size: 20px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Section 5: Top Selling Products</h2>
+                    </div>
+                    <table style="width: 100%; border-collapse: collapse; margin-top: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                        <thead>
+                            <tr style="background: #130325;">
+                                <th style="padding: 14px 16px; border: 1px solid #e5e7eb; color: #FFD736; font-size: 13px; font-weight: 700; text-align: center; text-transform: uppercase; letter-spacing: 0.5px;">Rank</th>
+                                <th style="padding: 14px 16px; border: 1px solid #e5e7eb; color: #FFD736; font-size: 13px; font-weight: 700; text-align: left; text-transform: uppercase; letter-spacing: 0.5px;">Product Name</th>
+                                <th style="padding: 14px 16px; border: 1px solid #e5e7eb; color: #FFD736; font-size: 13px; font-weight: 700; text-align: right; text-transform: uppercase; letter-spacing: 0.5px;">Units Sold</th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php foreach ($topProducts as $index => $product): ?>
-                            <tr style="<?php echo $index % 2 == 0 ? 'background: #f3f4f6;' : ''; ?>">
-                                <td style="padding: 10px; border: 1px solid #ddd; font-size: 13px;"><?php echo htmlspecialchars($product['name']); ?></td>
-                                <td style="padding: 10px; border: 1px solid #ddd; text-align: right; font-size: 13px;"><?php echo $product['total_sold']; ?></td>
+                            <tr style="background: <?php echo $index % 2 == 0 ? '#ffffff' : '#f9fafb'; ?>;">
+                                <td style="padding: 12px 16px; border: 1px solid #e5e7eb; font-size: 14px; text-align: center; color: #130325; font-weight: 700;"><?php echo $index + 1; ?></td>
+                                <td style="padding: 12px 16px; border: 1px solid #e5e7eb; font-size: 14px; color: #130325; font-weight: 500;"><?php echo htmlspecialchars($product['name']); ?></td>
+                                <td style="padding: 12px 16px; border: 1px solid #e5e7eb; font-size: 14px; text-align: right; color: #130325; font-weight: 600;"><?php echo $product['total_sold']; ?></td>
                             </tr>
                             <?php endforeach; ?>
                         </tbody>
                     </table>
                 </div>
                 
-                <div style="margin-top: 30px; page-break-inside: avoid;">
-                    <h2 style="color: #130325; border-bottom: 2px solid #FFD736; padding-bottom: 10px; font-size: 20px;">Return Statistics</h2>
-                    <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
-                        <tr style="background: #f3f4f6;">
-                            <td style="padding: 10px; border: 1px solid #ddd; font-size: 13px;"><strong>Total Returns</strong></td>
-                            <td style="padding: 10px; border: 1px solid #ddd; font-size: 13px; text-align: right;"><?php echo $returnStats['total_returns'] ?? 0; ?></td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 10px; border: 1px solid #ddd; font-size: 13px;"><strong>Return Rate</strong></td>
-                            <td style="padding: 10px; border: 1px solid #ddd; font-size: 13px; text-align: right;"><?php echo number_format($returnRate, 1); ?>%</td>
-                        </tr>
-                        <tr style="background: #f3f4f6;">
-                            <td style="padding: 10px; border: 1px solid #ddd; font-size: 13px;"><strong>Refunded Amount</strong></td>
-                            <td style="padding: 10px; border: 1px solid #ddd; font-size: 13px; text-align: right;">₱<?php echo number_format($periodRefundAmount, 2); ?></td>
-                        </tr>
+                <!-- Section 6: Return & Refund Statistics -->
+                <div style="margin-bottom: 35px; page-break-inside: avoid;">
+                    <div style="background: #130325; padding: 12px 20px; margin-bottom: 20px; border-left: 4px solid #FFD736;">
+                        <h2 style="color: #FFD736; margin: 0; font-size: 20px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Section 6: Return & Refund Statistics</h2>
+                    </div>
+                    <table style="width: 100%; border-collapse: collapse; margin-top: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                        <thead>
+                            <tr style="background: #130325;">
+                                <th style="padding: 14px 16px; border: 1px solid #e5e7eb; color: #FFD736; font-size: 13px; font-weight: 700; text-align: left; text-transform: uppercase; letter-spacing: 0.5px;">Metric</th>
+                                <th style="padding: 14px 16px; border: 1px solid #e5e7eb; color: #FFD736; font-size: 13px; font-weight: 700; text-align: right; text-transform: uppercase; letter-spacing: 0.5px;">Value</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr style="background: #ffffff;">
+                                <td style="padding: 12px 16px; border: 1px solid #e5e7eb; font-size: 14px; font-weight: 600; color: #130325;">Total Return Requests</td>
+                                <td style="padding: 12px 16px; border: 1px solid #e5e7eb; font-size: 14px; text-align: right; color: #130325; font-weight: 600;"><?php echo $returnStats['total_returns'] ?? 0; ?></td>
+                            </tr>
+                            <tr style="background: #f9fafb;">
+                                <td style="padding: 12px 16px; border: 1px solid #e5e7eb; font-size: 14px; font-weight: 600; color: #130325;">Pending Returns</td>
+                                <td style="padding: 12px 16px; border: 1px solid #e5e7eb; font-size: 14px; text-align: right; color: #130325; font-weight: 600;"><?php echo $returnStats['pending_returns'] ?? 0; ?></td>
+                            </tr>
+                            <tr style="background: #ffffff;">
+                                <td style="padding: 12px 16px; border: 1px solid #e5e7eb; font-size: 14px; font-weight: 600; color: #130325;">Approved Returns</td>
+                                <td style="padding: 12px 16px; border: 1px solid #e5e7eb; font-size: 14px; text-align: right; color: #059669; font-weight: 600;"><?php echo $returnStats['approved_returns'] ?? 0; ?></td>
+                            </tr>
+                            <tr style="background: #f9fafb;">
+                                <td style="padding: 12px 16px; border: 1px solid #e5e7eb; font-size: 14px; font-weight: 600; color: #130325;">Rejected Returns</td>
+                                <td style="padding: 12px 16px; border: 1px solid #e5e7eb; font-size: 14px; text-align: right; color: #dc2626; font-weight: 600;"><?php echo $returnStats['rejected_returns'] ?? 0; ?></td>
+                            </tr>
+                            <tr style="background: #ffffff;">
+                                <td style="padding: 12px 16px; border: 1px solid #e5e7eb; font-size: 14px; font-weight: 600; color: #130325;">Return Rate</td>
+                                <td style="padding: 12px 16px; border: 1px solid #e5e7eb; font-size: 14px; text-align: right; color: #130325; font-weight: 600;"><?php echo number_format($returnRate, 1); ?>%</td>
+                            </tr>
+                            <tr style="background: #f0f2f5; border-top: 2px solid #130325;">
+                                <td style="padding: 12px 16px; border: 1px solid #e5e7eb; font-size: 14px; font-weight: 700; color: #130325;">Total Refunded Amount</td>
+                                <td style="padding: 12px 16px; border: 1px solid #e5e7eb; font-size: 14px; text-align: right; color: #130325; font-weight: 700;">₱<?php echo number_format($periodRefundAmount, 2); ?></td>
+                            </tr>
+                        </tbody>
                     </table>
+                </div>
+                
+                <!-- Footer -->
+                <div style="margin-top: 50px; padding-top: 30px; border-top: 2px solid #e5e7eb; text-align: center; color: #6b7280; font-size: 12px;">
+                    <p style="margin: 5px 0;">This report was automatically generated by PEST-CTRL Sales Analytics System</p>
+                    <p style="margin: 5px 0;">For inquiries, please contact support</p>
+                    <p style="margin: 10px 0 0 0; color: #130325; font-weight: 600;">© <?php echo date('Y'); ?> PEST-CTRL. All rights reserved.</p>
+                </div>
                 </div>
             `;
             

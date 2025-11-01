@@ -89,32 +89,185 @@ require_once 'includes/seller_header.php';
 ?>
 
 <style>
-html, body { background:#130325 !important; margin:0; padding:0; }
-main { background:transparent !important; margin-left: 120px !important; padding: 15px 30px 60px 30px !important; min-height: calc(100vh - 60px) !important; transition: margin-left 0.3s ease; margin-top: -35px !important; }
+html, body { 
+    background: #f0f2f5 !important; 
+    margin: 0; 
+    padding: 0; 
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+main { 
+    background: #f0f2f5 !important; 
+    margin-left: 120px !important; 
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+    padding-top: 0 !important;
+    padding-bottom: 40px !important;
+    padding-left: 30px !important;
+    padding-right: 30px !important;
+    min-height: calc(100vh - 60px) !important; 
+    transition: margin-left 0.3s ease !important;
+}
 main.sidebar-collapsed { margin-left: 0px !important; }
 
 .notification-toast {
     position: fixed;
     top: 100px;
     right: 20px;
-    max-width: 400px;
-    background: #1a0a2e;
-    border: 1px solid rgba(255,215,54,0.5);
-    border-left: 4px solid #FFD736;
-    border-radius: 10px;
-    padding: 16px 20px;
-    color: #F9F9F9;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+    max-width: 450px;
+    min-width: 350px;
+    background: #ffffff;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 16px;
+    padding: 20px 24px;
+    color: #130325;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
     z-index: 10000;
-    animation: slideInRight 0.3s ease;
+    animation: slideInRight 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    font-family: var(--font-primary, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
 }
 
-.notification-toast.success { border-left-color: #28a745; }
-.notification-toast.error { border-left-color: #dc3545; }
+.notification-toast::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    border-radius: 16px 16px 0 0;
+    background: linear-gradient(90deg, #FFD736, #FFA500);
+}
+
+.notification-toast.success {
+    background: #ffffff;
+    border-color: rgba(40, 167, 69, 0.3);
+    border-top: 4px solid #28a745;
+}
+
+.notification-toast.success::before {
+    background: linear-gradient(90deg, #28a745, #20c997);
+}
+
+.notification-toast.error {
+    background: #ffffff;
+    border-color: rgba(220, 53, 69, 0.3);
+    border-top: 4px solid #dc3545;
+}
+
+.notification-toast.error::before {
+    background: linear-gradient(90deg, #dc3545, #fd7e14);
+}
 
 @keyframes slideInRight {
-    from { transform: translateX(400px); opacity: 0; }
-    to { transform: translateX(0); opacity: 1; }
+    0% { 
+        transform: translateX(100%) scale(0.8); 
+        opacity: 0; 
+    }
+    50% {
+        transform: translateX(-10px) scale(1.02);
+        opacity: 0.8;
+    }
+    100% { 
+        transform: translateX(0) scale(1); 
+        opacity: 1; 
+    }
+}
+
+@keyframes slideOutRight {
+    0% { 
+        transform: translateX(0) scale(1); 
+        opacity: 1; 
+    }
+    100% { 
+        transform: translateX(100%) scale(0.8); 
+        opacity: 0; 
+    }
+}
+
+.notification-toast.slide-out {
+    animation: slideOutRight 0.3s ease forwards;
+}
+
+.notification-toast .toast-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    flex-shrink: 0;
+    background: rgba(255, 215, 54, 0.15);
+}
+
+.notification-toast.success .toast-icon {
+    background: rgba(40, 167, 69, 0.15);
+    color: #28a745;
+}
+
+.notification-toast.error .toast-icon {
+    background: rgba(220, 53, 69, 0.15);
+    color: #dc3545;
+}
+
+.notification-toast .toast-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.notification-toast .toast-title {
+    font-size: 16px;
+    font-weight: 700;
+    margin: 0 0 4px 0;
+    color: #130325;
+    line-height: 1.3;
+}
+
+.notification-toast .toast-message {
+    font-size: 14px;
+    margin: 0;
+    color: #130325;
+    opacity: 0.8;
+    line-height: 1.4;
+}
+
+.notification-toast .toast-close {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: none;
+    border: none;
+    color: #130325;
+    opacity: 0.6;
+    font-size: 18px;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.notification-toast .toast-close:hover {
+    background: rgba(255, 215, 54, 0.15);
+    color: #130325;
+    opacity: 1;
+    transform: scale(1.1);
+}
+
+h1 { 
+    color: #130325 !important; 
+    font-size: 32px !important; 
+    font-weight: 700 !important; 
+    margin: 0 !important;
+    margin-bottom: 28px !important;
+    padding: 0 !important; 
+    text-shadow: none !important;
 }
 
 .products-container {
@@ -122,32 +275,13 @@ main.sidebar-collapsed { margin-left: 0px !important; }
     margin: 0 auto;
 }
 
-.products-container h1 {
-    color: #F9F9F9 !important;
-    font-family: var(--font-primary) !important;
-    font-size: 24px !important;
-    font-weight: 700 !important;
-    text-align: left !important;
-    margin: 0 0 15px 0 !important;
-    padding-left: 20px !important;
-    background: none !important;
-    text-shadow: none !important;
-}
-
-.products-container > p {
-    color: #ffffff;
-    text-align: center;
-    opacity: 0.95;
-    margin: 0 0 30px 0;
-}
-
 .search-card {
-    background: #1a0a2e;
-    border: 1px solid #2d1b4e;
-    border-radius: 12px;
+    background: #ffffff;
+    border: 1px solid rgba(0,0,0,0.1);
+    border-radius: 8px;
     padding: 20px;
     margin-bottom: 30px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 
 .search-wrapper {
@@ -164,24 +298,23 @@ main.sidebar-collapsed { margin-left: 0px !important; }
 
 .search-bar {
     flex: 1;
-    padding: 12px;
-    background: rgba(255,255,255,0.1);
-    border: 1px solid rgba(255,215,54,0.3);
-    border-radius: 8px;
-    color: #F9F9F9;
+    padding: 12px 14px;
+    background: #ffffff;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    color: #130325;
     font-size: 14px;
-    transition: all 0.3s ease;
+    transition: all 0.2s ease;
 }
 
 .search-bar:focus {
     outline: none;
     border-color: #FFD736;
-    box-shadow: 0 0 0 3px rgba(255,215,54,0.2);
-    background: rgba(255,255,255,0.15);
+    box-shadow: 0 0 0 2px rgba(255,215,54,0.2);
 }
 
 .search-bar::placeholder {
-    color: rgba(249,249,249,0.5);
+    color: #999;
 }
 
 .search-btn {
@@ -189,188 +322,194 @@ main.sidebar-collapsed { margin-left: 0px !important; }
     background: #FFD736;
     color: #130325;
     border: none;
-    border-radius: 8px;
+    border-radius: 4px;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.2s ease;
     display: flex;
     align-items: center;
     justify-content: center;
 }
 
 .search-btn:hover {
-    background: #e6c230;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(255,215,54,0.4);
+    background: #f5d026;
 }
 
 .filter-dropdown {
-    padding: 12px 16px;
-    background: rgba(255,255,255,0.1);
-    border: 1px solid rgba(255,215,54,0.3);
-    border-radius: 8px;
-    color: #F9F9F9;
+    padding: 12px 14px;
+    background: #ffffff;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    color: #130325;
     font-size: 14px;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.2s ease;
     min-width: 160px;
 }
 
 .filter-dropdown:focus {
     outline: none;
     border-color: #FFD736;
-    box-shadow: 0 0 0 3px rgba(255,215,54,0.2);
+    box-shadow: 0 0 0 2px rgba(255,215,54,0.2);
 }
 
 .filter-dropdown option {
-    background: #1a0a2e;
-    color: #F9F9F9;
+    background: #ffffff;
+    color: #130325;
+}
+
+.products-table-container {
+    background: #ffffff;
+    border: 1px solid rgba(0,0,0,0.1);
+    border-radius: 8px;
+    padding: 24px;
+    margin-top: 0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 
 .table-wrapper {
-    background: #1a0a2e;
-    border: 1px solid #2d1b4e;
-    border-radius: 12px;
-    overflow: hidden;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    overflow-x: auto;
 }
 
 .products-table {
     width: 100%;
     border-collapse: collapse;
+    font-size: 14px;
 }
 
 .products-table thead {
-    background: rgba(255,215,54,0.1);
-    border-bottom: 2px solid #FFD736;
+    background: #f8f9fa;
+    border-bottom: 2px solid #e5e7eb;
 }
 
 .products-table th {
-    padding: 14px 12px;
+    padding: 12px 16px;
     text-align: left;
-    color: #FFD736;
     font-weight: 700;
-    font-size: 12px;
+    color: #130325;
+    font-size: 13px;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-}
-
-.products-table td {
-    padding: 14px 12px;
-    color: #F9F9F9;
-    border-bottom: 1px solid rgba(255,255,255,0.1);
+    position: relative;
+    user-select: none;
 }
 
 .products-table tbody tr {
-    transition: all 0.2s ease;
+    border-bottom: 1px solid #f0f0f0;
+    transition: background 0.2s ease;
 }
 
 .products-table tbody tr:hover {
-    background: rgba(255,215,54,0.05);
+    background: rgba(255, 215, 54, 0.05);
+}
+
+.products-table td {
+    padding: 14px 16px;
+    color: #130325;
+    vertical-align: middle;
+}
+
+.product-name-cell {
+    display: flex;
+    align-items: center;
+    gap: 12px;
 }
 
 .product-image {
-    width: 60px;
-    height: 60px;
+    width: 50px;
+    height: 50px;
     object-fit: cover;
-    border-radius: 8px;
-    border: 2px solid #FFD736;
+    border-radius: 4px;
+    border: 1px solid #e5e7eb;
 }
 
-.status-badge {
+.stock-badge-table {
     display: inline-block;
-    padding: 5px 12px;
-    border-radius: 20px;
-    font-size: 11px;
-    font-weight: 700;
+    padding: 0;
+    border-radius: 0;
+    font-weight: 600;
+    font-size: 14px;
+    background: transparent;
+    color: #130325;
+}
+
+.status-badge-table {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-weight: 600;
+    font-size: 12px;
     text-transform: uppercase;
 }
 
-.status-active {
-    background: rgba(40,167,69,0.2);
+.status-badge-table.active {
+    background: rgba(40, 167, 69, 0.15);
     color: #28a745;
-    border: 1px solid #28a745;
 }
 
-.status-inactive {
-    background: rgba(220,53,69,0.2);
+.status-badge-table.inactive {
+    background: rgba(220, 53, 69, 0.15);
     color: #dc3545;
-    border: 1px solid #dc3545;
 }
 
-.action-buttons {
+.table-actions {
     display: flex;
-    flex-direction: column;
-    gap: 6px;
+    gap: 8px;
 }
 
 .action-btn {
-    width: 100%;
-    padding: 10px 16px;
-    border: none;
-    border-radius: 8px;
-    font-weight: 600;
-    font-size: 13px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    text-align: center;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: all 0.2s ease;
     text-decoration: none;
-    display: inline-block;
+    color: #130325;
 }
 
-.btn-edit {
-    background: #007bff;
-    color: white;
+.edit-btn {
+    background: #130325;
+    color: #ffffff;
 }
 
-.btn-edit:hover {
-    background: #0056b3;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(0,123,255,0.4);
+.edit-btn:hover {
+    background: #0a0218;
+    transform: scale(1.1);
 }
 
-.btn-toggle {
-    background: #28a745;
-    color: white;
+.status-btn {
+    background: #FFD736;
+    color: #130325;
 }
 
-.btn-toggle:hover {
-    background: #1e7e34;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(40,167,69,0.4);
+.status-btn:hover {
+    background: #f5d026;
+    transform: scale(1.1);
 }
 
-.btn-delete {
+.delete-btn {
     background: #dc3545;
-    color: white;
+    color: #ffffff;
 }
 
-.btn-delete:hover {
+.delete-btn:hover {
     background: #c82333;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(220,53,69,0.4);
+    transform: scale(1.1);
 }
 
-.no-products {
-    background: #1a0a2e;
-    border: 1px solid #2d1b4e;
-    color: #F9F9F9;
-    border-radius: 12px;
-    padding: 60px 20px;
+.no-products-message {
     text-align: center;
-}
-
-.no-products i {
-    font-size: 64px;
-    color: #FFD736;
-    margin-bottom: 20px;
-    display: block;
+    padding: 40px;
+    color: #6b7280;
+    font-size: 14px;
 }
 
 /* Custom Confirmation Modal */
 .custom-confirm-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.8);
+    background: rgba(0, 0, 0, 0.6);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -383,36 +522,54 @@ main.sidebar-collapsed { margin-left: 0px !important; }
 .custom-confirm-overlay.show { opacity: 1; visibility: visible; }
 
 .custom-confirm-dialog {
-    background: linear-gradient(135deg, #1a0a2e 0%, #130325 100%);
-    border: 2px solid #FFD736;
-    border-radius: 12px;
-    padding: 22px;
+    background: #ffffff;
+    border-radius: 10px;
+    padding: 18px 20px;
     width: 92%;
     max-width: 420px;
-    box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.18);
 }
 
-.custom-confirm-title { color: #FFD736; font-weight: 800; font-size: 18px; margin: 0 0 10px 0; }
-.custom-confirm-message { color: #F9F9F9; opacity: 0.9; font-size: 14px; margin-bottom: 16px; }
-.custom-confirm-buttons { display: flex; gap: 10px; justify-content: flex-end; }
-.custom-confirm-btn { padding: 10px 14px; border-radius: 8px; font-weight: 800; border: 2px solid transparent; cursor: pointer; }
-.custom-confirm-btn.cancel { background: rgba(108,117,125,0.15); color: #adb5bd; border-color: #6c757d; }
-.custom-confirm-btn.primary { background: linear-gradient(135deg, #FFD736, #FFD736); color: #130325; border-color: #FFD736; }
+.custom-confirm-title { color: #111827; font-weight: 600; font-size: 1.1rem; margin: 0 0 10px 0; text-transform: none; letter-spacing: normal; }
+.custom-confirm-message { color: #374151; font-size: 0.92rem; margin-bottom: 20px; line-height: 1.5; }
+.custom-confirm-buttons { display: flex; gap: 10px; justify-content: flex-end; margin-top: 16px; }
+.custom-confirm-btn { padding: 6px 12px; border-radius: 6px; font-size: 0.85rem; font-weight: 600; text-transform: none; letter-spacing: normal; border: none; cursor: pointer; }
+.custom-confirm-btn.cancel { background: #6c757d; color: white; }
+.custom-confirm-btn.primary { background: #dc3545; color: white; }
+.custom-confirm-btn.primary:hover { background: #c82333; }
+.custom-confirm-btn.cancel:hover { background: #5a6268; }
 
 @media (max-width: 768px) {
-    main { padding: 15px 15px 60px 15px !important; }
+    main { padding: 30px 24px 60px 24px !important; }
     .search-wrapper { flex-direction: column; }
     .filter-dropdown { width: 100%; }
     .products-table { font-size: 12px; }
-    .action-buttons { flex-direction: row; }
+    .table-actions { flex-direction: row; }
 }
 </style>
 
 <main>
 <div class="products-container">
     <?php if (isset($_SESSION['product_message'])): ?>
-        <div class="notification-toast <?php echo $_SESSION['product_message']['type']; ?>">
-            <?php echo htmlspecialchars($_SESSION['product_message']['text']); ?>
+        <div class="notification-toast <?php echo $_SESSION['product_message']['type']; ?>" id="notificationToast">
+            <div class="toast-icon">
+                <?php if ($_SESSION['product_message']['type'] === 'success'): ?>
+                    <i class="fas fa-check-circle"></i>
+                <?php else: ?>
+                    <i class="fas fa-exclamation-circle"></i>
+                <?php endif; ?>
+            </div>
+            <div class="toast-content">
+                <div class="toast-title">
+                    <?php echo $_SESSION['product_message']['type'] === 'success' ? 'Success!' : 'Error!'; ?>
+                </div>
+                <div class="toast-message">
+                    <?php echo htmlspecialchars($_SESSION['product_message']['text']); ?>
+                </div>
+            </div>
+            <button class="toast-close" onclick="closeNotification()">
+                <i class="fas fa-times"></i>
+            </button>
         </div>
         <?php unset($_SESSION['product_message']); ?>
     <?php endif; ?>
@@ -436,68 +593,76 @@ main.sidebar-collapsed { margin-left: 0px !important; }
     </div>
 
     <?php if (empty($allProducts)): ?>
-        <div class="no-products">
-            <i class="fas fa-box-open"></i>
-            <p style="font-size: 18px; margin: 0;">No products found.</p>
+        <div class="products-table-container">
+            <div class="no-products-message">
+                <p>No products found. Add your first product!</p>
+            </div>
         </div>
     <?php else: ?>
-        <div class="table-wrapper">
-            <table class="products-table">
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Image</th>
-                        <th>Name</th>
-                        <th>Category</th>
-                        <th>Price</th>
-                        <th>Stock</th>
-                        <th>Status</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach ($allProducts as $product): ?>
-                        <tr data-status="<?php echo htmlspecialchars($product['status'] ?? 'inactive'); ?>">
-                            <td><?php echo $product['id']; ?></td>
-                            <td>
-                                <img src="<?php echo htmlspecialchars($product['image_url']); ?>" 
-                                     alt="<?php echo htmlspecialchars($product['name']); ?>" 
-                                     class="product-image"
-                                     onerror="this.src='assets/uploads/tempo_image.jpg'">
-                            </td>
-                            <td><?php echo htmlspecialchars($product['name']); ?></td>
-                            <td><?php echo htmlspecialchars($product['category_name'] ?? 'No Category'); ?></td>
-                            <td>₱<?php echo number_format($product['price'], 2); ?></td>
-                            <td><?php echo $product['stock_quantity']; ?></td>
-                            <td>
-                                <span class="status-badge <?php echo ($product['status'] == 'active') ? 'status-active' : 'status-inactive'; ?>">
-                                    <?php echo ucfirst($product['status'] ?? 'inactive'); ?>
-                                </span>
-                            </td>
-                            <td>
-                                <div class="action-buttons">
-                                    <a href="edit-product.php?id=<?php echo $product['id']; ?>" class="action-btn btn-edit">
-                                        <i class="fas fa-edit"></i> Edit
-                                    </a>
-                                    <a href="?toggle_status=<?php echo $product['id']; ?>" 
-                                       class="action-btn btn-toggle product-toggle"
-                                       data-action="<?php echo ($product['status'] == 'active') ? 'deactivate' : 'activate'; ?>"
-                                       data-product-name="<?php echo htmlspecialchars($product['name']); ?>">
-                                        <i class="fas fa-<?php echo ($product['status'] == 'active') ? 'pause' : 'play'; ?>"></i>
-                                        <?php echo ($product['status'] == 'active') ? 'Deactivate' : 'Activate'; ?>
-                                    </a>
-                                    <a href="?delete=<?php echo $product['id']; ?>" 
-                                       class="action-btn btn-delete product-delete"
-                                       data-action="delete"
-                                       data-product-name="<?php echo htmlspecialchars($product['name']); ?>">
-                                        <i class="fas fa-trash"></i> Delete
-                                    </a>
-                                </div>
-                            </td>
+        <div class="products-table-container">
+            <div class="table-wrapper">
+                <table class="products-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Image</th>
+                            <th>Name</th>
+                            <th>Category</th>
+                            <th>Price</th>
+                            <th>Stock</th>
+                            <th>Status</th>
+                            <th>Actions</th>
                         </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($allProducts as $product): ?>
+                            <tr data-status="<?php echo htmlspecialchars($product['status'] ?? 'inactive'); ?>">
+                                <td><?php echo $product['id']; ?></td>
+                                <td>
+                                    <img src="<?php echo htmlspecialchars($product['image_url']); ?>" 
+                                         alt="<?php echo htmlspecialchars($product['name']); ?>" 
+                                         class="product-image"
+                                         onerror="this.src='assets/uploads/tempo_image.jpg'">
+                                </td>
+                                <td><?php echo htmlspecialchars($product['name']); ?></td>
+                                <td><?php echo htmlspecialchars($product['category_name'] ?? 'No Category'); ?></td>
+                                <td>₱<?php echo number_format($product['price'], 2); ?></td>
+                                <td>
+                                    <span class="stock-badge-table">
+                                        <?php echo (int)$product['stock_quantity']; ?>
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="status-badge-table <?php echo ($product['status'] == 'active') ? 'active' : 'inactive'; ?>">
+                                        <?php echo ucfirst($product['status'] ?? 'inactive'); ?>
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="table-actions">
+                                        <a href="edit-product.php?id=<?php echo $product['id']; ?>" class="action-btn edit-btn" title="Edit">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <a href="?toggle_status=<?php echo $product['id']; ?>" 
+                                           class="action-btn status-btn product-toggle"
+                                           title="<?php echo ($product['status'] == 'active') ? 'Toggle Inactive' : 'Toggle Active'; ?>"
+                                           data-action="<?php echo ($product['status'] == 'active') ? 'deactivate' : 'activate'; ?>"
+                                           data-product-name="<?php echo htmlspecialchars($product['name']); ?>">
+                                            <i class="fas fa-<?php echo ($product['status'] == 'active') ? 'eye-slash' : 'eye'; ?>"></i>
+                                        </a>
+                                        <a href="?delete=<?php echo $product['id']; ?>" 
+                                           class="action-btn delete-btn product-delete"
+                                           title="Delete"
+                                           data-action="delete"
+                                           data-product-name="<?php echo htmlspecialchars($product['name']); ?>">
+                                            <i class="fas fa-trash"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
         </div>
     <?php endif; ?>
 </div>
@@ -534,14 +699,23 @@ function filterProducts() {
     });
 }
 
+// Close notification function
+function closeNotification() {
+    const toast = document.getElementById('notificationToast');
+    if (toast) {
+        toast.classList.add('slide-out');
+        setTimeout(function() {
+            toast.remove();
+        }, 300);
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     const toast = document.querySelector('.notification-toast');
     if (toast) {
         setTimeout(function() {
-            toast.style.transition = 'opacity 0.5s ease';
-            toast.style.opacity = '0';
-            setTimeout(function() { toast.remove(); }, 500);
-        }, 4000);
+            closeNotification();
+        }, 5000);
     }
 
     const main = document.querySelector('main');

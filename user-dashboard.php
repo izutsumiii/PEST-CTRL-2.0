@@ -631,6 +631,21 @@ body {
     color: #130325 !important;
     font-size: 1.1rem;
     font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.order-date-inline {
+    color: #6b7280;
+    font-size: 0.85rem;
+    font-weight: 400;
+}
+
+.order-time-inline {
+    margin-left: 6px;
+    color: #9ca3af;
+    font-size: 0.8rem;
 }
 
 .order-date {
@@ -705,6 +720,14 @@ body {
 .order-item-details {
     color: #666 !important;
     font-size: 0.8rem;
+}
+
+.order-item-date {
+    color: #6b7280;
+    font-size: 0.75rem;
+    white-space: nowrap;
+    margin-left: auto;
+    padding-left: 12px;
 }
 
 /* Order bottom section */
@@ -2800,7 +2823,10 @@ function confirmProductSelection() {
                         }
                         ?>
                         <div class="seller-info"><?php echo htmlspecialchars($sellerName); ?></div>
-                        <div class="order-number">Order #<?php echo str_pad($order['id'], 6, '0', STR_PAD_LEFT); ?></div>
+                        <div class="order-number">
+                            Order #<?php echo str_pad($order['id'], 6, '0', STR_PAD_LEFT); ?>
+                            <span class="order-date-inline"><?php echo date('j M Y', strtotime($order['created_at'])); ?> <span class="order-time-inline"><?php echo date('g:i A', strtotime($order['created_at'])); ?></span></span>
+                        </div>
                     </div>
                     <span class="order-status status-<?php echo strtolower($order['status']); ?>">
                         <?php echo ucfirst($order['status']); ?>

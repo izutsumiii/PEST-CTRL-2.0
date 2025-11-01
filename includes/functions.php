@@ -280,15 +280,15 @@ function validateCartForCheckout() {
 /* -----------------------------
    PRODUCT MANAGEMENT FUNCTIONS
 ------------------------------ */
-function addProduct($name, $description, $price, $categoryId, $sellerId, $stockQuantity, $imageUrl) {
+function addProduct($name, $description, $price, $categoryId, $sellerId, $stockQuantity, $imageUrl, $status = 'active') {
     global $pdo;
     
     // Ensure AUTO_INCREMENT is set on products table
     ensureAutoIncrementPrimary('products');
     
     $stmt = $pdo->prepare("INSERT INTO products (name, description, price, category_id, seller_id, stock_quantity, image_url, status) 
-                          VALUES (?, ?, ?, ?, ?, ?, ?, 'active')");
-    return $stmt->execute([$name, $description, $price, $categoryId, $sellerId, $stockQuantity, $imageUrl]);
+                          VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+    return $stmt->execute([$name, $description, $price, $categoryId, $sellerId, $stockQuantity, $imageUrl, $status]);
 }
 // Update product
 function updateProduct($productId, $name, $description, $price, $categoryId, $stockQuantity, $status) {

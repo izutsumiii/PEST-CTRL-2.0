@@ -6,6 +6,12 @@ require_once 'includes/seller_notification_functions.php';
 requireSeller();
 $userId = $_SESSION['user_id'];
 
+// Get seller name for welcome message
+$stmt = $pdo->prepare("SELECT username, first_name, last_name FROM users WHERE id = ?");
+$stmt->execute([$userId]);
+$sellerInfo = $stmt->fetch(PDO::FETCH_ASSOC);
+$sellerName = trim(($sellerInfo['first_name'] ?? '') . ' ' . ($sellerInfo['last_name'] ?? '')) ?: ($sellerInfo['username'] ?? 'Seller');
+
 // 1. Total Products (unchanged)
 $stmt = $pdo->prepare("SELECT COUNT(*) as total FROM products WHERE seller_id = ? AND status = 'active'");
 $stmt->execute([$userId]);
@@ -423,58 +429,84 @@ $topProducts = $stmt->fetchAll(PDO::FETCH_ASSOC);
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 <style>
 /* Base Styles */
+html, body { 
+    background: #f0f2f5 !important; 
+    color: #130325; 
+    font-size: 14px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
 body { 
-    background: linear-gradient(135deg, #130325 0%, #1a0a2e 100%); 
-    color: #F9F9F9; 
-    font-size: 0.9em; 
+    margin: 0;
+    padding: 0;
 }
 
 main { 
-    margin-top: 20px; 
+    margin-top: -30px !important; 
+    padding: 5px 30px 40px 30px !important;
+}
+
+.container {
+    background: transparent;
 }
 
 /* Typography */
+.dashboard-welcome {
+    color: #130325 !important;
+    font-size: 32px;
+    font-weight: 700;
+    margin: 0;
+    text-align: left;
+    text-shadow: none !important;
+}
+
 h1 {
-    color: #F9F9F9;
-    font-size: 1.8em;
-    margin-bottom: 30px;
-    text-align: center;
+    color: #130325;
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 24px;
+    text-align: left;
+    text-shadow: none !important;
 }
 
 h2 {
-    color: #F9F9F9;
-    font-size: 1.4em;
+    color: #130325;
+    font-size: 22px;
+    font-weight: 700;
     margin-bottom: 20px;
+    text-shadow: none !important;
 }
 
 h3 {
-    color: #F9F9F9;
-    font-size: 1.2em;
+    color: #130325;
+    font-size: 16px;
+    font-weight: 600;
     margin-bottom: 15px;
+    text-shadow: none !important;
 }
 
 /* Stat Cards */
 .stat-card {
-    background: rgba(255, 255, 255, 0.1);
+    background: #ffffff;
     padding: 20px;
     border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-    text-align: center;
-    border-left: 4px solid #007bff;
-    color: #F9F9F9;
-    backdrop-filter: blur(10px);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    text-align: left;
+    border-left: 4px solid #FFD736;
+    color: #130325;
     transition: all 0.3s ease;
 }
 
 /* New KPI Card Styles */
 .kpi-card {
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    background: #ffffff;
+    border: 1px solid rgba(0, 0, 0, 0.1);
     border-radius: 12px;
-    padding: 20px;
+    padding: 24px;
     text-align: center;
-    color: #F9F9F9;
-    backdrop-filter: blur(10px);
+    color: #130325;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
     transition: all 0.3s ease;
     position: relative;
     overflow: hidden;
@@ -484,26 +516,10 @@ h3 {
     justify-content: space-between;
 }
 
-.kpi-card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 3px;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
-    transform: translateX(-100%);
-    transition: transform 0.8s ease;
-}
-
-.kpi-card:hover::before {
-    transform: translateX(100%);
-}
-
 .kpi-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 15px 30px rgba(0,0,0,0.2);
-    border-color: rgba(255, 255, 255, 0.25);
+    transform: translateY(-3px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    border-color: rgba(0, 0, 0, 0.15);
 }
 
 .kpi-header {
@@ -519,30 +535,27 @@ h3 {
 }
 
 .kpi-header h3 {
-    font-size: 0.9em;
+    font-size: 13px;
     font-weight: 600;
-    color: rgba(255, 255, 255, 0.8);
+    color: #6b7280;
     margin: 0;
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
 
 .kpi-value {
-    font-size: 1.8em;
-    font-weight: bold;
-    margin: 8px 0;
-    background: linear-gradient(135deg, #fff, #e0e7ff);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    font-size: 28px;
+    font-weight: 700;
+    margin: 12px 0;
+    color: #130325;
     line-height: 1.2;
 }
 
 .kpi-subtitle {
-    font-size: 0.75em;
-    color: rgba(255, 255, 255, 0.6);
-    margin-bottom: 8px;
-    font-weight: 500;
+    font-size: 13px;
+    color: #6b7280;
+    margin-bottom: 0;
+    font-weight: 400;
 }
 
 /* Widened KPI Card */
@@ -558,30 +571,38 @@ h3 {
 
 /* Export Button Styling */
 .download-icon-btn {
-    background: linear-gradient(135deg, #FFD736, #FFA500);
+    background: #FFD736;
     border: none;
-    border-radius: 6px;
-    padding: 6px 12px;
-    height: 32px;
-    display: flex;
+    border-radius: 8px;
+    padding: 10px 18px;
+    height: auto;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 6px;
+    gap: 8px;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.2s ease;
     font-weight: 600;
-    font-size: 0.8rem;
+    font-size: 13px;
     color: #130325;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    font-family: inherit;
 }
 
 .download-icon-btn:hover {
-    background: linear-gradient(135deg, #FFA500, #FF8C00);
-    transform: translateY(-2px);
+    background: #f5d026;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.download-icon-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
 }
 
 .download-icon-btn i {
     color: #130325;
-    font-size: 1rem;
+    font-size: 14px;
 }
 
 /* Export Modal Styling */
@@ -623,12 +644,15 @@ h3 {
 }
 .form-select option { background: rgb(230, 230, 230); color: #333; padding: 8px; } /* Off-white */
 .btn-close {
-    background: #dc3545; border: none; border-radius: 6px; width: 28px; height: 28px;
-    opacity: 1; color: #fff; font-size: 0.9rem; font-weight: bold;
-    display: flex; align-items: center; justify-content: center;
-    transition: all 0.3s ease; position: absolute; top: 15px; right: 15px;
+    background: transparent !important; border: none !important; border-radius: 0 !important;
+    width: auto !important; height: auto !important;
+    opacity: 1 !important; color: #dc3545 !important; font-size: 24px !important; font-weight: bold !important;
+    display: flex !important; align-items: center !important; justify-content: center !important;
+    transition: all 0.2s ease !important; position: absolute !important; top: 15px !important; right: 15px !important;
+    padding: 0 !important; cursor: pointer !important;
 }
-.btn-close:hover { background: #c82333; color: #fff; }
+.btn-close:hover { background: transparent !important; color: #c82333 !important; transform: scale(1.15) !important; }
+.btn-close:active { transform: scale(1.05) !important; }
 .btn-cancel {
     background: #dc3545; color: #ffffff; border: none; border-radius: 8px;
     padding: 8px 16px; font-size: 0.9rem; font-weight: 500; cursor: pointer; transition: all 0.3s ease;
@@ -659,10 +683,10 @@ h3 {
 .stat-card.conversion { border-left-color: #e83e8c; }
 
 .stat-value {
-    font-size: 2em;
-    font-weight: bold;
+    font-size: 24px;
+    font-weight: 700;
     margin: 10px 0;
-    color: #FFD736;
+    color: #130325;
 }
 
 .stat-card h3,
@@ -670,17 +694,17 @@ h3 {
 .stat-card span,
 .stat-card small,
 .stat-card .label {
-    color: #FFFFFF;
+    color: #130325;
 }
 
 /* Section Containers */
 .section {
-    background: rgba(255, 255, 255, 0.1);
-    padding: 20px;
+    background: #ffffff;
+    padding: 24px;
     border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-    color: #F9F9F9;
-    backdrop-filter: blur(10px);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    color: #130325;
 }
 
 /* Status Cards */
@@ -799,9 +823,12 @@ h3 {
 }
 
 .orders-table th {
-    background-color: rgba(255, 255, 255, 0.05);
-    font-weight: bold;
-    color: #F9F9F9;
+    background: #130325;
+    font-weight: 700;
+    color: #ffffff;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
 .orders-table tbody tr {
@@ -816,16 +843,31 @@ h3 {
 
 /* Product List */
 .product-list {
-    max-height: 250px;
+    max-height: 400px;
     overflow-y: auto;
+    padding: 4px;
 }
 
 .product-item {
     display: flex;
     align-items: center;
     gap: 15px;
-    padding: 10px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 16px;
+    border-bottom: 2px solid #e5e7eb;
+    margin-bottom: 8px;
+    background: #ffffff;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.product-item:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+}
+
+.product-item:hover {
+    background: #f9fafb;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
 
 .product-info {
@@ -834,19 +876,19 @@ h3 {
 
 .product-name {
     display: block;
-    font-weight: bold;
+    font-weight: 600;
     margin-bottom: 5px;
-    color: #F9F9F9;
+    color: #130325;
 }
 
 .product-stats {
-    font-size: 0.9em;
-    color: rgba(255, 255, 255, 0.7);
+    font-size: 14px;
+    color: #6b7280;
 }
 
 .rank {
-    font-weight: bold;
-    color: #FFD736;
+    font-weight: 700;
+    color: #130325;
     min-width: 30px;
 }
 
@@ -883,14 +925,62 @@ h3 {
 }
 
 .view-btn {
-    background-color: #17a2b8;
-    color: white;
-    padding: 4px 8px;
-    font-size: 0.8em;
+    background-color: #130325;
+    color: #ffffff;
+    padding: 8px;
+    width: 36px;
+    height: 36px;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    position: relative;
 }
 
 .view-btn:hover {
-    background-color: #138496;
+    background-color: #0a0218;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.view-btn::after {
+    content: 'View Details';
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%) translateY(-4px);
+    background: #130325;
+    color: #ffffff;
+    padding: 6px 10px;
+    border-radius: 4px;
+    font-size: 11px;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    margin-bottom: 4px;
+}
+
+.view-btn::before {
+    content: '';
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%) translateY(4px);
+    border: 4px solid transparent;
+    border-top-color: #130325;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.view-btn:hover::after,
+.view-btn:hover::before {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
 }
 
 /* Loading Animation */
@@ -942,10 +1032,10 @@ h3 {
 .orders-table-container {
     overflow-x: auto;
     margin-bottom: 15px;
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(0, 0, 0, 0.1);
     border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-    background: rgba(255, 255, 255, 0.05);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    background: #ffffff;
 }
 
 .orders-table {
@@ -955,67 +1045,69 @@ h3 {
 }
 
 .orders-table thead {
-    background: rgba(255, 255, 255, 0.1);
+    background: #130325;
     position: sticky;
     top: 0;
     z-index: 10;
+    border-bottom: 2px solid #FFD736;
 }
 
 .orders-table th {
     padding: 12px 12px;
     text-align: left;
-    font-size: 0.75rem;
-    font-weight: 600;
+    font-size: 13px;
+    font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: #FFD736;
-    border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+    letter-spacing: 0.5px;
+    color: #ffffff;
+    border-bottom: 2px solid #FFD736;
 }
 
 .orders-table td {
     padding: 12px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    color: #F9F9F9;
+    border-bottom: 1px solid #f0f0f0;
+    color: #130325;
+    background: #ffffff;
 }
 
 .orders-table tbody tr {
-    background: rgba(255, 255, 255, 0.03);
+    background: #ffffff;
     transition: all 0.15s ease-in-out;
 }
 
 .orders-table tbody tr:hover {
-    background: #1a0a2e !important; /* darker purple hover */
+    background: rgba(255, 215, 54, 0.05) !important;
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 .orders-table tbody tr:hover td,
 .orders-table tbody tr:hover span,
 .orders-table tbody tr:hover a {
-    color: #F9F9F9 !important; /* keep text readable */
+    color: #130325 !important;
 }
 
 /* Order ID and Product Info */
 .orders-table .font-mono {
-    color: #17a2b8;
+    color: #130325;
     font-weight: 700;
 }
 
 .orders-table .text-gray-400 {
-    color: rgba(255, 255, 255, 0.5);
+    color: #6b7280 !important;
 }
 
 .orders-table .text-gray-500 {
-    color: rgba(255, 255, 255, 0.6);
+    color: #6b7280 !important;
 }
 
 .orders-table .text-gray-900 {
-    color: #F9F9F9;
+    color: #130325 !important;
 }
 
 /* Product Image */
 .orders-table img {
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 /* Payment Status Badges */
@@ -1156,23 +1248,23 @@ h3 {
     }
 }
 
-/* Scrollbar Styling for Dark Theme */
+/* Scrollbar Styling */
 .orders-table-container::-webkit-scrollbar {
     height: 8px;
 }
 
 .orders-table-container::-webkit-scrollbar-track {
-    background: rgba(255, 255, 255, 0.05);
+    background: #f3f4f6;
     border-radius: 4px;
 }
 
 .orders-table-container::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.2);
+    background: #d1d5db;
     border-radius: 4px;
 }
 
 .orders-table-container::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.3);
+    background: #9ca3af;
 }
 </style>
 
@@ -1180,8 +1272,8 @@ h3 {
     <div class="container mx-auto px-4 py-2">
         <!-- Main Section Header with Export Button -->
         <div class="flex justify-between items-center mb-6">
-            <h1 class="text-4xl font-bold text-center text-white">
-                Seller Dashboard
+            <h1 class="dashboard-welcome">
+                Welcome, <?php echo htmlspecialchars($sellerName); ?>
             </h1>
             <button onclick="showDashboardExportModal()" class="download-icon-btn" title="Export Dashboard Data">
                 <i class="fas fa-download"></i> Export Data
@@ -1265,18 +1357,18 @@ h3 {
         </div>
 
 <!-- Optional: Add a breakdown section for more detailed revenue tracking -->
-<div class="stat-card bg-white rounded-lg shadow p-6 border-l-4 border-green-500 mb-8" data-aos="fade-up">
-    <h2 class="text-lg font-bold text-white mb-4">Revenue Breakdown</h2>
+<div class="stat-card mb-8" data-aos="fade-up">
+    <h2 class="text-lg font-bold mb-4">Revenue Breakdown</h2>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div class="stat-card paid bg-green-50 rounded-lg shadow p-4 border-l-4 border-green-500">
-            <h3 class="text-sm font-medium text-green-800 mb-1">Online Payments (Secured)</h3>
-            <p class="stat-value text-green-600">₱<?php echo number_format($onlinePaymentRevenue, 2); ?></p>
-            <small class="text-green-700">Gcash, PayPal, Credit Card, Debit Card</small>
+        <div class="stat-card paid" style="background: #f0fdf4; border-left-color: #10b981;">
+            <h3 class="text-sm font-medium mb-1" style="color: #065f46;">Online Payments (Secured)</h3>
+            <p class="stat-value" style="color: #059669;">₱<?php echo number_format($onlinePaymentRevenue, 2); ?></p>
+            <small style="color: #047857;">Gcash, PayPal, Credit Card, Debit Card</small>
         </div>
-        <div class="stat-card paid bg-blue-50 rounded-lg shadow p-4 border-l-4 border-blue-500">
-            <h3 class="text-sm font-medium text-blue-800 mb-1">COD Delivered</h3>
-            <p class="stat-value text-blue-600">₱<?php echo number_format($codDeliveredRevenue, 2); ?></p>
-            <small class="text-blue-700">Cash payments received</small>
+        <div class="stat-card paid" style="background: #eff6ff; border-left-color: #3b82f6;">
+            <h3 class="text-sm font-medium mb-1" style="color: #1e40af;">COD Delivered</h3>
+            <p class="stat-value" style="color: #2563eb;">₱<?php echo number_format($codDeliveredRevenue, 2); ?></p>
+            <small style="color: #1e3a8a;">Cash payments received</small>
         </div>
     </div>
 </div>
@@ -1318,7 +1410,10 @@ h3 {
                     <?php endif; ?>
                 </div>
                 <?php if (empty($lowStockProducts)): ?>
-                    <p class="text-green-600">✅ All products have sufficient stock.</p>
+                    <div style="display: flex; align-items: center; gap: 10px; padding: 12px 16px; background: #f0fdf4; border: 1px solid #10b981; border-radius: 8px; color: #065f46;">
+                        <i class="fas fa-check-circle" style="font-size: 18px; color: #10b981;"></i>
+                        <span style="font-weight: 500; font-size: 14px;">All products have sufficient stock.</span>
+                    </div>
                 <?php else: ?>
                     <div class="alert-list">
                         <?php foreach ($lowStockProducts as $product): ?>
@@ -1423,11 +1518,13 @@ h3 {
                         return $methodLabels[$m] ?? ucfirst($m);
                     }, $methods);
                     ?>
-                    <span class="text-xs text-gray-400 block mt-1">
+                    <span class="text-xs block mt-1" style="color: #6b7280;">
                         Payment Methods Used: <?php echo implode(', ', $displayMethods); ?>
                     </span>
                     </div>
-                    <a href="edit-product.php?id=<?php echo $product['id']; ?>" class="view-btn">View</a>
+                    <a href="edit-product.php?id=<?php echo $product['id']; ?>" class="view-btn" title="View Details">
+                        <i class="fas fa-eye"></i>
+                    </a>
                 </div>
                 <?php endforeach; ?>
             </div>
@@ -1435,10 +1532,10 @@ h3 {
         </div>
 
        <!-- Recent Orders -->
-<div class="section mb-8" data-aos="fade-up">
+        <div class="section mb-8" data-aos="fade-up">
     <div class="flex items-center justify-between mb-4">
-        <h2 class="text-xl font-bold text-white">Recent Orders</h2>
-        <span class="bg-blue-600 bg-opacity-20 text-blue-300 text-xs font-medium px-2.5 py-0.5 rounded-full border border-blue-500">
+        <h2 class="text-xl font-bold">Recent Orders</h2>
+        <span style="background: #eff6ff; color: #1e40af; font-size: 12px; font-weight: 500; padding: 4px 10px; border-radius: 9999px; border: 1px solid #3b82f6;">
             <?php echo count($recentOrders); ?> orders
         </span>
     </div>
@@ -1448,52 +1545,52 @@ h3 {
             <svg class="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
             </svg>
-            <h3 class="text-lg font-medium text-white mb-2">No Recent Orders</h3>
-            <p class="text-gray-300">You haven't received any orders yet. Start promoting your products!</p>
+            <h3 class="text-lg font-medium mb-2" style="color: #130325;">No Recent Orders</h3>
+            <p class="text-gray-600">You haven't received any orders yet. Start promoting your products!</p>
         </div>
     <?php else: ?>
         <!-- Responsive Recent Orders List -->
-        <div class="orders-table-container overflow-auto max-h-96 border border-gray-700 rounded-lg shadow-lg">
-            <table class="orders-table min-w-full divide-y divide-gray-700 text-sm">
-                <thead class="bg-gray-800 bg-opacity-50 sticky top-0">
+        <div class="orders-table-container overflow-auto max-h-96" style="border: 1px solid rgba(0, 0, 0, 0.1); border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+            <table class="orders-table min-w-full text-sm">
+                <thead class="sticky top-0">
                     <tr>
-                        <th class="px-3 py-3 text-left text-xs font-medium text-yellow-400 uppercase tracking-wider">Order</th>
-                        <th class="px-3 py-3 text-left text-xs font-medium text-yellow-400 uppercase tracking-wider">Product</th>
-                        <th class="px-3 py-3 text-left text-xs font-medium text-yellow-400 uppercase tracking-wider">Customer</th>
-                        <th class="px-3 py-3 text-left text-xs font-medium text-yellow-400 uppercase tracking-wider">Qty/Price</th>
-                        <th class="px-3 py-3 text-left text-xs font-medium text-yellow-400 uppercase tracking-wider">Total</th>
-                        <th class="px-3 py-3 text-left text-xs font-medium text-yellow-400 uppercase tracking-wider">Payment</th>
-                        <th class="px-3 py-3 text-left text-xs font-medium text-yellow-400 uppercase tracking-wider">Status</th>
-                        <th class="px-3 py-3 text-left text-xs font-medium text-yellow-400 uppercase tracking-wider">Date</th>
+                        <th class="px-3 py-3 text-left text-xs font-medium uppercase tracking-wider">Order</th>
+                        <th class="px-3 py-3 text-left text-xs font-medium uppercase tracking-wider">Product</th>
+                        <th class="px-3 py-3 text-left text-xs font-medium uppercase tracking-wider">Customer</th>
+                        <th class="px-3 py-3 text-left text-xs font-medium uppercase tracking-wider">Qty/Price</th>
+                        <th class="px-3 py-3 text-left text-xs font-medium uppercase tracking-wider">Total</th>
+                        <th class="px-3 py-3 text-left text-xs font-medium uppercase tracking-wider">Payment</th>
+                        <th class="px-3 py-3 text-left text-xs font-medium uppercase tracking-wider">Status</th>
+                        <th class="px-3 py-3 text-left text-xs font-medium uppercase tracking-wider">Date</th>
                     </tr>
                 </thead>
-                <tbody class="bg-transparent divide-y divide-gray-700">
+                <tbody class="bg-transparent">
                     <?php foreach ($recentOrders as $order): ?>
                         <tr class="transition duration-150">
                             <td class="px-3 py-3 whitespace-nowrap">
                                 <div class="flex flex-col">
-                                    <span class="font-mono text-xs font-bold text-cyan-400">#<?php echo $order['id']; ?></span>
+                                    <span class="font-mono text-xs font-bold" style="color: #130325;">#<?php echo $order['id']; ?></span>
                                     <?php if (!empty($order['product_sku'])): ?>
-                                        <span class="text-xs text-gray-400">SKU: <?php echo htmlspecialchars($order['product_sku']); ?></span>
+                                        <span class="text-xs" style="color: #6b7280;">SKU: <?php echo htmlspecialchars($order['product_sku']); ?></span>
                                     <?php endif; ?>
                                 </div>
                             </td>
                             <td class="px-3 py-3">
                                 <div class="flex items-center space-x-2">
                                     <?php if (!empty($order['product_image'])): ?>
-                                        <img class="w-8 h-8 rounded object-cover border border-gray-600" 
+                                        <img class="w-8 h-8 rounded object-cover" style="border: 1px solid #e5e7eb;" 
                                              src="<?php echo htmlspecialchars($order['product_image']); ?>" 
                                              alt="<?php echo htmlspecialchars($order['product_name']); ?>"
                                              onerror="this.src='placeholder-product.png'">
                                     <?php else: ?>
-                                        <div class="w-8 h-8 bg-gray-700 rounded flex items-center justify-center">
-                                            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <div class="w-8 h-8 rounded flex items-center justify-center" style="background: #f3f4f6;">
+                                            <svg class="w-4 h-4" style="color: #9ca3af;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
                                             </svg>
                                         </div>
                                     <?php endif; ?>
                                     <div class="flex-1 min-w-0">
-                                        <p class="text-sm font-medium text-white truncate max-w-32" title="<?php echo htmlspecialchars($order['product_name']); ?>">
+                                        <p class="text-sm font-medium truncate max-w-32" style="color: #130325;" title="<?php echo htmlspecialchars($order['product_name']); ?>">
                                             <?php echo htmlspecialchars($order['product_name']); ?>
                                         </p>
                                     </div>
@@ -1501,18 +1598,18 @@ h3 {
                             </td>
                             <td class="px-3 py-3 whitespace-nowrap">
                                 <div class="flex flex-col">
-                                    <span class="text-sm font-medium text-white"><?php echo htmlspecialchars($order['customer_name']); ?></span>
-                                    <span class="text-xs text-gray-400"><?php echo htmlspecialchars($order['customer_email']); ?></span>
+                                    <span class="text-sm font-medium" style="color: #130325;"><?php echo htmlspecialchars($order['customer_name']); ?></span>
+                                    <span class="text-xs" style="color: #6b7280;"><?php echo htmlspecialchars($order['customer_email']); ?></span>
                                 </div>
                             </td>
                             <td class="px-3 py-3 whitespace-nowrap">
                                 <div class="flex flex-col">
-                                    <span class="text-sm font-medium text-white"><?php echo $order['quantity']; ?> item(s)</span>
-                                    <span class="text-xs text-gray-400">₱<?php echo number_format($order['item_price'], 2); ?></span>
+                                    <span class="text-sm font-medium" style="color: #130325;"><?php echo $order['quantity']; ?> item(s)</span>
+                                    <span class="text-xs" style="color: #6b7280;">₱<?php echo number_format($order['item_price'], 2); ?></span>
                                 </div>
                             </td>
                             <td class="px-3 py-3 whitespace-nowrap">
-                                <span class="font-bold text-sm text-yellow-400">
+                                <span class="font-bold text-sm" style="color: #130325;">
                                     ₱<?php echo number_format($order['total_amount'], 2); ?>
                                 </span>
                             </td>
@@ -1526,7 +1623,7 @@ h3 {
                                     <?php echo ucfirst($order['status']); ?>
                                 </span>
                             </td>
-                            <td class="px-3 py-3 whitespace-nowrap text-xs text-gray-400">
+                            <td class="px-3 py-3 whitespace-nowrap text-xs" style="color: #6b7280;">
                                 <div class="flex flex-col">
                                     <span><?php echo date('M j, Y', strtotime($order['created_at'])); ?></span>
                                     <span class="text-xs"><?php echo date('g:i A', strtotime($order['created_at'])); ?></span>
@@ -1571,7 +1668,9 @@ h3 {
                 <div class="modal-content">
                     <div class="modal-header">
                         <h5 class="modal-title">Export Dashboard Data</h5>
-                        <button type="button" class="btn-close" onclick="closeDashboardExportModal()" aria-label="Close">×</button>
+                        <button type="button" class="btn-close" onclick="closeDashboardExportModal()" aria-label="Close">
+                            <i class="fas fa-times" style="font-size: 20px;"></i>
+                        </button>
                     </div>
                     <div class="modal-body">
                         <div class="mb-3">

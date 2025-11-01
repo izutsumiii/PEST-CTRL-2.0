@@ -324,10 +324,10 @@ if (isLoggedIn()) {
         .modal-content {
             background: #ffffff;
             color: #130325;
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
+            position: absolute !important;
+            top: 50% !important;
+            left: 50% !important;
+            transform: translate(-50%, -50%) !important;
             padding: 28px 24px;
             border-radius: 8px;
             border: none;
@@ -336,6 +336,7 @@ if (isLoggedIn()) {
             box-shadow: 0 4px 15px rgba(19, 3, 37, 0.1);
             text-align: center;
             animation: slideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            margin: 0 !important;
         }
 
         @keyframes slideIn {
@@ -392,16 +393,18 @@ if (isLoggedIn()) {
         }
 
         .code-input {
-            font-size: 26px;
+            font-size: 24px;
             letter-spacing: 10px;
-            padding: 10px 10px;
+            padding: 12px 16px;
             background: var(--primary-light);
             color: var(--primary-dark);
             border: 1px solid var(--border-secondary);
             border-radius: 10px;
             max-width: 260px;
-            margin: 0 auto;
+            margin: 20px auto !important;
             width: 100%;
+            display: block;
+            text-align: center;
         }
 
         .code-input:focus {
@@ -423,20 +426,24 @@ if (isLoggedIn()) {
 
         .modal-buttons {
             flex-direction: column;
-            gap: 12px;
+            gap: 10px;
             display: flex;
             margin-top: 16px;
+            align-items: center;
+            width: 100%;
         }
 
         .btn {
-            padding: 14px 28px;
+            padding: 10px 20px;
             border: none;
-            border-radius: 10px;
+            border-radius: 8px;
             cursor: pointer;
             font-weight: 600;
-            font-size: 16px;
+            font-size: 13px;
             transition: all 0.3s ease;
-            width: 100%;
+            width: auto;
+            min-width: 140px;
+            max-width: 200px;
         }
 
         .modal-buttons .btn-primary {
@@ -714,10 +721,10 @@ if (isLoggedIn()) {
         .modal-content {
             background: #ffffff;
             color: #130325;
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
+            position: absolute !important;
+            top: 50% !important;
+            left: 50% !important;
+            transform: translate(-50%, -50%) !important;
             padding: 28px 24px;
             border-radius: 8px;
             border: none;
@@ -726,6 +733,7 @@ if (isLoggedIn()) {
             box-shadow: 0 4px 15px rgba(19, 3, 37, 0.1);
             text-align: center;
             animation: slideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            margin: 0 !important;
         }
 
         @keyframes slideIn {
@@ -762,6 +770,14 @@ if (isLoggedIn()) {
             transform: rotate(90deg);
         }
 
+        .modal-header {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+
         .modal-header i {
             font-size: 56px;
             color: #130325;
@@ -774,24 +790,28 @@ if (isLoggedIn()) {
             font-size: 28px;
             margin-bottom: 12px;
             font-weight: 700;
+            text-align: center;
         }
 
         .modal-header p {
             color: #130325;
             opacity: 0.85;
+            text-align: center;
         }
 
         .code-input {
-            font-size: 26px;
+            font-size: 24px;
             letter-spacing: 10px;
-            padding: 14px 12px;
+            padding: 12px 16px;
             background: var(--primary-light);
             color: var(--primary-dark);
             border: 1px solid var(--border-secondary);
             border-radius: 10px;
             max-width: 260px;
-            margin: 0 auto;
+            margin: 20px auto !important;
             width: 100%;
+            display: block;
+            text-align: center;
         }
 
         .code-input:focus {
@@ -813,20 +833,24 @@ if (isLoggedIn()) {
 
         .modal-buttons {
             flex-direction: column;
-            gap: 12px;
+            gap: 10px;
             display: flex;
             margin-top: 16px;
+            align-items: center;
+            width: 100%;
         }
 
         .btn {
-            padding: 14px 28px;
+            padding: 10px 20px;
             border: none;
-            border-radius: 10px;
+            border-radius: 8px;
             cursor: pointer;
             font-weight: 600;
-            font-size: 16px;
-            transition: var(--transition);
-            width: 100%;
+            font-size: 13px;
+            transition: all 0.3s ease;
+            width: auto;
+            min-width: 140px;
+            max-width: 200px;
         }
 
         .modal-buttons .btn-primary {

@@ -119,11 +119,11 @@ if (isset($_COOKIE['remember_token']) && !isLoggedIn()) {
             max-width: 380px;
             margin: 40px auto;
             padding: 20px;
-            border: 1px solid var(--border-secondary);
-            border-radius: 15px;
-            background: linear-gradient(135deg, var(--primary-dark) 0%, rgba(19, 3, 37, 0.95) 100%);
-            color: var(--primary-light);
-            box-shadow: 0 10px 40px var(--shadow-dark);
+            border: none;
+            border-radius: 8px;
+            background: #ffffff;
+            color: #130325;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
             position: relative;
             overflow: hidden;
         }
@@ -137,36 +137,32 @@ if (isset($_COOKIE['remember_token']) && !isLoggedIn()) {
             margin: 0;
             font-size: 24px;
             font-weight: 700;
-            color: var(--accent-yellow);
+            color: #130325;
         }
 
         .login-header .subtitle {
             font-size: 14px;
-            opacity: 0.8;
-            margin-top: 5px;
-        }
-        
-        .login-header .subtitle {
-            font-size: 14px;
-            opacity: 0.8;
+            color: #130325;
+            opacity: 0.7;
             margin-top: 5px;
         }
         
         .security-notice {
-            background: rgba(231, 76, 60, 0.2);
+            background: rgba(220, 53, 69, 0.15);
             padding: 15px;
             border-radius: 8px;
             margin-bottom: 25px;
             font-size: 13px;
             text-align: center;
-            border-left: 4px solid #e74c3c;
+            border: 2px solid rgba(220, 53, 69, 0.4);
             position: relative;
             z-index: 1;
+            color: #dc3545;
         }
         
         .security-notice i {
             margin-right: 8px;
-            color: #e74c3c;
+            color: #dc3545;
         }
         
         .form-group {
@@ -180,16 +176,18 @@ if (isset($_COOKIE['remember_token']) && !isLoggedIn()) {
             margin-bottom: 8px;
             font-weight: 600;
             font-size: 14px;
+            color: #130325;
         }
         
         .form-group input[type="text"],
         .form-group input[type="password"] {
             width: 100%;
-            padding: 8px;
-            border: none;
+            padding: 8px 10px;
+            border: 2px solid rgba(19, 3, 37, 0.2);
             border-radius: 6px;
             font-size: 13px;
-            background: rgba(255,255,255,0.95);
+            background: #ffffff;
+            color: #130325;
             box-sizing: border-box;
             transition: all 0.3s ease;
         }
@@ -197,8 +195,12 @@ if (isset($_COOKIE['remember_token']) && !isLoggedIn()) {
         .form-group input:focus {
             outline: none;
             background: #ffffff;
-            box-shadow: 0 0 15px rgba(255, 215, 54, 0.3);
-            transform: translateY(-2px);
+            border-color: #FFD736;
+            box-shadow: 0 0 0 3px rgba(255, 215, 54, 0.2);
+        }
+        
+        .form-group input::placeholder {
+            color: rgba(19, 3, 37, 0.5);
         }
         
         .password-input-container {
@@ -214,24 +216,27 @@ if (isset($_COOKIE['remember_token']) && !isLoggedIn()) {
             border: none;
             cursor: pointer;
             padding: 8px;
-            color: #666;
-            transition: color 0.3s ease;
+            color: #130325;
+            opacity: 0.6;
+            transition: opacity 0.3s ease;
         }
         
         .toggle-password:hover {
-            color: #333;
+            opacity: 1;
         }
         
         .forgot-password {
-            color: var(--accent-yellow);
+            color: #130325;
             font-size: 14px;
             text-decoration: none;
             float: right;
             margin-top: 5px;
+            opacity: 0.7;
+            transition: opacity 0.3s ease;
         }
         
         .forgot-password:hover {
-            color: var(--primary-light);
+            opacity: 1;
             text-decoration: underline;
         }
         
@@ -241,11 +246,13 @@ if (isset($_COOKIE['remember_token']) && !isLoggedIn()) {
             font-size: 14px;
             position: relative;
             z-index: 1;
+            color: #130325;
         }
         
         .remember-me input[type="checkbox"] {
             margin-right: 10px;
             transform: scale(1.2);
+            accent-color: #FFD736;
         }
         
         .remember-warning {
@@ -253,24 +260,28 @@ if (isset($_COOKIE['remember_token']) && !isLoggedIn()) {
             opacity: 0.7;
             margin-top: 5px;
             font-style: italic;
+            color: #130325;
         }
         
         button[type="submit"] {
             width: 100%;
-            padding: 10px;
-            background: linear-gradient(135deg, var(--accent-yellow), #e6c230);
-            color: var(--primary-dark);
-            border: none;
+            padding: 10px 16px;
+            background-color: #130325;
+            color: #F9F9F9;
+            border: 2px solid #130325;
             border-radius: 6px;
             font-size: 13px;
             font-weight: 700;
             cursor: pointer;
             transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(255, 215, 54, 0.3);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
         
-        button[type="submit"]:hover {
-            background: linear-gradient(135deg, #e6c230, var(--accent-yellow));
+        button[type="submit"]:hover:not(:disabled) {
+            background-color: #FFD736;
+            color: #130325;
+            border-color: #FFD736;
             transform: translateY(-2px);
             box-shadow: 0 6px 20px rgba(255, 215, 54, 0.4);
         }
@@ -284,91 +295,82 @@ if (isset($_COOKIE['remember_token']) && !isLoggedIn()) {
             margin-top: 25px;
             position: relative;
             z-index: 1;
+            padding-top: 12px;
+            border-top: 1px solid rgba(19, 3, 37, 0.1);
         }
         
         .login-links a {
-            color: rgba(255,255,255,0.8);
+            color: #130325;
             text-decoration: none;
             margin: 0 10px;
             font-size: 14px;
+            font-weight: 600;
             transition: color 0.3s ease;
         }
         
         .login-links a:hover {
-            color: white;
+            color: #FFD736;
             text-decoration: underline;
         }
         
         .other-logins {
             text-align: center;
-            margin-top: 30px;
+            margin-top: 20px;
             padding-top: 20px;
-            border-top: 1px solid rgba(255,255,255,0.2);
+            border-top: 1px solid rgba(19, 3, 37, 0.1);
             position: relative;
             z-index: 1;
+        }
+        
+        .other-logins p {
+            margin-bottom: 12px;
+            font-size: 14px;
+            color: #130325;
+            opacity: 0.7;
         }
         
         .other-logins a {
             display: inline-block;
-            margin: 5px 10px;
-            padding: 8px 16px;
-            background: rgba(255,255,255,0.1);
-            color: var(--primary-light);
+            margin: 3px 5px;
+            padding: 6px 12px;
+            background: #130325;
+            color: #FFD736;
             text-decoration: none;
             border-radius: 5px;
-            font-size: 14px;
-            transition: background 0.3s ease;
+            font-size: 12px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            border: 2px solid #130325;
         }
         
         .other-logins a:hover {
-            background: rgba(255,255,255,0.2);
+            background: #FFD736;
+            color: #130325;
+            border-color: #FFD736;
+            transform: translateY(-2px);
         }
         
         .success-message, .error-message {
             padding: 12px;
-            border-radius: 5px;
+            border-radius: 6px;
             margin-bottom: 20px;
             text-align: center;
+            font-size: 13px;
+            font-weight: 600;
         }
         
         .success-message {
-            background: rgba(46, 204, 113, 0.2);
-            border: 1px solid rgba(46, 204, 113, 0.5);
-            color: #2ecc71;
+            background: rgba(40, 167, 69, 0.15);
+            border: 2px solid rgba(40, 167, 69, 0.4);
+            color: #28a745;
         }
         
         .error-message {
-            background: rgba(231, 76, 60, 0.2);
-            border: 1px solid rgba(231, 76, 60, 0.5);
-            color: #e74c3c;
+            background: rgba(220, 53, 69, 0.15);
+            border: 2px solid rgba(220, 53, 69, 0.4);
+            color: #dc3545;
         }
         
-        .admin-features {
-            background: rgba(255,255,255,0.05);
-            padding: 20px;
-            border-radius: 8px;
-            margin-bottom: 25px;
-            font-size: 13px;
-            position: relative;
-            z-index: 1;
-        }
-        
-        .admin-features h4 {
-            margin: 0 0 12px 0;
-            font-size: 15px;
-            color: #3498db;
-        }
-        
-        .admin-features ul {
-            margin: 8px 0;
-            padding-left: 20px;
-        }
-        
-        .admin-features li {
-            margin-bottom: 6px;
-            opacity: 0.9;
-        }
-
         /* Code Verification Styles */
         .code-overlay {
             position: fixed;
@@ -541,17 +543,6 @@ if (isset($_COOKIE['remember_token']) && !isLoggedIn()) {
         <div class="security-notice">
             <i class="fas fa-exclamation-triangle"></i>
             <strong>Security Notice:</strong> Admin access is logged and monitored. Only authorized personnel should access this area.
-        </div>
-
-        <div class="admin-features">
-            <h4><i class="fas fa-cogs"></i> Admin Dashboard Features:</h4>
-            <ul>
-                <li>User Management (Customers, Sellers, Admins)</li>
-                <li>Seller Application Reviews</li>
-                <li>Product & Category Management</li>
-                <li>Order Tracking & Management</li>
-                <li>Security & Audit Logs</li>
-            </ul>
         </div>
 
         <?php if (isset($_SESSION['success'])): ?>     

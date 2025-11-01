@@ -85,6 +85,55 @@ $pathPrefix = ($currentDir === 'paymongo') ? '../' : '';
         .search-box {
             flex: 1;
             max-width: 600px;
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        
+        .search-type-toggle {
+            flex-shrink: 0;
+        }
+        
+        .search-type-select {
+            padding: 8px 36px 8px 14px;
+            height: 36px;
+            min-width: 110px;
+            border-radius: 8px;
+            border: 1px solid rgba(249, 249, 249, 0.25);
+            background: rgba(249, 249, 249, 0.12);
+            color: #F9F9F9;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            outline: none;
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 14 14'%3E%3Cpath fill='%23F9F9F9' d='M7 10L2 5h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            background-size: 14px;
+            transition: all 0.2s ease;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+        }
+        
+        .search-type-select:hover {
+            background: rgba(249, 249, 249, 0.18);
+            border-color: rgba(249, 249, 249, 0.35);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+        }
+        
+        .search-type-select:focus {
+            background: rgba(249, 249, 249, 0.2);
+            border-color: rgba(255, 215, 54, 0.5);
+            box-shadow: 0 0 0 3px rgba(255, 215, 54, 0.15);
+        }
+        
+        .search-type-select option {
+            background: #130325;
+            color: #F9F9F9;
+            padding: 10px;
+            font-weight: 500;
         }
         
         .search-box form {
@@ -92,6 +141,7 @@ $pathPrefix = ($currentDir === 'paymongo') ? '../' : '';
             gap: 8px;
             align-items: center;
             width: 100%;
+            flex: 1;
         }
         
         .search-box input {
@@ -294,30 +344,28 @@ $pathPrefix = ($currentDir === 'paymongo') ? '../' : '';
         
         .notif-footer {
             border-top: 1px solid rgba(0, 0, 0, 0.1);
-            padding: 8px 0 0 0;
+            padding: 6px 0 4px 0;
             margin-top: 8px;
             text-align: center;
         }
         
+        .notif-footer .see-all-btn,
         .see-all-btn {
-            display: block;
-            text-align: center;
+            display: block !important;
+            text-align: center !important;
             color: #130325 !important;
-            text-decoration: none;
-            font-size: 12px;
-            font-weight: 600;
-            text-transform: uppercase;
-            padding: 8px 12px;
-            border-radius: 6px;
-            border: 1px solid rgba(0, 0, 0, 0.1);
-            background: rgba(248, 249, 250, 0.8) !important;
-            margin: 0 auto;
-            width: fit-content;
-        }
-        
-        .see-all-btn:hover {
-            color: #130325 !important;
-            background: rgba(248, 249, 250, 0.8) !important;
+            text-decoration: none !important;
+            font-size: 13px !important;
+            font-weight: 500 !important;
+            text-transform: none !important;
+            padding: 4px 0 !important;
+            border-radius: 0 !important;
+            border: none !important;
+            background: transparent !important;
+            margin: 0 auto !important;
+            width: fit-content !important;
+            opacity: 0.7 !important;
+            line-height: 1.3 !important;
         }
         
         
@@ -737,8 +785,14 @@ $pathPrefix = ($currentDir === 'paymongo') ? '../' : '';
 
             <div class="header-center">
                 <div class="search-box">
-                    <form action="<?php echo $pathPrefix; ?>products.php" method="GET" role="search">
-                        <input name="search" type="text" placeholder="Search products...">
+                    <div class="search-type-toggle">
+                        <select id="searchType" class="search-type-select">
+                            <option value="products">Products</option>
+                            <option value="sellers">Sellers</option>
+                        </select>
+                    </div>
+                    <form id="headerSearchForm" action="<?php echo $pathPrefix; ?>products.php" method="GET" role="search">
+                        <input name="search" type="text" placeholder="Search products..." id="headerSearchInput">
                         <button type="submit"><i class="fas fa-search"></i></button>
                     </form>
                 </div>
@@ -1154,6 +1208,27 @@ function confirmLogout(logoutUrl) {
         window.location.href = logoutUrl;
     });
 }
+
+// Handle search type toggle (Products vs Sellers)
+document.addEventListener('DOMContentLoaded', function() {
+    const searchTypeSelect = document.getElementById('searchType');
+    const searchForm = document.getElementById('headerSearchForm');
+    const searchInput = document.getElementById('headerSearchInput');
+    
+    if (searchTypeSelect && searchForm && searchInput) {
+        searchTypeSelect.addEventListener('change', function() {
+            const searchType = this.value;
+            const pathPrefix = '<?php echo $pathPrefix; ?>';
+            if (searchType === 'sellers') {
+                searchForm.action = pathPrefix + 'sellers.php';
+                searchInput.placeholder = 'Search sellers...';
+            } else {
+                searchForm.action = pathPrefix + 'products.php';
+                searchInput.placeholder = 'Search products...';
+            }
+        });
+    }
+});
     </script>
 
     <main>

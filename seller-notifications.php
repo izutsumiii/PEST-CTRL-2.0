@@ -19,160 +19,308 @@ $unreadCount = getSellerUnreadCount($userId);
 // Include seller header
 require_once 'includes/seller_header.php';
 
-// Apply dark purple theme
-echo '<style>
-body { background: #130325 !important; color: #F9F9F9 !important; }
-.container { background: transparent !important; }
-.max-w-4xl { max-width: 56rem !important; }
-.mx-auto { margin-left: auto !important; margin-right: auto !important; }
-.px-4 { padding-left: 1rem !important; padding-right: 1rem !important; }
-.py-8 { padding-top: 2rem !important; padding-bottom: 2rem !important; }
-.flex { display: flex !important; }
-.justify-between { justify-content: space-between !important; }
-.items-center { align-items: center !important; }
-.mb-8 { margin-bottom: 2rem !important; }
-.text-3xl { font-size: 1.875rem !important; line-height: 2.25rem !important; }
-.font-bold { font-weight: 700 !important; }
-.text-white { color: #F9F9F9 !important; }
-.mb-2 { margin-bottom: 0.5rem !important; }
-.text-gray-300 { color: rgba(249, 249, 249, 0.7) !important; }
-.text-right { text-align: right !important; }
-.text-2xl { font-size: 1.5rem !important; line-height: 2rem !important; }
-.text-yellow-400 { color: #FFD736 !important; }
-.text-sm { font-size: 0.875rem !important; line-height: 1.25rem !important; }
-.bg-white { background-color: rgba(255, 255, 255, 0.1) !important; }
-.bg-opacity-10 { background-color: rgba(255, 255, 255, 0.1) !important; }
-.rounded-lg { border-radius: 0.5rem !important; }
-.shadow-lg { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3) !important; }
-.backdrop-filter { backdrop-filter: blur(10px) !important; }
-.backdrop-blur-lg { backdrop-filter: blur(16px) !important; }
-.p-6 { padding: 1.5rem !important; }
-.text-center { text-align: center !important; }
-.py-12 { padding-top: 3rem !important; padding-bottom: 3rem !important; }
-.fas { font-family: "Font Awesome 5 Free" !important; font-weight: 900 !important; }
-.text-6xl { font-size: 3.75rem !important; line-height: 1 !important; }
-.text-gray-400 { color: rgba(249, 249, 249, 0.5) !important; }
-.mb-4 { margin-bottom: 1rem !important; }
-.text-xl { font-size: 1.25rem !important; line-height: 1.75rem !important; }
-.font-semibold { font-weight: 600 !important; }
-.space-y-4 > * + * { margin-top: 1rem !important; }
-.bg-opacity-5 { background-color: rgba(255, 255, 255, 0.05) !important; }
-.p-4 { padding: 1rem !important; }
-.border-l-4 { border-left-width: 4px !important; }
-.border-yellow-400 { border-color: #FFD736 !important; }
-.bg-yellow-400 { background-color: rgba(255, 215, 54, 0.1) !important; }
-.bg-opacity-10 { background-color: rgba(255, 255, 255, 0.1) !important; }
-.border-gray-600 { border-color: rgba(249, 249, 249, 0.3) !important; }
-.hover\\:bg-opacity-10:hover { background-color: rgba(255, 255, 255, 0.1) !important; }
-.transition-all { transition-property: all !important; transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1) !important; transition-duration: 150ms !important; }
-.duration-200 { transition-duration: 200ms !important; }
-.cursor-pointer { cursor: pointer !important; }
-.items-start { align-items: flex-start !important; }
-.space-x-4 > * + * { margin-left: 1rem !important; }
-.flex-shrink-0 { flex-shrink: 0 !important; }
-.text-lg { font-size: 1.125rem !important; line-height: 1.75rem !important; }
-.flex-1 { flex: 1 1 0% !important; }
-.min-w-0 { min-width: 0px !important; }
-.justify-between { justify-content: space-between !important; }
-.inline-flex { display: inline-flex !important; }
-.items-center { align-items: center !important; }
-.px-2 { padding-left: 0.5rem !important; padding-right: 0.5rem !important; }
-.py-1 { padding-top: 0.25rem !important; padding-bottom: 0.25rem !important; }
-.rounded-full { border-radius: 9999px !important; }
-.text-xs { font-size: 0.75rem !important; line-height: 1rem !important; }
-.font-medium { font-weight: 500 !important; }
-.bg-yellow-400 { background-color: #FFD736 !important; }
-.text-yellow-900 { color: #130325 !important; }
-.mt-1 { margin-top: 0.25rem !important; }
-.mt-2 { margin-top: 0.5rem !important; }
-.hover\\:text-yellow-300:hover { color: #e6c230 !important; }
-.ml-1 { margin-left: 0.25rem !important; }
-.mt-8 { margin-top: 2rem !important; }
-.justify-center { justify-content: center !important; }
-.space-x-4 > * + * { margin-left: 1rem !important; }
-.bg-yellow-400 { background-color: #FFD736 !important; }
-.hover\\:bg-yellow-500:hover { background-color: #e6c230 !important; }
-.text-yellow-900 { color: #130325 !important; }
-.py-2 { padding-top: 0.5rem !important; padding-bottom: 0.5rem !important; }
-.px-6 { padding-left: 1.5rem !important; padding-right: 1.5rem !important; }
-.transition-colors { transition-property: color, background-color, border-color, text-decoration-color, fill, stroke !important; transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1) !important; transition-duration: 150ms !important; }
-.duration-200 { transition-duration: 200ms !important; }
-.bg-gray-600 { background-color: rgba(249, 249, 249, 0.2) !important; }
-.hover\\:bg-gray-700:hover { background-color: rgba(249, 249, 249, 0.3) !important; }
-.mr-2 { margin-right: 0.5rem !important; }
-</style>';
 ?>
+<style>
+  html, body { background:#f8f9fa !important; }
+  main { background:#f8f9fa !important; }
+  main h1 { text-shadow: none !important; }
+  .notif-item { background:#ffffff !important; }
+  .notif-item a { background:#ffffff !important; }
+  .notif-item a:hover { background:#ffffff !important; }
+  .notif-item a:focus { background:#ffffff !important; }
+  .notif-item a:active { background:#ffffff !important; }
+  .notif-item a:visited { background:#ffffff !important; }
+  .notif-list .notif-item { background:#ffffff !important; }
+  .notif-list .notif-item a { background:#ffffff !important; }
+  .notif-list .notif-item a:hover { background:#ffffff !important; }
+  .notif-list .notif-item a:focus { background:#ffffff !important; }
+  .notif-list .notif-item a:active { background:#ffffff !important; }
+  .notif-list .notif-item a:visited { background:#ffffff !important; }
+  
+  .notif-delete-btn-page {
+    position: absolute;
+    top: 12px;
+    right: 8px;
+    background: transparent;
+    border: none;
+    color: #dc3545;
+    width: 28px;
+    height: 28px;
+    border-radius: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 12px;
+    transition: all 0.3s ease;
+    z-index: 10;
+  }
+  
+  .notif-delete-btn-page:hover {
+    background: transparent;
+    border: none;
+    color: #b02a37;
+    transform: scale(1.15);
+  }
+  
+  /* Add smooth transitions for notification removal */
+  .notif-item {
+    transition: opacity 0.3s ease, transform 0.3s ease;
+  }
 
-<div class="container mx-auto px-4 py-8">
-    <div class="max-w-4xl mx-auto">
-        <!-- Header -->
-        <div class="flex justify-between items-center mb-8">
-            <div>
-                <h1 class="text-3xl font-bold text-white mb-2">Seller Notifications</h1>
-            </div>
-            <div class="text-right">
-                <div class="text-2xl font-bold text-yellow-400"><?php echo $unreadCount; ?></div>
-                <div class="text-sm text-gray-300">Unread</div>
-            </div>
-        </div>
+  .notif-list {
+    transition: all 0.3s ease;
+  }
 
-        <!-- Notifications List -->
-        <div class="bg-white bg-opacity-10 rounded-lg shadow-lg backdrop-filter backdrop-blur-lg">
-            <div class="p-6">
-                <?php if (empty($notifications)): ?>
-                    <div class="text-center py-12">
-                        <i class="fas fa-bell-slash text-6xl text-gray-400 mb-4"></i>
-                        <h3 class="text-xl font-semibold text-white mb-2">No Notifications</h3>
-                        <p class="text-gray-300">You don't have any notifications yet.</p>
-                    </div>
-                <?php else: ?>
-                    <div class="space-y-4">
-                        <?php foreach ($notifications as $notification): ?>
-                            <div class="notification-item bg-white bg-opacity-5 rounded-lg p-4 border-l-4 <?php echo !$notification['is_read'] ? 'border-yellow-400 bg-yellow-400 bg-opacity-10' : 'border-gray-600'; ?> hover:bg-opacity-10 transition-all duration-200 cursor-pointer" 
-                                 onclick="markAsRead(<?php echo $notification['id']; ?>)">
-                                <div class="flex items-start space-x-4">
-                                    <div class="flex-shrink-0">
-                                        <i class="fas fa-<?php echo getNotificationIcon($notification['type']); ?> text-lg <?php echo getNotificationColor($notification['type']); ?>"></i>
-                                    </div>
-                                    <div class="flex-1 min-w-0">
-                                        <div class="flex items-center justify-between">
-                                            <h4 class="text-lg font-semibold text-white"><?php echo htmlspecialchars($notification['title']); ?></h4>
-                                            <div class="flex items-center space-x-2">
-                                                <?php if (!$notification['is_read']): ?>
-                                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-400 text-yellow-900">New</span>
-                                                <?php endif; ?>
-                                                <span class="text-sm text-gray-400"><?php echo formatTime($notification['created_at']); ?></span>
-                                            </div>
-                                        </div>
-                                        <p class="text-gray-300 mt-1"><?php echo htmlspecialchars($notification['message']); ?></p>
-                                        <?php if ($notification['action_url']): ?>
-                                            <a href="<?php echo htmlspecialchars($notification['action_url']); ?>" 
-                                               class="inline-flex items-center mt-2 text-yellow-400 hover:text-yellow-300 text-sm font-medium">
-                                                View Details <i class="fas fa-arrow-right ml-1"></i>
-                                            </a>
-                                        <?php endif; ?>
-                                    </div>
-                                </div>
-                            </div>
-                        <?php endforeach; ?>
-                    </div>
-                <?php endif; ?>
-            </div>
-        </div>
+  /* Ensure delete button is always visible */
+  .notif-item:hover .notif-delete-btn-page {
+    opacity: 1;
+  }
+  
+  /* Custom confirmation dialog styles */
+  .confirm-dialog {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    backdrop-filter: blur(5px);
+  }
+  
+  .confirm-content {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 30px;
+    max-width: 400px;
+    width: 90%;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    text-align: center;
+    animation: confirmSlideIn 0.3s ease-out;
+  }
+  
+  @keyframes confirmSlideIn {
+    from {
+      opacity: 0;
+      transform: scale(0.8) translateY(-20px);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
+  }
+  
+  .confirm-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: #130325;
+    margin-bottom: 15px;
+  }
+  
+  .confirm-message {
+    font-size: 16px;
+    color: #666;
+    margin-bottom: 25px;
+    line-height: 1.5;
+  }
+  
+  .confirm-buttons {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+  }
+  
+  .confirm-btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-width: 80px;
+  }
+  
+  .confirm-btn-yes {
+    background: #dc3545;
+    color: white;
+  }
+  
+  .confirm-btn-yes:hover {
+    background: #c82333;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(220, 53, 69, 0.4);
+  }
+  
+  .confirm-btn-no {
+    background: #6c757d;
+    color: white;
+  }
+  
+  .confirm-btn-no:hover {
+    background: #5a6268;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(108, 117, 125, 0.4);
+  }
+</style>
 
-        <!-- Actions -->
-        <div class="mt-8 flex justify-center space-x-4">
-            <button onclick="markAllAsRead()" class="bg-yellow-400 hover:bg-yellow-500 text-yellow-900 font-semibold py-2 px-6 rounded-lg transition-colors duration-200">
-                <i class="fas fa-check-double mr-2"></i>Mark All as Read
-            </button>
-            <a href="seller-dashboard.php" class="bg-gray-600 hover:bg-gray-700 text-white font-semibold py-2 px-6 rounded-lg transition-colors duration-200">
-                <i class="fas fa-arrow-left mr-2"></i>Back to Dashboard
-            </a>
-        </div>
+<main style="background:#f8f9fa; min-height:100vh; padding: 0 0 60px 0;">
+  <div style="max-width: 1400px; margin-left: -150px; margin-right: auto; margin-top: -15px; padding-left: 0; padding-right: 60px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+      <h1 style="color:#130325; margin:0; text-shadow: none;">Seller Notifications (<?php echo count($notifications); ?> total<?php echo $unreadCount > 0 ? ', ' . $unreadCount . ' unread' : ''; ?>)</h1>
+      <?php if (!empty($notifications)): ?>
+        <button onclick="markAllAsRead()" style="background:#dc3545; color:#ffffff; border:none; padding:8px 16px; border-radius:6px; cursor:pointer; font-weight:600;">
+          <i class="fas fa-check-double"></i> Mark All as Read
+        </button>
+      <?php endif; ?>
     </div>
-</div>
+
+    <?php if (empty($notifications)): ?>
+      <div style="background:#ffffff; border:1px solid rgba(0,0,0,0.1); color:#130325; border-radius:8px; padding:20px; text-align:center;">No notifications yet.</div>
+    <?php else: ?>
+      <div class="notif-list" style="display:flex; flex-direction:column; gap:12px;">
+        <?php foreach ($notifications as $notification): ?>
+          <div class="notif-item" style="position: relative;">
+            <div style="display:flex; gap:12px; align-items:center; background:#ffffff; border:1px solid rgba(0,0,0,0.1); padding:14px; border-radius:10px;">
+              <div style="width:36px; height:36px; display:flex; align-items:center; justify-content:center; background:rgba(255,215,54,0.15); color:#FFD736; border-radius:8px;">
+                <i class="fas fa-<?php echo getNotificationIcon($notification['type']); ?>"></i>
+              </div>
+              <div style="flex:1;">
+                <div style="color:#130325; font-weight:700;"><?php echo htmlspecialchars($notification['title']); ?></div>
+                <div style="color:#130325; opacity:0.9; font-size:0.9rem;">
+                  <?php echo htmlspecialchars($notification['message']); ?>
+                  <?php if ($notification['action_url']): ?>
+                    <a href="<?php echo htmlspecialchars($notification['action_url']); ?>" style="color:#130325; text-decoration:underline; margin-left:8px;">View Details</a>
+                  <?php endif; ?>
+                </div>
+              </div>
+              <div style="color:#130325; opacity:0.8; font-size:0.85rem; white-space:nowrap; margin-right: 5px;">
+                <?php echo htmlspecialchars(date('M d, Y h:i A', strtotime($notification['created_at']))); ?>
+              </div>
+            </div>
+            <!-- X button for deleting notifications -->
+            <button class="notif-delete-btn-page" onclick="deleteSellerNotification(<?php echo $notification['id']; ?>, this)" title="Delete notification">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+        <?php endforeach; ?>
+      </div>
+    <?php endif; ?>
+  </div>
+</main>
 
 <script>
+// Custom styled confirmation dialog function
+function openConfirm(message, onConfirm) {
+    // Create dialog overlay
+    const dialog = document.createElement('div');
+    dialog.className = 'confirm-dialog';
+    dialog.innerHTML = `
+        <div class="confirm-content">
+            <div class="confirm-title">Confirm Action</div>
+            <div class="confirm-message">${message}</div>
+            <div class="confirm-buttons">
+                <button class="confirm-btn confirm-btn-yes">Yes</button>
+                <button class="confirm-btn confirm-btn-no">No</button>
+            </div>
+        </div>
+    `;
+    
+    // Add to page
+    document.body.appendChild(dialog);
+    
+    // Handle button clicks
+    const yesBtn = dialog.querySelector('.confirm-btn-yes');
+    const noBtn = dialog.querySelector('.confirm-btn-no');
+    
+    yesBtn.addEventListener('click', () => {
+        document.body.removeChild(dialog);
+        if (onConfirm) onConfirm();
+    });
+    
+    noBtn.addEventListener('click', () => {
+        document.body.removeChild(dialog);
+    });
+    
+    // Handle escape key
+    const handleEscape = (e) => {
+        if (e.key === 'Escape') {
+            document.body.removeChild(dialog);
+            document.removeEventListener('keydown', handleEscape);
+        }
+    };
+    document.addEventListener('keydown', handleEscape);
+    
+    // Handle click outside
+    dialog.addEventListener('click', (e) => {
+        if (e.target === dialog) {
+            document.body.removeChild(dialog);
+            document.removeEventListener('keydown', handleEscape);
+        }
+    });
+}
+
+function deleteSellerNotification(notificationId, buttonElement) {
+    openConfirm('Are you sure you want to delete this notification? This action cannot be undone.', function() {
+        // Hide the notification item immediately with animation
+        const notifItem = buttonElement.closest('.notif-item');
+        if (notifItem) {
+            notifItem.style.opacity = '0';
+            notifItem.style.transform = 'translateX(-20px)';
+            setTimeout(() => {
+                notifItem.style.display = 'none';
+            }, 300);
+        }
+        
+        // Call API to delete
+        fetch('ajax/delete-seller-notification.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ notification_id: notificationId })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Remove the item from DOM
+                if (notifItem) {
+                    notifItem.remove();
+                }
+                // Update the count in the header
+                const header = document.querySelector('h1');
+                if (header) {
+                    const notifList = document.querySelector('.notif-list');
+                    const remainingCount = notifList ? notifList.querySelectorAll('.notif-item').length : 0;
+                    header.textContent = `Seller Notifications (${remainingCount} total)`;
+                }
+            } else {
+                // If deletion failed, show the item again
+                if (notifItem) {
+                    notifItem.style.opacity = '1';
+                    notifItem.style.transform = 'translateX(0)';
+                    notifItem.style.display = 'block';
+                }
+                alert('Failed to delete notification: ' + (data.message || 'Unknown error'));
+            }
+        })
+        .catch(error => {
+            console.error('Error deleting notification:', error);
+            // If deletion failed, show the item again
+            if (notifItem) {
+                notifItem.style.opacity = '1';
+                notifItem.style.transform = 'translateX(0)';
+                notifItem.style.display = 'block';
+            }
+            alert('Error deleting notification. Please try again.');
+        });
+    });
+}
+
 function markAsRead(notificationId) {
     fetch('ajax/mark-seller-notification-read.php', {
         method: 'POST',
@@ -194,18 +342,20 @@ function markAsRead(notificationId) {
 }
 
 function markAllAsRead() {
-    fetch('ajax/mark-all-seller-notifications-read.php', {
-        method: 'POST'
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            // Reload page to update the display
-            location.reload();
-        }
-    })
-    .catch(error => {
-        console.error('Error marking all notifications as read:', error);
+    openConfirm('Are you sure you want to mark all notifications as read?', function() {
+        fetch('ajax/mark-all-seller-notifications-read.php', {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Reload page to update the display
+                location.reload();
+            }
+        })
+        .catch(error => {
+            console.error('Error marking all notifications as read:', error);
+        });
     });
 }
 
@@ -275,3 +425,4 @@ function formatTime($timestamp) {
     }
 }
 ?>
+
