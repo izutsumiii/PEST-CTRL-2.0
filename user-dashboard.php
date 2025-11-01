@@ -464,7 +464,9 @@ $returnRequestedOrders = [];
 try {
     $stmt = $pdo->prepare("
         SELECT DISTINCT o.*, 
-               GROUP_CONCAT(CONCAT(p.name, ' (x', oi.quantity, ')') SEPARATOR ', ') as items
+               GROUP_CONCAT(CONCAT(p.name, ' (x', oi.quantity, ')') SEPARATOR ', ') as items,
+               rr.status as return_status,
+               rr.id as return_request_id
         FROM orders o
         INNER JOIN return_requests rr ON o.id = rr.order_id
         LEFT JOIN order_items oi ON o.id = oi.order_id
@@ -631,21 +633,6 @@ body {
     color: #130325 !important;
     font-size: 1.1rem;
     font-weight: 700;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-
-.order-date-inline {
-    color: #6b7280;
-    font-size: 0.85rem;
-    font-weight: 400;
-}
-
-.order-time-inline {
-    margin-left: 6px;
-    color: #9ca3af;
-    font-size: 0.8rem;
 }
 
 .order-date {
@@ -720,14 +707,6 @@ body {
 .order-item-details {
     color: #666 !important;
     font-size: 0.8rem;
-}
-
-.order-item-date {
-    color: #6b7280;
-    font-size: 0.75rem;
-    white-space: nowrap;
-    margin-left: auto;
-    padding-left: 12px;
 }
 
 /* Order bottom section */
@@ -1337,13 +1316,6 @@ body {
     margin-top: 15px;
 }
 
-/* Make dashboard action buttons (View Details, Buy Again, Cancel, etc.) more compact */
-.order-bottom .order-actions .btn {
-    padding: 6px 12px !important;
-    font-size: 0.85rem !important;
-    border-radius: 6px !important;
-}
-
 .btn {
     padding: 10px 20px;
     border: none;
@@ -1623,15 +1595,15 @@ body {
 }
 
 .cancel-modal-content {
-    background: #ffffff;
+    background: white;
     margin: 10% auto;
-    padding: 18px 20px;
-    border-radius: 10px;
-    width: 92%;
-    max-width: 420px;
+    padding: 30px;
+    border-radius: 15px;
+    width: 90%;
+    max-width: 500px;
     position: relative;
-    animation: modalSlideIn 0.22s ease;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+    animation: modalSlideIn 0.3s ease;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.3);
 }
 
 @keyframes modalSlideIn {
@@ -1645,66 +1617,45 @@ body {
     }
 }
 
-.modal-close {
+.close-modal {
     position: absolute;
-    right: 10px;
-    top: 10px;
-    left: auto;
-    background: transparent;
+    right: 15px;
+    top: 15px;
+    background: none;
     border: none;
-    font-size: 18px;
-    line-height: 1;
+    font-size: 2rem;
     cursor: pointer;
-    color: #dc3545;
-    transition: color 0.15s ease, transform 0.15s ease;
-    width: 28px;
-    height: 28px;
-    display: inline-flex;
+    color: #ccc;
+    transition: all 0.2s ease;
+    width: 40px;
+    height: 40px;
+    display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 0;
-    padding: 0;
+    border-radius: 50%;
 }
 
-.modal-close:hover {
-    color: #b02a37;
-    background: transparent;
-    border: none;
-    transform: scale(1.15);
+.close-modal:hover {
+    color: #e74c3c;
+    background: #f8f9fa;
 }
 
 .cancel-modal-content h3 {
-    font-size: 1.1rem;
-    margin-bottom: 10px;
-    color: #111827;
+    font-size: 1.5rem;
+    margin-bottom: 15px;
+    color: #2c3e50;
 }
 
 .cancel-modal-content p {
-    margin-bottom: 10px;
-    color: #374151;
-    font-size: 0.92rem;
+    margin-bottom: 15px;
+    color: #495057;
 }
 
 .cancel-modal-buttons {
     display: flex;
-    gap: 10px;
-    justify-content: flex-end;
-    margin-top: 16px;
-}
-
-/* Minimal buttons inside the cancel modal */
-.cancel-modal-content .btn {
-    padding: 6px 12px;
-    font-size: 0.85rem;
-    border-radius: 6px;
-}
-
-.cancel-modal-content .btn-danger {
-    padding: 6px 12px;
-}
-
-.cancel-modal-content .btn-primary {
-    padding: 6px 12px;
+    gap: 15px;
+    justify-content: center;
+    margin-top: 25px;
 }
 
 /* Responsive Design */
@@ -2159,6 +2110,31 @@ body {
     color:#28a745; 
     border-color:#28a745; 
 }
+
+/* Return Request Status Badges */
+.status-return-pending {
+    background: rgba(255, 193, 7, 0.2);
+    color: #ffc107;
+    border: 1px solid #ffc107;
+}
+
+.status-return-approved {
+    background: rgba(0, 123, 255, 0.2);
+    color: #007bff;
+    border: 1px solid #007bff;
+}
+
+.status-return-rejected {
+    background: rgba(220, 53, 69, 0.2);
+    color: #dc3545;
+    border: 1px solid #dc3545;
+}
+
+.status-return-completed {
+    background: rgba(40, 167, 69, 0.2);
+    color: #28a745;
+    border: 1px solid #28a745;
+}
 /* Custom confirmation dialog styling */
 .confirm-dialog {
     position: fixed;
@@ -2251,6 +2227,85 @@ body {
     border: 2px solid #6c757d;
 }
 
+
+/* Return Details Styling */
+.return-details-section {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 215, 54, 0.2);
+    border-radius: 8px;
+    padding: 15px;
+    margin: 10px 0;
+}
+
+.return-details-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(255, 215, 54, 0.2);
+}
+
+.return-details-header i {
+    color: #FFD736;
+}
+
+.return-details-header h4 {
+    margin: 0;
+    color: #130325;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.return-info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+    margin-bottom: 10px;
+}
+
+.return-info-item {
+    background: rgba(255, 255, 255, 0.5);
+    padding: 10px;
+    border-radius: 6px;
+}
+
+.return-info-label {
+    font-size: 0.75rem;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+}
+
+.return-info-value {
+    font-size: 0.9rem;
+    color: #130325;
+    font-weight: 600;
+}
+
+.return-action-notice {
+    padding: 12px;
+    border-radius: 6px;
+    margin-top: 10px;
+    font-size: 0.9rem;
+}
+
+.return-action-notice.approved {
+    background: rgba(40, 167, 69, 0.15);
+    border: 1px solid #28a745;
+    color: #155724;
+}
+
+.return-action-notice.rejected {
+    background: rgba(220, 53, 69, 0.15);
+    border: 1px solid #dc3545;
+    color: #721c24;
+}
+
+.return-action-notice i {
+    margin-right: 8px;
+}
 .confirm-btn-no:hover {
     background: #5a6268;
     border-color: #5a6268;
@@ -2455,7 +2510,7 @@ class OrderManager {
             }
 
             // Handle close modal clicks
-            if (e.target.classList.contains('close-modal') || e.target.classList.contains('modal-close') || e.target === document.getElementById('cancelModal')) {
+            if (e.target.classList.contains('close-modal') || e.target === document.getElementById('cancelModal')) {
                 this.closeCancelModal();
             }
 
@@ -2529,22 +2584,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 });
-
-// Fallback global to support inline onclick in pending cards
-function openCancelModal(orderId) {
-    const idEl = document.getElementById('cancelOrderId');
-    const numEl = document.getElementById('cancelOrderNumber');
-    const modal = document.getElementById('cancelModal');
-    if (idEl) idEl.value = orderId;
-    if (numEl) {
-        const formatted = String(orderId).padStart(6, '0');
-        numEl.textContent = '#' + formatted;
-    }
-    if (modal) {
-        modal.style.display = 'block';
-        document.body.style.overflow = 'hidden';
-    }
-}
 
 function showReturnExpiredPopup() {
     // Create popup HTML
@@ -2709,7 +2748,15 @@ function closeProductSelectionPopup() {
     currentOrderId = null;
     currentOrderItems = null;
 }
-
+function openCancelModal(orderId) {
+    const orderElement = document.querySelector(`[data-order-id="${orderId}"]`);
+    const orderNumberText = orderElement.querySelector('.order-number').textContent;
+    
+    document.getElementById('cancelOrderId').value = orderId;
+    document.getElementById('cancelOrderNumber').textContent = orderNumberText.replace('Order ', '');
+    document.getElementById('cancelModal').style.display = 'block';
+    document.body.style.overflow = 'hidden';
+}
 function confirmProductSelection() {
     const checkboxes = document.querySelectorAll('#productCheckboxes input[type="checkbox"]:checked');
     
@@ -2733,6 +2780,44 @@ function confirmProductSelection() {
     
     window.location.href = redirectUrl;
 }
+// Scroll to specific order when page loads with hash
+document.addEventListener('DOMContentLoaded', function() {
+    // Check if there's a hash in the URL (e.g., #order-123)
+    if (window.location.hash) {
+        const hash = window.location.hash;
+        const match = hash.match(/#order-(\d+)/);
+        
+        if (match) {
+            const orderId = match[1];
+            
+            // Wait for page to fully render
+            setTimeout(function() {
+                // Find the order card
+                const orderCard = document.querySelector(`.order-card[data-order-id="${orderId}"]`);
+                
+                if (orderCard) {
+                    // Scroll to the order with smooth animation
+                    orderCard.scrollIntoView({ 
+                        behavior: 'smooth', 
+                        block: 'center' 
+                    });
+                    
+                    // Add a highlight effect
+                    orderCard.style.transition = 'all 0.3s ease';
+                    orderCard.style.boxShadow = '0 0 20px rgba(255, 215, 54, 0.6)';
+                    orderCard.style.transform = 'scale(1.02)';
+                    
+                    // Remove highlight after 2 seconds
+                    setTimeout(function() {
+                        orderCard.style.boxShadow = '';
+                        orderCard.style.transform = '';
+                    }, 2000);
+                }
+            }, 500); // Wait 500ms for page to render
+        }
+    }
+});
+
 </script>
 
 <!-- Display cancel message if exists -->
@@ -2823,15 +2908,19 @@ function confirmProductSelection() {
                         }
                         ?>
                         <div class="seller-info"><?php echo htmlspecialchars($sellerName); ?></div>
-                        <div class="order-number">
-                            Order #<?php echo str_pad($order['id'], 6, '0', STR_PAD_LEFT); ?>
-                            <span class="order-date-inline"><?php echo date('j M Y', strtotime($order['created_at'])); ?> <span class="order-time-inline"><?php echo date('g:i A', strtotime($order['created_at'])); ?></span></span>
-                        </div>
+                        <div class="order-number">Order #<?php echo str_pad($order['id'], 6, '0', STR_PAD_LEFT); ?></div>
                     </div>
+                    <div style="display: flex; flex-direction: column; gap: 5px; align-items: flex-end;">
                     <span class="order-status status-<?php echo strtolower($order['status']); ?>">
-                        <?php echo ucfirst($order['status']); ?>
+                        <?php echo ucfirst(str_replace('_', ' ', $order['status'])); ?>
                     </span>
+                    <?php if ($filter === 'return_requested' && isset($order['return_status'])): ?>
+                        <span class="order-status status-return-<?php echo strtolower($order['return_status']); ?>" style="font-size: 0.75rem;">
+                            Return: <?php echo ucfirst(str_replace('_', ' ', $order['return_status'])); ?>
+                        </span>
+                    <?php endif; ?>
                 </div>
+            </div>
                 
                 <!-- Items: PIC | NAME | QTY -->
                 <div class="order-items">
@@ -2858,145 +2947,188 @@ function confirmProductSelection() {
                     </div>
                     
                     <div class="order-actions">
-                        <?php if (strtolower($order['status']) === 'delivered'): ?>
-                            <!-- COMPLETED ORDERS: View Details, Return/Refund and Rate buttons -->
-                            <a href="order-details.php?id=<?php echo $order['id']; ?>" class="btn btn-primary">
-                                <i class="fas fa-eye"></i> View Details
-                            </a>
-                            <?php 
-                            // Check if 1 week has passed since delivery for return/refund
-                            $deliveryDate = new DateTime($order['delivery_date'] ?? $order['created_at']);
-                            $currentDate = new DateTime();
-                            $daysSinceDelivery = $currentDate->diff($deliveryDate)->days;
-                            $canReturn = $daysSinceDelivery <= 7;
-                            ?>
-                <?php if ($canReturn): ?>
-                    <?php if (count($order['order_items']) > 1): ?>
-                        <button onclick="showProductSelectionPopup(<?php echo $order['id']; ?>)" class="btn btn-return-active">
-                            <i class="fas fa-undo"></i> Return/Refund
-                        </button>
-                    <?php else: ?>
-                        <a href="customer-returns.php?order_id=<?php echo $order['id']; ?>" class="btn btn-return-active">
-                            <i class="fas fa-undo"></i> Return/Refund
-                        </a>
-                    <?php endif; ?>
-                            <?php else: ?>
-                                <button onclick="showReturnExpiredPopup()" class="btn btn-return-expired" disabled>
-                                    <i class="fas fa-undo"></i> Return/Refund
-                                </button>
-                            <?php endif; ?>
-                            <?php 
-                            // Check if user has already reviewed this product
-                            $hasReviewed = hasUserReviewedProduct($pdo, $userId, $order['id']);
-                            ?>
-                            <?php if ($hasReviewed): ?>
-                                <a href="product-detail.php?id=<?php echo $order['order_items'][0]['product_id']; ?>" class="btn btn-warning">
-                                    <i class="fas fa-shopping-cart"></i> Buy Again
-                                </a>
-                            <?php else: ?>
-                                <a href="product-detail.php?id=<?php echo $order['order_items'][0]['product_id']; ?>#reviews-tab" class="btn btn-secondary">
-                                    <i class="fas fa-star"></i> Rate
-                                </a>
-                            <?php endif; ?>
-                        <?php elseif (strtolower($order['status']) === 'return_requested' || 
-                                    strtolower($order['status']) === 'return_approved' || 
-                                    strtolower($order['status']) === 'return_rejected' || 
-                                    strtolower($order['status']) === 'return_completed'): ?>
-                                    <!-- RETURN REQUESTED ORDERS: Show detailed return status -->
-                                    <?php 
-                                    $returnStatus = getReturnRequestStatus($order['id']);
-                                    if ($returnStatus): 
-                                    ?>
-                                        <div class="return-status-indicator">
-                                            <div class="return-status-header">
-                                                <i class="fas fa-info-circle"></i>
-                                                <span class="return-status-title">Return/Refund Request Status</span>
-                                            </div>
-                                            
-                                            <div class="return-status-details">
-                                                <div>
-                                                    <strong>Status:</strong>
-                                                    <span class="status-badge-large status-return-<?php echo htmlspecialchars($returnStatus['status']); ?>">
-                                                        <?php 
-                                                        $statusLabels = [
-                                                            'pending' => 'Pending Review',
-                                                            'approved' => 'Approved - Processing Refund',
-                                                            'rejected' => 'Rejected',
-                                                            'completed' => 'Refund Completed'
-                                                        ];
-                                                        echo $statusLabels[$returnStatus['status']] ?? ucfirst($returnStatus['status']);
-                                                        ?>
-                                                    </span>
-                                                </div>
-                                                
-                                                <div>
-                                                    <strong>Requested:</strong> <?php echo date('M d, Y g:i A', strtotime($returnStatus['created_at'])); ?>
-                                                </div>
-                                                
-                                                <?php if ($returnStatus['returned_products']): ?>
-                                                <div>
-                                                    <strong>Products:</strong> <?php echo htmlspecialchars($returnStatus['returned_products']); ?>
-                                                </div>
-                                                <?php endif; ?>
-                                                
-                                                <?php if ($returnStatus['reason']): ?>
-                                                <div>
-                                                    <strong>Reason:</strong> <?php echo htmlspecialchars($returnStatus['reason']); ?>
-                                                </div>
-                                                <?php endif; ?>
-                                                
-                                                <?php if ($returnStatus['status'] === 'rejected' && $returnStatus['rejection_reason']): ?>
-                                                <div style="color: #dc3545; margin-top: 8px; padding: 8px; background: rgba(220, 53, 69, 0.1); border-radius: 4px;">
-                                                    <strong>Rejection Reason:</strong> <?php echo htmlspecialchars($returnStatus['rejection_reason']); ?>
-                                                </div>
-                                                <?php endif; ?>
-                                                
-                                                <?php if ($returnStatus['processed_at']): ?>
-                                                <div>
-                                                    <strong>Processed:</strong> <?php echo date('M d, Y g:i A', strtotime($returnStatus['processed_at'])); ?>
-                                                </div>
-                                                <?php endif; ?>
-                                                
-                                                <?php if ($returnStatus['status'] === 'approved'): ?>
-                                                <div style="color: #28a745; margin-top: 8px; padding: 8px; background: rgba(40, 167, 69, 0.1); border-radius: 4px;">
-                                                    <i class="fas fa-check-circle"></i> Your refund is being processed and will be completed within 3-5 business days.
-                                                </div>
-                                                <?php endif; ?>
-                                                
-                                                <?php if ($returnStatus['status'] === 'completed'): ?>
-                                                <div style="color: #17a2b8; margin-top: 8px; padding: 8px; background: rgba(23, 162, 184, 0.1); border-radius: 4px;">
-                                                    <i class="fas fa-check-circle"></i> Your refund has been completed successfully!
-                                                </div>
-                                                <?php endif; ?>
-                                            </div>
-                                        </div>
-                                    <?php endif; ?>
-                                    
-                                    <a href="order-details.php?id=<?php echo $order['id']; ?>" class="btn btn-primary">
-                                        <i class="fas fa-eye"></i> View Details
-                                    </a>
-                                    <a href="customer-returns.php" class="btn btn-warning">
-                                        <i class="fas fa-search"></i> Track Return
-                                    </a>
-                        <?php else: ?>
-                            <?php if (strtolower($order['status']) === 'pending'): ?>
-                                <a href="order-details.php?id=<?php echo $order['id']; ?>" class="btn btn-primary">
-                                    <i class="fas fa-eye"></i> View Details
-                                </a>
-                                <button type="button" class="btn btn-danger" onclick="openCancelModal(<?php echo $order['id']; ?>)">
-                                    <i class="fas fa-times"></i> Cancel Order
-                                </button>
-                            <?php elseif (strtolower($order['status']) === 'processing' || strtolower($order['status']) === 'shipped'): ?>
-                                <a href="order-details.php?id=<?php echo $order['id']; ?>" class="btn btn-primary">
-                                    <i class="fas fa-eye"></i> View Details
-                                </a>
-                            <?php elseif (strtolower($order['status']) === 'cancelled'): ?>
-                                <a href="order-details.php?id=<?php echo $order['id']; ?>" class="btn btn-primary">
-                                    <i class="fas fa-eye"></i> View Details
-                                </a>
-                            <?php endif; ?>
-                        <?php endif; ?>
+    <?php if (strtolower($order['status']) === 'delivered'): ?>
+        <!-- COMPLETED ORDERS: View Details, Return/Refund and Rate buttons -->
+        <a href="order-details.php?id=<?php echo $order['id']; ?>" class="btn btn-primary">
+            <i class="fas fa-eye"></i> View Details
+        </a>
+        <?php 
+        // Check if 1 week has passed since delivery for return/refund
+        $deliveryDate = new DateTime($order['delivery_date'] ?? $order['created_at']);
+        $currentDate = new DateTime();
+        $daysSinceDelivery = $currentDate->diff($deliveryDate)->days;
+        $canReturn = $daysSinceDelivery <= 7;
+        ?>
+        <?php if ($canReturn): ?>
+            <?php if (count($order['order_items']) > 1): ?>
+                <button onclick="showProductSelectionPopup(<?php echo $order['id']; ?>)" class="btn btn-return-active">
+                    <i class="fas fa-undo"></i> Return/Refund
+                </button>
+            <?php else: ?>
+                <a href="customer-returns.php?order_id=<?php echo $order['id']; ?>" class="btn btn-return-active">
+                    <i class="fas fa-undo"></i> Return/Refund
+                </a>
+            <?php endif; ?>
+        <?php else: ?>
+            <button onclick="showReturnExpiredPopup()" class="btn btn-return-expired" disabled>
+                <i class="fas fa-undo"></i> Return/Refund
+            </button>
+        <?php endif; ?>
+        <?php 
+        // Check if user has already reviewed this product
+        $hasReviewed = hasUserReviewedProduct($pdo, $userId, $order['id']);
+        ?>
+        <?php if ($hasReviewed): ?>
+            <a href="product-detail.php?id=<?php echo $order['order_items'][0]['product_id']; ?>" class="btn btn-warning">
+                <i class="fas fa-shopping-cart"></i> Buy Again
+            </a>
+        <?php else: ?>
+            <a href="product-detail.php?id=<?php echo $order['order_items'][0]['product_id']; ?>#reviews-tab" class="btn btn-secondary">
+                <i class="fas fa-star"></i> Rate
+            </a>
+        <?php endif; ?>
+        
+    <?php elseif (strtolower($order['status']) === 'return_requested' || 
+                  in_array(strtolower($order['status']), ['return_approved', 'return_rejected', 'return_completed'])): ?>
+        <!-- RETURN REQUESTED/PROCESSED ORDERS -->
+        <?php 
+        $returnDetails = getOrderReturnDetails($order['id']);
+        if ($returnDetails): 
+        ?>
+            <div class="return-details-section">
+                <div class="return-details-header">
+                    <i class="fas fa-info-circle"></i>
+                    <h4>Return Request Details</h4>
+                </div>
+                
+                <div class="return-info-grid">
+                    <div class="return-info-item">
+                        <div class="return-info-label">Status</div>
+                        <div class="return-info-value">
+                            <span class="status-badge-large status-return-<?php echo htmlspecialchars($returnDetails['status']); ?>">
+                                <?php 
+                                $statusLabels = [
+                                    'pending' => 'Pending Review',
+                                    'approved' => 'Approved',
+                                    'rejected' => 'Rejected',
+                                    'completed' => 'Completed'
+                                ];
+                                echo $statusLabels[$returnDetails['status']] ?? ucfirst($returnDetails['status']);
+                                ?>
+                            </span>
+                        </div>
                     </div>
+                    
+                    <div class="return-info-item">
+                        <div class="return-info-label">Requested Date</div>
+                        <div class="return-info-value">
+                            <?php echo date('M d, Y', strtotime($returnDetails['created_at'])); ?>
+                        </div>
+                    </div>
+                    
+                    <?php if ($returnDetails['processed_at']): ?>
+                    <div class="return-info-item">
+                        <div class="return-info-label">Processed Date</div>
+                        <div class="return-info-value">
+                            <?php echo date('M d, Y', strtotime($returnDetails['processed_at'])); ?>
+                        </div>
+                    </div>
+                    <?php endif; ?>
+                    
+                    <?php if ($returnDetails['items_count']): ?>
+                    <div class="return-info-item">
+                        <div class="return-info-label">Items Returned</div>
+                        <div class="return-info-value">
+                            <?php echo $returnDetails['items_count']; ?> item(s)
+                        </div>
+                    </div>
+                    <?php endif; ?>
+                </div>
+                
+                <?php if ($returnDetails['reason']): ?>
+                <div class="return-info-item" style="margin-bottom: 10px;">
+                    <div class="return-info-label">Return Reason</div>
+                    <div class="return-info-value" style="font-weight: normal;">
+                        <?php echo nl2br(htmlspecialchars($returnDetails['reason'])); ?>
+                    </div>
+                </div>
+                <?php endif; ?>
+                
+                <?php if ($returnDetails['status'] === 'approved'): ?>
+                <div class="return-action-notice approved">
+                    <i class="fas fa-check-circle"></i>
+                    <strong>Return Approved!</strong> Your refund is being processed and will be completed within 3-5 business days. 
+                    The refund will be issued to your original payment method.
+                </div>
+                <?php endif; ?>
+                
+                <?php if ($returnDetails['status'] === 'rejected'): ?>
+                <div class="return-action-notice rejected">
+                    <i class="fas fa-times-circle"></i>
+                    <strong>Return Request Rejected.</strong>
+                    <?php if ($returnDetails['rejection_reason']): ?>
+                        <br>Reason: <?php echo htmlspecialchars($returnDetails['rejection_reason']); ?>
+                    <?php endif; ?>
+                    <br><br>
+                    <strong>You can submit a new return request within 7 days of delivery if you believe this was an error.</strong>
+                </div>
+                <?php endif; ?>
+                
+                <?php if ($returnDetails['status'] === 'completed'): ?>
+                <div class="return-action-notice approved">
+                    <i class="fas fa-check-circle"></i>
+                    <strong>Refund Completed!</strong> Your refund has been successfully processed. 
+                    Please allow 3-5 business days for the amount to reflect in your account.
+                </div>
+                <?php endif; ?>
+            </div>
+        <?php endif; ?>
+        
+        <a href="order-details.php?id=<?php echo $order['id']; ?>" class="btn btn-primary">
+            <i class="fas fa-eye"></i> View Full Details
+        </a>
+        
+        <?php 
+        // Allow re-requesting return if rejected and still within 7 days
+        if ($returnDetails && $returnDetails['status'] === 'rejected'): 
+            $deliveryDate = new DateTime($order['delivery_date'] ?? $order['created_at']);
+            $currentDate = new DateTime();
+            $daysSinceDelivery = $currentDate->diff($deliveryDate)->days;
+            $canReturnAgain = $daysSinceDelivery <= 7;
+            
+            if ($canReturnAgain):
+        ?>
+            <?php if (count($order['order_items']) > 1): ?>
+                <button onclick="showProductSelectionPopup(<?php echo $order['id']; ?>)" class="btn btn-warning">
+                    <i class="fas fa-redo"></i> Submit New Return Request
+                </button>
+            <?php else: ?>
+                <a href="customer-returns.php?order_id=<?php echo $order['id']; ?>" class="btn btn-warning">
+                    <i class="fas fa-redo"></i> Submit New Return Request
+                </a>
+            <?php endif; ?>
+        <?php else: ?>
+            <button onclick="showReturnExpiredPopup()" class="btn btn-return-expired" disabled>
+                <i class="fas fa-redo"></i> Return Period Expired
+            </button>
+        <?php endif; ?>
+        <?php endif; ?>
+        
+    <?php elseif (strtolower($order['status']) === 'pending'): ?>
+        <a href="order-details.php?id=<?php echo $order['id']; ?>" class="btn btn-primary">
+            <i class="fas fa-eye"></i> View Details
+        </a>
+        <button type="button" class="btn btn-danger" onclick="openCancelModal(<?php echo $order['id']; ?>)">
+            <i class="fas fa-times"></i> Cancel Order
+        </button>
+        
+    <?php else: ?>
+        <!-- For processing and shipped orders -->
+        <a href="order-details.php?id=<?php echo $order['id']; ?>" class="btn btn-primary">
+            <i class="fas fa-eye"></i> View Details
+        </a>
+    <?php endif; ?>
+</div>
                 </div>
             </div>
             <?php endforeach; ?>
@@ -3010,7 +3142,7 @@ function confirmProductSelection() {
 <!-- Cancel Order Modal -->
 <div id="cancelModal" class="cancel-modal">
     <div class="cancel-modal-content">
-        <button class="modal-close" type="button">&times;</button>
+        <button class="close-modal" type="button">&times;</button>
         <h3>Cancel Order</h3>
         <p>Please tell us why you're cancelling order <strong id="cancelOrderNumber">#000000</strong></p>
         
@@ -3035,7 +3167,7 @@ function confirmProductSelection() {
                 </small>
             </div>
             
-            <p style="color:#b91c1c; font-weight:600; margin:12px 0; padding:10px 12px; background:#fee2e2; border-radius:8px; border-left:3px solid #ef4444; font-size:0.9rem;">
+            <p style="color: #dc3545; font-weight: 600; margin: 20px 0; padding: 15px; background: #f8d7da; border-radius: 6px; border-left: 4px solid #dc3545;">
                 ⚠️ This action cannot be undone. Once cancelled, you'll need to place a new order.
             </p>
             
