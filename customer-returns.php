@@ -212,13 +212,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_return'])) {
                             }
                             $fullReason .= " | " . $reason;
 
-        $pdo->beginTransaction();
+                              $pdo->beginTransaction();
         
                             // Insert return request
                             $stmt = $pdo->prepare("INSERT INTO return_requests (order_id, customer_id, product_id, seller_id, quantity, reason, status, created_at) 
                                                   VALUES (?, ?, ?, ?, ?, ?, 'pending', NOW())");
                             $stmt->execute([$orderId, $customerId, $productId, $sellerId, $quantity, $fullReason]);
                             $returnRequestId = $pdo->lastInsertId();
+                            // Update order status to return_requested
+                            $stmt = $pdo->prepare("UPDATE orders SET status = 'return_requested' WHERE id = ?");
+                            $stmt->execute([$orderId]);
+                      
 
                             if (!$returnRequestId) {
                                 throw new Exception('Failed to create return request');
@@ -432,7 +436,9 @@ $stmt->execute([$customerId]);
                             
                             // Redirect to user dashboard with success message
                             $_SESSION['return_success_message'] = $message;
-                            header('Location: user-dashboard.php?status=return_refund');
+
+                            // Redirect to user dashboard with success message
+                            header('Location: user-dashboard.php?status=return_requested');
                             exit;
                         }
                     } catch (Exception $e) {
