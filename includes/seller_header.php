@@ -390,7 +390,7 @@ require_once 'functions.php';
         }
         
         .notification-bell i {
-            color: #ffffff;
+            color: #FFD736;
             font-size: 16px;
         }
         
@@ -580,113 +580,6 @@ require_once 'functions.php';
             main { margin-left: 0; }
             .sidebar { width: 100%; position: static; border-right: none; }
         }
-
-        /* Logout Confirmation Dialog */
-        .confirm-dialog {
-            position: fixed !important;
-            top: 0 !important;
-            left: 0 !important;
-            width: 100% !important;
-            height: 100% !important;
-            background: rgba(0, 0, 0, 0.6) !important;
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-            z-index: 10000 !important;
-            backdrop-filter: blur(5px) !important;
-        }
-
-        .confirm-content {
-            background: #ffffff !important;
-            margin: 10% auto !important;
-            padding: 18px 20px !important;
-            border-radius: 10px !important;
-            width: 92% !important;
-            max-width: 420px !important;
-            position: relative !important;
-            text-align: left !important;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.18) !important;
-            animation: confirmSlideIn 0.22s ease !important;
-            border: none !important;
-        }
-
-        @keyframes confirmSlideIn {
-            from {
-                opacity: 0;
-                transform: translateY(-50px) scale(0.9);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0) scale(1);
-            }
-        }
-
-        .confirm-content .confirm-title {
-            color: #111827 !important;
-            font-size: 1.1rem !important;
-            font-weight: 600 !important;
-            margin-bottom: 10px !important;
-            text-transform: none !important;
-            letter-spacing: normal !important;
-            display: flex !important;
-            align-items: center !important;
-            gap: 8px !important;
-        }
-
-        .confirm-content .confirm-title i {
-            color: #dc3545 !important;
-            font-size: 1.2rem !important;
-        }
-
-        .confirm-content .confirm-message {
-            color: #374151 !important;
-            font-size: 0.92rem !important;
-            margin-bottom: 20px !important;
-            line-height: 1.5 !important;
-        }
-
-        .confirm-content .confirm-buttons {
-            display: flex !important;
-            gap: 10px !important;
-            justify-content: flex-end !important;
-            margin-top: 16px !important;
-            text-align: right !important;
-        }
-
-        .confirm-content .confirm-btn {
-            padding: 6px 12px !important;
-            border: none !important;
-            border-radius: 6px !important;
-            font-size: 0.85rem !important;
-            font-weight: 600 !important;
-            text-transform: none !important;
-            letter-spacing: normal !important;
-            cursor: pointer !important;
-            transition: all 0.15s ease !important;
-            min-width: auto !important;
-        }
-
-        .confirm-content .confirm-btn-yes {
-            background: #dc3545 !important;
-            color: white !important;
-            border: none !important;
-        }
-
-        .confirm-content .confirm-btn-yes:hover {
-            background: #c82333 !important;
-            transform: translateY(-1px) !important;
-        }
-
-        .confirm-content .confirm-btn-no {
-            background: #6c757d !important;
-            color: white !important;
-            border: none !important;
-        }
-
-        .confirm-content .confirm-btn-no:hover {
-            background: #5a6268 !important;
-            transform: translateY(-1px) !important;
-        }
     </style>
 </head>
 <body>
@@ -729,7 +622,7 @@ require_once 'functions.php';
                 </div>
                 <div class="header-dropdown" id="headerDropdown">
                     <a href="seller-edit-profile.php"><i class="fas fa-user"></i>My Account</a>
-                    <a href="#" onclick="confirmLogout('logout.php'); return false;"><i class="fas fa-sign-out-alt"></i>Logout</a>
+                    <a href="logout.php"><i class="fas fa-sign-out-alt"></i>Logout</a>
                 </div>
             </div>
         </div>
@@ -884,20 +777,44 @@ require_once 'functions.php';
 
         // Seller Notification Functions
         function toggleSellerNotifications() {
-            const dropdown = document.getElementById('sellerNotificationDropdown');
-            const isVisible = dropdown.classList.contains('show');
-            
-            // Close other dropdowns
-            document.getElementById('headerDropdown').classList.remove('show');
-            
-            if (isVisible) {
-                dropdown.classList.remove('show');
-            } else {
-                dropdown.classList.add('show');
-                loadSellerNotifications();
-            }
+    const dropdown = document.getElementById('sellerNotificationDropdown');
+    const isVisible = dropdown.classList.contains('show');
+    
+    // Close other dropdowns
+    document.getElementById('headerDropdown').classList.remove('show');
+    
+    if (isVisible) {
+        dropdown.classList.remove('show');
+    } else {
+        dropdown.classList.add('show');
+        loadSellerNotifications();
+        
+        // Mark all notifications as read when bell is clicked
+        setTimeout(() => {
+            markAllSellerNotificationsAsRead();
+        }, 500); // Small delay to let dropdown open first
+    }
+}
+function markAllSellerNotificationsAsRead() {
+    fetch('ajax/mark-all-seller-notifications-read.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
         }
-
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Update badge to 0
+            updateSellerNotificationBadge(0);
+            // Reload notifications to show them as read
+            loadSellerNotifications();
+        }
+    })
+    .catch(error => {
+        console.error('Error marking all notifications as read:', error);
+    });
+}
         function loadSellerNotifications() {
             fetch('ajax/get-seller-notifications.php')
                 .then(response => response.json())
@@ -932,7 +849,7 @@ require_once 'functions.php';
             
             list.innerHTML = notifications.map(notification => `
                 <div class="notification-item ${!notification.is_read ? 'unread' : ''}" 
-                     onclick="markSellerNotificationAsRead(${notification.id})">
+                    onclick="handleNotificationClick(${notification.id}, '${notification.action_url || ''}')">
                     <i class="fas fa-${getNotificationIcon(notification.type)} notification-type-${notification.type}"></i>
                     <div class="notification-content">
                         <div class="notification-title">${notification.title}</div>
@@ -942,25 +859,50 @@ require_once 'functions.php';
                 </div>
             `).join('');
         }
-
-        function markSellerNotificationAsRead(notificationId) {
-            fetch('ajax/mark-seller-notification-read.php', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ notification_id: notificationId })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    loadSellerNotifications(); // Reload to update badge
-                }
-            })
-            .catch(error => {
-                console.error('Error marking notification as read:', error);
-            });
+        function handleNotificationClick(notificationId, actionUrl) {
+    // Mark as read
+    fetch('ajax/mark-seller-notification-read.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ notification_id: notificationId })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Redirect if action URL exists
+            if (actionUrl && actionUrl !== '' && actionUrl !== 'null') {
+                window.location.href = actionUrl;
+            } else {
+                // Just reload notifications if no URL
+                loadSellerNotifications();
+            }
         }
+    })
+    .catch(error => {
+        console.error('Error handling notification click:', error);
+    });
+}
+
+function markSellerNotificationAsRead(notificationId) {
+    fetch('ajax/mark-seller-notification-read.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ notification_id: notificationId })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            loadSellerNotifications(); // Reload to update badge
+        }
+    })
+    .catch(error => {
+        console.error('Error marking notification as read:', error);
+    });
+}
 
 
         function getNotificationIcon(type) {
@@ -992,63 +934,6 @@ require_once 'functions.php';
                 dropdown.classList.remove('show');
             }
         });
-
-        // Logout Confirmation Functions
-        function openConfirm(message, onConfirm) {
-            // Create dialog overlay
-            const dialog = document.createElement('div');
-            dialog.className = 'confirm-dialog';
-            dialog.innerHTML = `
-                <div class="confirm-content">
-                    <div class="confirm-title"><i class="fas fa-exclamation-triangle"></i> Confirm Action</div>
-                    <div class="confirm-message">${message}</div>
-                    <div class="confirm-buttons">
-                        <button class="confirm-btn confirm-btn-no">No</button>
-                        <button class="confirm-btn confirm-btn-yes">Yes</button>
-                    </div>
-                </div>
-            `;
-            
-            // Add to page
-            document.body.appendChild(dialog);
-            
-            // Handle button clicks
-            const yesBtn = dialog.querySelector('.confirm-btn-yes');
-            const noBtn = dialog.querySelector('.confirm-btn-no');
-            
-            yesBtn.addEventListener('click', () => {
-                document.body.removeChild(dialog);
-                if (onConfirm) onConfirm();
-            });
-            
-            noBtn.addEventListener('click', () => {
-                document.body.removeChild(dialog);
-            });
-            
-            // Handle escape key
-            const handleEscape = (e) => {
-                if (e.key === 'Escape') {
-                    document.body.removeChild(dialog);
-                    document.removeEventListener('keydown', handleEscape);
-                }
-            };
-            document.addEventListener('keydown', handleEscape);
-            
-            // Handle click outside
-            dialog.addEventListener('click', (e) => {
-                if (e.target === dialog) {
-                    document.body.removeChild(dialog);
-                    document.removeEventListener('keydown', handleEscape);
-                }
-            });
-        }
-
-        // Logout confirmation function
-        function confirmLogout(logoutUrl) {
-            openConfirm('Are you sure you want to logout?', function() {
-                window.location.href = logoutUrl;
-            });
-        }
     </script>
     
     <!-- Bootstrap JavaScript -->
