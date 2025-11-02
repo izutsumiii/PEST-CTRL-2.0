@@ -240,24 +240,25 @@ function statusBadge($status) {
     position: absolute;
     top: 12px;
     right: 8px;
-    background: rgba(220, 53, 69, 0.2);
-    border: 1px solid rgba(220, 53, 69, 0.4);
+    background: transparent !important;
+    border: none !important;
     color: #dc3545;
-    width: 28px;
-    height: 28px;
-    border-radius: 4px;
+    width: 20px;
+    height: 20px;
+    border-radius: 0;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    font-size: 12px;
+    font-size: 14px;
     transition: all 0.3s ease;
     z-index: 10;
+    padding: 0;
   }
   
   .notif-delete-btn-page:hover {
-    background: rgba(220, 53, 69, 0.4);
-    border-color: #dc3545;
+    background: transparent !important;
+    color: #c82333;
     transform: scale(1.1);
   }
   
@@ -363,10 +364,10 @@ function statusBadge($status) {
     box-shadow: 0 6px 20px rgba(108, 117, 125, 0.4);
   }
 </style>
-<main style="background:#f8f9fa; min-height:100vh; padding: 80px 0 60px 0;">
+<main style="background:#f8f9fa; min-height:100vh; padding: 20px 0 60px 0;">
   <div style="max-width: 1400px; margin: 0 auto; padding: 0 60px;">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
-      <h1 style="color:#130325; margin:0;">Notifications (<?php echo count($events); ?> total)</h1>
+      <h1 style="color:#130325; margin:0; font-size: 28px; font-weight: 700;">Notifications <span style="background: #FFD736; color: #130325; padding: 4px 12px; border-radius: 20px; font-size: 18px; font-weight: 600; margin-left: 8px;"><?php echo count($events); ?> total</span></h1>
       <?php if (!empty($events)): ?>
         <form method="POST" style="margin:0;" id="deleteAllForm">
             <input type="hidden" name="delete_notifications" value="1">
@@ -595,7 +596,7 @@ function updateNotificationsDisplay(items, unreadCount) {
     if (header) {
         const totalText = items.length === 1 ? '1 total' : `${items.length} total`;
         const unreadText = unreadCount > 0 ? `, ${unreadCount} unread` : '';
-        header.textContent = `Notifications (${totalText}${unreadText})`;
+        header.innerHTML = `Notifications <span style="background: #FFD736; color: #130325; padding: 4px 12px; border-radius: 20px; font-size: 18px; font-weight: 600; margin-left: 8px;">${totalText}${unreadText}</span>`;
     }
 
     // Show/hide clear all button based on notifications

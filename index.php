@@ -439,7 +439,6 @@ section.featured-products .products-container {
      flex-direction: column;
      flex: 0 0 19%;
      min-width: 250px;
-     max-height: 400px;
  }
 
 .product-card:hover {
@@ -493,9 +492,13 @@ section.featured-products .product-card .product-name {
      font-weight: 700 !important;
      margin: 5px 0 !important;
      min-height: 35px !important;
-     display: flex !important;
-     align-items: center !important;
-     justify-content: center !important;
+     max-height: 50px !important;
+     overflow: hidden !important;
+     text-overflow: ellipsis !important;
+     display: -webkit-box !important;
+     -webkit-line-clamp: 2 !important;
+     -webkit-box-orient: vertical !important;
+     line-height: 1.4 !important;
  }
 
 section.featured-products .product-card .price {
@@ -533,9 +536,10 @@ section.featured-products .product-card .rating-text {
 .product-actions {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 8px;
     margin-top: auto;
-    margin-bottom: 10px;
+    margin-bottom: 0;
+    padding-top: 8px;
 }
 
 .cart-actions {
@@ -548,12 +552,12 @@ section.featured-products .product-card .rating-text {
     background: #FFD736;
     color: #130325;
     border: 2px solid #FFD736; /* match yellow */
-    border-radius: 6px; /* slight rounding */
-    padding: 6px;
+    border-radius: 4px; /* slight rounding */
+    padding: 4px;
     cursor: pointer;
-    font-size: 12px;
-    width: 32px;
-    height: 32px;
+    font-size: 10px;
+    width: 24px;
+    height: 24px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -572,9 +576,9 @@ section.featured-products .product-card .rating-text {
     background: #130325;
     color: white;
     border: 2px solid #FFD736;
-    padding: 6px 12px;
+    padding: 4px 10px;
     cursor: pointer;
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.5px;
@@ -583,9 +587,9 @@ section.featured-products .product-card .rating-text {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
+    gap: 4px;
     flex: 1;
-    height: 32px;
+    height: 24px;
 }
 
 .btn-buy-now:hover {
@@ -595,11 +599,11 @@ section.featured-products .product-card .rating-text {
 }
 
 .btn {
-    padding: 12px 20px;
+    padding: 4px 10px;
     border: none;
-    border-radius: 8px;
+    border-radius: 4px;
     cursor: pointer;
-    font-size: 0.95rem;
+    font-size: 0.75rem;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.5px;
@@ -608,13 +612,27 @@ section.featured-products .product-card .rating-text {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
+    gap: 4px;
 }
 
 .btn-details {
-    background: #130325;
-    color: #F9F9F9;
-    border: 2px solid #130325;
+    background: #130325 !important;
+    color: #F9F9F9 !important;
+    border: 2px solid #130325 !important;
+    padding: 1px 4px !important;
+    font-size: 0.6rem !important;
+    width: 100% !important;
+    justify-content: center !important;
+    border-radius: 2px !important;
+    margin: 0 !important;
+    line-height: 1.2 !important;
+    min-height: auto !important;
+    height: auto !important;
+}
+
+.btn-details i {
+    font-size: 0.6rem !important;
+    margin-right: 2px !important;
 }
 
 .btn-details:hover {

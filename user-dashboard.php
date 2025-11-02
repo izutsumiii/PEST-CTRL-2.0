@@ -738,7 +738,7 @@ body {
 }
 
 .btn {
-    padding: 6px 12px;
+    padding: 4px 10px;
     border: none;
     border-radius: 4px;
     font-weight: 600;
@@ -748,7 +748,7 @@ body {
     gap: 4px;
     transition: all 0.3s ease;
     cursor: pointer;
-    font-size: 0.8rem;
+    font-size: 0.75rem;
 }
 
 .btn-primary {
@@ -1317,16 +1317,18 @@ body {
 }
 
 .btn {
-    padding: 10px 20px;
+    padding: 4px 10px;
     border: none;
-    border-radius: 6px;
+    border-radius: 4px;
     font-weight: 600;
     text-decoration: none;
     cursor: pointer;
     transition: all 0.3s ease;
-    font-size: 0.9rem;
+    font-size: 0.75rem;
     text-align: center;
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
 }
 
 /* Removed duplicate btn-primary definition - using the dark purple one above */
@@ -1782,13 +1784,13 @@ body {
     background: #495057;
     color: #ffffff;
     border: none;
-    padding: 8px 16px;
-    border-radius: 6px;
-    font-size: 0.9rem;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 0.75rem;
     font-weight: 600;
     display: inline-flex;
     align-items: center;
-    gap: 8px;
+    gap: 4px;
     text-decoration: none;
     transition: all 0.3s ease;
 }
@@ -1806,13 +1808,13 @@ body {
     opacity: 0.7;
     cursor: not-allowed;
     border: none;
-    padding: 8px 16px;
-    border-radius: 6px;
-    font-size: 0.9rem;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 0.75rem;
     font-weight: 600;
     display: inline-flex;
     align-items: center;
-    gap: 8px;
+    gap: 4px;
 }
 
 .btn-return-expired:hover {
@@ -2908,7 +2910,18 @@ document.addEventListener('DOMContentLoaded', function() {
                         }
                         ?>
                         <div class="seller-info"><?php echo htmlspecialchars($sellerName); ?></div>
-                        <div class="order-number">Order #<?php echo str_pad($order['id'], 6, '0', STR_PAD_LEFT); ?></div>
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <div class="order-number">Order #<?php echo str_pad($order['id'], 6, '0', STR_PAD_LEFT); ?></div>
+                            <div class="order-date-time" style="color: #666; font-size: 0.85rem; font-weight: 400;">
+                                <?php 
+                                $orderDate = isset($order['created_at']) ? $order['created_at'] : (isset($order['order_date']) ? $order['order_date'] : '');
+                                if ($orderDate) {
+                                    $dateTime = new DateTime($orderDate);
+                                    echo $dateTime->format('M d, Y h:i A');
+                                }
+                                ?>
+                            </div>
+                        </div>
                     </div>
                     <div style="display: flex; flex-direction: column; gap: 5px; align-items: flex-end;">
                     <span class="order-status status-<?php echo strtolower($order['status']); ?>">

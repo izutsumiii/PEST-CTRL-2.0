@@ -168,27 +168,37 @@ $sellers = $stmt->fetchAll(PDO::FETCH_ASSOC);
         color: #130325;
     }
     
-    .view-seller-btn {
-        margin-top: 16px;
-        width: 100%;
-        padding: 10px 16px;
-        background: #FFD736;
+    .seller-info h3 a {
         color: #130325;
+        text-decoration: none;
+        transition: color 0.2s ease;
+    }
+    
+    .seller-info h3 a:hover {
+        color: #FFD736;
+    }
+    
+    .visit-seller-btn {
+        margin-top: 16px;
+        padding: 6px 14px;
+        background: #130325;
+        color: #ffffff;
         border: none;
-        border-radius: 8px;
+        border-radius: 6px;
         font-weight: 600;
-        font-size: 14px;
+        font-size: 12px;
         cursor: pointer;
         transition: all 0.2s ease;
         text-decoration: none;
-        display: block;
+        display: inline-block;
         text-align: center;
     }
     
-    .view-seller-btn:hover {
-        background: #f5d026;
+    .visit-seller-btn:hover {
+        background: #0a0218;
         transform: translateY(-1px);
-        box-shadow: 0 2px 8px rgba(255, 215, 54, 0.3);
+        box-shadow: 0 2px 6px rgba(19, 3, 37, 0.3);
+        color: #ffffff;
     }
     
     .empty-state {
@@ -299,7 +309,7 @@ $sellers = $stmt->fetchAll(PDO::FETCH_ASSOC);
                     <div class="seller-header">
                         <div class="seller-avatar"><?php echo htmlspecialchars($initials); ?></div>
                         <div class="seller-info">
-                            <h3><?php echo htmlspecialchars($sellerName); ?></h3>
+                            <h3><a href="seller.php?seller_id=<?php echo (int)$seller['id']; ?>"><?php echo htmlspecialchars($sellerName); ?></a></h3>
                             <p>@<?php echo htmlspecialchars($seller['username'] ?? ''); ?></p>
                         </div>
                     </div>
@@ -315,8 +325,8 @@ $sellers = $stmt->fetchAll(PDO::FETCH_ASSOC);
                         </div>
                     </div>
                     
-                    <a href="seller.php?seller_id=<?php echo (int)$seller['id']; ?>" class="view-seller-btn">
-                        <i class="fas fa-store"></i> View Seller Products
+                    <a href="seller.php?seller_id=<?php echo (int)$seller['id']; ?>" class="visit-seller-btn">
+                        <i class="fas fa-store"></i> Visit Store
                     </a>
                 </div>
             <?php endforeach; ?>

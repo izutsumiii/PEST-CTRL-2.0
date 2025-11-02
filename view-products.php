@@ -393,6 +393,41 @@ h1 {
     user-select: none;
 }
 
+.products-table th.sortable {
+    cursor: pointer;
+    transition: background 0.2s ease;
+    padding-right: 32px;
+}
+
+.products-table th.sortable:hover {
+    background: rgba(255, 215, 54, 0.1);
+}
+
+.sort-indicator {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 10px;
+    color: #9ca3af;
+    transition: all 0.2s ease;
+}
+
+.sort-indicator::before {
+    content: '↕';
+    display: block;
+}
+
+.sort-indicator.asc::before {
+    content: '↑';
+    color: #130325;
+}
+
+.sort-indicator.desc::before {
+    content: '↓';
+    color: #130325;
+}
+
 .products-table tbody tr {
     border-bottom: 1px solid #f0f0f0;
     transition: background 0.2s ease;
@@ -601,22 +636,42 @@ h1 {
     <?php else: ?>
         <div class="products-table-container">
             <div class="table-wrapper">
-                <table class="products-table">
+                <table class="products-table" id="products-table">
                     <thead>
                         <tr>
-                            <th>ID</th>
+                            <th class="sortable" data-column="id">
+                                ID
+                                <span class="sort-indicator"></span>
+                            </th>
                             <th>Image</th>
-                            <th>Name</th>
+                            <th class="sortable" data-column="name">
+                                Name
+                                <span class="sort-indicator"></span>
+                            </th>
                             <th>Category</th>
-                            <th>Price</th>
-                            <th>Stock</th>
-                            <th>Status</th>
+                            <th class="sortable" data-column="price">
+                                Price
+                                <span class="sort-indicator"></span>
+                            </th>
+                            <th class="sortable" data-column="stock">
+                                Stock
+                                <span class="sort-indicator"></span>
+                            </th>
+                            <th class="sortable" data-column="status">
+                                Status
+                                <span class="sort-indicator"></span>
+                            </th>
                             <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php foreach ($allProducts as $product): ?>
-                            <tr data-status="<?php echo htmlspecialchars($product['status'] ?? 'inactive'); ?>">
+                            <tr data-id="<?php echo (int)$product['id']; ?>"
+                                data-name="<?php echo htmlspecialchars($product['name']); ?>"
+                                data-price="<?php echo (float)$product['price']; ?>"
+                                data-stock="<?php echo (int)$product['stock_quantity']; ?>"
+                                data-status="<?php echo htmlspecialchars($product['status'] ?? 'inactive'); ?>"
+                                data-date="<?php echo isset($product['created_at']) ? strtotime($product['created_at']) : 0; ?>">
                                 <td><?php echo $product['id']; ?></td>
                                 <td>
                                     <img src="<?php echo htmlspecialchars($product['image_url']); ?>" 
@@ -777,6 +832,111 @@ document.addEventListener('DOMContentLoaded', function() {
             showConfirm(message, 'Delete').then(function(ok){ if (ok) window.location.href = link.href; });
         });
     });
+
+    // Handle table sorting (client-side, no page reload)
+    const table = document.getElementById('products-table');
+    if (table) {
+        const tbody = table.querySelector('tbody');
+        const sortableHeaders = document.querySelectorAll('.products-table th.sortable');
+        let currentSort = null;
+        let currentOrder = 'desc';
+        
+        // Store original rows data
+        const rows = Array.from(tbody.querySelectorAll('tr'));
+        const rowsData = rows.map(row => {
+            return {
+                element: row,
+                id: parseInt(row.getAttribute('data-id')) || 0,
+                name: row.getAttribute('data-name') || '',
+                price: parseFloat(row.getAttribute('data-price')) || 0,
+                stock: parseInt(row.getAttribute('data-stock')) || 0,
+                status: row.getAttribute('data-status') || 'inactive',
+                date: parseInt(row.getAttribute('data-date')) || 0
+            };
+        });
+        
+        function updateSortIndicators(activeColumn, order) {
+            sortableHeaders.forEach(header => {
+                const indicator = header.querySelector('.sort-indicator');
+                const column = header.getAttribute('data-column');
+                
+                // Remove all sort classes
+                if (indicator) {
+                    indicator.classList.remove('asc', 'desc');
+                    
+                    // Add active sort class
+                    if (column === activeColumn) {
+                        indicator.classList.add(order);
+                    }
+                }
+            });
+        }
+        
+        function sortTable(column, order) {
+            const sortedData = [...rowsData].sort((a, b) => {
+                let aVal, bVal;
+                
+                switch(column) {
+                    case 'id':
+                        aVal = a.id;
+                        bVal = b.id;
+                        break;
+                    case 'name':
+                        aVal = a.name.toLowerCase();
+                        bVal = b.name.toLowerCase();
+                        break;
+                    case 'price':
+                        aVal = a.price;
+                        bVal = b.price;
+                        break;
+                    case 'stock':
+                        aVal = a.stock;
+                        bVal = b.stock;
+                        break;
+                    case 'status':
+                        aVal = a.status;
+                        bVal = b.status;
+                        break;
+                    default:
+                        return 0;
+                }
+                
+                if (aVal < bVal) return order === 'asc' ? -1 : 1;
+                if (aVal > bVal) return order === 'asc' ? 1 : -1;
+                return 0;
+            });
+            
+            // Clear tbody
+            tbody.innerHTML = '';
+            
+            // Append sorted rows
+            sortedData.forEach(data => {
+                tbody.appendChild(data.element);
+            });
+            
+            // Update indicators
+            updateSortIndicators(column, order);
+            
+            currentSort = column;
+            currentOrder = order;
+        }
+        
+        // Add click handlers
+        sortableHeaders.forEach(header => {
+            header.addEventListener('click', function() {
+                const column = this.getAttribute('data-column');
+                let newOrder = 'asc';
+                
+                // If clicking the same column, toggle order
+                if (column === currentSort) {
+                    newOrder = currentOrder === 'asc' ? 'desc' : 'asc';
+                }
+                
+                // Sort table without reload
+                sortTable(column, newOrder);
+            });
+        });
+    }
 });
 </script>
 

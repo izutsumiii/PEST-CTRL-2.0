@@ -70,14 +70,14 @@ $pathPrefix = ($currentDir === 'paymongo') ? '../' : '';
             align-items: center;
             justify-content: center;
             color: #F9F9F9;
-            font-size: 26px;
+            font-size: 20px;
             font-family: 'Libre Barcode 128 Text', monospace;
             font-weight: 400;
             text-decoration: none;
         }
         
         .brand-text {
-            font-size: 18px;
+            font-size: 14px;
             color: #F9F9F9;
             font-family: 'Libre Barcode 128 Text', monospace;
         }
@@ -89,9 +89,30 @@ $pathPrefix = ($currentDir === 'paymongo') ? '../' : '';
         
         .search-box form {
             display: flex;
-            gap: 8px;
+            gap: 0;
             align-items: center;
             width: 100%;
+        }
+        
+        .search-box select {
+            padding: 8px 10px !important;
+            height: 36px !important;
+            border-radius: 6px 0 0 6px !important;
+            border: 1px solid rgba(249, 249, 249, 0.3) !important;
+            border-right: 1px solid rgba(249, 249, 249, 0.3) !important;
+            background: rgba(249, 249, 249, 0.1) !important;
+            color: #F9F9F9 !important;
+            font-size: 14px !important;
+            cursor: pointer !important;
+            outline: none !important;
+            margin-right: 0 !important;
+            width: auto !important;
+            min-width: 100px !important;
+        }
+        
+        .search-box select option {
+            background: #130325 !important;
+            color: #F9F9F9 !important;
         }
         
         .search-box input {
@@ -99,11 +120,14 @@ $pathPrefix = ($currentDir === 'paymongo') ? '../' : '';
             padding: 8px 12px !important;
             height: 36px !important;
             max-height: 36px !important;
-            border-radius: 6px !important;
+            border-radius: 0 !important;
             border: 1px solid rgba(249, 249, 249, 0.3) !important;
+            border-left: none !important;
+            border-right: none !important;
             background: rgba(249, 249, 249, 0.1) !important;
             color: #F9F9F9 !important;
             min-width: 0;
+            margin-left: 0 !important;
         }
 
         .site-header .search-box { max-width: 600px; }
@@ -116,14 +140,16 @@ $pathPrefix = ($currentDir === 'paymongo') ? '../' : '';
         }
         
         .search-box button {
-            padding: 0 10px !important;
-            border-radius: 6px;
+            padding: 0 14px !important;
+            border-radius: 0 6px 6px 0 !important;
             background: #FFD736;
             color: #130325;
             border: none;
+            border-left: 1px solid rgba(249, 249, 249, 0.3) !important;
             height: 36px;
             flex: 0 0 auto !important;
             width: auto !important;
+            margin-left: 0 !important;
         }
         
         .header-actions {
@@ -187,11 +213,14 @@ $pathPrefix = ($currentDir === 'paymongo') ? '../' : '';
             transform: scale(0);
             transition: all 0.3s ease;
             z-index: 1000 !important;
+            visibility: hidden;
         }
         
         .notif-badge.show {
-            opacity: 1;
-            transform: scale(1);
+            opacity: 1 !important;
+            transform: scale(1) !important;
+            visibility: visible !important;
+            display: flex !important;
         }
         
         .cart-notification.show {
@@ -300,19 +329,19 @@ $pathPrefix = ($currentDir === 'paymongo') ? '../' : '';
         }
         
         .see-all-btn {
-            display: block;
-            text-align: center;
+            display: block !important;
+            text-align: center !important;
             color: #130325 !important;
-            text-decoration: none;
-            font-size: 12px;
-            font-weight: 600;
-            text-transform: uppercase;
-            padding: 8px 12px;
-            border-radius: 6px;
-            border: 1px solid rgba(0, 0, 0, 0.1);
+            text-decoration: none !important;
+            font-size: 15px !important;
+            font-weight: 300 !important;
+            text-transform: none !important;
+            padding: 4px 8px !important;
+            border-radius: 4px !important;
+            border: 1px solid rgba(0, 0, 0, 0.1) !important;
             background: rgba(248, 249, 250, 0.8) !important;
-            margin: 0 auto;
-            width: fit-content;
+            margin: 0 auto !important;
+            width: fit-content !important;
         }
         
         .see-all-btn:hover {
@@ -325,24 +354,25 @@ $pathPrefix = ($currentDir === 'paymongo') ? '../' : '';
             position: absolute;
             top: 8px;
             right: 8px;
-            background: rgba(220, 53, 69, 0.2);
-            border: 1px solid rgba(220, 53, 69, 0.4);
+            background: transparent !important;
+            border: none !important;
             color: #dc3545;
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            border-radius: 0;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            font-size: 10px;
+            font-size: 14px;
             transition: all 0.3s ease;
             z-index: 10;
+            padding: 0;
         }
         
         .notif-delete-btn:hover {
-            background: rgba(220, 53, 69, 0.4);
-            border-color: #dc3545;
+            background: transparent !important;
+            color: #c82333;
             transform: scale(1.1);
         }
         
@@ -440,7 +470,7 @@ $pathPrefix = ($currentDir === 'paymongo') ? '../' : '';
 
         @media (max-width: 900px) {
             .header-center {
-                display: none;
+                display: flex !important;
             }
             .header-right .nav-links {
                 display: none;
@@ -628,8 +658,12 @@ $pathPrefix = ($currentDir === 'paymongo') ? '../' : '';
 
             <div class="header-center">
                 <div class="search-box">
-                    <form action="<?php echo $pathPrefix; ?>products.php" method="GET" role="search">
-                        <input name="search" type="text" placeholder="Search products...">
+                    <form action="<?php echo $pathPrefix; ?>products.php" method="GET" role="search" id="headerSearchForm">
+                        <select name="search_type" id="searchTypeSelect">
+                            <option value="products" <?php echo (isset($_GET['search_type']) && $_GET['search_type'] === 'sellers') ? '' : 'selected'; ?>>Products</option>
+                            <option value="sellers" <?php echo (isset($_GET['search_type']) && $_GET['search_type'] === 'sellers') ? 'selected' : ''; ?>>Sellers</option>
+                        </select>
+                        <input name="search" type="text" placeholder="Search..." id="headerSearchInput" value="<?php echo isset($_GET['search']) ? htmlspecialchars($_GET['search']) : ''; ?>">
                         <button type="submit"><i class="fas fa-search"></i></button>
                     </form>
                 </div>
@@ -898,10 +932,14 @@ function updateNotificationBadge(count) {
     if (count > 0) {
         badge.textContent = count;
         badge.style.display = 'flex';
+        badge.style.visibility = 'visible';
+        badge.style.opacity = '1';
         badge.classList.add('show');
     } else {
         badge.textContent = '';
         badge.style.display = 'none';
+        badge.style.visibility = 'hidden';
+        badge.style.opacity = '0';
         badge.classList.remove('show');
     }
 }
@@ -1008,6 +1046,125 @@ document.addEventListener('DOMContentLoaded', function() {
     }, 30000); // Every 30 seconds
 });
 
+// Handle search type dropdown - redirect to sellers.php if sellers selected
+document.addEventListener('DOMContentLoaded', function() {
+    const searchForm = document.getElementById('headerSearchForm');
+    const searchTypeSelect = document.getElementById('searchTypeSelect');
+    
+    if (searchForm && searchTypeSelect) {
+        // Store the selected value in localStorage to persist across page loads
+        const savedSearchType = localStorage.getItem('headerSearchType') || 'products';
+        if (savedSearchType) {
+            searchTypeSelect.value = savedSearchType;
+        }
+        
+        searchForm.addEventListener('submit', function(e) {
+            const searchType = searchTypeSelect.value;
+            const searchQuery = document.getElementById('headerSearchInput').value;
+            
+            // Save the selected search type
+            localStorage.setItem('headerSearchType', searchType);
+            
+            if (searchType === 'sellers') {
+                e.preventDefault();
+                window.location.href = '<?php echo $pathPrefix; ?>sellers.php?search=' + encodeURIComponent(searchQuery);
+                return false;
+            }
+            // For products, let the form submit normally to products.php
+            // But add the search_type parameter to preserve it
+            const formAction = searchForm.getAttribute('action');
+            if (formAction && !formAction.includes('search_type=')) {
+                const url = new URL(formAction, window.location.origin);
+                url.searchParams.set('search_type', searchType);
+                searchForm.setAttribute('action', url.pathname + '?' + url.searchParams.toString());
+            }
+        });
+        
+        // Update localStorage when dropdown changes
+        searchTypeSelect.addEventListener('change', function() {
+            localStorage.setItem('headerSearchType', this.value);
+        });
+    }
+});
+
+    </script>
+
+    <!-- Logout Confirmation Modal -->
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Create logout confirmation modal
+        const logoutModal = document.createElement('div');
+        logoutModal.id = 'logoutConfirmModal';
+        logoutModal.style.cssText = 'display: none; position: fixed; z-index: 10000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center;';
+        
+        const modalContent = document.createElement('div');
+        modalContent.style.cssText = 'background: #ffffff; border-radius: 12px; padding: 0; max-width: 400px; width: 90%; box-shadow: 0 10px 40px rgba(0,0,0,0.2); animation: slideDown 0.3s ease;';
+        
+        const modalHeader = document.createElement('div');
+        modalHeader.style.cssText = 'background: #130325; color: #ffffff; padding: 16px 20px; border-radius: 12px 12px 0 0; display: flex; align-items: center; gap: 10px;';
+        modalHeader.innerHTML = '<i class="fas fa-sign-out-alt" style="font-size: 16px; color: #FFD736;"></i><h3 style="margin: 0; font-size: 14px; font-weight: 700;">Confirm Logout</h3>';
+        
+        const modalBody = document.createElement('div');
+        modalBody.style.cssText = 'padding: 20px; color: #130325;';
+        modalBody.innerHTML = '<p style="margin: 0; font-size: 13px; line-height: 1.5; color: #130325;">Are you sure you want to logout? You will need to login again to access your account.</p>';
+        
+        const modalFooter = document.createElement('div');
+        modalFooter.style.cssText = 'padding: 16px 24px; border-top: 1px solid #e5e7eb; display: flex; gap: 10px; justify-content: flex-end;';
+        
+        const cancelBtn = document.createElement('button');
+        cancelBtn.textContent = 'Cancel';
+        cancelBtn.style.cssText = 'padding: 8px 20px; background: #f3f4f6; color: #130325; border: 1px solid #e5e7eb; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px; transition: all 0.2s ease;';
+        cancelBtn.onmouseover = function() { this.style.background = '#e5e7eb'; };
+        cancelBtn.onmouseout = function() { this.style.background = '#f3f4f6'; };
+        
+        const confirmBtn = document.createElement('button');
+        confirmBtn.textContent = 'Logout';
+        confirmBtn.style.cssText = 'padding: 8px 20px; background: #130325; color: #ffffff; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px; transition: all 0.2s ease;';
+        confirmBtn.onmouseover = function() { this.style.background = '#0a0218'; };
+        confirmBtn.onmouseout = function() { this.style.background = '#130325'; };
+        
+        let logoutUrl = '';
+        
+        cancelBtn.onclick = function() {
+            logoutModal.style.display = 'none';
+        };
+        
+        confirmBtn.onclick = function() {
+            window.location.href = logoutUrl;
+        };
+        
+        modalFooter.appendChild(cancelBtn);
+        modalFooter.appendChild(confirmBtn);
+        
+        modalContent.appendChild(modalHeader);
+        modalContent.appendChild(modalBody);
+        modalContent.appendChild(modalFooter);
+        logoutModal.appendChild(modalContent);
+        document.body.appendChild(logoutModal);
+        
+        logoutModal.onclick = function(e) {
+            if (e.target === logoutModal) {
+                logoutModal.style.display = 'none';
+            }
+        };
+        
+        // Intercept logout links
+        document.querySelectorAll('a[href*="logout.php"]').forEach(function(link) {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                logoutUrl = this.getAttribute('href');
+                logoutModal.style.display = 'flex';
+            });
+        });
+        
+        // Add CSS animation
+        if (!document.getElementById('logoutModalStyles')) {
+            const style = document.createElement('style');
+            style.id = 'logoutModalStyles';
+            style.textContent = '@keyframes slideDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }';
+            document.head.appendChild(style);
+        }
+    });
     </script>
 
     <main>

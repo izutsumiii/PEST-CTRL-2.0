@@ -26,17 +26,17 @@ try {
             o.id as order_id,
             o.total_amount,
             o.created_at as order_date,
-            u.username as customer_name,
+            CONCAT(u.first_name, ' ', u.last_name) as customer_name,
             u.email as customer_email,
-            p.name as product_name,
-            p.image_url as product_image,
-            oi.quantity,
-            oi.price as item_price
+            COALESCE(p.name, 'Product Deleted') as product_name,
+            COALESCE(p.image_url, '') as product_image,
+            COALESCE(rr.quantity, COALESCE(oi.quantity, 1)) as quantity,
+            COALESCE(oi.price, 0) as item_price
         FROM return_requests rr
         JOIN orders o ON rr.order_id = o.id
         JOIN users u ON o.user_id = u.id
-        JOIN order_items oi ON o.id = oi.order_id AND rr.product_id = oi.product_id
-        JOIN products p ON oi.product_id = p.id
+        LEFT JOIN order_items oi ON o.id = oi.order_id AND rr.product_id = oi.product_id
+        LEFT JOIN products p ON rr.product_id = p.id
         WHERE rr.id = ? AND rr.seller_id = ?
     ");
     $stmt->execute([$returnId, $sellerId]);
@@ -51,6 +51,6 @@ try {
     
 } catch (Exception $e) {
     error_log("Error fetching return details: " . $e->getMessage());
-    echo json_encode(['success' => false, 'message' => 'Error fetching details']);
+    echo json_encode(['success' => false, 'message' => 'Error fetching details: ' . $e->getMessage()]);
 }
 ?>

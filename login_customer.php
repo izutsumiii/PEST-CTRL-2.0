@@ -97,12 +97,13 @@ require_once 'includes/header.php';
     .login-page-wrapper {
         display: flex;
         justify-content: space-between;
-        align-items: center;
-        min-height: calc(100vh - 80px);
-        padding: 30px 60px;
+        align-items: flex-start;
+        height: 100vh;
+        padding: 40px 60px 0 60px;
         gap: 50px;
         max-width: 1400px;
         margin: 0 auto;
+        overflow: hidden;
     }
 
     /* Left Side Branding */
@@ -111,35 +112,36 @@ require_once 'includes/header.php';
         display: flex;
         flex-direction: column;
         align-items: center;
-        justify-content: center;
+        justify-content: flex-start;
         text-align: center;
+        padding-top: 100px;
     }
 
     .main-logo {
-        font-size: 80px;
+        font-size: 70px;
         font-family: 'Libre Barcode 128 Text', monospace;
         font-weight: 400;
         color: #FFD736;
-        margin-bottom: 25px;
+        margin-bottom: 20px;
         text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
     }
 
     .tagline {
-        font-size: 26px;
+        font-size: 24px;
         color: #FFD736;
         font-weight: 700;
-        margin-bottom: 12px;
+        margin-bottom: 10px;
         opacity: 0.95;
         letter-spacing: 0.5px;
     }
 
     .subtagline {
-        font-size: 18px;
+        font-size: 16px;
         color: #FFD736;
         opacity: 0.75;
         font-weight: 400;
         max-width: 400px;
-        line-height: 1.5;
+        line-height: 1.4;
     }
 
     /* Login Container - EXTRA MINIMIZED */
@@ -153,6 +155,7 @@ require_once 'includes/header.php';
         box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
         position: relative;
         overflow: hidden;
+        margin-top: 40px;
     }
 
     .login-header {

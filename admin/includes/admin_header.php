@@ -1426,4 +1426,82 @@ require_once $rootPath . '/includes/functions.php';
             });
         </script>
 
+        <!-- Logout Confirmation Modal -->
+        <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Create logout confirmation modal
+            const logoutModal = document.createElement('div');
+            logoutModal.id = 'logoutConfirmModal';
+            logoutModal.style.cssText = 'display: none; position: fixed; z-index: 10000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center;';
+            
+            const modalContent = document.createElement('div');
+            modalContent.style.cssText = 'background: #ffffff; border-radius: 12px; padding: 0; max-width: 400px; width: 90%; box-shadow: 0 10px 40px rgba(0,0,0,0.2); animation: slideDown 0.3s ease;';
+            
+            const modalHeader = document.createElement('div');
+            modalHeader.style.cssText = 'background: #130325; color: #ffffff; padding: 16px 20px; border-radius: 12px 12px 0 0; display: flex; align-items: center; gap: 10px;';
+            modalHeader.innerHTML = '<i class="fas fa-sign-out-alt" style="font-size: 16px; color: #FFD736;"></i><h3 style="margin: 0; font-size: 14px; font-weight: 700;">Confirm Logout</h3>';
+            
+            const modalBody = document.createElement('div');
+            modalBody.style.cssText = 'padding: 20px; color: #130325;';
+            modalBody.innerHTML = '<p style="margin: 0; font-size: 13px; line-height: 1.5; color: #130325;">Are you sure you want to logout? You will need to login again to access your admin account.</p>';
+            
+            const modalFooter = document.createElement('div');
+            modalFooter.style.cssText = 'padding: 16px 24px; border-top: 1px solid #e5e7eb; display: flex; gap: 10px; justify-content: flex-end;';
+            
+            const cancelBtn = document.createElement('button');
+            cancelBtn.textContent = 'Cancel';
+            cancelBtn.style.cssText = 'padding: 8px 20px; background: #f3f4f6; color: #130325; border: 1px solid #e5e7eb; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px; transition: all 0.2s ease;';
+            cancelBtn.onmouseover = function() { this.style.background = '#e5e7eb'; };
+            cancelBtn.onmouseout = function() { this.style.background = '#f3f4f6'; };
+            
+            const confirmBtn = document.createElement('button');
+            confirmBtn.textContent = 'Logout';
+            confirmBtn.style.cssText = 'padding: 8px 20px; background: #130325; color: #ffffff; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px; transition: all 0.2s ease;';
+            confirmBtn.onmouseover = function() { this.style.background = '#0a0218'; };
+            confirmBtn.onmouseout = function() { this.style.background = '#130325'; };
+            
+            let logoutUrl = '';
+            
+            cancelBtn.onclick = function() {
+                logoutModal.style.display = 'none';
+            };
+            
+            confirmBtn.onclick = function() {
+                window.location.href = logoutUrl;
+            };
+            
+            modalFooter.appendChild(cancelBtn);
+            modalFooter.appendChild(confirmBtn);
+            
+            modalContent.appendChild(modalHeader);
+            modalContent.appendChild(modalBody);
+            modalContent.appendChild(modalFooter);
+            logoutModal.appendChild(modalContent);
+            document.body.appendChild(logoutModal);
+            
+            logoutModal.onclick = function(e) {
+                if (e.target === logoutModal) {
+                    logoutModal.style.display = 'none';
+                }
+            };
+            
+            // Intercept logout links
+            document.querySelectorAll('a[href*="logout.php"]').forEach(function(link) {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    logoutUrl = this.getAttribute('href');
+                    logoutModal.style.display = 'flex';
+                });
+            });
+            
+            // Add CSS animation
+            if (!document.getElementById('logoutModalStyles')) {
+                const style = document.createElement('style');
+                style.id = 'logoutModalStyles';
+                style.textContent = '@keyframes slideDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }';
+                document.head.appendChild(style);
+            }
+        });
+        </script>
+
     <main>

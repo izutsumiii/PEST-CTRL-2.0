@@ -125,7 +125,7 @@ $cartTotal = getMultiSellerCartTotal();
                                 <button type="button" 
                                         class="btn btn-remove" 
                                         title="Remove item"
-                                        onclick="removeCartItem(<?php echo $item['product_id']; ?>)">×</button>
+                                        onclick="removeCartItem(<?php echo $item['product_id']; ?>)"><i class="fas fa-trash"></i></button>
                             </td>
                         </tr>
                         <?php endforeach; ?>
@@ -230,9 +230,10 @@ h1 {
 .cart-table th {
     background: #130325;
     color: #ffffff;
-    padding: 15px;
+    padding: 12px;
     text-align: left;
     font-weight: 600;
+    font-size: 0.85rem;
     border-bottom: 1px solid rgba(0, 0, 0, 0.1);
 }
 
@@ -271,10 +272,11 @@ h1 {
 }
 
 .cart-table td {
-    padding: 15px;
+    padding: 12px;
     border-bottom: 1px solid #e0e0e0;
     color: #130325;
     background: #ffffff;
+    font-size: 0.85rem;
 }
 
 .cart-table tbody tr:hover {
@@ -298,6 +300,8 @@ h1 {
 .product-details h4 {
     margin: 0 0 5px 0;
     color: #130325;
+    font-size: 0.9rem;
+    font-weight: 600;
 }
 
 .stock-info {
@@ -357,13 +361,13 @@ h1 {
 
 /* Buttons */
 .btn {
-    padding: 10px 20px;
+    padding: 4px 10px;
     border: none;
-    border-radius: 5px;
+    border-radius: 4px;
     cursor: pointer;
     text-decoration: none;
     display: inline-block;
-    font-size: 1rem;
+    font-size: 0.75rem;
     text-align: center;
     transition: all 0.3s ease;
 }

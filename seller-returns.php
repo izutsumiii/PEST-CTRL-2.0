@@ -214,15 +214,15 @@ $stmt = $pdo->prepare("
         o.created_at as order_date,
         CONCAT(u.first_name, ' ', u.last_name) as customer_name,
         u.email as customer_email,
-        p.name as product_name,
-        p.image_url as product_image,
-        COALESCE(rr.quantity, oi.quantity) as quantity,
-        oi.price as item_price
+        COALESCE(p.name, 'Product Deleted') as product_name,
+        COALESCE(p.image_url, '') as product_image,
+        COALESCE(rr.quantity, COALESCE(oi.quantity, 1)) as quantity,
+        COALESCE(oi.price, 0) as item_price
     FROM return_requests rr
     JOIN orders o ON rr.order_id = o.id
     JOIN users u ON o.user_id = u.id
-    JOIN order_items oi ON o.id = oi.order_id
-    JOIN products p ON oi.product_id = p.id
+    LEFT JOIN order_items oi ON o.id = oi.order_id AND rr.product_id = oi.product_id
+    LEFT JOIN products p ON rr.product_id = p.id
     WHERE rr.seller_id = ?
     ORDER BY rr.created_at DESC
 ");
@@ -255,13 +255,13 @@ include 'includes/seller_header.php';
 <style>
 /* Body and Main Container */
 body {
-    background: #130325;
+    background: #f8f9fa !important;
     min-height: 100vh;
-    color: #F9F9F9;
+    color: #130325;
 }
 
 .main-content {
-    background: #130325;
+    background: #f8f9fa !important;
     min-height: 100vh;
     padding: 20px 0 40px 0;
     margin-left: 70px;
@@ -279,11 +279,11 @@ body {
 .page-header {
     margin-bottom: 30px;
     padding-bottom: 15px;
-    border-bottom: 2px solid rgba(255, 215, 54, 0.3);
+    border-bottom: 2px solid #e5e7eb;
 }
 
 .page-title {
-    color: #F9F9F9;
+    color: #130325;
     font-size: 1.5rem;
     font-weight: 700;
     margin: 0;
@@ -316,15 +316,15 @@ body {
 }
 
 .alert-success {
-    background: rgba(40, 167, 69, 0.15);
-    color: #28a745;
-    border: 1px solid rgba(40, 167, 69, 0.3);
+    background: #f0fdf4 !important;
+    color: #166534 !important;
+    border: 2px solid #86efac !important;
 }
 
 .alert-danger {
-    background: rgba(220, 53, 69, 0.15);
-    color: #dc3545;
-    border: 1px solid rgba(220, 53, 69, 0.3);
+    background: #fef2f2 !important;
+    color: #991b1b !important;
+    border: 2px solid #fca5a5 !important;
 }
 
 .alert i {
@@ -354,22 +354,23 @@ body {
 }
 
 .stats-card {
-    background: #1a0a2e;
-    border: 1px solid #2d1b4e;
-    border-left: 4px solid #007bff;
-    border-radius: 8px;
+    background: #ffffff !important;
+    border: 2px solid #e5e7eb !important;
+    border-left: 4px solid #FFD736;
+    border-radius: 12px !important;
     padding: 12px 16px;
     display: flex;
     align-items: center;
     justify-content: center;
     transition: all 0.3s ease;
     min-height: 60px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06) !important;
 }
 
 .stats-card:hover {
     transform: translateY(-5px);
-    border-color: #FFD736;
-    box-shadow: 0 10px 30px rgba(255, 215, 54, 0.2);
+    border-color: #FFD736 !important;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.1) !important;
 }
 
 
@@ -377,13 +378,13 @@ body {
     font-size: 1.8rem;
     font-weight: 700;
     margin: 0 0 2px 0;
-    color: #F9F9F9;
+    color: #130325 !important;
     text-align: center;
 }
 
 .stats-content p {
     margin: 0;
-    color: rgba(249, 249, 249, 0.7);
+    color: #6b7280 !important;
     font-weight: 500;
     font-size: 0.85rem;
     text-transform: uppercase;
@@ -392,25 +393,25 @@ body {
 
 /* Card Container */
 .card {
-    background: #1a0a2e;
-    border: 1px solid #2d1b4e;
-    border-radius: 10px;
-    box-shadow: 0 3px 15px rgba(0, 0, 0, 0.3);
+    background: #ffffff !important;
+    border: 2px solid #e5e7eb !important;
+    border-radius: 12px !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06) !important;
     margin-bottom: 20px;
-    overflow: hidden;
+    overflow: visible !important;
 }
 
 .card-header {
-    background: #130325;
+    background: #130325 !important;
     padding: 15px 20px;
-    border-bottom: 1px solid rgba(255, 215, 54, 0.3);
+    border-bottom: 2px solid #FFD736 !important;
 }
 
 .card-title {
     margin: 0;
     font-size: 1.2rem;
     font-weight: 600;
-    color: #F9F9F9;
+    color: #ffffff !important;
     display: flex;
     align-items: center;
     gap: 8px;
@@ -422,12 +423,19 @@ body {
 
 .card-body {
     padding: 20px;
+    background: #ffffff !important;
+    overflow: visible !important;
+    max-height: none !important;
+    height: auto !important;
 }
 
 /* Table Styling */
 .table-responsive {
     overflow-x: auto;
+    overflow-y: visible !important;
     border-radius: 8px;
+    max-height: none !important;
+    height: auto !important;
 }
 
 .table {
@@ -435,16 +443,17 @@ body {
     margin-bottom: 0;
     border-collapse: separate;
     border-spacing: 0;
+    background: #ffffff !important;
 }
 
 .table thead th {
-    background: rgba(19, 3, 37, 0.8);
-    color: #FFD736;
-    font-weight: 600;
+    background: #ffffff !important;
+    color: #130325 !important;
+    font-weight: 700 !important;
     text-transform: uppercase;
     font-size: 0.8rem;
     padding: 12px 10px;
-    border: none;
+    border-bottom: 2px solid #e5e7eb !important;
     letter-spacing: 0.5px;
     white-space: nowrap;
 }
@@ -452,9 +461,9 @@ body {
 .table tbody td {
     padding: 12px 10px;
     vertical-align: middle;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-    color: #F9F9F9;
-    background: #1a0a2e;
+    border-top: 1px solid #f3f4f6 !important;
+    color: #130325 !important;
+    background: #ffffff !important;
 }
 
 .table tbody tr {
@@ -462,19 +471,19 @@ body {
 }
 
 .table tbody tr:hover {
-    background: rgba(255, 215, 54, 0.05);
+    background: #f9fafb !important;
     transform: translateX(5px);
 }
 
 /* Customer Info */
 .customer-info strong {
-    color: #F9F9F9;
+    color: #130325 !important;
     font-weight: 600;
     font-size: 0.95rem;
 }
 
 .customer-info small {
-    color: rgba(249, 249, 249, 0.6);
+    color: #6b7280 !important;
     font-size: 0.8rem;
 }
 
@@ -490,11 +499,11 @@ body {
     height: 50px;
     object-fit: cover;
     border-radius: 8px;
-    border: 2px solid rgba(255, 215, 54, 0.3);
+    border: 2px solid #e5e7eb;
 }
 
 .product-details strong {
-    color: #F9F9F9;
+    color: #130325 !important;
     font-weight: 600;
     font-size: 0.95rem;
     display: block;
@@ -502,7 +511,7 @@ body {
 }
 
 .product-details small {
-    color: rgba(249, 249, 249, 0.6);
+    color: #6b7280 !important;
     font-size: 0.8rem;
 }
 
@@ -614,24 +623,25 @@ body {
 .empty-state {
     text-align: center;
     padding: 60px 20px;
-    color: rgba(249, 249, 249, 0.6);
+    color: #6b7280 !important;
+    background: #ffffff !important;
 }
 
 .empty-state i {
     font-size: 5rem;
     margin-bottom: 20px;
-    color: rgba(255, 215, 54, 0.3);
+    color: #d1d5db !important;
 }
 
 .empty-state h4 {
-    color: #F9F9F9;
+    color: #130325 !important;
     margin-bottom: 10px;
     font-size: 1.5rem;
     font-weight: 700;
 }
 
 .empty-state p {
-    color: rgba(249, 249, 249, 0.6);
+    color: #6b7280 !important;
     font-size: 1rem;
 }
 
@@ -642,7 +652,7 @@ body {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    color: rgba(249, 249, 249, 0.8);
+    color: #130325 !important;
 }
 
 /* Modal Styling */
@@ -661,18 +671,19 @@ body {
 
 /* Details Modal Specific Styling */
 .return-details .table {
-    background: transparent;
-    color: #F9F9F9;
+    background: #ffffff !important;
+    color: #130325 !important;
 }
 
 .return-details .table td {
-    border-color: rgba(255, 255, 255, 0.1);
+    border-color: #e5e7eb !important;
     padding: 8px 12px;
+    color: #130325 !important;
 }
 
 .return-details .table td:first-child {
-    color: #FFD736;
-    font-weight: 500;
+    color: #130325 !important;
+    font-weight: 600;
 }
 
 .product-info {
@@ -680,9 +691,9 @@ body {
     align-items: center;
     gap: 15px;
     padding: 15px;
-    background: rgba(255, 255, 255, 0.05);
+    background: #f9fafb !important;
     border-radius: 8px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid #e5e7eb !important;
 }
 
 .product-details {
@@ -691,13 +702,14 @@ body {
 
 .issue-details {
     padding: 15px;
-    background: rgba(255, 255, 255, 0.05);
+    background: #f9fafb !important;
     border-radius: 8px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid #e5e7eb !important;
 }
 
 .description-box {
-    background: rgba(0, 0, 0, 0.3);
+    background: #f9fafb !important;
+    color: #130325 !important;
     padding: 12px;
     border-radius: 6px;
     border-left: 3px solid #FFD736;
@@ -712,9 +724,9 @@ body {
     align-items: center;
     gap: 10px;
     padding: 10px;
-    background: rgba(255, 255, 255, 0.05);
+    background: #f9fafb !important;
     border-radius: 6px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid #e5e7eb !important;
 }
 
 .product-image-compact {
@@ -727,18 +739,21 @@ body {
 .product-details-compact {
     flex: 1;
     font-size: 0.9rem;
+    color: #130325 !important;
 }
 
 .issue-details-compact {
     padding: 10px;
-    background: rgba(255, 255, 255, 0.05);
+    background: #f9fafb !important;
     border-radius: 6px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid #e5e7eb !important;
     font-size: 0.9rem;
+    color: #130325 !important;
 }
 
 .description-box-compact {
-    background: rgba(0, 0, 0, 0.3);
+    background: #f9fafb !important;
+    color: #130325 !important;
     padding: 8px;
     border-radius: 4px;
     border-left: 2px solid #FFD736;
@@ -755,9 +770,9 @@ body {
     grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
     gap: 15px;
     padding: 15px;
-    background: rgba(255, 255, 255, 0.05);
+    background: #f9fafb !important;
     border-radius: 8px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid #e5e7eb !important;
 }
 
 .photo-item {
@@ -828,6 +843,20 @@ body {
 /* Ultra Wide Details Layout */
 .return-details-wide {
     font-size: 0.85rem;
+    color: #130325 !important;
+}
+
+.return-details-wide h6 {
+    color: #130325 !important;
+    font-weight: 700;
+    margin-bottom: 8px;
+    border-bottom: 2px solid #FFD736;
+    padding-bottom: 4px;
+}
+
+.return-details-wide h6 i {
+    color: #FFD736 !important;
+    margin-right: 6px;
 }
 
 /* Force modal to be horizontal/wide */
@@ -855,9 +884,9 @@ body {
     flex-direction: column;
     gap: 4px;
     padding: 8px;
-    background: rgba(255, 255, 255, 0.05);
+    background: #f9fafb !important;
     border-radius: 6px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid #e5e7eb !important;
 }
 
 .info-grid div {
@@ -865,7 +894,8 @@ body {
     justify-content: space-between;
     align-items: center;
     padding: 2px 0;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    border-bottom: 1px solid #e5e7eb;
+    color: #130325 !important;
 }
 
 .info-grid div:last-child {
@@ -873,7 +903,7 @@ body {
 }
 
 .info-grid strong {
-    color: #FFD736;
+    color: #130325 !important;
     font-size: 0.8rem;
     min-width: 40px;
 }
@@ -883,9 +913,9 @@ body {
     align-items: center;
     gap: 8px;
     padding: 8px;
-    background: rgba(255, 255, 255, 0.05);
+    background: #f9fafb !important;
     border-radius: 6px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid #e5e7eb !important;
 }
 
 .product-image-ultra-compact {
@@ -899,29 +929,45 @@ body {
     flex: 1;
     font-size: 0.8rem;
     line-height: 1.2;
+    color: #130325 !important;
+}
+
+.product-details-ultra-compact strong {
+    color: #130325 !important;
+}
+
+.product-details-ultra-compact small {
+    color: #6b7280 !important;
 }
 
 .issue-details-ultra-compact {
     padding: 8px;
-    background: rgba(255, 255, 255, 0.05);
+    background: #f9fafb !important;
     border-radius: 6px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid #e5e7eb !important;
     font-size: 0.8rem;
+    color: #130325 !important;
 }
 
 .issue-details-ultra-compact div {
     margin-bottom: 4px;
+    color: #130325 !important;
 }
 
 .issue-details-ultra-compact div:last-child {
     margin-bottom: 0;
 }
 
+.issue-details-ultra-compact strong {
+    color: #130325 !important;
+}
+
 .description-box-ultra-compact {
-    background: rgba(0, 0, 0, 0.3);
+    background: #f9fafb !important;
+    color: #130325 !important;
     padding: 6px;
     border-radius: 4px;
-    border-left: 2px solid #FFD736;
+    border-left: 3px solid #FFD736 !important;
     margin-top: 4px;
     white-space: pre-wrap;
     font-style: italic;
@@ -935,9 +981,9 @@ body {
     grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
     gap: 8px;
     padding: 8px;
-    background: rgba(255, 255, 255, 0.05);
+    background: #f9fafb !important;
     border-radius: 6px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid #e5e7eb !important;
     max-height: 120px;
     overflow-y: auto;
 }
@@ -952,7 +998,12 @@ body {
     height: 60px;
     object-fit: cover;
     border-radius: 4px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 2px solid #e5e7eb !important;
+    transition: border-color 0.2s ease;
+}
+
+.photos-container-wide .return-photo:hover {
+    border-color: #FFD736 !important;
 }
 
 /* New Action Buttons Layout */
@@ -1002,6 +1053,16 @@ body {
     transform: scale(1.1);
 }
 
+.btn-info-icon {
+    background: #FFD736;
+    color: #130325;
+}
+
+.btn-info-icon:hover {
+    background: #FFC107;
+    transform: scale(1.1);
+}
+
 .btn-details {
     background: #FFD736;
     color: #130325;
@@ -1035,31 +1096,33 @@ body {
 }
 
 .modal-content {
-    background: #1a0a2e;
-    border: 1px solid #2d1b4e;
+    background: #ffffff !important;
+    border: 2px solid #e5e7eb !important;
     border-radius: 10px;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15) !important;
     position: relative;
     z-index: 10001;
 }
 
 .modal-header {
-    background: #130325;
-    color: #F9F9F9;
-    border-bottom: 1px solid rgba(255, 215, 54, 0.3);
+    background: #ffffff !important;
+    color: #130325 !important;
+    border-bottom: 2px solid #FFD736 !important;
     padding: 15px 50px 15px 20px;
     border-radius: 10px 10px 0 0;
     position: relative;
 }
 
 .modal-title {
-    font-weight: 600;
+    font-weight: 700;
     font-size: 1.1rem;
-    color: #F9F9F9;
+    color: #130325 !important;
 }
 
 .modal-body {
     padding: 20px;
+    background: #ffffff !important;
+    color: #130325 !important;
 }
 
 .modal-footer {
@@ -1104,14 +1167,14 @@ body {
 
 /* Modal Close Button Override */
 .modal-header .btn-close {
-    background: #dc3545;
-    border: none;
-    border-radius: 4px;
+    background: transparent !important;
+    border: none !important;
+    border-radius: 0;
     width: 30px;
     height: 30px;
     opacity: 1;
-    color: #fff;
-    font-size: 1rem;
+    color: #dc3545 !important;
+    font-size: 1.2rem;
     font-weight: bold;
     display: flex;
     align-items: center;
@@ -1120,11 +1183,12 @@ body {
     position: absolute;
     top: 10px;
     right: 10px;
+    padding: 0;
 }
 
 .modal-header .btn-close:hover {
-    background: #c82333;
-    color: #fff;
+    background: transparent !important;
+    color: #c82333 !important;
     transform: scale(1.1);
 }
 
@@ -1306,6 +1370,29 @@ body {
                 </h5>
             </div>
             <div class="card-body">
+                <?php if (!empty($returnRequests)): ?>
+                <!-- Filter Section -->
+                <div class="filter-section" style="margin-bottom: 20px; padding: 15px; background: #f9fafb; border-radius: 8px; border: 1px solid #e5e7eb;">
+                    <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+                        <div style="flex: 1; min-width: 200px;">
+                            <input type="text" id="returnSearch" placeholder="Search by ID, Customer, or Product..." 
+                                   style="width: 100%; padding: 10px 12px; border: 2px solid #e5e7eb; border-radius: 6px; font-size: 14px; background: #ffffff; color: #130325;"
+                                   onkeyup="filterReturns()">
+                        </div>
+                        <div style="min-width: 180px;">
+                            <select id="statusFilter" onchange="filterReturns()" 
+                                    style="width: 100%; padding: 10px 12px; border: 2px solid #e5e7eb; border-radius: 6px; font-size: 14px; background: #ffffff; color: #130325; cursor: pointer;">
+                                <option value="all">All Status</option>
+                                <option value="pending">Pending</option>
+                                <option value="approved">Approved</option>
+                                <option value="rejected">Rejected</option>
+                                <option value="completed">Completed</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <?php endif; ?>
+                
                 <?php if (empty($returnRequests)): ?>
                     <div class="empty-state">
                         <i class="fas fa-inbox"></i>
@@ -1329,7 +1416,10 @@ body {
                             </thead>
                             <tbody>
                                 <?php foreach ($returnRequests as $request): ?>
-                                    <tr>
+                                    <tr data-status="<?php echo htmlspecialchars($request['status']); ?>" 
+                                        data-request-id="<?php echo $request['id']; ?>"
+                                        data-customer="<?php echo htmlspecialchars(strtolower($request['customer_name'] . ' ' . $request['customer_email'])); ?>"
+                                        data-product="<?php echo htmlspecialchars(strtolower($request['product_name'])); ?>">
                                         <td>
                                             <strong>#<?php echo $request['id']; ?></strong>
                                         </td>
@@ -1369,8 +1459,8 @@ body {
                                         </td>
                                         <td>
                                             <div class="action-buttons-new">
-                                                <?php if ($request['status'] === 'pending'): ?>
-                                                    <div class="action-icons">
+                                                <div class="action-icons">
+                                                    <?php if ($request['status'] === 'pending'): ?>
                                                         <button class="btn-icon btn-success-icon" 
                                                                 onclick="approveReturn(<?php echo $request['id']; ?>)"
                                                                 title="Approve">
@@ -1381,21 +1471,20 @@ body {
                                                                 title="Reject">
                                                             <i class="fas fa-times"></i>
                                                         </button>
-                                                    </div>
-                                                <?php elseif ($request['status'] === 'approved'): ?>
-                                                    <div class="action-icons">
+                                                    <?php elseif ($request['status'] === 'approved'): ?>
                                                         <button class="btn-icon btn-success-icon" 
                                                                 onclick="completeRefund(<?php echo $request['id']; ?>)"
                                                                 title="Complete Refund">
                                                             <i class="fas fa-check"></i>
                                                         </button>
-                                                    </div>
-                                                <?php endif; ?>
-                                                
-                                                <button class="btn-details" 
-                                                        onclick="viewDetails(<?php echo $request['id']; ?>)">
-                                                    VIEW DETAILS
-                                                </button>
+                                                    <?php endif; ?>
+                                                    
+                                                    <button class="btn-icon btn-info-icon" 
+                                                            onclick="viewDetails(<?php echo $request['id']; ?>)"
+                                                            title="View Details">
+                                                        <i class="fas fa-eye"></i>
+                                                    </button>
+                                                </div>
                                             </div>
                                         </td>
                                     </tr>
@@ -1498,9 +1587,6 @@ body {
             <div class="modal-body" id="detailsModalBody">
                 <!-- Content will be loaded here -->
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" onclick="closeDetailsModal()">Close</button>
-            </div>
         </div>
     </div>
 </div>
@@ -1516,14 +1602,45 @@ body {
             <div class="modal-body text-center">
                 <img id="photoModalImg" src="" alt="Return photo" class="img-fluid" style="max-height: 70vh;">
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" onclick="closePhotoModal()">Close</button>
-            </div>
         </div>
     </div>
 </div>
 
 <script>
+// Filter return requests
+function filterReturns() {
+    const searchInput = document.getElementById('returnSearch');
+    const statusFilter = document.getElementById('statusFilter');
+    
+    if (!searchInput || !statusFilter) return;
+    
+    const searchTerm = searchInput.value.toLowerCase();
+    const statusValue = statusFilter.value;
+    const rows = document.querySelectorAll('.table tbody tr');
+    
+    rows.forEach(row => {
+        const requestId = (row.getAttribute('data-request-id') || '').toString();
+        const customer = row.getAttribute('data-customer') || '';
+        const product = row.getAttribute('data-product') || '';
+        const status = row.getAttribute('data-status') || '';
+        
+        const matchesSearch = requestId.includes(searchTerm) || 
+                             customer.includes(searchTerm) || 
+                             product.includes(searchTerm);
+        
+        let matchesStatus = true;
+        if (statusValue !== 'all') {
+            matchesStatus = status === statusValue;
+        }
+        
+        if (matchesSearch && matchesStatus) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+}
+
 let currentReturnId = null;
 
 function approveReturn(returnId) {

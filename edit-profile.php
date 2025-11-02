@@ -142,16 +142,22 @@ main {
 
 /* Action toggle (single icon button) */
 .action-toggle-btn {
-    background: #FFD736;
+    background: transparent;
     color: #130325;
-    border: 2px solid #FFD736;
-    border-radius: 8px;
-    width: 36px;
-    height: 36px;
+    border: none;
+    border-radius: 0;
+    width: auto;
+    height: auto;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
+    padding: 0;
+    font-size: 18px;
+}
+
+.action-toggle-btn:hover {
+    color: #FFD736;
 }
 
 .profile-actions-menu {

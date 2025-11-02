@@ -279,7 +279,7 @@ require_once '../includes/header.php';
                                 </div>
                                 <button class="remove-item-btn" 
                                         data-product-id="<?php echo $item['product_id']; ?>"
-                                        title="Remove item">×</button>
+                                        title="Remove item"><i class="fas fa-trash"></i></button>
                             </div>
                         <?php endforeach; ?>
                     </div>
@@ -417,10 +417,10 @@ require_once '../includes/header.php';
 }
 
 .close-btn {
-    background: none;
-    border: none;
-    color: #ffffff;
-    font-size: 24px;
+    background: transparent !important;
+    border: none !important;
+    color: #dc3545 !important;
+    font-size: 20px;
     cursor: pointer;
     padding: 0;
     width: 30px;
@@ -428,12 +428,13 @@ require_once '../includes/header.php';
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 50%;
+    border-radius: 0;
     transition: all 0.3s;
 }
 
 .close-btn:hover {
-    background: rgba(255, 255, 255, 0.2);
+    background: transparent !important;
+    color: #c82333 !important;
     transform: scale(1.1);
 }
 
@@ -457,13 +458,13 @@ require_once '../includes/header.php';
 }
 
 .btn-cancel, .btn-confirm {
-    padding: 12px 24px;
+    padding: 4px 10px;
     border: none;
-    border-radius: 8px;
+    border-radius: 4px;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.3s;
-    font-size: 1rem;
+    font-size: 0.75rem;
 }
 
 .btn-cancel {
@@ -628,13 +629,13 @@ h1 {
 }
 
 .remove-item-btn { 
-    background-color: #dc3545; 
-    color: white; 
-    border: none; 
-    border-radius: 50%; 
+    background: transparent !important; 
+    color: #dc3545 !important; 
+    border: none !important; 
+    border-radius: 0; 
     width: 24px; 
     height: 24px; 
-    font-size: 16px; 
+    font-size: 14px; 
     font-weight: bold; 
     cursor: pointer; 
     display: flex; 
@@ -642,10 +643,12 @@ h1 {
     justify-content: center; 
     transition: all 0.2s ease; 
     line-height: 1; 
+    padding: 0;
 }
 
 .remove-item-btn:hover { 
-    background-color: #c82333; 
+    background: transparent !important; 
+    color: #c82333 !important; 
     transform: scale(1.1); 
 }
 
@@ -877,11 +880,11 @@ h1 {
 }
 
 .btn { 
-    padding: 12px 24px; 
+    padding: 4px 10px; 
     border: none; 
-    border-radius: 8px; 
+    border-radius: 4px; 
     cursor: pointer; 
-    font-size: 14px; 
+    font-size: 0.75rem; 
     text-decoration: none; 
     text-align: center; 
     transition: all 0.3s; 
@@ -1014,16 +1017,27 @@ h1 {
 }
 
 .close-modal { 
-    color: var(--text-dark); 
-    font-size: 32px; 
+    background: transparent !important;
+    border: none !important;
+    color: #dc3545 !important; 
+    font-size: 20px; 
     font-weight: bold; 
     cursor: pointer; 
-    transition: color 0.3s; 
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0;
+    transition: all 0.3s; 
     line-height: 1; 
 }
 
 .close-modal:hover { 
-    color: var(--primary-dark); 
+    background: transparent !important;
+    color: #c82333 !important; 
+    transform: scale(1.1);
 }
 
 .review-section h3 { 

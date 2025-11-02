@@ -193,7 +193,7 @@ p, span, div {
 }
 
 .invisible-header .notification-bell i {
-    color: #ffffff !important;
+    color: #FFD736 !important;
 }
 
 .invisible-header .header-user-avatar {

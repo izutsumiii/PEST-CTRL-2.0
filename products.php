@@ -308,9 +308,13 @@ body {
     font-weight: 700 !important;
     margin: 5px 0 !important;
     min-height: 35px !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
+    max-height: 50px !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    display: -webkit-box !important;
+    -webkit-line-clamp: 2 !important;
+    -webkit-box-orient: vertical !important;
+    line-height: 1.4 !important;
 }
 
 /* Price - EXACT MATCH */
@@ -355,8 +359,10 @@ body {
 .product-actions {
     display: flex !important;
     flex-direction: column !important;
-    gap: 10px !important;
+    gap: 8px !important;
     margin-top: auto !important;
+    margin-bottom: 0 !important;
+    padding-top: 8px !important;
 }
 
 .cart-actions {
@@ -369,12 +375,12 @@ body {
     background: #FFD736 !important;
     color: #130325 !important;
     border: 2px solid #FFD736 !important; /* match yellow */
-    border-radius: 6px !important; /* slight rounding */
-    padding: 6px !important;
+    border-radius: 4px !important; /* slight rounding */
+    padding: 4px !important;
     cursor: pointer !important;
-    font-size: 12px !important;
-    width: 32px !important;
-    height: 32px !important;
+    font-size: 10px !important;
+    width: 24px !important;
+    height: 24px !important;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
@@ -393,9 +399,9 @@ body {
     background: #130325 !important;
     color: white !important;
     border: 2px solid #FFD736 !important;
-    padding: 6px 12px !important;
+    padding: 4px 10px !important;
     cursor: pointer !important;
-    font-size: 0.8rem !important;
+    font-size: 0.75rem !important;
     font-weight: 700 !important;
     text-transform: uppercase !important;
     letter-spacing: 0.5px !important;
@@ -404,9 +410,9 @@ body {
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
-    gap: 8px !important;
+    gap: 4px !important;
     flex: 1 !important;
-    height: 32px !important;
+    height: 24px !important;
 }
 
 .btn-buy-now:hover {
@@ -417,11 +423,11 @@ body {
 
 /* Buttons - EXACT MATCH */
 .btn {
-    padding: 12px 20px !important;
+    padding: 4px 10px !important;
     border: none !important;
-    border-radius: 8px !important;
+    border-radius: 4px !important;
     cursor: pointer !important;
-    font-size: 0.95rem !important;
+    font-size: 0.75rem !important;
     font-weight: 700 !important;
     text-transform: uppercase !important;
     letter-spacing: 0.5px !important;
@@ -430,13 +436,27 @@ body {
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
-    gap: 8px !important;
+    gap: 4px !important;
 }
 
 .btn-details {
     background: #130325 !important;
     color: #ffffff !important;
     border: 2px solid #130325 !important;
+    padding: 1px 4px !important;
+    font-size: 0.6rem !important;
+    width: 100% !important;
+    justify-content: center !important;
+    border-radius: 2px !important;
+    margin: 0 !important;
+    line-height: 1.2 !important;
+    min-height: auto !important;
+    height: auto !important;
+}
+
+.btn-details i {
+    font-size: 0.6rem !important;
+    margin-right: 2px !important;
 }
 
 .btn-details:hover {
@@ -592,9 +612,9 @@ body {
     background: #130325;
     color: white;
     border: 2px solid #130325; /* match background */
-    padding: 8px 16px;
-    border-radius: 6px; /* slight rounding */
-    font-size: 0.9rem;
+    padding: 4px 10px;
+    border-radius: 4px; /* slight rounding */
+    font-size: 0.75rem;
     font-weight: 700;
     cursor: pointer;
     text-transform: uppercase;
@@ -612,10 +632,10 @@ body {
     text-align: center;
     color: white;
     text-decoration: none;
-    font-size: 0.9rem;
-    padding: 8px 16px;
+    font-size: 0.75rem;
+    padding: 4px 10px;
     border: 2px solid #130325; /* match background */
-    border-radius: 6px; /* slight rounding */
+    border-radius: 4px; /* slight rounding */
     background: #130325;
     font-weight: 700;
     text-transform: uppercase;

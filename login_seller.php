@@ -116,12 +116,13 @@ require_once 'includes/header.php';
     .login-page-wrapper {
         display: flex;
         justify-content: space-between;
-        align-items: center;
-        min-height: calc(100vh - 80px);
-        padding: 30px 60px;
+        align-items: flex-start;
+        height: 100vh;
+        padding: 40px 60px 0 60px;
         gap: 50px;
         max-width: 1400px;
         margin: 0 auto;
+        overflow: hidden;
     }
 
     /* Left Side Branding */
@@ -130,65 +131,66 @@ require_once 'includes/header.php';
         display: flex;
         flex-direction: column;
         align-items: center;
-        justify-content: center;
+        justify-content: flex-start;
         text-align: center;
+        padding-top: 80px;
     }
 
     .main-logo {
-        font-size: 80px;
+        font-size: 70px;
         font-family: 'Libre Barcode 128 Text', monospace;
         font-weight: 400;
         color: #FFD736;
-        margin-bottom: 25px;
+        margin-bottom: 20px;
         text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
     }
 
     .tagline {
-        font-size: 26px;
+        font-size: 24px;
         color: #FFD736;
         font-weight: 700;
-        margin-bottom: 12px;
+        margin-bottom: 10px;
         opacity: 0.95;
         letter-spacing: 0.5px;
     }
 
     .subtagline {
-        font-size: 18px;
+        font-size: 16px;
         color: #FFD736;
         opacity: 0.75;
         font-weight: 400;
         max-width: 400px;
-        line-height: 1.5;
+        line-height: 1.4;
     }
 
     /* Login Container - Extra Minimized */
-/* Login Container - Extra Minimized */
     .login-container {
         max-width: 380px; 
         width: 100%;
-        padding: 20px;
+        padding: 18px;
         border-radius: 8px;
         background: #ffffff;
         color: #130325;
         box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
         position: relative;
         overflow: hidden;
+        margin-top:0px;
     }
 
     .login-header {
         text-align: center;
-        margin-bottom: 14px;
+        margin-bottom: 12px;
     }
 
     .login-header h1 {
         color: #130325;
-        font-size: 18px;
+        font-size: 17px;
         font-weight: 700;
-        margin-bottom: 4px;
+        margin-bottom: 3px;
     }
 
     .login-header .subtitle {
-        font-size: 11px;
+        font-size: 10px;
         color: #130325;
         opacity: 0.7;
     }
@@ -196,10 +198,10 @@ require_once 'includes/header.php';
     .seller-requirements {
         background: rgba(255, 215, 54, 0.1);
         border: 1px solid rgba(255, 215, 54, 0.3);
-        padding: 10px;
+        padding: 8px;
         border-radius: 6px;
-        margin-bottom: 12px;
-        font-size: 11px;
+        margin-bottom: 8px;
+        font-size: 10px;
     }
 
     .seller-requirements h4 {
@@ -220,21 +222,21 @@ require_once 'includes/header.php';
     }
     
     .form-group {
-        margin-bottom: 12px;
+        margin-bottom: 10px;
     }
     
     .form-group label {
         display: block;
-        margin-bottom: 5px;
+        margin-bottom: 4px;
         font-weight: 600;
         color: #130325;
-        font-size: 12px;
+        font-size: 11px;
     }
     
     .form-group input[type="text"],
     .form-group input[type="password"] {
         width: 100%;
-        padding: 8px 10px;
+        padding: 7px 10px;
         border: 2px solid rgba(19, 3, 37, 0.2);
         border-radius: 6px;
         font-size: 12px;

@@ -129,18 +129,18 @@ function statusBadge($status, $bg, $fg) {
   }
 </style>
 
-<main style="background:#f8f9fa; min-height:100vh; padding: 40px 0 60px 0;">
+<main style="background:#f8f9fa; min-height:100vh; padding: 10px 0 60px 0;">
   <div style="max-width: 1200px; margin: 0 auto; padding: 0 20px;">
     
     <!-- Header with back arrow and title -->
-    <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 30px;">
+    <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
       <a href="products.php" style="color: #130325; text-decoration: none; font-size: 1.8rem; font-weight: 600; display: flex; align-items: center; gap: 12px;">
         <i class="fas fa-arrow-left"></i>
       </a>
       <h1 style="color: #130325; margin: 0; font-size: 1.5rem; font-weight: 700;">Compare Products</h1>
     </div>
 
-    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap:15px;">
+    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap:10px;">
       <?php foreach ($products as $product): 
         $isBestPrice = ($product['price'] == $minPrice);
         $rating = floatval($product['rating']);
@@ -150,50 +150,50 @@ function statusBadge($status, $bg, $fg) {
         $emptyStars = 5 - $fullStars - ($hasHalfStar ? 1 : 0);
         $stock = intval($product['stock_quantity'] ?? 0);
       ?>
-        <div style="background:#ffffff; border:<?php echo ($isBestPrice || $isBestRating) ? '3px solid #130325' : '1px solid rgba(0,0,0,0.1)'; ?>; border-radius:8px; padding:15px; position:relative; display:flex; flex-direction:column; min-height:500px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+        <div style="background:#ffffff; border:<?php echo ($isBestPrice || $isBestRating) ? '3px solid #130325' : '1px solid rgba(0,0,0,0.1)'; ?>; border-radius:8px; padding:10px; position:relative; display:flex; flex-direction:column; min-height:450px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
           
           <?php if ($isBestPrice || $isBestRating): ?>
-            <div style="position:absolute; top:10px; right:10px; background:#130325; color:#FFD736; padding:6px 12px; border-radius:20px; border:1px solid #130325;">
-              <i class="fas fa-star" style="margin-right:4px;"></i>
+            <div style="position:absolute; top:8px; right:8px; background:#130325; color:#FFD736; padding:4px 8px; border-radius:20px; border:1px solid #130325; font-size:0.75rem;">
+              <i class="fas fa-star" style="margin-right:3px;"></i>
               <?php if ($isBestPrice) echo 'Best Price'; ?>
               <?php if ($isBestPrice && $isBestRating) echo ' & '; ?>
               <?php if ($isBestRating) echo 'Top Rated'; ?>
             </div>
           <?php endif; ?>
-
+ 
           <!-- Product Image -->
-          <div style="text-align:center; margin-bottom:15px;">
+          <div style="text-align:center; margin-bottom:10px;">
             <img src="<?php echo htmlspecialchars($product['image_url'] ?? 'default-image.jpg'); ?>" 
                  alt="<?php echo htmlspecialchars($product['name']); ?>"
-                 style="width:180px; height:180px; object-fit:cover; border-radius:10px; border:2px solid #2d1b4e;"
+                 style="width:150px; height:150px; object-fit:cover; border-radius:8px; border:2px solid #2d1b4e;"
                  onerror="this.src='default-image.jpg'">
           </div>
 
           <!-- Product Name -->
-          <h3 style="color:#130325; margin:0 0 10px 0; text-align:center;">
+          <h3 style="color:#130325; margin:0 0 8px 0; text-align:center; font-size:1rem;">
             <a href="product-detail.php?id=<?php echo $product['id']; ?>" style="text-decoration:none; color:#130325;">
               <?php echo htmlspecialchars($product['name']); ?>
             </a>
           </h3>
 
           <!-- Price -->
-          <div style="text-align:center; margin-bottom:15px;">
-            <div style="color:#130325; font-weight:700; font-size:24px;">₱<?php echo number_format($product['price'], 2); ?></div>
+          <div style="text-align:center; margin-bottom:10px;">
+            <div style="color:#130325; font-weight:700; font-size:20px;">₱<?php echo number_format($product['price'], 2); ?></div>
           </div>
 
           <!-- Rating -->
-          <div style="background:rgba(255,215,54,0.1); padding:10px; border-radius:6px; margin-bottom:12px; text-align:center;">
-            <div style="color:#FFD736; margin-bottom:5px;">
+          <div style="background:rgba(255,215,54,0.1); padding:8px; border-radius:6px; margin-bottom:8px; text-align:center;">
+            <div style="color:#FFD736; margin-bottom:4px;">
               <?php echo str_repeat('★', $fullStars); ?>
               <?php echo $hasHalfStar ? '☆' : ''; ?>
               <?php echo str_repeat('☆', $emptyStars); ?>
             </div>
-            <div style="color:#130325; font-weight:600;"><?php echo number_format($rating, 1); ?>/5.0</div>
-            <div style="color:#130325; opacity:0.7;">(<?php echo $product['review_count']; ?> reviews)</div>
+            <div style="color:#130325; font-weight:600; font-size:0.9rem;"><?php echo number_format($rating, 1); ?>/5.0</div>
+            <div style="color:#130325; opacity:0.7; font-size:0.85rem;">(<?php echo $product['review_count']; ?> reviews)</div>
           </div>
 
           <!-- Stock Status -->
-          <div style="text-align:center; margin-bottom:15px;">
+          <div style="text-align:center; margin-bottom:10px;">
             <?php 
             if ($stock > 20) {
                 echo statusBadge("In Stock ($stock)", '#28a745', '#ffffff');
@@ -206,18 +206,18 @@ function statusBadge($status, $bg, $fg) {
           </div>
 
           <!-- Category -->
-          <div style="text-align:center; margin-bottom:12px;">
-            <span style="background:#f8f9fa; color:#130325; padding:6px 12px; border-radius:12px; font-weight:600; border:1px solid rgba(0,0,0,0.1);">
+          <div style="text-align:center; margin-bottom:8px;">
+            <span style="background:#f8f9fa; color:#130325; padding:4px 10px; border-radius:12px; font-weight:600; border:1px solid rgba(0,0,0,0.1); font-size:0.85rem;">
               <?php echo htmlspecialchars($product['category_name'] ?? 'Uncategorized'); ?>
             </span>
           </div>
 
           <!-- Description -->
-          <div style="background:#f8f9fa; padding:10px; border-radius:6px; margin-bottom:12px;">
-            <div style="color:#130325; margin-bottom:5px; font-weight:600;">Description</div>
-            <div style="color:#130325; opacity:0.8; line-height:1.5;">
-              <?php echo htmlspecialchars(substr($product['description'] ?? '', 0, 120)); ?>
-              <?php if (strlen($product['description'] ?? '') > 120): ?>
+          <div style="background:#f8f9fa; padding:8px; border-radius:6px; margin-bottom:8px;">
+            <div style="color:#130325; margin-bottom:4px; font-weight:600; font-size:0.9rem;">Description</div>
+            <div style="color:#130325; opacity:0.8; line-height:1.4; font-size:0.85rem;">
+              <?php echo htmlspecialchars(substr($product['description'] ?? '', 0, 100)); ?>
+              <?php if (strlen($product['description'] ?? '') > 100): ?>
                 <a href="product-detail.php?id=<?php echo $product['id']; ?>" style="color:#1e3a8a; text-decoration:none;">...read more</a>
               <?php endif; ?>
             </div>
@@ -225,12 +225,12 @@ function statusBadge($status, $bg, $fg) {
 
           <!-- Product Features -->
           <?php if (!empty($allFeatureNames)): ?>
-            <div style="background:#f8f9fa; padding:10px; border-radius:6px; margin-bottom:12px;">
-              <div style="color:#130325; margin-bottom:8px; font-weight:600;">Specifications</div>
+            <div style="background:#f8f9fa; padding:8px; border-radius:6px; margin-bottom:8px;">
+              <div style="color:#130325; margin-bottom:6px; font-weight:600; font-size:0.9rem;">Specifications</div>
               <?php foreach ($allFeatureNames as $featureName): ?>
-                <div style="display:flex; justify-content:space-between; padding:4px 0; border-bottom:1px solid rgba(0,0,0,0.1);">
-                  <span style="color:#130325; opacity:0.8;"><?php echo htmlspecialchars($featureName); ?>:</span>
-                  <span style="color:#130325; font-weight:600;">
+                <div style="display:flex; justify-content:space-between; padding:3px 0; border-bottom:1px solid rgba(0,0,0,0.1);">
+                  <span style="color:#130325; opacity:0.8; font-size:0.85rem;"><?php echo htmlspecialchars($featureName); ?>:</span>
+                  <span style="color:#130325; font-weight:600; font-size:0.85rem;">
                     <?php 
                     if (isset($productFeatures[$product['id']][$featureName])) {
                         echo htmlspecialchars($productFeatures[$product['id']][$featureName]);
@@ -249,15 +249,15 @@ function statusBadge($status, $bg, $fg) {
           <div style="flex:1;"></div>
 
           <!-- Action Buttons -->
-          <div style="display:flex; flex-direction:row; gap:8px; margin-top:auto;">
+          <div style="display:flex; flex-direction:row; gap:6px; margin-top:auto;">
             <a href="product-detail.php?id=<?php echo $product['id']; ?>" 
-               style="background:#130325; border:none; color:#ffffff; padding:10px; border-radius:6px; text-decoration:none; text-align:center; font-weight:600; font-size:14px; transition:all 0.3s; flex:1;">
-              <i class="fas fa-eye" style="margin-right:6px;"></i>View Details
+               style="background:#130325; border:none; color:#ffffff; padding:6px 8px; border-radius:4px; text-decoration:none; text-align:center; font-weight:600; font-size:0.75rem; transition:all 0.3s; flex:1;">
+              <i class="fas fa-eye" style="margin-right:4px;"></i>View Details
             </a>
             <button onclick="addToCart(<?php echo $product['id']; ?>, 1)" 
                     data-product-id="<?php echo $product['id']; ?>"
-                    style="background:#FFD736; border:none; color:#130325; padding:10px; border-radius:6px; cursor:pointer; font-weight:600; font-size:14px; transition:all 0.3s; flex:1;">
-              <i class="fas fa-shopping-cart" style="margin-right:6px;"></i>Add to Cart
+                    style="background:#FFD736; border:none; color:#130325; padding:6px 8px; border-radius:4px; cursor:pointer; font-weight:600; font-size:0.75rem; transition:all 0.3s; flex:1;">
+              <i class="fas fa-shopping-cart" style="margin-right:4px;"></i>Add to Cart
             </button>
           </div>
 
