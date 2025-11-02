@@ -113,11 +113,14 @@ if (isset($_COOKIE['remember_token']) && !isLoggedIn()) {
             min-height: 100vh;
             margin: 0;
             font-family: var(--font-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         
         .login-container {
             max-width: 380px;
-            margin: 40px auto;
+            margin: 0 auto;
             padding: 20px;
             border: none;
             border-radius: 8px;

@@ -991,11 +991,14 @@ if (isLoggedIn()) {
                 <p>Enter the 6-digit admin access code to proceed</p>
             </div>
             <input type="password" id="adminCode" class="code-input" placeholder="••••••" maxlength="6" pattern="\d{6}">
-            <div class="error-message" id="errorMessage">
-                <i class="fas fa-exclamation-triangle"></i> Invalid code. Access denied.
+            <div class="error-message" id="errorMessage" style="display: none;">
+                <i class="fas fa-exclamation-triangle"></i> <span id="errorText">Invalid code. Access denied.</span>
+            </div>
+            <div class="error-message" id="lockoutMessage" style="display: none; background: rgba(220, 53, 69, 0.15); border-color: rgba(220, 53, 69, 0.4); color: #dc3545;">
+                <i class="fas fa-lock"></i> Admin access locked. Please try again in <span id="countdown">30</span> seconds.
             </div>
             <div class="modal-buttons">
-                <button class="btn btn-primary" onclick="verifyAdminCode()">
+                <button class="btn btn-primary" id="verifyBtn" onclick="verifyAdminCode()">
                     <i class="fas fa-unlock"></i> Verify
                 </button>
                 <button class="btn btn-secondary" onclick="goBack()">
@@ -1058,31 +1061,44 @@ if (isLoggedIn()) {
             const notification = document.createElement('div');
             notification.style.cssText = `
                 position: fixed;
-                top: 20px;
-                right: 20px;
-                background: linear-gradient(135deg, #2c3e50, #4a6741);
-                color: white;
-                padding: 12px 20px;
-                border-radius: 8px;
-                font-size: 14px;
-                font-weight: 600;
+                bottom: 40px;
+                left: 50%;
+                transform: translateX(-50%) translateY(20px);
+                background: #ffffff;
+                color: #130325;
+                padding: 16px 24px;
+                border-radius: 12px;
+                font-size: 15px;
+                font-weight: 700;
                 z-index: 2000;
                 opacity: 0;
-                transform: translateY(-20px);
                 transition: all 0.3s ease;
-                box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+                border: 2px solid #e5e7eb;
+                display: flex;
+                align-items: center;
+                gap: 12px;
             `;
-            notification.textContent = message;
+            
+            const bugIcon = document.createElement('i');
+            bugIcon.className = 'fa fa-bug';
+            bugIcon.style.cssText = 'color: #130325; font-size: 18px;';
+            
+            const messageText = document.createElement('span');
+            messageText.textContent = message;
+            
+            notification.appendChild(bugIcon);
+            notification.appendChild(messageText);
             document.body.appendChild(notification);
             
             setTimeout(() => {
                 notification.style.opacity = '1';
-                notification.style.transform = 'translateY(0)';
+                notification.style.transform = 'translateX(-50%) translateY(0)';
             }, 100);
             
             setTimeout(() => {
                 notification.style.opacity = '0';
-                notification.style.transform = 'translateY(-20px)';
+                notification.style.transform = 'translateX(-50%) translateY(20px)';
                 setTimeout(() => {
                     document.body.removeChild(notification);
                 }, 300);
@@ -1092,7 +1108,89 @@ if (isLoggedIn()) {
         adminTrigger.addEventListener('click', handleAdminTriggerClick);
         storeLogo.addEventListener('click', handleAdminTriggerClick);
 
+        // Admin code verification with attempt limiting
+        const MAX_ATTEMPTS = 5;
+        const LOCKOUT_DURATION = 30000; // 30 seconds in milliseconds
+        
+        function getAttempts() {
+            const attempts = localStorage.getItem('adminCodeAttempts');
+            return attempts ? parseInt(attempts) : 0;
+        }
+        
+        function setAttempts(count) {
+            localStorage.setItem('adminCodeAttempts', count.toString());
+        }
+        
+        function resetAttempts() {
+            localStorage.removeItem('adminCodeAttempts');
+            localStorage.removeItem('adminCodeLockoutUntil');
+        }
+        
+        function getLockoutUntil() {
+            const lockoutUntil = localStorage.getItem('adminCodeLockoutUntil');
+            return lockoutUntil ? parseInt(lockoutUntil) : null;
+        }
+        
+        function setLockout() {
+            const lockoutUntil = Date.now() + LOCKOUT_DURATION;
+            localStorage.setItem('adminCodeLockoutUntil', lockoutUntil.toString());
+            return lockoutUntil;
+        }
+        
+        function isLockedOut() {
+            const lockoutUntil = getLockoutUntil();
+            if (!lockoutUntil) return false;
+            
+            if (Date.now() < lockoutUntil) {
+                return true;
+            } else {
+                // Lockout expired, clear it
+                localStorage.removeItem('adminCodeLockoutUntil');
+                resetAttempts();
+                return false;
+            }
+        }
+        
+        function updateLockoutDisplay() {
+            const lockoutMessage = document.getElementById('lockoutMessage');
+            const countdownSpan = document.getElementById('countdown');
+            const adminCode = document.getElementById('adminCode');
+            const verifyBtn = document.getElementById('verifyBtn');
+            
+            if (isLockedOut()) {
+                const lockoutUntil = getLockoutUntil();
+                const remaining = Math.ceil((lockoutUntil - Date.now()) / 1000);
+                
+                lockoutMessage.style.display = 'block';
+                countdownSpan.textContent = remaining;
+                adminCode.disabled = true;
+                verifyBtn.disabled = true;
+                
+                if (remaining > 0) {
+                    setTimeout(updateLockoutDisplay, 1000);
+                } else {
+                    lockoutMessage.style.display = 'none';
+                    adminCode.disabled = false;
+                    verifyBtn.disabled = false;
+                    resetAttempts();
+                }
+            } else {
+                lockoutMessage.style.display = 'none';
+                adminCode.disabled = false;
+                verifyBtn.disabled = false;
+            }
+        }
+
         function showAdminModal() {
+            // Check if locked out
+            if (isLockedOut()) {
+                updateLockoutDisplay();
+            } else {
+                document.getElementById('lockoutMessage').style.display = 'none';
+                document.getElementById('adminCode').disabled = false;
+                document.getElementById('verifyBtn').disabled = false;
+            }
+            
             document.getElementById('adminModal').style.display = 'block';
             document.getElementById('adminCode').focus();
             document.getElementById('errorMessage').style.display = 'none';
@@ -1103,18 +1201,44 @@ if (isLoggedIn()) {
             document.getElementById('adminModal').style.display = 'none';
             document.getElementById('adminCode').value = '';
             document.getElementById('errorMessage').style.display = 'none';
+            document.getElementById('lockoutMessage').style.display = 'none';
         }
 
         function verifyAdminCode() {
+            // Check if locked out
+            if (isLockedOut()) {
+                updateLockoutDisplay();
+                return;
+            }
+            
             const enteredCode = document.getElementById('adminCode').value;
             const correctCode = '987654';
+            const errorMessage = document.getElementById('errorMessage');
+            const errorText = document.getElementById('errorText');
             
             if (enteredCode === correctCode) {
+                // Success - reset attempts and redirect
+                resetAttempts();
                 window.location.href = 'login_admin.php';
             } else {
-                document.getElementById('errorMessage').style.display = 'block';
-                document.getElementById('adminCode').value = '';
-                document.getElementById('adminCode').focus();
+                // Failed attempt
+                let attempts = getAttempts() + 1;
+                setAttempts(attempts);
+                
+                const remainingAttempts = MAX_ATTEMPTS - attempts;
+                
+                if (attempts >= MAX_ATTEMPTS) {
+                    // Lock out
+                    setLockout();
+                    updateLockoutDisplay();
+                    errorMessage.style.display = 'none';
+                } else {
+                    // Show error with remaining attempts
+                    errorText.textContent = `Invalid code. ${remainingAttempts} attempt${remainingAttempts > 1 ? 's' : ''} remaining.`;
+                    errorMessage.style.display = 'block';
+                    document.getElementById('adminCode').value = '';
+                    document.getElementById('adminCode').focus();
+                }
             }
         }
 
@@ -1124,7 +1248,7 @@ if (isLoggedIn()) {
         }
 
         document.getElementById('adminCode').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
+            if (e.key === 'Enter' && !this.disabled) {
                 verifyAdminCode();
             }
         });
