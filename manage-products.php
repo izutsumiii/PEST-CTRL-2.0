@@ -90,9 +90,9 @@ html, body {
 main { 
     background: #f0f2f5 !important; 
     margin-left: 120px !important; 
-    margin-top: 0 !important;
+    margin-top: -20px !important;
     margin-bottom: 0 !important;
-    padding-top: 0 !important;
+    padding-top: 5px !important;
     padding-bottom: 40px !important;
     padding-left: 30px !important;
     padding-right: 30px !important;
@@ -103,10 +103,10 @@ main.sidebar-collapsed { margin-left: 0px !important; }
 
 h1 { 
     color: #130325 !important; 
-    font-size: 32px !important; 
+    font-size: 20px !important; 
     font-weight: 700 !important; 
     margin: 0 !important;
-    margin-bottom: 28px !important;
+    margin-bottom: 16px !important;
     padding: 0 !important; 
     text-shadow: none !important;
 }
@@ -279,9 +279,9 @@ h1 {
 }
 
 .products-container h1 {
-    font-size: 32px;
+    font-size: 20px;
     font-weight: 700;
-    margin: 0 0 28px 0;
+    margin: 0 0 16px 0;
     color: #130325;
     text-shadow: none !important;
 }
@@ -297,10 +297,10 @@ h1 {
 
 .add-product-card h2 {
     color: #130325;
-    margin: 0 0 28px 0;
-    padding-bottom: 16px;
+    margin: 0 0 16px 0;
+    padding-bottom: 12px;
     border-bottom: 1px solid rgba(0,0,0,0.1);
-    font-size: 20px;
+    font-size: 16px;
     font-weight: 600;
     text-shadow: none !important;
 }
@@ -1428,12 +1428,119 @@ h1 {
         gap: 10px;
     }
     h1 {
-        font-size: 32px;
-        margin-bottom: 28px;
+        font-size: 18px;
+        margin-bottom: 16px;
     }
     .add-product-card h2 {
-        font-size: 18px;
-        margin-bottom: 32px;
+        font-size: 14px;
+        margin-bottom: 16px;
+    }
+}
+
+/* Custom Confirmation Modal - Matching Logout Modal Design */
+.custom-confirm-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+}
+
+.custom-confirm-overlay.show { 
+    opacity: 1; 
+    visibility: visible; 
+}
+
+.custom-confirm-dialog {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 0;
+    width: 90%;
+    max-width: 400px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+    animation: slideDown 0.3s ease;
+    overflow: hidden;
+}
+
+.custom-confirm-header {
+    background: #130325;
+    color: #ffffff;
+    padding: 16px 20px;
+    border-radius: 12px 12px 0 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.custom-confirm-title { 
+    color: #ffffff; 
+    font-weight: 700; 
+    font-size: 14px; 
+    margin: 0; 
+    text-transform: none; 
+    letter-spacing: normal; 
+}
+
+.custom-confirm-message { 
+    color: #130325; 
+    font-size: 13px; 
+    margin: 0;
+    padding: 20px;
+    line-height: 1.5; 
+}
+
+.custom-confirm-buttons { 
+    display: flex; 
+    gap: 10px; 
+    justify-content: flex-end; 
+    padding: 16px 24px;
+    border-top: 1px solid #e5e7eb;
+}
+
+.custom-confirm-btn { 
+    padding: 8px 20px; 
+    border-radius: 6px; 
+    font-size: 14px; 
+    font-weight: 600; 
+    text-transform: none; 
+    letter-spacing: normal; 
+    border: none; 
+    cursor: pointer; 
+    transition: all 0.2s ease;
+}
+
+.custom-confirm-btn.cancel { 
+    background: #f3f4f6; 
+    color: #130325; 
+    border: 1px solid #e5e7eb;
+}
+
+.custom-confirm-btn.cancel:hover { 
+    background: #e5e7eb; 
+}
+
+.custom-confirm-btn.primary { 
+    background: #130325; 
+    color: #ffffff; 
+}
+
+.custom-confirm-btn.primary:hover { 
+    background: #0a0218; 
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
     }
 }
 
@@ -1682,7 +1789,7 @@ h1 {
                                         <i class="fas fa-edit"></i>
                                     </a>
                                     <a href="?toggle_status=<?php echo $product['id']; ?>" class="action-btn status-btn" title="<?php echo $product['status'] == 'active' ? 'Toggle Inactive' : 'Toggle Active'; ?>">
-                                        <i class="fas fa-<?php echo $product['status'] == 'active' ? 'eye-slash' : 'eye'; ?>"></i>
+                                        <i class="fas fa-<?php echo $product['status'] == 'active' ? 'toggle-on' : 'toggle-off'; ?>"></i>
                                     </a>
                                 </div>
                             </td>
@@ -2154,6 +2261,104 @@ document.addEventListener('DOMContentLoaded', function() {
     
     categoryCheckboxes.forEach(function(checkbox) {
         checkbox.addEventListener('change', validateForm);
+    });
+
+    // Custom Confirmation Modal - Matching Logout Modal Design
+    function showConfirm(message, confirmText) {
+        return new Promise(function(resolve){
+            const overlay = document.createElement('div');
+            overlay.className = 'custom-confirm-overlay';
+            
+            const dialog = document.createElement('div');
+            dialog.className = 'custom-confirm-dialog';
+            
+            // Create header matching logout modal
+            const header = document.createElement('div');
+            header.className = 'custom-confirm-header';
+            header.innerHTML = '<h3 class="custom-confirm-title">Confirm Action</h3>';
+            
+            // Create body
+            const body = document.createElement('div');
+            body.className = 'custom-confirm-message';
+            body.textContent = message;
+            
+            // Create footer with buttons matching logout modal
+            const footer = document.createElement('div');
+            footer.className = 'custom-confirm-buttons';
+            
+            const cancelBtn = document.createElement('button');
+            cancelBtn.className = 'custom-confirm-btn cancel';
+            cancelBtn.textContent = 'Cancel';
+            cancelBtn.onmouseover = function() { this.style.background = '#e5e7eb'; };
+            cancelBtn.onmouseout = function() { this.style.background = '#f3f4f6'; };
+            
+            const confirmBtn = document.createElement('button');
+            confirmBtn.className = 'custom-confirm-btn primary';
+            confirmBtn.textContent = confirmText || 'Confirm';
+            confirmBtn.onmouseover = function() { this.style.background = '#0a0218'; };
+            confirmBtn.onmouseout = function() { this.style.background = '#130325'; };
+            
+            footer.appendChild(cancelBtn);
+            footer.appendChild(confirmBtn);
+            
+            dialog.appendChild(header);
+            dialog.appendChild(body);
+            dialog.appendChild(footer);
+            overlay.appendChild(dialog);
+            
+            document.body.appendChild(overlay);
+            
+            requestAnimationFrame(()=> overlay.classList.add('show'));
+            
+            const close = ()=>{ 
+                overlay.classList.remove('show'); 
+                setTimeout(()=>overlay.remove(), 300); 
+            };
+            
+            overlay.addEventListener('click', (e)=>{ 
+                if(e.target === overlay){ 
+                    close(); 
+                    resolve(false);
+                } 
+            });
+            
+            cancelBtn.addEventListener('click', ()=>{ 
+                close(); 
+                resolve(false); 
+            });
+            
+            confirmBtn.addEventListener('click', ()=>{ 
+                close(); 
+                resolve(true); 
+            });
+        });
+    }
+
+    // Intercept edit button clicks
+    document.querySelectorAll('a.edit-btn').forEach(function(link){
+        link.addEventListener('click', function(e){
+            e.preventDefault();
+            const row = this.closest('tr');
+            const productName = row ? (row.getAttribute('data-name') || row.querySelector('td:first-child')?.textContent?.trim() || 'this product') : 'this product';
+            const message = `Are you sure you want to edit ${productName}?`;
+            showConfirm(message, 'Edit').then(function(ok){ 
+                if (ok) window.location.href = link.href; 
+            });
+        });
+    });
+
+    // Intercept toggle status button clicks
+    document.querySelectorAll('a.status-btn').forEach(function(link){
+        link.addEventListener('click', function(e){
+            e.preventDefault();
+            const row = this.closest('tr');
+            const productName = row ? (row.getAttribute('data-name') || row.querySelector('td:first-child')?.textContent?.trim() || 'this product') : 'this product';
+            const statusText = this.title.includes('Inactive') ? 'deactivate' : 'activate';
+            const message = `Are you sure you want to ${statusText} ${productName}?`;
+            showConfirm(message, 'Yes').then(function(ok){ 
+                if (ok) window.location.href = link.href; 
+            });
+        });
     });
 });
 

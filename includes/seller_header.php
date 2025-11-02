@@ -448,28 +448,34 @@ require_once 'functions.php';
             font-weight: 600;
         }
         
-        .notification-close-btn {
+        .notification-item-close-btn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
             background: transparent !important;
             border: none !important;
             color: #dc3545;
-            font-size: 16px;
+            font-size: 12px;
             cursor: pointer;
             padding: 0;
-            width: 20px;
-            height: 20px;
+            width: 18px;
+            height: 18px;
             display: flex;
             align-items: center;
             justify-content: center;
             transition: all 0.2s ease;
+            z-index: 10;
+            opacity: 0.7;
         }
         
-        .notification-close-btn:hover {
+        .notification-item-close-btn:hover {
             color: #c82333;
             transform: scale(1.1);
+            opacity: 1;
         }
         
-        .notification-close-btn i {
-            font-size: 16px;
+        .notification-item:hover .notification-item-close-btn {
+            opacity: 1;
         }
         
         .mark-all-read {
@@ -500,6 +506,7 @@ require_once 'functions.php';
             gap: 10px;
             cursor: pointer;
             transition: all 0.3s ease;
+            position: relative;
         }
         
         .notification-item:hover {
@@ -511,10 +518,35 @@ require_once 'functions.php';
             border-left: 3px solid #f59e0b;
         }
         
-        .notification-item i {
-            color: #6b7280;
-            margin-top: 2px;
-            font-size: 14px;
+        .notification-status-badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+        }
+        
+        .notification-status-order {
+            background: #3b82f6;
+            color: #ffffff;
+        }
+        
+        .notification-status-return {
+            background: #dc3545;
+            color: #ffffff;
+        }
+        
+        .notification-status-lowstock {
+            background: #f97316;
+            color: #ffffff;
+        }
+        
+        .notification-status-processing {
+            background: #10b981;
+            color: #ffffff;
         }
         
         .notification-content {
@@ -625,13 +657,9 @@ require_once 'functions.php';
                 <div class="notification-dropdown" id="sellerNotificationDropdown">
                     <div class="notification-header">
                         <h6>Notifications</h6>
-                        <button class="notification-close-btn" onclick="toggleSellerNotifications()">
-                            <i class="fas fa-times"></i>
-                        </button>
                     </div>
                     <div class="notification-list" id="sellerNotificationList">
                         <div class="notification-item">
-                            <i class="fas fa-spinner fa-spin"></i>
                             <span style="color: #1f2937;">Loading notifications...</span>
                         </div>
                     </div>
@@ -874,17 +902,21 @@ function markAllSellerNotificationsAsRead() {
                 return;
             }
             
-            list.innerHTML = notifications.map(notification => `
+            list.innerHTML = notifications.map(notification => {
+                const badgeInfo = getNotificationBadge(notification.title, notification.type);
+                return `
                 <div class="notification-item ${!notification.is_read ? 'unread' : ''}" 
                     onclick="handleNotificationClick(${notification.id}, '${notification.action_url || ''}')">
-                    <i class="fas fa-${getNotificationIcon(notification.type)} notification-type-${notification.type}"></i>
+                    <span class="notification-status-badge ${badgeInfo.class}">${badgeInfo.text}</span>
                     <div class="notification-content">
                         <div class="notification-title">${notification.title}</div>
                         <div class="notification-message">${notification.message}</div>
                         <div class="notification-time">${formatTime(notification.created_at)}</div>
                     </div>
+                    <button class="notification-item-close-btn" onclick="event.stopPropagation(); removeNotificationFromDropdown(this, ${notification.id})" title="Remove from dropdown">×</button>
                 </div>
-            `).join('');
+            `;
+            }).join('');
         }
         function handleNotificationClick(notificationId, actionUrl) {
     // Mark as read
@@ -941,6 +973,26 @@ function markSellerNotificationAsRead(notificationId) {
             }
         }
 
+        function getNotificationBadge(title, type) {
+            const titleLower = title.toLowerCase();
+            
+            if (titleLower.includes('new order') || titleLower.includes('order received')) {
+                return { class: 'notification-status-order', text: 'Order' };
+            }
+            if (titleLower.includes('return request') || titleLower.includes('return/refund') || titleLower.includes('refund')) {
+                return { class: 'notification-status-return', text: 'Return/Refund' };
+            }
+            if (titleLower.includes('low stock')) {
+                return { class: 'notification-status-lowstock', text: 'Low Stocks' };
+            }
+            if (titleLower.includes('processing') || titleLower.includes('order status')) {
+                return { class: 'notification-status-processing', text: 'Processing' };
+            }
+            
+            // Default fallback
+            return { class: 'notification-status-order', text: 'Order' };
+        }
+
         function formatTime(timestamp) {
             const date = new Date(timestamp);
             const now = new Date();
@@ -950,6 +1002,25 @@ function markSellerNotificationAsRead(notificationId) {
             if (diff < 3600000) return Math.floor(diff / 60000) + 'm ago';
             if (diff < 86400000) return Math.floor(diff / 3600000) + 'h ago';
             return Math.floor(diff / 86400000) + 'd ago';
+        }
+
+        function removeNotificationFromDropdown(button, notificationId) {
+            // Just remove from dropdown view, don't delete from database
+            const notificationItem = button.closest('.notification-item');
+            if (notificationItem) {
+                notificationItem.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+                notificationItem.style.opacity = '0';
+                notificationItem.style.transform = 'translateX(20px)';
+                setTimeout(() => {
+                    notificationItem.remove();
+                    
+                    // Check if list is now empty
+                    const list = document.getElementById('sellerNotificationList');
+                    if (list && list.children.length === 0) {
+                        list.innerHTML = '<div class="notification-item"><span>No notifications</span></div>';
+                    }
+                }, 300);
+            }
         }
 
         // Close notification dropdown when clicking outside

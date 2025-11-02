@@ -98,9 +98,9 @@ html, body {
 main { 
     background: #f0f2f5 !important; 
     margin-left: 120px !important; 
-    margin-top: 0 !important;
+    margin-top: -20px !important;
     margin-bottom: 0 !important;
-    padding-top: 0 !important;
+    padding-top: 5px !important;
     padding-bottom: 40px !important;
     padding-left: 30px !important;
     padding-right: 30px !important;
@@ -262,10 +262,10 @@ main.sidebar-collapsed { margin-left: 0px !important; }
 
 h1 { 
     color: #130325 !important; 
-    font-size: 32px !important; 
+    font-size: 20px !important; 
     font-weight: 700 !important; 
     margin: 0 !important;
-    margin-bottom: 28px !important;
+    margin-bottom: 16px !important;
     padding: 0 !important; 
     text-shadow: none !important;
 }
@@ -540,39 +540,111 @@ h1 {
     font-size: 14px;
 }
 
-/* Custom Confirmation Modal */
+/* Custom Confirmation Modal - Matching Logout Modal Design */
 .custom-confirm-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.6);
+    background: rgba(0, 0, 0, 0.5);
     display: flex;
     align-items: center;
     justify-content: center;
     z-index: 10000;
     opacity: 0;
     visibility: hidden;
-    transition: all 0.25s ease;
+    transition: all 0.3s ease;
 }
 
-.custom-confirm-overlay.show { opacity: 1; visibility: visible; }
+.custom-confirm-overlay.show { 
+    opacity: 1; 
+    visibility: visible; 
+}
 
 .custom-confirm-dialog {
     background: #ffffff;
-    border-radius: 10px;
-    padding: 18px 20px;
-    width: 92%;
-    max-width: 420px;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+    border-radius: 12px;
+    padding: 0;
+    width: 90%;
+    max-width: 400px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+    animation: slideDown 0.3s ease;
+    overflow: hidden;
 }
 
-.custom-confirm-title { color: #111827; font-weight: 600; font-size: 1.1rem; margin: 0 0 10px 0; text-transform: none; letter-spacing: normal; }
-.custom-confirm-message { color: #374151; font-size: 0.92rem; margin-bottom: 20px; line-height: 1.5; }
-.custom-confirm-buttons { display: flex; gap: 10px; justify-content: flex-end; margin-top: 16px; }
-.custom-confirm-btn { padding: 6px 12px; border-radius: 6px; font-size: 0.85rem; font-weight: 600; text-transform: none; letter-spacing: normal; border: none; cursor: pointer; }
-.custom-confirm-btn.cancel { background: #6c757d; color: white; }
-.custom-confirm-btn.primary { background: #dc3545; color: white; }
-.custom-confirm-btn.primary:hover { background: #c82333; }
-.custom-confirm-btn.cancel:hover { background: #5a6268; }
+.custom-confirm-header {
+    background: #130325;
+    color: #ffffff;
+    padding: 16px 20px;
+    border-radius: 12px 12px 0 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.custom-confirm-title { 
+    color: #ffffff; 
+    font-weight: 700; 
+    font-size: 14px; 
+    margin: 0; 
+    text-transform: none; 
+    letter-spacing: normal; 
+}
+
+.custom-confirm-message { 
+    color: #130325; 
+    font-size: 13px; 
+    margin: 0;
+    padding: 20px;
+    line-height: 1.5; 
+}
+.custom-confirm-buttons { 
+    display: flex; 
+    gap: 10px; 
+    justify-content: flex-end; 
+    padding: 16px 24px;
+    border-top: 1px solid #e5e7eb;
+}
+
+.custom-confirm-btn { 
+    padding: 8px 20px; 
+    border-radius: 6px; 
+    font-size: 14px; 
+    font-weight: 600; 
+    text-transform: none; 
+    letter-spacing: normal; 
+    border: none; 
+    cursor: pointer; 
+    transition: all 0.2s ease;
+}
+
+.custom-confirm-btn.cancel { 
+    background: #f3f4f6; 
+    color: #130325; 
+    border: 1px solid #e5e7eb;
+}
+
+.custom-confirm-btn.cancel:hover { 
+    background: #e5e7eb; 
+}
+
+.custom-confirm-btn.primary { 
+    background: #130325; 
+    color: #ffffff; 
+}
+
+.custom-confirm-btn.primary:hover { 
+    background: #0a0218; 
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
 
 @media (max-width: 768px) {
     main { padding: 30px 24px 60px 24px !important; }
@@ -702,7 +774,7 @@ h1 {
                                            title="<?php echo ($product['status'] == 'active') ? 'Toggle Inactive' : 'Toggle Active'; ?>"
                                            data-action="<?php echo ($product['status'] == 'active') ? 'deactivate' : 'activate'; ?>"
                                            data-product-name="<?php echo htmlspecialchars($product['name']); ?>">
-                                            <i class="fas fa-<?php echo ($product['status'] == 'active') ? 'eye-slash' : 'eye'; ?>"></i>
+                                            <i class="fas fa-<?php echo ($product['status'] == 'active') ? 'toggle-on' : 'toggle-off'; ?>"></i>
                                         </a>
                                         <a href="?delete=<?php echo $product['id']; ?>" 
                                            class="action-btn delete-btn product-delete"
@@ -791,26 +863,74 @@ document.addEventListener('DOMContentLoaded', function() {
         observer.observe(sidebar, { attributes: true, attributeFilter: ['class'] });
     }
 
-    // Intercept product toggle and delete with custom confirm
+    // Intercept product toggle and delete with custom confirm - Matching Logout Modal Design
     function showConfirm(message, confirmText) {
         return new Promise(function(resolve){
             const overlay = document.createElement('div');
             overlay.className = 'custom-confirm-overlay';
-            overlay.innerHTML = `
-                <div class="custom-confirm-dialog">
-                    <div class="custom-confirm-title">Confirm Action</div>
-                    <div class="custom-confirm-message">${message}</div>
-                    <div class="custom-confirm-buttons">
-                        <button type="button" class="custom-confirm-btn cancel">Cancel</button>
-                        <button type="button" class="custom-confirm-btn primary">${confirmText || 'Confirm'}</button>
-                    </div>
-                </div>`;
+            
+            const dialog = document.createElement('div');
+            dialog.className = 'custom-confirm-dialog';
+            
+            // Create header matching logout modal
+            const header = document.createElement('div');
+            header.className = 'custom-confirm-header';
+            header.innerHTML = '<h3 class="custom-confirm-title">Confirm Action</h3>';
+            
+            // Create body
+            const body = document.createElement('div');
+            body.className = 'custom-confirm-message';
+            body.textContent = message;
+            
+            // Create footer with buttons matching logout modal
+            const footer = document.createElement('div');
+            footer.className = 'custom-confirm-buttons';
+            
+            const cancelBtn = document.createElement('button');
+            cancelBtn.className = 'custom-confirm-btn cancel';
+            cancelBtn.textContent = 'Cancel';
+            cancelBtn.onmouseover = function() { this.style.background = '#e5e7eb'; };
+            cancelBtn.onmouseout = function() { this.style.background = '#f3f4f6'; };
+            
+            const confirmBtn = document.createElement('button');
+            confirmBtn.className = 'custom-confirm-btn primary';
+            confirmBtn.textContent = confirmText || 'Confirm';
+            confirmBtn.onmouseover = function() { this.style.background = '#0a0218'; };
+            confirmBtn.onmouseout = function() { this.style.background = '#130325'; };
+            
+            footer.appendChild(cancelBtn);
+            footer.appendChild(confirmBtn);
+            
+            dialog.appendChild(header);
+            dialog.appendChild(body);
+            dialog.appendChild(footer);
+            overlay.appendChild(dialog);
+            
             document.body.appendChild(overlay);
+            
             requestAnimationFrame(()=> overlay.classList.add('show'));
-            const close = ()=>{ overlay.classList.remove('show'); setTimeout(()=>overlay.remove(), 200); };
-            overlay.addEventListener('click', (e)=>{ if(e.target === overlay){ close(); resolve(false);} });
-            overlay.querySelector('.cancel').addEventListener('click', ()=>{ close(); resolve(false); });
-            overlay.querySelector('.primary').addEventListener('click', ()=>{ close(); resolve(true); });
+            
+            const close = ()=>{ 
+                overlay.classList.remove('show'); 
+                setTimeout(()=>overlay.remove(), 300); 
+            };
+            
+            overlay.addEventListener('click', (e)=>{ 
+                if(e.target === overlay){ 
+                    close(); 
+                    resolve(false);
+                } 
+            });
+            
+            cancelBtn.addEventListener('click', ()=>{ 
+                close(); 
+                resolve(false); 
+            });
+            
+            confirmBtn.addEventListener('click', ()=>{ 
+                close(); 
+                resolve(true); 
+            });
         });
     }
 
@@ -821,6 +941,17 @@ document.addEventListener('DOMContentLoaded', function() {
             const name = link.getAttribute('data-product-name') || 'this product';
             const message = `Are you sure you want to ${action} ${name}?`;
             showConfirm(message, 'Yes').then(function(ok){ if (ok) window.location.href = link.href; });
+        });
+    });
+
+    document.querySelectorAll('a.edit-btn').forEach(function(link){
+        link.addEventListener('click', function(e){
+            e.preventDefault();
+            const row = link.closest('tr');
+            // Product name is in the td after the image (third td: ID, image, name)
+            const name = row ? (row.querySelector('td:nth-child(3)')?.textContent?.trim() || 'this product') : 'this product';
+            const message = `Are you sure you want to edit ${name}?`;
+            showConfirm(message, 'Edit').then(function(ok){ if (ok) window.location.href = link.href; });
         });
     });
 

@@ -196,7 +196,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['checkout'])) {
                             foreach ($sellers as $seller) {
                                 createSellerNotification(
                                     $seller['seller_id'],
-                                    '🎉 New Order Received!',
+                                    'New Order Received',
                                     'You have a new order #' . str_pad($orderId, 6, '0', STR_PAD_LEFT) . ' for: ' . $seller['product_names'] . '. Please review and process it.',
                                     'success',
                                     'view-orders.php'

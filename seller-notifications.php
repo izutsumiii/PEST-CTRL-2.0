@@ -37,31 +37,6 @@ require_once 'includes/seller_header.php';
   .notif-list .notif-item a:active { background:#ffffff !important; }
   .notif-list .notif-item a:visited { background:#ffffff !important; }
   
-  .notif-delete-btn-page {
-    position: absolute;
-    top: 12px;
-    right: 8px;
-    background: transparent;
-    border: none;
-    color: #dc3545;
-    width: 28px;
-    height: 28px;
-    border-radius: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    font-size: 12px;
-    transition: all 0.3s ease;
-    z-index: 10;
-  }
-  
-  .notif-delete-btn-page:hover {
-    background: transparent;
-    border: none;
-    color: #b02a37;
-    transform: scale(1.15);
-  }
   
   /* Add smooth transitions for notification removal */
   .notif-item {
@@ -72,10 +47,37 @@ require_once 'includes/seller_header.php';
     transition: all 0.3s ease;
   }
 
-  /* Ensure delete button is always visible */
-  .notif-item:hover .notif-delete-btn-page {
-    opacity: 1;
+  .notification-status-badge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
   }
+
+  .notification-status-order {
+    background: #3b82f6;
+    color: #ffffff;
+  }
+
+  .notification-status-return {
+    background: #dc3545;
+    color: #ffffff;
+  }
+
+  .notification-status-lowstock {
+    background: #f97316;
+    color: #ffffff;
+  }
+
+  .notification-status-processing {
+    background: #10b981;
+    color: #ffffff;
+  }
+
   
   /* Custom confirmation dialog styles */
   .confirm-dialog {
@@ -171,10 +173,10 @@ require_once 'includes/seller_header.php';
 <main style="background:#f8f9fa; min-height:100vh; padding: 0 0 60px 0;">
   <div style="max-width: 1400px; margin-left: -150px; margin-right: auto; margin-top: -15px; padding-left: 0; padding-right: 60px;">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
-      <h1 style="color:#130325; margin:0; text-shadow: none;">Seller Notifications (<?php echo count($notifications); ?> total<?php echo $unreadCount > 0 ? ', ' . $unreadCount . ' unread' : ''; ?>)</h1>
+      <h1 style="color:#130325; margin:0; font-size: 28px; font-weight: 700;">Notifications <span style="background: #FFD736; color: #130325; padding: 4px 12px; border-radius: 20px; font-size: 18px; font-weight: 600; margin-left: 8px;"><?php echo count($notifications); ?> total</span></h1>
       <?php if (!empty($notifications)): ?>
         <button onclick="markAllAsRead()" style="background:#dc3545; color:#ffffff; border:none; padding:8px 16px; border-radius:6px; cursor:pointer; font-weight:600;">
-          <i class="fas fa-check-double"></i> Mark All as Read
+          Mark All as Read
         </button>
       <?php endif; ?>
     </div>
@@ -186,9 +188,9 @@ require_once 'includes/seller_header.php';
         <?php foreach ($notifications as $notification): ?>
           <div class="notif-item" style="position: relative;">
             <div style="display:flex; gap:12px; align-items:center; background:#ffffff; border:1px solid rgba(0,0,0,0.1); padding:14px; border-radius:10px;">
-              <div style="width:36px; height:36px; display:flex; align-items:center; justify-content:center; background:rgba(255,215,54,0.15); color:#FFD736; border-radius:8px;">
-                <i class="fas fa-<?php echo getNotificationIcon($notification['type']); ?>"></i>
-              </div>
+              <span class="notification-status-badge <?php echo getNotificationBadgeClass($notification['title'], $notification['type']); ?>">
+                <?php echo getNotificationBadgeText($notification['title'], $notification['type']); ?>
+              </span>
               <div style="flex:1;">
                 <div style="color:#130325; font-weight:700;"><?php echo htmlspecialchars($notification['title']); ?></div>
                 <div style="color:#130325; opacity:0.9; font-size:0.9rem;">
@@ -202,10 +204,6 @@ require_once 'includes/seller_header.php';
                 <?php echo htmlspecialchars(date('M d, Y h:i A', strtotime($notification['created_at']))); ?>
               </div>
             </div>
-            <!-- X button for deleting notifications -->
-            <button class="notif-delete-btn-page" onclick="deleteSellerNotification(<?php echo $notification['id']; ?>, this)" title="Delete notification">
-              <i class="fas fa-times"></i>
-            </button>
           </div>
         <?php endforeach; ?>
       </div>
@@ -391,6 +389,44 @@ function formatTime(timestamp) {
 
 <?php
 // Helper functions
+function getNotificationBadgeClass($title, $type) {
+    $titleLower = strtolower($title);
+    
+    if (strpos($titleLower, 'new order') !== false || strpos($titleLower, 'order received') !== false) {
+        return 'notification-status-order';
+    }
+    if (strpos($titleLower, 'return request') !== false || strpos($titleLower, 'return/refund') !== false || strpos($titleLower, 'refund') !== false) {
+        return 'notification-status-return';
+    }
+    if (strpos($titleLower, 'low stock') !== false) {
+        return 'notification-status-lowstock';
+    }
+    if (strpos($titleLower, 'processing') !== false || strpos($titleLower, 'order status') !== false) {
+        return 'notification-status-processing';
+    }
+    
+    return 'notification-status-order'; // Default fallback
+}
+
+function getNotificationBadgeText($title, $type) {
+    $titleLower = strtolower($title);
+    
+    if (strpos($titleLower, 'new order') !== false || strpos($titleLower, 'order received') !== false) {
+        return 'Order';
+    }
+    if (strpos($titleLower, 'return request') !== false || strpos($titleLower, 'return/refund') !== false || strpos($titleLower, 'refund') !== false) {
+        return 'Return/Refund';
+    }
+    if (strpos($titleLower, 'low stock') !== false) {
+        return 'Low Stocks';
+    }
+    if (strpos($titleLower, 'processing') !== false || strpos($titleLower, 'order status') !== false) {
+        return 'Processing';
+    }
+    
+    return 'Order'; // Default fallback
+}
+
 function getNotificationIcon($type) {
     switch($type) {
         case 'warning': return 'exclamation-triangle';
