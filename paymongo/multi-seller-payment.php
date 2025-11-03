@@ -107,7 +107,7 @@ require_once '../includes/header.php';
 }
 
 .payment-header h1 {
-    color: #F9F9F9;
+    color:rgb(39, 37, 37);
     font-size: 2.5rem;
     margin-bottom: 10px;
 }
@@ -292,12 +292,13 @@ require_once '../includes/header.php';
     font-weight: 600;
     color: #130325;
 }
+
 </style>
 
 <div class="payment-page">
     <div class="payment-header">
         <h1>Complete Your Payment</h1>
-        <p style="color: #F9F9F9;">Transaction ID: <?php echo $paymentTransactionId; ?></p>
+        <p style="color:rgb(255, 255, 255);">Transaction ID: <?php echo $paymentTransactionId; ?></p>
     </div>
 
     <?php if (!empty($errors)): ?>
