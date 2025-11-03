@@ -1254,7 +1254,7 @@ function validateMultiSellerCart() {
 }
 
 // Process multi-seller checkout
-function processMultiSellerCheckout($shippingAddress, $paymentMethod, $customerName = null, $customerEmail = null, $customerPhone = null) {
+function processMultiSellerCheckout($shippingAddress, $paymentMethod, $customerName = '', $customerEmail = '', $customerPhone = '', $isBuyNow = false) {
     if (!isLoggedIn()) {
         return ['success' => false, 'message' => 'Not logged in'];
     }
@@ -1346,10 +1346,11 @@ function processMultiSellerCheckout($shippingAddress, $paymentMethod, $customerN
             }
         }
         
-        // 5. Clear the cart after successful checkout
-        $stmt = $pdo->prepare("DELETE FROM cart WHERE user_id = ?");
-        $stmt->execute([$userId]);
-        
+// Clear cart after successful checkout (but NOT for buy now)
+if (!$isBuyNow) {
+    $stmt = $pdo->prepare("DELETE FROM cart WHERE user_id = ?");
+    $stmt->execute([$userId]);
+}
         $pdo->commit();
         
         // 6. Create notifications for each order (after transaction is committed)
