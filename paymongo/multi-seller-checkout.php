@@ -32,15 +32,9 @@ try {
 }
 
 // Get cart items grouped by seller
-// Support selected-only checkout via query param ?selected=1,2,3
-$selectedIds = [];
-if (!empty($_GET['selected'])) {
-    $selectedIds = array_values(array_filter(array_map('intval', explode(',', $_GET['selected']))));
-}
-
-// If this is a buy now request, create a single-item cart
+// Get cart items grouped by seller or create buy now item
 if ($isBuyNow && $buyNowItem) {
-    // Get seller info for the buy now item
+    // Buy Now: Create a single-item group, bypass cart entirely
     $stmt = $pdo->prepare("SELECT seller_id FROM products WHERE id = ?");
     $stmt->execute([$buyNowItem['id']]);
     $sellerId = $stmt->fetchColumn();
@@ -75,31 +69,42 @@ if ($isBuyNow && $buyNowItem) {
     } else {
         $groupedItems = [];
     }
+    
+    // Set grand total directly from buy now item
+    $grandTotal = $buyNowItem['total'];
 } else {
+    // Regular cart checkout
     $groupedItems = getCartItemsGroupedBySeller();
-}
-if (!empty($selectedIds)) {
-    // Filter items to selected product IDs only, recompute subtotals and item counts
-    foreach ($groupedItems as $sid => &$sg) {
-        $sg['items'] = array_values(array_filter($sg['items'], function($it) use ($selectedIds) {
-            return in_array((int)$it['product_id'], $selectedIds, true);
-        }));
-        $sg['subtotal'] = 0;
-        $sg['item_count'] = 0;
-        foreach ($sg['items'] as $it) {
-            $sg['subtotal'] += $it['price'] * $it['quantity'];
-            $sg['item_count'] += $it['quantity'];
+    
+    // Support selected-only checkout via query param ?selected=1,2,3
+    $selectedIds = [];
+    if (!empty($_GET['selected'])) {
+        $selectedIds = array_values(array_filter(array_map('intval', explode(',', $_GET['selected']))));
+        
+        // Filter items to selected product IDs only
+        foreach ($groupedItems as $sid => &$sg) {
+            $sg['items'] = array_values(array_filter($sg['items'], function($it) use ($selectedIds) {
+                return in_array((int)$it['product_id'], $selectedIds, true);
+            }));
+            $sg['subtotal'] = 0;
+            $sg['item_count'] = 0;
+            foreach ($sg['items'] as $it) {
+                $sg['subtotal'] += $it['price'] * $it['quantity'];
+                $sg['item_count'] += $it['quantity'];
+            }
+            if (empty($sg['items'])) {
+                unset($groupedItems[$sid]);
+            }
         }
-        if (empty($sg['items'])) {
-            unset($groupedItems[$sid]);
-        }
-    }                       
-    unset($sg);
+        unset($sg);
+    }
+    
+    // Recompute grand total from filtered groups
+    $grandTotal = 0;
+    foreach ($groupedItems as $sg) { 
+        $grandTotal += $sg['subtotal']; 
+    }
 }
-
-// Recompute grand total from filtered groups
-$grandTotal = 0;
-foreach ($groupedItems as $sg) { $grandTotal += $sg['subtotal']; }
 
 // Handle form submission
 $errors = [];
@@ -140,8 +145,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['checkout'])) {
     if (empty($errors)) {
         // Process multi-seller checkout
         if (method_exists($pdo, 'query')) { ensureAutoIncrementPrimary('payment_transactions'); ensureAutoIncrementPrimary('orders'); }
-        $result = processMultiSellerCheckout($shippingAddress, $paymentMethod, $customerName, $customerEmail, $customerPhone);
         
+        // Pass buy_now flag to prevent cart clearing
+        $result = processMultiSellerCheckout($shippingAddress, $paymentMethod, $customerName, $customerEmail, $customerPhone, $isBuyNow);
         if ($result['success']) {
             // Route PayMongo payments to PayMongo checkout
             if (in_array($paymentMethod, ['card', 'gcash', 'paymaya', 'grab_pay', 'billease'])) {
