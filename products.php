@@ -1343,11 +1343,31 @@ function compareSelected() {
     const productIds = compareProducts.map(p => p.id).join(',');
     window.location.href = `compare.php?products=${productIds}`;
 }
-
 function handleBuyNow(productId, quantity = 1) {
-    // Add to cart and redirect to checkout
-    addToCart(productId, quantity);
-    window.location.href = 'cart.php';
+    // Send buy now request to backend
+    fetch('ajax/buy-now-handler.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            product_id: productId,
+            quantity: quantity
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Redirect directly to checkout with buy_now flag
+            window.location.href = 'paymongo/multi-seller-checkout.php?buy_now=1';
+        } else {
+            alert(data.message || 'Error processing buy now request');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error processing buy now request');
+    });
 }
 
 document.addEventListener('DOMContentLoaded', function() {
