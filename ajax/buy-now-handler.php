@@ -1,89 +1,57 @@
 <?php
-// ajax/buy-now-handler.php
 session_start();
 require_once '../config/database.php';
+require_once '../includes/functions.php';
 
 header('Content-Type: application/json');
 
-// Check if request method is POST
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    http_response_code(405);
-    echo json_encode(['success' => false, 'message' => 'Method not allowed']);
+// Check if user is logged in
+if (!isLoggedIn()) {
+    echo json_encode(['success' => false, 'message' => 'Not logged in']);
     exit();
 }
 
-// Get JSON input
+// Get POST data
 $input = json_decode(file_get_contents('php://input'), true);
+$productId = (int)($input['product_id'] ?? 0);
+$quantity = (int)($input['quantity'] ?? 1);
 
-// Validate input
-if (!isset($input['product_id']) || !isset($input['quantity'])) {
-    echo json_encode(['success' => false, 'message' => 'Missing required parameters']);
-    exit();
-}
-
-$productId = (int)$input['product_id'];
-$quantity = (int)$input['quantity'];
-
-// Validate quantity
-if ($quantity < 1 || $quantity > 100) {
-    echo json_encode(['success' => false, 'message' => 'Invalid quantity']);
+if ($productId <= 0 || $quantity <= 0) {
+    echo json_encode(['success' => false, 'message' => 'Invalid product or quantity']);
     exit();
 }
 
 try {
     // Get product details
-    $stmt = $pdo->prepare("SELECT id, name, price, stock_quantity, status, image_url FROM products WHERE id = ?");
+    $stmt = $pdo->prepare("SELECT id, name, price, image_url, stock_quantity FROM products WHERE id = ? AND status = 'active'");
     $stmt->execute([$productId]);
     $product = $stmt->fetch(PDO::FETCH_ASSOC);
     
-    // Check if product exists
     if (!$product) {
         echo json_encode(['success' => false, 'message' => 'Product not found']);
         exit();
     }
     
-    // Check if product is active
-    if ($product['status'] !== 'active') {
-        echo json_encode(['success' => false, 'message' => 'Product is not available']);
-        exit();
-    }
-    
-    // Check stock availability
+    // Check stock
     if ($product['stock_quantity'] < $quantity) {
-        echo json_encode([
-            'success' => false, 
-            'message' => 'Insufficient stock. Only ' . $product['stock_quantity'] . ' items available'
-        ]);
+        echo json_encode(['success' => false, 'message' => 'Not enough stock available']);
         exit();
     }
     
-    // Calculate total
-    $total = $product['price'] * $quantity;
-    
-    // Set up buy now session item
+    // Store buy now item in session
     $_SESSION['buy_now_item'] = [
         'id' => $product['id'],
         'name' => $product['name'],
         'price' => $product['price'],
         'quantity' => $quantity,
         'image_url' => $product['image_url'],
-        'total' => $total,
-        'timestamp' => time()
+        'total' => $product['price'] * $quantity
     ];
     
-    echo json_encode([
-        'success' => true,
-        'message' => 'Buy now item prepared successfully',
-        'product' => [
-            'name' => $product['name'],
-            'price' => $product['price'],
-            'quantity' => $quantity,
-            'total' => $total
-        ]
-    ]);
+    echo json_encode(['success' => true]);
     
 } catch (Exception $e) {
-    error_log('Buy now handler error: ' . $e->getMessage());
-    echo json_encode(['success' => false, 'message' => 'Database error occurred']);
+    error_log('Buy now error: ' . $e->getMessage());
+    echo json_encode(['success' => false, 'message' => 'Error processing request']);
 }
 ?>
