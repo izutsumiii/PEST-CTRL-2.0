@@ -12,9 +12,13 @@ $stmt->execute([$userId]);
 $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
 // Handle profile update
+$updateSuccess = false;
+$updateError = '';
+
 if (isset($_POST['update_profile'])) {
     $firstName = sanitizeInput($_POST['first_name']);
     $lastName = sanitizeInput($_POST['last_name']);
+    $displayName = sanitizeInput($_POST['display_name']);
     $email = sanitizeInput($_POST['email']);
     $phone = sanitizeInput($_POST['phone']);
     $address = sanitizeInput($_POST['address']);
@@ -25,12 +29,28 @@ if (isset($_POST['update_profile'])) {
     $existing = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if ($existing) {
-        echo "<p class=\"error-message\">Error: Email already exists.</p>";
+        $updateError = "Error: Email already exists.";
     } else {
-        $stmt = $pdo->prepare("UPDATE users SET first_name = ?, last_name = ?, email = ?, phone = ?, address = ? WHERE id = ?");
-        $stmt->execute([$firstName, $lastName, $email, $phone, $address, $userId]);
-        echo "<p class=\"success-message\">Profile updated successfully!</p>";
-        header("Refresh:2");
+        // Check if display_name column exists, if not, add it
+        try {
+            $checkCol = $pdo->query("SHOW COLUMNS FROM users LIKE 'display_name'");
+            if ($checkCol->rowCount() == 0) {
+                $pdo->exec("ALTER TABLE users ADD COLUMN display_name VARCHAR(100) NULL AFTER last_name");
+            }
+        } catch (PDOException $e) {
+            // Column might already exist or error, continue
+        }
+        
+        $stmt = $pdo->prepare("UPDATE users SET first_name = ?, last_name = ?, display_name = ?, email = ?, phone = ?, address = ? WHERE id = ?");
+        if ($stmt->execute([$firstName, $lastName, $displayName, $email, $phone, $address, $userId])) {
+            $updateSuccess = true;
+            // Refresh user data
+            $stmt = $pdo->prepare("SELECT * FROM users WHERE id = ? AND user_type = 'seller'");
+            $stmt->execute([$userId]);
+            $user = $stmt->fetch(PDO::FETCH_ASSOC);
+        } else {
+            $updateError = "Error updating profile. Please try again.";
+        }
     }
 }
 
@@ -68,8 +88,8 @@ html, body {
 main {
     background: transparent !important;
     margin-left: 120px !important;
-    margin-top: 0 !important;
-    padding: 0 0 60px 0 !important;
+    margin-top: -20px !important;
+    padding: 5px 0 60px 0 !important;
     min-height: calc(100vh - 60px) !important;
     transition: margin-left 0.3s ease !important;
 }
@@ -225,6 +245,11 @@ main.sidebar-collapsed {
     flex-direction: column;
 }
 
+/* Button container should be side by side */
+.profile-editor form .button-container {
+    flex-direction: row !important;
+}
+
 /* Label styling */
 .profile-editor label {
     margin-bottom: 5px;
@@ -262,17 +287,17 @@ main.sidebar-collapsed {
     font-family: inherit;
 }
 
-/* Button styling */
+/* Button styling - Minimized */
 .profile-editor button[type="submit"] {
     background: #FFD736;
     color: #130325;
-    padding: 12px 24px;
+    padding: 8px 16px;
     border: none;
-    border-radius: 4px;
-    font-size: 1rem;
+    border-radius: 6px;
+    font-size: 13px;
     cursor: pointer;
     transition: background-color 0.3s, transform 0.2s;
-    margin-top: 10px;
+    margin-top: 0;
     font-weight: 600;
 }
 
@@ -288,10 +313,10 @@ main.sidebar-collapsed {
 .btn-secondary {
     background: #6c757d;
     color: #fff;
-    padding: 12px 24px;
+    padding: 8px 16px;
     border: none;
-    border-radius: 4px;
-    font-size: 1rem;
+    border-radius: 6px;
+    font-size: 13px;
     cursor: pointer;
     transition: background-color 0.3s;
     font-weight: 600;
@@ -389,7 +414,7 @@ h1 {
     color: #130325 !important;
     text-align: left;
     margin: 0 0 16px 0 !important;
-    font-size: 32px !important;
+    font-size: 20px !important;
     font-weight: 700;
     padding: 0 !important;
     text-shadow: none !important;
@@ -415,8 +440,8 @@ h1 {
     }
     
     h1 {
-        font-size: 1.8rem !important;
-        margin: 15px 0 20px 0 !important;
+        font-size: 18px !important;
+        margin: 0 0 16px 0 !important;
     }
     
     .personal-info h2,
@@ -450,11 +475,12 @@ h1 {
     
     .profile-editor button[type="submit"],
     .btn-secondary {
-        padding: 10px 20px;
+        padding: 8px 16px;
+        font-size: 12px;
     }
 
     h1 {
-        font-size: 1.5rem !important;
+        font-size: 16px !important;
     }
 }
 </style>
@@ -471,7 +497,7 @@ h1 {
         ?>
     </div>
     <div class="profile-meta">
-        <div class="profile-name"><?php echo htmlspecialchars(trim(($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? '')) ?: 'Seller'); ?></div>
+        <div class="profile-name"><?php echo htmlspecialchars($user['display_name'] ?? trim(($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? '')) ?: 'Seller'); ?></div>
         <div class="profile-email"><?php echo htmlspecialchars($user['email'] ?? ''); ?></div>
     </div>
     <div style="margin-left:auto; position: relative;">
@@ -489,7 +515,8 @@ h1 {
     <div class="personal-info">
         <h2>Account Details</h2>
         <div class="account-summary">
-            <div class="summary-row"><strong>Name:</strong> <span><?php echo htmlspecialchars(trim(($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? ''))); ?></span></div>
+            <div class="summary-row"><strong>Display Name:</strong> <span><?php echo htmlspecialchars($user['display_name'] ?? 'Not set'); ?></span></div>
+            <div class="summary-row"><strong>Full Name:</strong> <span><?php echo htmlspecialchars(trim(($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? ''))); ?></span></div>
             <div class="summary-row"><strong>Email:</strong> <span><?php echo htmlspecialchars($user['email'] ?? ''); ?></span></div>
             <div class="summary-row"><strong>Phone:</strong> <span><?php echo htmlspecialchars($user['phone'] ?? ''); ?></span></div>
             <div class="summary-row"><strong>Address:</strong> <span><?php echo htmlspecialchars($user['address'] ?? ''); ?></span></div>
@@ -502,12 +529,17 @@ h1 {
         <!-- Hidden Edit Form -->
         <form id="editSellerForm" method="POST" action="" style="display:none; margin-top:20px;">
             <div>
+                <label for="display_name">Display Name (Brand Name) *:</label>
+                <input type="text" id="display_name" name="display_name" value="<?php echo htmlspecialchars($user['display_name'] ?? ''); ?>" required placeholder="Your brand/store name">
+                <small style="color: #6b7280; font-size: 12px;">This is the name customers will see on your store page</small>
+            </div>
+            <div>
                 <label for="first_name">First Name:</label>
-                <input type="text" id="first_name" name="first_name" value="<?php echo htmlspecialchars($user['first_name'] ?? ''); ?>" required>
+                <input type="text" id="first_name" name="first_name" value="<?php echo htmlspecialchars($user['first_name'] ?? ''); ?>">
             </div>
             <div>
                 <label for="last_name">Last Name:</label>
-                <input type="text" id="last_name" name="last_name" value="<?php echo htmlspecialchars($user['last_name'] ?? ''); ?>" required>
+                <input type="text" id="last_name" name="last_name" value="<?php echo htmlspecialchars($user['last_name'] ?? ''); ?>">
             </div>
             <div>
                 <label for="email">Email:</label>
@@ -520,8 +552,8 @@ h1 {
             <div>
                 <label for="address">Address:</label>
                 <textarea id="address" name="address"><?php echo htmlspecialchars($user['address'] ?? ''); ?></textarea>
-            </div>
-            <div style="display:flex; gap:10px;">
+            </div><br>
+            <div class="button-container" style="display:flex; flex-direction:row; gap:8px; align-items:center;">
                 <button type="submit" name="update_profile">Save Changes</button>
                 <button type="button" id="cancelEditBtn" class="btn-secondary">Cancel</button>
             </div>
@@ -544,7 +576,7 @@ h1 {
                 <label for="confirm_password">Confirm New Password:</label>
                 <input type="password" id="confirm_password" name="confirm_password" required>
             </div>
-            <div style="display:flex; gap:10px;">
+            <div class="button-container" style="display:flex; flex-direction:row; gap:8px; align-items:center;">
                 <button type="submit" name="change_password">Update Password</button>
                 <button type="button" id="cancelPwBtn" class="btn-secondary">Cancel</button>
             </div>
@@ -652,7 +684,94 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+    
+    // Show success/error notification
+    <?php if ($updateSuccess): ?>
+        showProfileNotification('Profile updated successfully!', 'success');
+    <?php elseif (!empty($updateError)): ?>
+        showProfileNotification('<?php echo htmlspecialchars($updateError); ?>', 'error');
+    <?php endif; ?>
 });
+
+// Profile update notification popup (bottom center)
+function showProfileNotification(message, type) {
+    // Remove existing notification if any
+    const existing = document.getElementById('profileUpdateNotification');
+    if (existing) {
+        existing.remove();
+    }
+    
+    const notification = document.createElement('div');
+    notification.id = 'profileUpdateNotification';
+    notification.style.cssText = `
+        position: fixed;
+        bottom: 40px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #ffffff;
+        color: ${type === 'success' ? '#166534' : '#991b1b'};
+        border: none;
+        border-radius: 12px;
+        padding: 16px 24px;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        z-index: 10000;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 14px;
+        font-weight: 600;
+        animation: slideUpNotification 0.3s ease;
+        max-width: 400px;
+        min-width: 300px;
+    `;
+    
+    const icon = document.createElement('i');
+    icon.className = type === 'success' ? 'fas fa-check-circle' : 'fas fa-exclamation-circle';
+    icon.style.cssText = `font-size: 20px; color: ${type === 'success' ? '#10b981' : '#dc3545'};`;
+    
+    const text = document.createElement('span');
+    text.textContent = message;
+    
+    notification.appendChild(icon);
+    notification.appendChild(text);
+    document.body.appendChild(notification);
+    
+    // Auto remove after 3 seconds
+    setTimeout(() => {
+        notification.style.animation = 'slideDownNotification 0.3s ease';
+        setTimeout(() => {
+            notification.remove();
+        }, 300);
+    }, 3000);
+}
+
+// Add CSS animations
+if (!document.getElementById('profileNotificationStyles')) {
+    const style = document.createElement('style');
+    style.id = 'profileNotificationStyles';
+    style.textContent = `
+        @keyframes slideUpNotification {
+            from {
+                opacity: 0;
+                transform: translateX(-50%) translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(-50%) translateY(0);
+            }
+        }
+        @keyframes slideDownNotification {
+            from {
+                opacity: 1;
+                transform: translateX(-50%) translateY(0);
+            }
+            to {
+                opacity: 0;
+                transform: translateX(-50%) translateY(20px);
+            }
+        }
+    `;
+    document.head.appendChild(style);
+}
 </script>
 
-<?php require_once 'includes/footer.php'; ?>

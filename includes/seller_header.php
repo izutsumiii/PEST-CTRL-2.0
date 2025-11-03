@@ -434,6 +434,20 @@ require_once 'functions.php';
             display: block;
         }
         
+        /* Ensure notification dropdown uses dark text globally, even on invisible headers */
+        .notification-dropdown,
+        .notification-dropdown *,
+        .notification-dropdown a,
+        .notification-dropdown a i,
+        .notification-header h6,
+        .notification-title,
+        .notification-message,
+        .notification-time {
+            color: #130325 !important;
+        }
+        .notification-dropdown { background: #ffffff !important; border-color: #e5e7eb !important; }
+        .notification-item:hover { background: #f9fafb !important; }
+        
         .notification-header {
             padding: 15px;
             border-bottom: 1px solid #e5e7eb;

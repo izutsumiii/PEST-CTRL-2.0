@@ -1,5 +1,50 @@
-
 <?php
+// Early export handler (before any HTML output)
+if (isset($_GET['export']) && $_GET['export'] === 'csv') {
+    require_once '../config/database.php';
+    require_once '../includes/functions.php';
+    requireAdmin();
+
+    $filterEntity = isset($_GET['entity']) ? sanitizeInput($_GET['entity']) : 'all';
+    $selectedPeriod = isset($_GET['period']) ? sanitizeInput($_GET['period']) : 'weekly';
+    $customStartDate = isset($_GET['start_date']) ? sanitizeInput($_GET['start_date']) : '';
+    $customEndDate = isset($_GET['end_date']) ? sanitizeInput($_GET['end_date']) : '';
+    if ($selectedPeriod !== 'custom') { $customStartDate = date('Y-m-d', strtotime('-6 days')); $customEndDate = date('Y-m-d'); }
+
+    $dateCondition = '';
+    if ($selectedPeriod === 'custom' && $customStartDate && $customEndDate) {
+        $dateCondition = "DATE(created_at) BETWEEN '" . date('Y-m-d', strtotime($customStartDate)) . "' AND '" . date('Y-m-d', strtotime($customEndDate)) . "'";
+    } else {
+        $dateCondition = "DATE(created_at) BETWEEN '" . date('Y-m-d', strtotime('-6 days')) . "' AND '" . date('Y-m-d') . "'";
+    }
+
+    $filteredNewSellers = 0; $filteredNewCustomers = 0; $filteredOrders = 0; $filteredRevenue = 0.0; $filteredProducts = 0;
+    try {
+        if ($filterEntity === 'all' || $filterEntity === 'sellers') {
+            $stmt = $pdo->query("SELECT COUNT(*) FROM users WHERE user_type='seller' AND $dateCondition");
+            $filteredNewSellers = (int)$stmt->fetchColumn();
+        }
+        if ($filterEntity === 'all' || $filterEntity === 'customers') {
+            $stmt = $pdo->query("SELECT COUNT(*) FROM users WHERE user_type='customer' AND $dateCondition");
+            $filteredNewCustomers = (int)$stmt->fetchColumn();
+        }
+        $stmt = $pdo->query("SELECT COUNT(*) FROM orders WHERE $dateCondition");
+        $filteredOrders = (int)$stmt->fetchColumn();
+        $stmt = $pdo->query("SELECT COALESCE(SUM(total_amount),0) FROM orders WHERE status='delivered' AND $dateCondition");
+        $filteredRevenue = (float)$stmt->fetchColumn();
+        $stmt = $pdo->query("SELECT COUNT(*) FROM products WHERE $dateCondition");
+        $filteredProducts = (int)$stmt->fetchColumn();
+    } catch (Exception $e) {}
+
+    header('Content-Type: text/csv; charset=UTF-8');
+    header('Content-Disposition: attachment; filename="admin-analytics-' . date('Ymd-His') . '.csv"');
+    $out = fopen('php://output', 'w');
+    fputcsv($out, ['Entity','Period','Start Date','End Date','New Sellers','New Customers','Orders','Revenue (PHP)','Products']);
+    fputcsv($out, [strtoupper($filterEntity), strtoupper($selectedPeriod), $customStartDate, $customEndDate, $filteredNewSellers, $filteredNewCustomers, $filteredOrders, number_format($filteredRevenue, 2, '.', ''), $filteredProducts]);
+    fclose($out);
+    exit();
+}
+
 require_once 'includes/admin_header.php';
 
 // Simple admin check - ensure user is logged in and is admin
@@ -10,1155 +55,997 @@ if (!isset($_SESSION['user_id']) || $_SESSION['user_type'] !== 'admin') {
 
 // Ensure PDO connection is available
 if (!isset($pdo)) {
-    require_once '../config/database.php'; // Adjust path if needed
+    require_once '../config/database.php';
 }
 
-if (isset($_POST['update_settings'])) {
-    $gracePeriod = intval($_POST['grace_period']);
+// Get selected time period from URL parameter
+$selectedPeriod = isset($_GET['period']) ? sanitizeInput($_GET['period']) : 'weekly';
+$customStartDate = isset($_GET['start_date']) ? sanitizeInput($_GET['start_date']) : '';
+$customEndDate = isset($_GET['end_date']) ? sanitizeInput($_GET['end_date']) : '';
+
+// For non-custom views, always show the current last 7 days in inputs
+if ($selectedPeriod !== 'custom') {
+    $customStartDate = date('Y-m-d', strtotime('-6 days'));
+    $customEndDate = date('Y-m-d');
+}
+
+// Get analytics filter (seller/customer)
+$filterEntity = isset($_GET['entity']) ? sanitizeInput($_GET['entity']) : 'all'; // all|sellers|customers
+
+// Helper function to get date condition based on period
+function getPeriodDateCondition($period, $startDate = '', $endDate = '') {
+    if ($period === 'custom' && !empty($startDate) && !empty($endDate)) {
+        $startDate = date('Y-m-d', strtotime($startDate));
+        $endDate = date('Y-m-d', strtotime($endDate));
+        return "created_at >= '$startDate' AND created_at <= '$endDate 23:59:59'";
+    }
     
-    // Validate grace period (between 1 and 60 minutes)
-    if ($gracePeriod < 1 || $gracePeriod > 60) {
-        $error = "Grace period must be between 1 and 60 minutes.";
-    } else {
-        try {
-            // Check if setting exists
-            $stmt = $pdo->prepare("SELECT id FROM settings WHERE setting_key = 'order_grace_period'");
-            $stmt->execute();
-            $exists = $stmt->fetch();
-            
-            if ($exists) {
-                // Update existing setting
-                $stmt = $pdo->prepare("UPDATE settings SET setting_value = ?, updated_at = NOW() WHERE setting_key = 'order_grace_period'");
-                $stmt->execute([$gracePeriod]);
-            } else {
-                // Insert new setting
-                $stmt = $pdo->prepare("INSERT INTO settings (setting_key, setting_value, created_at, updated_at) VALUES ('order_grace_period', ?, NOW(), NOW())");
-                $stmt->execute([$gracePeriod]);
-            }
-            
-            $success = "Grace period updated successfully to {$gracePeriod} minutes.";
-        } catch (PDOException $e) {
-            $error = "Error updating settings: " . $e->getMessage();
-        }
+    switch($period) {
+        case 'weekly':
+            return "created_at >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)";
+        case 'monthly':
+            return "created_at >= DATE_SUB(CURDATE(), INTERVAL 1 MONTH)";
+        case 'yearly':
+            return "created_at >= DATE_SUB(CURDATE(), INTERVAL 1 YEAR)";
+        case '6months':
+        default:
+            return "created_at >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH)";
     }
 }
 
-// Get current grace period setting
-$stmt = $pdo->prepare("SELECT setting_value FROM settings WHERE setting_key = 'order_grace_period'");
-$stmt->execute();
-$currentGracePeriod = $stmt->fetchColumn();
+$dateCondition = getPeriodDateCondition($selectedPeriod, $customStartDate, $customEndDate);
 
-// Default to 5 minutes if not set
-if (!$currentGracePeriod) {
-    $currentGracePeriod = 5;
+// Compute filtered analytics based on entity
+$filteredNewSellers = 0;
+$filteredNewCustomers = 0;
+$filteredOrders = 0;
+$filteredRevenue = 0.0;
+$filteredProducts = 0;
+
+try {
+    if ($filterEntity === 'all' || $filterEntity === 'sellers') {
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM users WHERE user_type='seller' AND $dateCondition");
+        $stmt->execute();
+        $filteredNewSellers = (int)$stmt->fetchColumn();
+    }
+    
+    if ($filterEntity === 'all' || $filterEntity === 'customers') {
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM users WHERE user_type='customer' AND $dateCondition");
+        $stmt->execute();
+        $filteredNewCustomers = (int)$stmt->fetchColumn();
+    }
+    
+    // Orders
+    $stmt = $pdo->prepare("SELECT COUNT(*) FROM orders WHERE $dateCondition");
+    $stmt->execute();
+    $filteredOrders = (int)$stmt->fetchColumn();
+    
+    // Revenue
+    $stmt = $pdo->prepare("SELECT COALESCE(SUM(total_amount),0) FROM orders WHERE status='delivered' AND $dateCondition");
+    $stmt->execute();
+    $filteredRevenue = (float)$stmt->fetchColumn();
+    
+    // Products
+    $stmt = $pdo->prepare("SELECT COUNT(*) FROM products WHERE $dateCondition");
+    $stmt->execute();
+    $filteredProducts = (int)$stmt->fetchColumn();
+} catch (Exception $e) {
+    // fail safe
 }
-
-// Get stats for dashboard
-$stmt = $pdo->prepare("SELECT COUNT(*) as total FROM users");
-$stmt->execute();
-$totalUsers = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
-
-$stmt = $pdo->prepare("SELECT COUNT(*) as total FROM products");
-$stmt->execute();
-$totalProducts = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
-
-$stmt = $pdo->prepare("SELECT COUNT(*) as total FROM orders");
-$stmt->execute();
-$totalOrders = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
-
-$stmt = $pdo->prepare("SELECT SUM(total_amount) as total FROM orders WHERE status = 'delivered'");
-$stmt->execute();
-$totalRevenue = $stmt->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
 
 // Get pending sellers
 $stmt = $pdo->prepare("SELECT COUNT(*) as total FROM users WHERE user_type = 'seller' AND seller_status = 'pending'");
 $stmt->execute();
 $pendingSellers = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
 
-// Get pending products for approval
+// Get pending products
 $stmt = $pdo->prepare("SELECT COUNT(*) as total FROM products WHERE status = 'pending'");
 $stmt->execute();
 $pendingProducts = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
 
-// Get pending products list for display
-$stmt = $pdo->prepare("SELECT p.*, u.first_name, u.last_name 
-                       FROM products p 
-                       JOIN users u ON p.seller_id = u.id 
-                       WHERE p.status = 'pending' 
-                       ORDER BY p.created_at DESC 
-                       LIMIT 5");
+// Get active sellers
+$stmt = $pdo->prepare("SELECT COUNT(*) as total FROM users WHERE user_type = 'seller' AND seller_status = 'approved'");
 $stmt->execute();
-$pendingProductsList = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$activeSellers = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
 
-// Get all admin categories (seller_id IS NULL)
-$stmt = $pdo->prepare("SELECT c1.*, c2.name as parent_name 
-                       FROM categories c1 
-                       LEFT JOIN categories c2 ON c1.parent_id = c2.id 
-                       WHERE c1.seller_id IS NULL 
-                       ORDER BY c1.parent_id, c1.name");
+// Get active products
+$stmt = $pdo->prepare("SELECT COUNT(*) as total FROM products WHERE status = 'active'");
 $stmt->execute();
-$categories = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$activeProducts = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
 
-// Get parent categories for dropdown (admin categories only)
-$stmt = $pdo->prepare("SELECT * FROM categories WHERE parent_id IS NULL AND seller_id IS NULL ORDER BY name");
+// Get completed orders
+$stmt = $pdo->prepare("SELECT COUNT(*) as total FROM orders WHERE status = 'delivered'");
 $stmt->execute();
-$parentCategories = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$completedOrders = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
 
-// Analytics filter (seller/customer) - GET params: from, to, entity
-$filterFrom = isset($_GET['from']) ? trim($_GET['from']) : '';
-$filterTo = isset($_GET['to']) ? trim($_GET['to']) : '';
-$filterEntity = isset($_GET['entity']) ? trim($_GET['entity']) : 'all'; // all|sellers|customers
+// Period labels
+$periodLabels = [
+    'weekly' => 'Last 7 Days',
+    'monthly' => 'Last Month',
+    '6months' => 'Last 6 Months',
+    'yearly' => 'Last Year',
+    'custom' => !empty($customStartDate) && !empty($customEndDate) ? 
+        date('M j', strtotime($customStartDate)) . ' - ' . date('M j, Y', strtotime($customEndDate)) : 
+        'Custom Range'
+];
 
-// Normalize dates
-if ($filterFrom !== '' && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $filterFrom)) { $filterFrom = ''; }
-if ($filterTo !== '' && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $filterTo)) { $filterTo = ''; }
+// Chart labels
+$chartLabels = [];
+$groupBy = '';
 
-// Default to current 1-week range if no dates provided
-if ($filterFrom === '' && $filterTo === '') {
-    $filterFrom = date('Y-m-d', strtotime('-6 days'));
-    $filterTo = date('Y-m-d');
-}
-
-// Build date range for queries (inclusive range)
-$dateCondition = '';
-$dateParams = [];
-if ($filterFrom !== '' && $filterTo !== '') {
-    $dateCondition = " AND DATE(created_at) BETWEEN ? AND ?";
-    $dateParams = [$filterFrom, $filterTo];
-} elseif ($filterFrom !== '') {
-    $dateCondition = " AND DATE(created_at) >= ?";
-    $dateParams = [$filterFrom];
-} elseif ($filterTo !== '') {
-    $dateCondition = " AND DATE(created_at) <= ?";
-    $dateParams = [$filterTo];
-}
-
-// Compute filtered analytics
-$filteredNewSellers = 0; $filteredNewCustomers = 0; $filteredOrders = 0; $filteredRevenue = 0.0; $filteredProducts = 0;
-
+// Orders by status (in date range)
+$ordersByStatus = [
+    'pending' => 0,
+    'processing' => 0,
+    'delivered' => 0,
+    'cancelled' => 0
+];
 try {
-    if ($filterEntity === 'all' || $filterEntity === 'sellers') {
-        $q = "SELECT COUNT(*) FROM users WHERE user_type='seller'" . $dateCondition;
-        $stmt = $pdo->prepare($q);
-        $stmt->execute($dateParams);
-        $filteredNewSellers = (int)$stmt->fetchColumn();
+    $q = "SELECT status, COUNT(*) c FROM orders WHERE DATE(created_at) BETWEEN ? AND ? GROUP BY status";
+    $stmt = $pdo->prepare($q);
+    $stmt->execute([ $customStartDate, $customEndDate ]);
+    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+        $st = strtolower($row['status']);
+        if (isset($ordersByStatus[$st])) { $ordersByStatus[$st] = (int)$row['c']; }
     }
-    if ($filterEntity === 'all' || $filterEntity === 'customers') {
-        $q = "SELECT COUNT(*) FROM users WHERE user_type='customer'" . $dateCondition;
-        $stmt = $pdo->prepare($q);
-        $stmt->execute($dateParams);
-        $filteredNewCustomers = (int)$stmt->fetchColumn();
+} catch (Exception $e) {}
+
+// New users per day (customers vs sellers) for the last 7 days/current range
+$days = [];
+for ($i = 6; $i >= 0; $i--) { $days[] = date('Y-m-d', strtotime("-$i days")); }
+$newSellersByDay = array_fill(0, 7, 0);
+$newCustomersByDay = array_fill(0, 7, 0);
+try {
+    $q = "SELECT DATE(created_at) d, user_type, COUNT(*) c FROM users WHERE DATE(created_at) BETWEEN ? AND ? GROUP BY d, user_type";
+    $stmt = $pdo->prepare($q);
+    $stmt->execute([ $customStartDate, $customEndDate ]);
+    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+        $d = $row['d'];
+        $idx = array_search($d, $days);
+        if ($idx !== false) {
+            if ($row['user_type'] === 'seller') { $newSellersByDay[$idx] = (int)$row['c']; }
+            if ($row['user_type'] === 'customer') { $newCustomersByDay[$idx] = (int)$row['c']; }
+        }
     }
-    // Orders and revenue in date range
-    $orderDateCond = '';
-    $orderParams = [];
-    if ($filterFrom !== '' && $filterTo !== '') { $orderDateCond = " WHERE DATE(created_at) BETWEEN ? AND ?"; $orderParams = [$filterFrom, $filterTo]; }
-    elseif ($filterFrom !== '') { $orderDateCond = " WHERE DATE(created_at) >= ?"; $orderParams = [$filterFrom]; }
-    elseif ($filterTo !== '') { $orderDateCond = " WHERE DATE(created_at) <= ?"; $orderParams = [$filterTo]; }
+} catch (Exception $e) {}
 
-    $stmt = $pdo->prepare("SELECT COUNT(*) FROM orders" . $orderDateCond);
-    $stmt->execute($orderParams);
-    $filteredOrders = (int)$stmt->fetchColumn();
-
-    $revWhere = $orderDateCond === '' ? " WHERE status='delivered'" : $orderDateCond . " AND status='delivered'";
-    if ($orderDateCond === '') { $revParams = []; } else { $revParams = $orderParams; }
-    $stmt = $pdo->prepare("SELECT COALESCE(SUM(total_amount),0) FROM orders" . $revWhere);
-    $stmt->execute($revParams);
-    $filteredRevenue = (float)$stmt->fetchColumn();
-
-    // Products created in range
-    $prodDateCond = '';
-    $prodParams = [];
-    if ($filterFrom !== '' && $filterTo !== '') { $prodDateCond = " WHERE DATE(created_at) BETWEEN ? AND ?"; $prodParams = [$filterFrom, $filterTo]; }
-    elseif ($filterFrom !== '') { $prodDateCond = " WHERE DATE(created_at) >= ?"; $prodParams = [$filterFrom]; }
-    elseif ($filterTo !== '') { $prodDateCond = " WHERE DATE(created_at) <= ?"; $prodParams = [$filterTo]; }
-    $stmt = $pdo->prepare("SELECT COUNT(*) FROM products" . $prodDateCond);
-    $stmt->execute($prodParams);
-    $filteredProducts = (int)$stmt->fetchColumn();
-} catch (Exception $e) {
-    // fail safe: keep zeros
+switch($selectedPeriod) {
+    case 'weekly':
+        $chartLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+        $groupBy = 'DAYOFWEEK(created_at)';
+        break;
+    case 'monthly':
+        $chartLabels = ['Week 1', 'Week 2', 'Week 3', 'Week 4'];
+        $groupBy = 'WEEK(created_at, 1)';
+        break;
+    case '6months':
+        $chartLabels = ['Month 1', 'Month 2', 'Month 3', 'Month 4', 'Month 5', 'Month 6'];
+        $groupBy = 'DATE_FORMAT(created_at, "%Y-%m")';
+        break;
+    case 'yearly':
+        $chartLabels = ['Jan-Feb', 'Mar-Apr', 'May-Jun', 'Jul-Aug', 'Sep-Oct', 'Nov-Dec'];
+        $groupBy = 'FLOOR((MONTH(created_at) - 1) / 2)';
+        break;
+    default:
+        $chartLabels = ['Month 1', 'Month 2', 'Month 3', 'Month 4', 'Month 5', 'Month 6'];
+        $groupBy = 'DATE_FORMAT(created_at, "%Y-%m")';
 }
 
+// Get users data for chart
+$stmt = $pdo->prepare("SELECT 
+                          $groupBy as time_group,
+                          COUNT(*) as count
+                      FROM users 
+                      WHERE " . ($filterEntity === 'sellers' ? "user_type='seller'" : ($filterEntity === 'customers' ? "user_type='customer'" : "1=1")) . "
+                      AND $dateCondition
+                      GROUP BY time_group
+                      ORDER BY time_group ASC");
+$stmt->execute();
+$usersData = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// Add notification script function
-function addNotificationScript() {
-    echo "<script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Hide success messages after 4 seconds
-            var successMsg = document.querySelector('.success-message');
-            if (successMsg) {
-                setTimeout(function() {
-                    successMsg.style.display = 'none';
-                }, 4000);
-            }
-            
-            // Hide error messages after 4 seconds
-            var errorMsg = document.querySelector('.error-message');
-            if (errorMsg) {
-                setTimeout(function() {
-                    errorMsg.style.display = 'none';
-                }, 4000);
-            }
-        });
-    </script>";
+$usersDataPoints = array_fill(0, count($chartLabels), 0);
+if ($selectedPeriod === 'weekly') {
+    foreach ($usersData as $data) {
+        $index = ($data['time_group'] == 1) ? 6 : $data['time_group'] - 2;
+        if ($index >= 0 && $index < 7) {
+            $usersDataPoints[$index] = $data['count'];
+        }
+    }
+} else {
+    $idx = 0;
+    foreach ($usersData as $data) {
+        if ($idx < count($chartLabels)) {
+            $usersDataPoints[$idx] = $data['count'];
+            $idx++;
+        }
+    }
+}
+
+// Get revenue data for chart
+$stmt = $pdo->prepare("SELECT 
+                          $groupBy as time_group,
+                          COALESCE(SUM(total_amount), 0) as revenue
+                      FROM orders 
+                      WHERE status='delivered'
+                      AND $dateCondition
+                      GROUP BY time_group
+                      ORDER BY time_group ASC");
+$stmt->execute();
+$revenueData = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+$revenueDataPoints = array_fill(0, count($chartLabels), 0);
+if ($selectedPeriod === 'weekly') {
+    foreach ($revenueData as $data) {
+        $index = ($data['time_group'] == 1) ? 6 : $data['time_group'] - 2;
+        if ($index >= 0 && $index < 7) {
+            $revenueDataPoints[$index] = round($data['revenue'], 2);
+        }
+    }
+} else {
+    $idx = 0;
+    foreach ($revenueData as $data) {
+        if ($idx < count($chartLabels)) {
+            $revenueDataPoints[$idx] = round($data['revenue'], 2);
+            $idx++;
+        }
+    }
 }
 ?>
 
-<!-- Analytics Tabs + Filter -->
-<div class="container" style="max-width:1400px;margin:0 auto 30px;padding:0 20px;">
-  <div class="analytics-tabs">
-    <button class="tab-btn" data-target="customers" <?php echo $filterEntity==='customers'?'data-active="1"':''; ?>>CUSTOMER</button>
-    <button class="tab-btn" data-target="sellers" <?php echo $filterEntity==='sellers'?'data-active="1"':''; ?>>SELLER</button>
-    <a href="admin-dashboard.php" class="tab-close" title="Back to default">✕</a>
-  </div>
-  <div class="analytics-slider <?php echo $filterEntity==='sellers'?'slide-sellers':'slide-customers'; ?>">
-    <!-- Customers Pane -->
-    <div class="analytics-pane">
-      <div class="analytics-filter">
-        <form method="GET" action="admin-dashboard.php" class="analytics-form">
-          <input type="hidden" name="entity" value="customers">
-          <div class="row">
-            <div class="field">
-              <label>From</label>
-              <input type="date" name="from" value="<?php echo htmlspecialchars($filterFrom); ?>">
-            </div>
-            <div class="field">
-              <label>To</label>
-              <input type="date" name="to" value="<?php echo htmlspecialchars($filterTo); ?>">
-            </div>
-            <div class="actions">
-              <button type="submit" class="btn-apply"><i class="fas fa-filter"></i></button>
-              <a href="admin-dashboard.php?entity=customers" class="btn-clear" title="Clear"><i class="fas fa-times"></i></a>
-            </div>
-          </div>
-          <div class="quick-range">
-            <a href="admin-dashboard.php?entity=customers&from=<?php echo date('Y-m-d'); ?>&to=<?php echo date('Y-m-d'); ?>">Today</a>
-            <a href="admin-dashboard.php?entity=customers&from=<?php echo date('Y-m-d', strtotime('-6 days')); ?>&to=<?php echo date('Y-m-d'); ?>">Last 7 days</a>
-            <a href="admin-dashboard.php?entity=customers&from=<?php echo date('Y-m-d', strtotime('-29 days')); ?>&to=<?php echo date('Y-m-d'); ?>">Last 30 days</a>
-          </div>
-        </form>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Analytics</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script>
+        function openFormatModal() {
+            var m = document.getElementById('formatModal');
+            if (m) { m.style.display = 'flex'; }
+            // set excel link to current filters
+            var excel = document.getElementById('excelLink');
+            if (excel) {
+                var params = new URLSearchParams(window.location.search);
+                if (!params.get('period')) { params.set('period', '<?php echo $selectedPeriod; ?>'); }
+                if (!params.get('entity')) { params.set('entity', '<?php echo $filterEntity; ?>'); }
+                params.set('start_date', '<?php echo $customStartDate; ?>');
+                params.set('end_date', '<?php echo $customEndDate; ?>');
+                params.set('export', 'csv');
+                excel.href = 'admin-dashboard.php?' + params.toString();
+            }
+        }
+        function closeFormatModal() {
+            var m = document.getElementById('formatModal');
+            if (m) { m.style.display = 'none'; }
+        }
+        function exportPDF() {
+            alert('PDF export will be added next. For now, use Excel.');
+        }
+    </script>
+    
+    <style>
+        body {
+            background: #f8f9fa !important;
+            min-height: 100vh;
+            color: #130325 !important;
+            font-size: 14px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        }
 
+        /* Page Header (match other admin pages) */
+        .page-heading {
+            font-size: 32px;
+            font-weight: 700;
+            color: #130325;
+            margin: 0 0 8px 0;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-shadow: none !important;
+        }
+        .page-heading-title {
+            font-size: 32px;
+            font-weight: 700;
+            color: #130325;
+            margin-left: 0;
+            margin-bottom: 0;
+            text-shadow: none !important;
+        }
         
-      </div>
-    </div>
-
-    <!-- Sellers Pane -->
-    <div class="analytics-pane">
-      <div class="analytics-filter">
-        <form method="GET" action="admin-dashboard.php" class="analytics-form">
-          <input type="hidden" name="entity" value="sellers">
-          <div class="row">
-            <div class="field">
-              <label>From</label>
-              <input type="date" name="from" value="<?php echo htmlspecialchars($filterFrom); ?>">
-            </div>
-            <div class="field">
-              <label>To</label>
-              <input type="date" name="to" value="<?php echo htmlspecialchars($filterTo); ?>">
-            </div>
-            <div class="actions">
-              <button type="submit" class="btn-apply"><i class="fas fa-filter"></i></button>
-              <a href="admin-dashboard.php?entity=sellers" class="btn-clear" title="Clear"><i class="fas fa-times"></i></a>
-            </div>
-          </div>
-          <div class="quick-range">
-            <a href="admin-dashboard.php?entity=sellers&from=<?php echo date('Y-m-d'); ?>&to=<?php echo date('Y-m-d'); ?>">Today</a>
-            <a href="admin-dashboard.php?entity=sellers&from=<?php echo date('Y-m-d', strtotime('-6 days')); ?>&to=<?php echo date('Y-m-d'); ?>">Last 7 days</a>
-            <a href="admin-dashboard.php?entity=sellers&from=<?php echo date('Y-m-d', strtotime('-29 days')); ?>&to=<?php echo date('Y-m-d'); ?>">Last 30 days</a>
-          </div>
-        </form>
-
+        .dashboard-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
         
-      </div>
-    </div>
-  </div>
-</div>
-<!-- Edit Category Modal -->
-<div id="editCategoryModal" class="modal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.3);z-index:9999;align-items:center;justify-content:center;">
-  <div class="modal-content" style="background:#fff;padding:32px 28px;border-radius:14px;max-width:400px;margin:auto;box-shadow:0 4px 16px rgba(44,62,80,0.18);position:relative;">
-    <span class="close" onclick="closeEditModal()" style="position:absolute;top:12px;right:18px;font-size:22px;cursor:pointer;">&times;</span>
-    <h3>Edit Category</h3>
-    <form method="POST" action="">
-      <input type="hidden" id="edit_category_id" name="category_id">
-      
-      <div class="form-group">
-        <label for="edit_name">Category Name: <span style="color: #d32f2f;">*</span></label>
-        <input type="text" id="edit_name" name="name" required placeholder="Enter category name">
-      </div>
-      
-      <div class="form-group">
-        <label for="edit_parent_id">Parent Category (Optional):</label>
-        <select id="edit_parent_id" name="parent_id">
-          <option value="">-- None (Top-Level Category) --</option>
-          <?php foreach ($parentCategories as $parent): ?>
-            <option value="<?php echo $parent['id']; ?>">
-              <?php echo htmlspecialchars($parent['name']); ?>
-            </option>
-          <?php endforeach; ?>
-        </select>
-        <small class="form-help">Leave as "None" to make it a main category</small>
-      </div>
-      
-      <button type="submit" name="update_category" class="btn-primary">Update Category</button>
-    </form>
-  </div>
-</div>
+        /* Analytics Tabs */
+        .analytics-tabs {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 40px;
+            max-width: 700px;
+            margin: 0 auto 12px;
+            position: relative;
+            background: #ffffff;
+            padding: 12px 18px;
+            border-radius: 12px;
+            box-shadow: none;
+            border: 2px solid #f0f2f5;
+        }
+        
+        .tab-btn {
+            background: transparent;
+            border: none;
+            color: #130325;
+            padding: 8px 16px;
+            cursor: pointer;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            font-size: 14px;
+            line-height: 1;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+        }
+        
+        .tab-btn:hover {
+            background: rgba(255, 215, 54, 0.1);
+            color: #FFD736;
+        }
+        
+        .tab-btn[data-active="1"] {
+            background: linear-gradient(135deg, #FFD736 0%, #FFC107 100%);
+            color: #130325;
+            box-shadow: none;
+        }
+        
+        .tab-close {
+            position: absolute;
+            right: 10px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            height: 28px;
+            width: 28px;
+            border-radius: 6px;
+            background: #ffffff;
+            color: #dc3545;
+            border: 2px solid #dc3545;
+            font-size: 14px;
+            font-weight: 700;
+            transition: all 0.2s ease;
+        }
+        
+        .tab-close:hover {
+            background: #dc3545;
+            color: #ffffff;
+            transform: scale(1.05);
+        }
+        
+        /* Filter Container */
+        .analytics-filter {
+            background: #ffffff;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 6px 10px;
+            box-shadow: none;
+            margin-bottom: 14px;
+            position: relative;
+            z-index: 1;
+        }
+        .csv-export-btn, .import-btn {
+            position: absolute;
+            right: 10px;
+            top: 8px;
+            color: #130325;
+            text-decoration: none;
+            background: transparent;
+            border: none;
+            font-size: 18px;
+            line-height: 1;
+        }
+        .csv-export-btn:hover, .import-btn:hover { color: #FFD736; }
 
-<!-- Delete Category Modal -->
-<div id="deleteCategoryModal" class="modal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.3);z-index:9999;align-items:center;justify-content:center;">
-  <div class="modal-content" style="background:#fff;padding:32px 28px;border-radius:14px;max-width:400px;margin:auto;box-shadow:0 4px 16px rgba(44,62,80,0.18);position:relative;">
-    <span class="close" onclick="closeDeleteModal()" style="position:absolute;top:12px;right:18px;font-size:22px;cursor:pointer;">&times;</span>
-    <h3>Delete Category</h3>
-    <form id="deleteCategoryForm" method="GET" action="admin-dashboard.php">
-      <input type="hidden" name="delete_category" id="delete_category_id">
-      <p id="deleteCategoryName" style="margin-bottom:18px;"></p>
-      <button type="submit" class="btn" style="background:#d32f2f;">Delete</button>
-      <button type="button" class="btn" onclick="closeDeleteModal()" style="margin-left:10px;background:#888;">Cancel</button>
-    </form>
-  </div>
-</div>
+        /* Import/Export Modal */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.35); display: none; align-items: center; justify-content: center; z-index: 9999; }
+        .modal-dialog { width: 360px; max-width: 90vw; background: #ffffff; border: 2px solid #e5e7eb; border-radius: 12px; }
+        .modal-header { padding: 8px 12px; background: #130325; color: #F9F9F9; border-bottom: 2px solid #FFD736; display: flex; align-items: center; justify-content: space-between; border-radius: 12px 12px 0 0; }
+        .modal-title { font-size: 12px; font-weight: 800; letter-spacing: .3px; }
+        .modal-close { background: transparent; border: none; color: #F9F9F9; font-size: 16px; line-height: 1; cursor: pointer; }
+        .modal-body { padding: 12px; color: #130325; font-size: 13px; }
+        .modal-actions { display: flex; gap: 8px; justify-content: flex-end; padding: 0 12px 12px 12px; }
+        .btn-outline { background: #ffffff; color: #130325; border: 2px solid #e5e7eb; border-radius: 8px; padding: 6px 10px; font-weight: 700; font-size: 12px; }
+        .btn-primary-y { background: linear-gradient(135deg, #FFD736 0%, #FFC107 100%); color: #130325; border: 2px solid #FFD736; border-radius: 8px; padding: 6px 10px; font-weight: 700; font-size: 12px; }
+        
+        .analytics-filter::before { content: none; }
+        
+        .filter-row {
+            display: flex;
+            align-items: flex-end;
+            gap: 6px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        
+        .filter-field {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        
+        .filter-field label {
+            font-size: 10px;
+            font-weight: 600;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+        
+        .filter-field input[type="date"],
+        .filter-field select {
+            background: #f9fafb;
+            color: #130325;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 4px 8px;
+            font-size: 12px;
+            height: 28px;
+            min-width: 116px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+        
+        .filter-field input:focus,
+        .filter-field select:focus {
+            outline: none;
+            border-color: #FFD736;
+            box-shadow: 0 0 0 3px rgba(255, 215, 54, 0.1);
+            background: #ffffff;
+        }
+        
+        .filter-actions {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .btn-apply {
+            background: linear-gradient(135deg, #FFD736 0%, #FFC107 100%);
+            color: #130325;
+            border: 2px solid #FFD736;
+            height: 28px;
+            width: 28px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s ease;
+            box-shadow: none;
+        }
+        
+        .btn-apply:hover { transform: none; box-shadow: none; }
+        
+        .btn-clear {
+            background: #ffffff;
+            color: #6b7280;
+            border: 2px solid #e5e7eb;
+            height: 28px;
+            width: 28px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 12px;
+            transition: all 0.2s ease;
+            box-shadow: none;
+        }
+        .btn-clear:hover { background: #f3f4f6; border-color: #d1d5db; box-shadow: none; transform: none; }
+        
+        .quick-range {
+            display: flex;
+            gap: 6px;
+            margin-top: 6px;
+            justify-content: center;
+            padding-top: 6px;
+            border-top: none;
+        }
+        
+        .quick-range a {
+            color: #130325;
+            text-decoration: none;
+            font-weight: 600;
+            border: 1px solid #e5e7eb;
+            padding: 4px 9px;
+            border-radius: 6px;
+            background: #f9fafb;
+            font-size: 10px;
+            transition: all 0.2s ease;
+        }
+        
+        .quick-range a:hover {
+            background: #FFD736;
+            border-color: #FFD736;
+            color: #130325;
+            transform: translateY(-1px);
+        }
+        
+        .period-badge {
+            background: rgba(255, 215, 54, 0.15);
+            border: 1px solid #FFD736;
+            color: #130325;
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-size: 10px;
+            font-weight: 600;
+            display: inline-block;
+        }
+        
+        /* Stats Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-card {
+            background: #ffffff;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 16px 14px;
+            text-align: center;
+            box-shadow: none;
+            transition: none;
+            min-height: 100px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        .stat-icon { font-size: 18px; }
+        .icon-green { color: #22c55e; }
+        .icon-blue { color: #3b82f6; }
+        .icon-purple { color: #8b5cf6; }
+        .icon-orange { color: #f59e0b; }
+        .icon-yellow { color: #eab308; }
+        
+        .stat-card:hover { border-color: #FFD736; }
+        
+        .stat-card h3 {
+            color: #6b7280;
+            font-size: 11px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .stat-card .value {
+            color: #130325;
+            font-size: 22px;
+            font-weight: 800;
+            margin: 0;
+        }
+        
+        /* Charts */
+        .chart-container {
+            background: #ffffff;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 18px;
+            box-shadow: none;
+            margin-bottom: 20px;
+        }
+        
+        .chart-container h2 {
+            font-size: 16px;
+            font-weight: 700;
+            margin: 0 0 16px 0;
+            color: #130325;
+        }
+        
+        .chart-wrapper {
+            height: 300px;
+            position: relative;
+        }
+        
+        @media (max-width: 768px) {
+            .analytics-tabs {
+                gap: 30px;
+                padding: 12px 16px;
+            }
+            
+            .tab-btn {
+                font-size: 11px;
+                padding: 6px 14px;
+            }
+            
+            .analytics-filter {
+                padding: 14px 16px;
+            }
+            
+            .filter-row {
+                gap: 8px;
+            }
+            
+            .filter-field input,
+            .filter-field select {
+                min-width: 110px;
+                font-size: 11px;
+                padding: 6px 9px;
+                height: 30px;
+            }
+            
+            .btn-apply,
+            .btn-clear {
+                height: 30px;
+                width: 30px;
+                font-size: 11px;
+            }
+            
+            .quick-range a {
+                font-size: 9px;
+                padding: 4px 9px;
+            }
+            
+            .stats-grid { grid-template-columns: 1fr; gap: 12px; }
+            
+            .stat-card {
+                min-height: 80px;
+                padding: 14px 12px;
+            }
+            
+            .stat-card h3 {
+                font-size: 10px;
+            }
+            
+            .stat-card .value {
+                font-size: 20px;
+            }
+        }
+    </style>
+</head>
 
-<?php if (isset($success)): ?>
-    <div class="success-message"><?php echo $success; ?></div>
-<?php endif; ?>
+<body>
+    <div class="dashboard-container">
+        <h1 class="page-heading">
+            <span class="page-heading-title">Admin Dashboard</span>
+        </h1>
 
-<?php if (isset($error)): ?>
-    <div class="error-message"><?php echo $error; ?></div>
-<?php endif; ?>
-
-<div class="stats">
-    <div class="stat-card">
-        <h3><?php echo $filterEntity==='customers' ? 'New Customers' : ($filterEntity==='sellers' ? 'New Sellers' : 'New Users'); ?></h3>
-        <p><?php echo $filterEntity==='customers' ? $filteredNewCustomers : ($filterEntity==='sellers' ? $filteredNewSellers : $filteredNewSellers + $filteredNewCustomers); ?></p>
-    </div>
-    <?php if ($filterEntity !== 'customers'): ?>
-    <div class="stat-card">
-        <h3>Products</h3>
-        <p><?php echo $filteredProducts; ?></p>
-    </div>
-    <?php endif; ?>
-    <div class="stat-card">
-        <h3>Orders</h3>
-        <p><?php echo $filteredOrders; ?></p>
-    </div>
-    <?php if ($filterEntity !== 'customers'): ?>
-    <div class="stat-card">
-        <h3>Revenue</h3>
-        <p>₱<?php echo number_format($filteredRevenue, 2); ?></p>
-    </div>
-    <div class="stat-card">
-        <h3>Pending Sellers</h3>
-        <p><?php echo $pendingSellers; ?></p>
-    </div>
-    <div class="stat-card">
-        <h3>Pending Products</h3>
-        <p><?php echo $pendingProducts; ?></p>
-    </div>
-    <div class="stat-card">
-        <h3>Active Sellers</h3>
-        <p><?php 
-        $stmt = $pdo->prepare("SELECT COUNT(*) as total FROM users WHERE user_type = 'seller' AND seller_status = 'approved'");
-        $stmt->execute();
-        $activeSellers = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
-        echo $activeSellers; 
-        ?></p>
-    </div>
-    <div class="stat-card">
-        <h3>Active Products</h3>
-        <p><?php 
-        $stmt = $pdo->prepare("SELECT COUNT(*) as total FROM products WHERE status = 'active'");
-        $stmt->execute();
-        $activeProducts = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
-        echo $activeProducts; 
-        ?></p>
-    </div>
-    <?php endif; ?>
-    <div class="stat-card">
-        <h3>Completed Orders</h3>
-        <p><?php 
-        $stmt = $pdo->prepare("SELECT COUNT(*) as total FROM orders WHERE status = 'delivered'");
-        $stmt->execute();
-        $completedOrders = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
-        echo $completedOrders; 
-        ?></p>
-    </div>
-</div>
-
-
-
-<div class="admin-sections">
-    <!-- CATEGORY MANAGEMENT SECTION -->
-    <div class="section category-management-section">
-        <!-- <h2>Category Management</h2> -->
-        <!-- <p class="section-description">Manage global product categories available to all sellers</p>
-         -->
-
-<!-- <div class="add-category-form">
-    <h3>Add New Category</h3>
-    <form method="POST" action="">
-        <div class="form-group">
-            <label for="name">Category Name: <span style="color: #d32f2f;">*</span></label>
-            <input type="text" id="name" name="name" required placeholder="Enter category name">
+        <!-- Filter Container -->
+        <div class="analytics-filter" data-aos="fade-up">
+            <button type="button" class="import-btn" title="Export/Import Options" onclick="openFormatModal()">
+                <i class="fas fa-file-export" aria-hidden="true"></i>
+            </button>
+            <div class="analytics-tabs" style="margin: 0 auto; border: none; box-shadow: none; padding: 8px 40px 8px 0; gap: 24px; justify-content: center; width: 100%;">
+                <button class="tab-btn" data-target="all" <?php echo $filterEntity==='all'?'data-active="1"':''; ?>>ALL</button>
+                <button class="tab-btn" data-target="customers" <?php echo $filterEntity==='customers'?'data-active="1"':''; ?>>CUSTOMERS</button>
+                <button class="tab-btn" data-target="sellers" <?php echo $filterEntity==='sellers'?'data-active="1"':''; ?>>SELLERS</button>
+            </div>
+            <form method="GET" action="admin-dashboard.php">
+                <input type="hidden" name="entity" value="<?php echo $filterEntity; ?>">
+                <div class="filter-row">
+                    <div class="filter-field">
+                        <label>From</label>
+                        <input type="date" name="start_date" value="<?php echo $customStartDate; ?>">
+                    </div>
+                    <div class="filter-field">
+                        <label>To</label>
+                        <input type="date" name="end_date" value="<?php echo $customEndDate; ?>">
+                    </div>
+                    <div class="filter-field">
+                        <label>Period</label>
+                        <select name="period" onchange="if(this.value!='custom') this.form.submit();">
+                            <option value="weekly" <?php echo $selectedPeriod==='weekly'?'selected':''; ?>>Last 7 Days</option>
+                            <option value="monthly" <?php echo $selectedPeriod==='monthly'?'selected':''; ?>>Last Month</option>
+                            <option value="6months" <?php echo $selectedPeriod==='6months'?'selected':''; ?>>Last 6 Months</option>
+                            <option value="yearly" <?php echo $selectedPeriod==='yearly'?'selected':''; ?>>Last Year</option>
+                            <option value="custom" <?php echo $selectedPeriod==='custom'?'selected':''; ?>>Custom</option>
+                        </select>
+                    </div>
+                    <div class="filter-actions">
+                        <button type="submit" class="btn-apply"><i class="fas fa-filter"></i></button>
+                        <a href="admin-dashboard.php?entity=<?php echo $filterEntity; ?>" class="btn-clear" title="Clear"><i class="fas fa-times"></i></a>
+                    </div>
+                </div>
+                <div class="quick-range">
+                    <a href="?entity=<?php echo $filterEntity; ?>&period=weekly">Today</a>
+                    <a href="?entity=<?php echo $filterEntity; ?>&period=weekly">Last 7 days</a>
+                    <a href="?entity=<?php echo $filterEntity; ?>&period=monthly">Last 30 days</a>
+                </div>
+            </form>
+            <div style="text-align: center; margin-top: 8px;">
+                <span class="period-badge"><?php echo $periodLabels[$selectedPeriod]; ?></span>
+            </div>
         </div>
-        
-        <div class="form-group">
-            <label for="parent_id">Parent Category (Optional):</label>
-            <select id="parent_id" name="parent_id">
-                <option value="">-- None (Top-Level Category) --</option>
-                <?php foreach ($parentCategories as $parent): ?>
-                    <option value="<?php echo $parent['id']; ?>">
-                        <?php echo htmlspecialchars($parent['name']); ?>
-                    </option>
-                <?php endforeach; ?>
-            </select>
-            <small class="form-help">Leave as "None" to create a main category, or select a parent to create a subcategory</small>
+
+        <!-- Format Modal -->
+        <div id="formatModal" class="modal-overlay" role="dialog" aria-modal="true" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-header">
+                    <div class="modal-title">Choose Format</div>
+                    <button class="modal-close" aria-label="Close" onclick="closeFormatModal()">×</button>
+                </div>
+                <div class="modal-body">
+                    Select how you want to export the current analytics.
+                </div>
+                <div class="modal-actions">
+                    <button class="btn-outline" onclick="exportPDF()"><i class="fas fa-file-pdf"></i>&nbsp; PDF</button>
+                    <a id="excelLink" class="btn-primary-y" href="#"><i class="fas fa-file-excel"></i>&nbsp; Excel</a>
+                </div>
+            </div>
         </div>
-        
-        <button type="submit" name="add_category" class="btn-primary">Add Category</button>
-    </form>
-</div> -->
 
-<!-- <div class="categories-list">
-    <h3>All Platform Categories</h3>
-    <?php if (empty($categories)): ?>
-        <p>No categories found. Add your first category above.</p>
-    <?php else: ?>
-        <div class="categories-table-wrapper">
-            <table class="categories-table">
-            <thead>
-                <tr>
-                    <th>Name</th>
-                    <th>Parent Category</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php 
-                $groupedCategories = [];
-                foreach ($categories as $category) {
-                    $parentId = $category['parent_id'] ? $category['parent_id'] : 0;
-                    $groupedCategories[$parentId][] = $category;
-                }
-                
-             function displayCategories($categories, $parentId = 0, $level = 0) {
-                if (!isset($categories[$parentId])) return;
-                foreach ($categories[$parentId] as $category) {
-                    $indent = str_repeat('&nbsp;&nbsp;&nbsp;&nbsp;', $level);
-                    $hasChildren = isset($categories[$category['id']]) && !empty($categories[$category['id']]);
-                    
-                    echo '<tr>';
-                    echo '<td>' . $indent . htmlspecialchars($category['name']) . '</td>';
-                    echo '<td>' . htmlspecialchars($category['parent_name'] ?: 'None') . '</td>';
-                    echo '<td class="action-links">';
+        <!-- Stats Grid -->
+        <div class="stats-grid" data-aos="fade-up" data-aos-delay="100">
+            <div class="stat-card">
+                <h3><i class="fas fa-user-plus stat-icon icon-blue"></i><?php echo $filterEntity==='customers' ? 'New Customers' : ($filterEntity==='sellers' ? 'New Sellers' : 'New Users'); ?></h3>
+                <div class="value"><?php echo $filterEntity==='customers' ? $filteredNewCustomers : ($filterEntity==='sellers' ? $filteredNewSellers : $filteredNewSellers + $filteredNewCustomers); ?></div>
+            </div>
+            
+            <?php if ($filterEntity !== 'customers'): ?>
+            <div class="stat-card">
+                <h3><i class="fas fa-box stat-icon icon-purple"></i>Products</h3>
+                <div class="value"><?php echo $filteredProducts; ?></div>
+            </div>
+            <?php endif; ?>
+            
+            <div class="stat-card">
+                <h3><i class="fas fa-shopping-cart stat-icon icon-blue"></i>Orders</h3>
+                <div class="value"><?php echo $filteredOrders; ?></div>
+            </div>
+            
+            <?php if ($filterEntity !== 'customers'): ?>
+            <div class="stat-card">
+                <h3><i class="fas fa-money-bill-wave stat-icon icon-green"></i>Revenue</h3>
+                <div class="value">₱<?php echo number_format($filteredRevenue, 2); ?></div>
+            </div>
+            
+            <div class="stat-card">
+                <h3><i class="fas fa-user-clock stat-icon icon-orange"></i>Pending Sellers</h3>
+                <div class="value"><?php echo $pendingSellers; ?></div>
+            </div>
+            
+            <div class="stat-card">
+                <h3><i class="fas fa-box-open stat-icon icon-yellow"></i>Pending Products</h3>
+                <div class="value"><?php echo $pendingProducts; ?></div>
+            </div>
+            
+            <div class="stat-card">
+                <h3><i class="fas fa-store stat-icon icon-green"></i>Active Sellers</h3>
+                <div class="value"><?php echo $activeSellers; ?></div>
+            </div>
+            
+            <div class="stat-card">
+                <h3><i class="fas fa-boxes-stacked stat-icon icon-purple"></i>Active Products</h3>
+                <div class="value"><?php echo $activeProducts; ?></div>
+            </div>
+            <?php endif; ?>
+            
+            <div class="stat-card">
+                <h3><i class="fas fa-check stat-icon icon-blue"></i>Completed Orders</h3>
+                <div class="value"><?php echo $completedOrders; ?></div>
+            </div>
+        </div>
 
-                echo '<a href="#" class="edit-link" style="color:#1976d2;font-weight:600;padding:4px 10px;border-radius:5px;background:#e3eafc;margin-right:6px;transition:background 0.2s;" onclick="openEditModal(' . $category['id'] . ', \'' . addslashes($category['name']) . '\', ' . ($category['parent_id'] ? $category['parent_id'] : 'null') . '); return false;">Edit</a>';
-                        if ($hasChildren) {
-                            echo '<a href="#" class="delete-link disabled" style="color:#999;font-weight:600;padding:4px 10px;border-radius:5px;background:#f5f5f5;cursor:not-allowed;" title="Cannot delete category with subcategories">Delete</a>';
-                        } else {
-                            echo '<a href="#" class="delete-link" style="color:#d32f2f;font-weight:600;padding:4px 10px;border-radius:5px;background:#fdeaea;transition:background 0.2s;" onclick="openDeleteModal(' . $category['id'] . ', \'' . addslashes($category['name']) . '\'); return false;">Delete</a>';
-                        }
-                    
-                    echo '</td>';
-                    echo '</tr>';
-                    displayCategories($categories, $category['id'], $level + 1);
+        <!-- Charts Section -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(500px, 1fr)); gap: 24px;">
+            <div class="chart-container" data-aos="fade-up" data-aos-delay="200">
+                <h2>
+                    <?php echo $filterEntity==='customers' ? 'Customers' : ($filterEntity==='sellers' ? 'Sellers' : 'Users'); ?> Growth
+                    <span class="period-badge" style="margin-left: 10px;"><?php echo $periodLabels[$selectedPeriod]; ?></span>
+                </h2>
+                <div class="chart-wrapper">
+                    <canvas id="usersChart"></canvas>
+                </div>
+            </div>
+            
+            <div class="chart-container" data-aos="fade-up" data-aos-delay="300">
+                <h2>
+                    Revenue Trend
+                    <span class="period-badge" style="margin-left: 10px;"><?php echo $periodLabels[$selectedPeriod]; ?></span>
+                </h2>
+                <div class="chart-wrapper">
+                    <canvas id="revenueChart"></canvas>
+                </div>
+            </div>
+            <div class="chart-container" data-aos="fade-up" data-aos-delay="320">
+                <h2>Orders by Status</h2>
+                <div class="chart-wrapper" style="height: 260px;">
+                    <canvas id="ordersStatusChart"></canvas>
+                </div>
+            </div>
+            <div class="chart-container" data-aos="fade-up" data-aos-delay="340">
+                <h2>New Users (7-day)</h2>
+                <div class="chart-wrapper" style="height: 260px;">
+                    <canvas id="newUsersChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Initialize AOS
+        AOS.init({
+            duration: 600,
+            easing: 'ease-in-out',
+            once: true
+        });
+
+        // Chart.js configuration
+        Chart.defaults.color = '#130325';
+        Chart.defaults.borderColor = 'rgba(0, 0, 0, 0.1)';
+
+        // Users Chart
+        const usersCtx = document.getElementById('usersChart').getContext('2d');
+        const usersChart = new Chart(usersCtx, {
+            type: 'line',
+            data: {
+                labels: <?php echo json_encode($chartLabels); ?>,
+                datasets: [{
+                    label: '<?php echo $filterEntity==='customers' ? 'Customers' : ($filterEntity==='sellers' ? 'Sellers' : 'Users'); ?>',
+                    data: <?php echo json_encode($usersDataPoints); ?>,
+                    borderColor: 'rgb(59, 130, 246)',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    tension: 0.4,
+                    fill: true,
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: { font: { size: 11 } }
+                    },
+                    x: {
+                        ticks: { font: { size: 11 } }
+                    }
                 }
             }
+        });
+
+        // Revenue Chart
+        const revenueCtx = document.getElementById('revenueChart').getContext('2d');
+        const revenueChart = new Chart(revenueCtx, {
+            type: 'bar',
+            data: {
+                labels: <?php echo json_encode($chartLabels); ?>,
+                datasets: [{
+                    label: 'Revenue (₱)',
+                    data: <?php echo json_encode($revenueDataPoints); ?>,
+                    backgroundColor: 'rgba(34, 197, 94, 0.8)',
+                    borderColor: 'rgb(34, 197, 94)',
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return '₱' + context.parsed.y.toFixed(2);
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            font: { size: 11 },
+                            callback: function(value) {
+                                return '₱' + value.toFixed(0);
+                            }
+                        }
+                    },
+                    x: {
+                        ticks: { font: { size: 11 } }
+                    }
+                }
+            }
+        });
+
+        // Orders by Status (Doughnut)
+        const ordersStatusCanvas = document.getElementById('ordersStatusChart');
+        if (ordersStatusCanvas) {
+            const ordersStatusCtx = ordersStatusCanvas.getContext('2d');
+            const ordersStatusChart = new Chart(ordersStatusCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Pending', 'Processing', 'Delivered', 'Cancelled'],
+                    datasets: [{
+                        data: <?php echo json_encode(array_values($ordersByStatus)); ?>,
+                        backgroundColor: ['#f59e0b', '#3b82f6', '#22c55e', '#ef4444'],
+                        borderWidth: 2,
+                        borderColor: '#ffffff'
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+            });
+        }
+
+        // New Users (7-day) stacked line
+        const newUsersCanvas = document.getElementById('newUsersChart');
+        if (newUsersCanvas) {
+            const newUsersCtx = newUsersCanvas.getContext('2d');
+            const newUsersChart = new Chart(newUsersCtx, {
+                type: 'line',
+                data: {
+                    labels: <?php echo json_encode(array_map(function($d){ return date('M j', strtotime($d)); }, $days)); ?>,
+                    datasets: [
+                        { label: 'Sellers', data: <?php echo json_encode($newSellersByDay); ?>, borderColor: '#8b5cf6', backgroundColor: 'rgba(139, 92, 246, 0.15)', tension: 0.35, fill: true, borderWidth: 2 },
+                        { label: 'Customers', data: <?php echo json_encode($newCustomersByDay); ?>, borderColor: '#3b82f6', backgroundColor: 'rgba(59, 130, 246, 0.15)', tension: 0.35, fill: true, borderWidth: 2 }
+                    ]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } }, scales: { y: { beginAtZero: true } } }
+            });
+        }
+
+        // Tab switching functionality
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const target = btn.getAttribute('data-target');
+                const url = new URL(window.location.href);
+                url.searchParams.set('entity', target);
+                // Keep current period
+                const currentPeriod = '<?php echo $selectedPeriod; ?>';
+                url.searchParams.set('period', currentPeriod);
                 
-                displayCategories($groupedCategories);
-                ?>
-            </tbody>
-        </table>
-    <?php endif; ?>
-</div> -->
-    </div>
-    
+                <?php if (!empty($customStartDate) && !empty($customEndDate)): ?>
+                url.searchParams.set('start_date', '<?php echo $customStartDate; ?>');
+                url.searchParams.set('end_date', '<?php echo $customEndDate; ?>');
+                <?php endif; ?>
+                
+                window.location.href = url.toString();
+            });
+        });
 
-   
+        // Period selector change
+        const periodSelect = document.querySelector('select[name="period"]');
+        if (periodSelect) {
+            periodSelect.addEventListener('change', function() {
+                if (this.value !== 'custom') {
+                    this.form.submit();
+                }
+            });
+        }
 
-    <?php if (empty($pendingProductsList)): ?>
-        <!-- <p>No pending product approvals.</p> -->
-    <?php else: ?>
-        <div class="section">
-            <h2>Pending Product Approvals</h2>
-            <p>Products waiting for admin approval</p>
-        </div>
-        <table>
-                <thead>
-                    <tr>
-                        <th>Product</th>
-                        <th>Seller</th>
-                        <th>Price</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach ($pendingProductsList as $product): ?>
-                        <tr>
-                            <td><?php echo htmlspecialchars($product['name']); ?></td>
-                            <td><?php echo htmlspecialchars($product['first_name'] . ' ' . $product['last_name']); ?></td>
-                            <td>₱<?php echo number_format($product['price'], 2); ?></td>
-                            <td>
-                                <a href="admin-products.php?action=approve&id=<?php echo $product['id']; ?>">Approve</a>
-                                <a href="admin-products.php?action=reject&id=<?php echo $product['id']; ?>">Reject</a>
-                            </td>
-                        </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
-            <a href="admin-products.php">View All Pending Products</a>
-        <?php endif; ?>
-    </div>
-</div>
-
-<!-- SETTINGS SECTION -->
-<div class="page-header" style="margin-top: 50px;">
-    <h1>System Settings</h1>
-</div>
-
-<div class="settings-container">
-    <form method="POST" action="">
-        <div class="setting-group">
-            <h3>Order Grace Period</h3>
-            <label for="grace_period">Customer Cancellation Grace Period:</label>
+        // Hover effects for stat cards
+        document.querySelectorAll('.stat-card').forEach(card => {
+            card.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateY(-6px) scale(1.02)';
+            });
             
-            <div class="input-group">
-                <input type="number" 
-                       id="grace_period" 
-                       name="grace_period" 
-                       value="<?php echo $currentGracePeriod; ?>" 
-                       min="1" 
-                       max="60" 
-                       required>
-                <span class="input-suffix">minutes</span>
-            </div>
-            
-            <div class="current-value">
-                <strong>Current Setting:</strong> <?php echo $currentGracePeriod; ?> minutes
-            </div>
-            
-            <div class="setting-description">
-                This is the time period after an order is placed during which:
-                <ul>
-                    <li>Customers have priority to cancel their orders</li>
-                    <li>Sellers cannot process orders (orders remain in "pending" status)</li>
-                    <li>This protects customers from immediate processing and allows cancellation flexibility</li>
-                </ul>
-            </div>
-            
-            <div class="warning-box">
-                <strong>Important:</strong> Changing this setting will affect all new orders going forward. 
-                Existing orders will continue to use the grace period that was active when they were placed.
-            </div>
-        </div>
-        
-        <button type="submit" name="update_settings" class="btn">Update Settings</button>
-    </form>
-    
-    <div class="setting-group" style="margin-top: 30px;">
-        <h3>How Grace Period Works</h3>
-        <div class="setting-description">
-            <ol>
-                <li><strong>Order Placed:</strong> Customer places an order (status: "pending")</li>
-                <li><strong>Grace Period Active:</strong> For the set duration, sellers cannot process the order</li>
-                <li><strong>Customer Priority:</strong> During this time, customers can cancel without seller intervention</li>
-                <li><strong>Grace Period Ends:</strong> Sellers can now process the order (change to "processing")</li>
-                <li><strong>Order Locked:</strong> Once processing starts, customer cancellation requires seller approval</li>
-            </ol>
-        </div>
-    </div>
-</div>
-
-<style>
-/* ===== IMPROVED ADMIN DASHBOARD - WHITE THEME ===== */
-
-/* Analytics Filter Container */
-.analytics-tabs {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 80px;
-    max-width: 800px;
-    margin: 0 auto 20px;
-    position: relative;
-    background: #ffffff;
-    padding: 16px 24px;
-    border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-    border: 2px solid #f0f2f5;
-}
-
-.tab-btn {
-    background: transparent;
-    border: none;
-    color: #130325;
-    padding: 8px 20px;
-    cursor: pointer;
-    font-weight: 700;
-    letter-spacing: 0.5px;
-    font-size: 14px;
-    line-height: 1;
-    border-radius: 8px;
-    transition: all 0.2s ease;
-}
-
-.tab-btn:hover {
-    background: rgba(255, 215, 54, 0.1);
-    color: #FFD736;
-}
-
-.tab-btn[data-active="1"] {
-    background: linear-gradient(135deg, #FFD736 0%, #FFC107 100%);
-    color: #130325;
-    box-shadow: 0 2px 8px rgba(255, 215, 54, 0.3);
-}
-
-.tab-close {
-    position: absolute;
-    right: 12px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    text-decoration: none;
-    height: 32px;
-    width: 32px;
-    border-radius: 8px;
-    background: #ffffff;
-    color: #dc3545;
-    border: 2px solid #dc3545;
-    font-size: 16px;
-    font-weight: 700;
-    transition: all 0.2s ease;
-}
-
-.tab-close:hover {
-    background: #dc3545;
-    color: #ffffff;
-    transform: scale(1.05);
-}
-
-/* Analytics Filter - COMPACT WHITE DESIGN */
-.analytics-filter {
-    background: #ffffff;
-    border: 2px solid #e5e7eb;
-    border-radius: 12px;
-    padding: 20px 24px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-    color: #130325;
-    width: 100%;
-    max-width: none;
-    margin: 0 auto;
-}
-
-.analytics-filter::before {
-    content: 'FILTER BY DATE RANGE';
-    display: block;
-    font-size: 11px;
-    font-weight: 700;
-    color: #6b7280;
-    text-align: center;
-    margin-bottom: 16px;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-}
-
-.analytics-form .row {
-    display: flex;
-    align-items: flex-end;
-    gap: 10px;
-    flex-wrap: wrap;
-    justify-content: center;
-}
-
-.analytics-form .field {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-}
-
-.analytics-form label {
-    font-size: 11px;
-    font-weight: 600;
-    color: #6b7280;
-    text-transform: uppercase;
-    letter-spacing: 0.3px;
-}
-
-.analytics-form input[type="date"],
-.analytics-form select {
-    background: #f9fafb;
-    color: #130325;
-    border: 2px solid #e5e7eb;
-    border-radius: 8px;
-    padding: 8px 12px;
-    font-size: 13px;
-    height: 36px;
-    min-width: 140px;
-    font-weight: 500;
-    transition: all 0.2s ease;
-}
-
-.analytics-form input[type="date"]:focus,
-.analytics-form select:focus {
-    outline: none;
-    border-color: #FFD736;
-    box-shadow: 0 0 0 3px rgba(255, 215, 54, 0.1);
-    background: #ffffff;
-}
-
-.analytics-form .actions {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-}
-
-.btn-apply {
-    background: linear-gradient(135deg, #FFD736 0%, #FFC107 100%);
-    color: #130325;
-    border: 2px solid #FFD736;
-    height: 36px;
-    width: 36px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 8px;
-    cursor: pointer;
-    font-size: 14px;
-    transition: all 0.2s ease;
-    box-shadow: 0 2px 6px rgba(255, 215, 54, 0.2);
-}
-
-.btn-apply:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 10px rgba(255, 215, 54, 0.3);
-}
-
-.btn-clear {
-    background: #ffffff;
-    color: #6b7280;
-    border: 2px solid #e5e7eb;
-    height: 36px;
-    width: 36px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 8px;
-    text-decoration: none;
-    font-weight: 700;
-    font-size: 14px;
-    transition: all 0.2s ease;
-}
-
-.btn-clear:hover {
-    background: #f3f4f6;
-    border-color: #d1d5db;
-    transform: translateY(-2px);
-}
-
-/* Quick Range Links - MINIMALIST */
-.quick-range {
-    display: flex;
-    gap: 8px;
-    margin-top: 14px;
-    justify-content: center;
-    padding-top: 14px;
-    border-top: 1px solid #f3f4f6;
-}
-
-.quick-range a {
-    color: #130325;
-    text-decoration: none;
-    font-weight: 600;
-    border: 1px solid #e5e7eb;
-    padding: 6px 12px;
-    border-radius: 6px;
-    background: #f9fafb;
-    font-size: 11px;
-    transition: all 0.2s ease;
-}
-
-.quick-range a:hover {
-    background: #FFD736;
-    border-color: #FFD736;
-    color: #130325;
-    transform: translateY(-1px);
-}
-
-/* Slider Container */
-.analytics-slider {
-    display: grid;
-    grid-template-columns: 100% 100%;
-    transition: transform 0.35s ease;
-}
-
-.analytics-slider.slide-customers {
-    transform: translateX(0);
-}
-
-.analytics-slider.slide-sellers {
-    transform: translateX(-100%);
-}
-
-.analytics-pane {
-    padding: 0 6px;
-    display: flex;
-    justify-content: center;
-}
-
-/* Stats Cards - WHITE THEME */
-.stats {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    grid-template-rows: repeat(3, 1fr);
-    gap: 16px;
-    margin: 24px auto;
-    padding: 0 20px;
-    max-width: 1400px;
-}
-
-.stat-card {
-    background: #ffffff !important;
-    border: 2px solid #e5e7eb !important;
-    border-radius: 12px !important;
-    padding: 20px 18px !important;
-    text-align: center !important;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.06) !important;
-    transition: all 0.3s ease !important;
-    min-height: 100px !important;
-    display: flex !important;
-    flex-direction: column !important;
-    justify-content: center !important;
-    align-items: center !important;
-}
-
-.stat-card:hover {
-    transform: translateY(-4px) !important;
-    box-shadow: 0 6px 16px rgba(0,0,0,0.1) !important;
-    border-color: #FFD736 !important;
-}
-
-.stat-card h3 {
-    color: #6b7280 !important;
-    font-size: 12px !important;
-    font-weight: 600 !important;
-    margin-bottom: 8px !important;
-    text-transform: uppercase !important;
-    letter-spacing: 0.5px !important;
-}
-
-.stat-card p {
-    color: #130325 !important;
-    font-size: 24px !important;
-    font-weight: 800 !important;
-    margin: 0 !important;
-}
-/* Section Containers - WHITE THEME */
-.admin-sections .section,
-.category-management-section,
-.categories-list,
-.add-category-form,
-.settings-container,
-.setting-group {
-    background: #ffffff !important;
-    border: 2px solid #e5e7eb !important;
-    border-radius: 12px !important;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.06) !important;
-    padding: 28px 24px !important;
-    margin-bottom: 24px !important;
-    color: #130325 !important;
-}
-
-.admin-sections .section h2,
-.categories-list h3,
-.setting-group h3 {
-    color: #130325 !important;
-    font-size: 18px !important;
-    font-weight: 700 !important;
-    margin-top: 0 !important;
-    margin-bottom: 16px !important;
-    border-bottom: 2px solid #f3f4f6 !important;
-    padding-bottom: 12px !important;
-}
-
-.admin-sections .section p,
-.setting-description {
-    color: #6b7280 !important;
-    font-size: 14px !important;
-    line-height: 1.6 !important;
-}
-
-/* Tables - WHITE THEME */
-.admin-sections table,
-.categories-table {
-    background: #ffffff !important;
-    border: 2px solid #e5e7eb !important;
-    border-radius: 10px !important;
-    overflow: hidden !important;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.04) !important;
-}
-
-.admin-sections table thead,
-.categories-table thead {
-    background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%) !important;
-}
-
-.admin-sections table th,
-.categories-table th {
-    color: #130325 !important;
-    font-weight: 700 !important;
-    font-size: 12px !important;
-    text-transform: uppercase !important;
-    letter-spacing: 0.5px !important;
-    padding: 12px 14px !important;
-    border-bottom: 2px solid #e5e7eb !important;
-}
-
-.admin-sections table td,
-.categories-table td {
-    color: #130325 !important;
-    font-size: 13px !important;
-    padding: 12px 14px !important;
-    border-bottom: 1px solid #f3f4f6 !important;
-}
-
-.admin-sections table tbody tr:hover,
-.categories-table tbody tr:hover {
-    background: #f9fafb !important;
-}
-
-/* Forms and Inputs - WHITE THEME */
-.settings-container input,
-.settings-container select,
-.settings-container textarea,
-.form-group input,
-.form-group select,
-.form-group textarea {
-    background: #ffffff !important;
-    border: 2px solid #e5e7eb !important;
-    color: #130325 !important;
-    padding: 10px 14px !important;
-    border-radius: 8px !important;
-    font-size: 14px !important;
-    transition: all 0.2s ease !important;
-}
-
-.settings-container input:focus,
-.settings-container select:focus,
-.settings-container textarea:focus,
-.form-group input:focus,
-.form-group select:focus,
-.form-group textarea:focus {
-    border-color: #FFD736 !important;
-    box-shadow: 0 0 0 3px rgba(255, 215, 54, 0.1) !important;
-    outline: none !important;
-}
-
-.form-group label {
-    font-size: 13px !important;
-    font-weight: 600 !important;
-    color: #130325 !important;
-    margin-bottom: 8px !important;
-}
-
-.input-suffix {
-    color: #6b7280 !important;
-    font-weight: 600 !important;
-    font-size: 14px !important;
-}
-
-.current-value {
-    background: #f9fafb !important;
-    border: 2px solid #e5e7eb !important;
-    border-left: 4px solid #FFD736 !important;
-    padding: 12px 16px !important;
-    border-radius: 8px !important;
-    margin-top: 12px !important;
-    color: #130325 !important;
-    font-size: 14px !important;
-}
-
-.warning-box {
-    background: #fffbeb !important;
-    border: 2px solid #fde68a !important;
-    color: #92400e !important;
-    padding: 14px 16px !important;
-    border-radius: 8px !important;
-    margin-top: 16px !important;
-    font-size: 13px !important;
-}
-
-/* Buttons - WHITE THEME */
-.btn,
-.btn-primary {
-    background: linear-gradient(135deg, #FFD736 0%, #FFC107 100%) !important;
-    color: #130325 !important;
-    padding: 12px 24px !important;
-    border: 2px solid #FFD736 !important;
-    border-radius: 8px !important;
-    font-size: 14px !important;
-    font-weight: 700 !important;
-    cursor: pointer !important;
-    transition: all 0.2s ease !important;
-    box-shadow: 0 2px 6px rgba(255, 215, 54, 0.2) !important;
-}
-
-.btn:hover,
-.btn-primary:hover {
-    transform: translateY(-2px) !important;
-    box-shadow: 0 4px 12px rgba(255, 215, 54, 0.3) !important;
-}
-
-/* Alerts - WHITE THEME */
-.success-message {
-    background: #f0fdf4 !important;
-    color: #166534 !important;
-    border: 2px solid #86efac !important;
-    border-radius: 8px !important;
-    padding: 14px 18px !important;
-    margin-bottom: 20px !important;
-    font-size: 14px !important;
-    font-weight: 600 !important;
-}
-
-.error-message {
-    background: #fef2f2 !important;
-    color: #991b1b !important;
-    border: 2px solid #fca5a5 !important;
-    border-radius: 8px !important;
-    padding: 14px 18px !important;
-    margin-bottom: 20px !important;
-    font-size: 14px !important;
-    font-weight: 600 !important;
-}
-
-/* Settings Container */
-.settings-container {
-    max-width: 900px !important;
-    margin: 32px auto !important;
-    padding: 32px 28px !important;
-}
-
-.setting-group {
-    margin-bottom: 28px !important;
-    padding: 24px 20px !important;
-}
-
-.input-group {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-top: 12px;
-}
-
-/* Responsive */
-@media (max-width: 1200px) {
-    .stats {
-        grid-template-columns: repeat(2, 1fr);
-        grid-template-rows: auto;
-    }
-}
-
-@media (max-width: 768px) {
-    .stats {
-        grid-template-columns: 1fr;
-        gap: 12px;
-    }
-    
-    .stat-card {
-        min-height: 80px !important;
-        padding: 16px 14px !important;
-    }
-    
-    .stat-card h3 {
-        font-size: 11px !important;
-    }
-    
-    .stat-card p {
-        font-size: 20px !important;
-    }
-    
-    .analytics-tabs {
-        gap: 40px;
-        padding: 12px 16px;
-    }
-    
-    .tab-btn {
-        font-size: 12px;
-        padding: 6px 14px;
-    }
-    
-    .analytics-filter {
-        padding: 16px 18px;
-    }
-    
-    .analytics-form .row {
-        gap: 8px;
-    }
-    
-    .analytics-form input[type="date"],
-    .analytics-form select {
-        min-width: 120px;
-        font-size: 12px;
-        padding: 6px 10px;
-        height: 32px;
-    }
-    
-    .btn-apply,
-    .btn-clear {
-        height: 32px;
-        width: 32px;
-        font-size: 12px;
-    }
-    
-    .quick-range {
-        gap: 6px;
-    }
-    
-    .quick-range a {
-        font-size: 10px;
-        padding: 5px 10px;
-    }
-}
-
-</style>
-
-<script>
-// Tabs toggle
-document.addEventListener('DOMContentLoaded', function() {
-  const tabs = document.querySelectorAll('.tab-btn');
-  const slider = document.querySelector('.analytics-slider');
-  tabs.forEach(btn => {
-    btn.addEventListener('click', () => {
-      tabs.forEach(b => b.removeAttribute('data-active'));
-      btn.setAttribute('data-active','1');
-      const target = btn.getAttribute('data-target');
-      if (slider) {
-        slider.classList.toggle('slide-sellers', target === 'sellers');
-        slider.classList.toggle('slide-customers', target === 'customers');
-      }
-      const url = new URL(window.location.href);
-      url.searchParams.set('entity', target === 'sellers' ? 'sellers' : 'customers');
-      window.location.href = url.toString();
-    });
-  });
-});
-
-function openEditModal(id, name, parentId) {
-  document.getElementById('edit_category_id').value = id;
-  document.getElementById('edit_name').value = name;
-  document.getElementById('edit_parent_id').value = parentId;
-  document.getElementById('editCategoryModal').style.display = 'flex';
-}
-function closeEditModal() {
-  document.getElementById('editCategoryModal').style.display = 'none';
-}
-function openDeleteModal(id, name) {
-  document.getElementById('delete_category_id').value = id;
-  document.getElementById('deleteCategoryName').innerHTML = 'Are you sure you want to delete <strong>' + name + '</strong>?';
-  document.getElementById('deleteCategoryModal').style.display = 'flex';
-}
-function closeDeleteModal() {
-  document.getElementById('deleteCategoryModal').style.display = 'none';
-}
-
-</script>
-<?php addNotificationScript(); ?>
+            card.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateY(0) scale(1)';
+            });
+        });
+    </script>
+</body>
+</html>

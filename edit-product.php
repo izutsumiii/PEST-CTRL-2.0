@@ -322,9 +322,9 @@ html, body {
 main { 
     background: #f0f2f5 !important; 
     margin-left: 120px !important; 
-    margin-top: 0 !important;
+    margin-top: -20px !important;
     margin-bottom: 0 !important;
-    padding-top: 0 !important;
+    padding-top: 5px !important;
     padding-bottom: 40px !important;
     padding-left: 30px !important;
     padding-right: 30px !important;
@@ -492,10 +492,10 @@ main.sidebar-collapsed { margin-left: 0px !important; }
 
 h1 { 
     color: #130325 !important; 
-    font-size: 32px !important; 
+    font-size: 20px !important; 
     font-weight: 700 !important; 
     margin: 0 !important;
-    margin-bottom: 28px !important;
+    margin-bottom: 16px !important;
     padding: 0 !important; 
     text-shadow: none !important;
     border-bottom: none !important;

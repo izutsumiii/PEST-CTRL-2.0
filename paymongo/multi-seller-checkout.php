@@ -24,7 +24,7 @@ if ($isBuyNow && isset($_SESSION['buy_now_item'])) {
 // Load user profile for auto-fill
 $userProfile = null;
 try {
-    $stmt = $pdo->prepare("SELECT first_name, last_name, email, phone, address FROM users WHERE id = ?");
+    $stmt = $pdo->prepare("SELECT first_name, last_name, display_name, email, phone, address FROM users WHERE id = ?");
     $stmt->execute([$userId]);
     $userProfile = $stmt->fetch(PDO::FETCH_ASSOC);
 } catch (Exception $e) {
@@ -41,7 +41,7 @@ if ($isBuyNow && $buyNowItem) {
     
     if ($sellerId) {
         // Get seller info
-        $stmt = $pdo->prepare("SELECT username, email FROM users WHERE id = ?");
+        $stmt = $pdo->prepare("SELECT username, display_name, email FROM users WHERE id = ?");
         $stmt->execute([$sellerId]);
         $seller = $stmt->fetch(PDO::FETCH_ASSOC);
         
@@ -49,8 +49,8 @@ if ($isBuyNow && $buyNowItem) {
         $groupedItems = [
             $sellerId => [
                 'seller_id' => $sellerId,
-                'seller_name' => $seller['username'] ?? 'Unknown Seller',
-                'seller_display_name' => $seller['username'] ?? 'Unknown Seller',
+                'seller_name' => $seller['display_name'] ?? $seller['username'] ?? 'Unknown Seller',
+                'seller_display_name' => $seller['display_name'] ?? $seller['username'] ?? 'Unknown Seller',
                 'seller_email' => $seller['email'] ?? '',
                 'items' => [
                     [
@@ -187,13 +187,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['checkout'])) {
                             
                             // Get all sellers from this order with product details
                             $stmt = $pdo->prepare("
-                                SELECT DISTINCT p.seller_id, u.username as seller_name,
+                                SELECT DISTINCT p.seller_id, COALESCE(u.display_name, CONCAT(u.first_name, ' ', u.last_name), u.username) as seller_name, u.display_name,
                                        GROUP_CONCAT(p.name SEPARATOR ', ') as product_names
                                 FROM order_items oi
                                 JOIN products p ON oi.product_id = p.id
                                 JOIN users u ON p.seller_id = u.id
                                 WHERE oi.order_id = ?
-                                GROUP BY p.seller_id, u.username
+                                GROUP BY p.seller_id, u.username, u.display_name
                             ");
                             $stmt->execute([$orderId]);
                             $sellers = $stmt->fetchAll(PDO::FETCH_ASSOC);

@@ -1172,7 +1172,7 @@ function getCartItemsGroupedBySeller() {
         }
         
         // Get seller details
-        $stmt = $pdo->prepare("SELECT username, first_name, last_name FROM users WHERE id = ?");
+        $stmt = $pdo->prepare("SELECT username, first_name, last_name, display_name FROM users WHERE id = ?");
         $stmt->execute([$product['seller_id']]);
         $seller = $stmt->fetch(PDO::FETCH_ASSOC);
         
@@ -1185,10 +1185,11 @@ function getCartItemsGroupedBySeller() {
         
         $sellerId = $product['seller_id'];
         if (!isset($groupedItems[$sellerId])) {
+            $displayName = $seller['display_name'] ?? trim($seller['first_name'] . ' ' . $seller['last_name']) ?: ($seller['username'] ?: 'Unknown Seller');
             $groupedItems[$sellerId] = [
                 'seller_id' => $sellerId,
                 'seller_name' => $seller['username'] ?: 'Unknown Seller',
-                'seller_display_name' => trim($seller['first_name'] . ' ' . $seller['last_name']) ?: ($seller['username'] ?: 'Unknown Seller'),
+                'seller_display_name' => $displayName,
                 'items' => [],
                 'subtotal' => 0,
                 'item_count' => 0

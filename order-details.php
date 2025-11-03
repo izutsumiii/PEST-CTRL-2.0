@@ -102,7 +102,7 @@ main {
 }
 
 .back-arrow {
-    color: #130325;
+    color: #ffffff;
     text-decoration: none;
     font-size: 1.8rem;
     font-weight: 600;
@@ -112,16 +112,19 @@ main {
 }
 
 .back-arrow:hover {
-    color: #FFD736;
+    color: #ffffff;
 }
 
 h1 {
     color: #130325;
     margin: 8px 0 0 0;
     font-size: 1.5rem;
-    font-weight: 400;
+    font-weight: 300;
     text-shadow: none;
 }
+
+/* Ensure header text weight applies */
+.page-header h1 { font-weight: 700 !important; }
 
 .order-details {
     max-width: 1400px;
@@ -147,7 +150,7 @@ h1 {
     color: #130325;
     margin: 0 0 20px 0;
     font-size: 1.4rem;
-    font-weight: 700;
+    font-weight: 600;
     border-bottom: 2px solid #FFD736;
     padding-bottom: 12px;
     text-transform: uppercase;
@@ -203,7 +206,12 @@ h1 {
     color: #130325;
     font-size: 1rem;
     font-weight: 500;
+    word-break: break-word;
+    overflow-wrap: anywhere;
 }
+
+/* Improve address wrapping */
+.customer-info-grid .info-item { white-space: normal; }
 
 .status-badge {
     display: inline-block;
@@ -514,6 +522,7 @@ h1 {
     
     h1 {
         font-size: 2rem;
+        font-weight: 300 !important;
     }
     
     .order-details {
@@ -581,22 +590,16 @@ h1 {
 }
 </style>
 
-<div class="page-header">
-    <div class="header-left">
-        <a href="user-dashboard.php" class="back-arrow">
-            <i class="fas fa-arrow-left"></i>
-        </a>
-        <h1>Order Details</h1>
-    </div>
-    <div class="header-right">
-    </div>
-</div>
+<!-- Header removed; back button moved into status header -->
 
 <div class="order-details">
     <!-- Status Card -->
     <div class="status-card">
         <div class="status-header">
-            <h3 class="status-title">Order Status</h3>
+            <div style="display:flex; align-items:center; gap:12px;">
+                <a href="user-dashboard.php" class="back-arrow"><i class="fas fa-arrow-left"></i></a>
+                <h3 class="status-title">Order Status</h3>
+            </div>
             <span class="status-badge status-<?php echo $order['status']; ?>"><?php echo ucfirst($order['status']); ?></span>
         </div>
     </div>

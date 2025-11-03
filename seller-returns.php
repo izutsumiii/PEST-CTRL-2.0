@@ -284,9 +284,12 @@ body {
 
 .page-title {
     color: #130325;
-    font-size: 1.5rem;
+    font-size: 20px; /* match manage-products header size */
     font-weight: 700;
     margin: 0;
+    margin-bottom: 16px; /* match spacing */
+    padding: 0;
+    text-shadow: none; /* ensure no text shadow */
     display: flex;
     align-items: center;
     gap: 12px;
@@ -431,7 +434,7 @@ body {
 
 /* Table Styling */
 .table-responsive {
-    overflow-x: auto;
+    overflow-x: hidden; /* prevent horizontal scrollbar */
     overflow-y: visible !important;
     border-radius: 8px;
     max-height: none !important;
@@ -444,6 +447,7 @@ body {
     border-collapse: separate;
     border-spacing: 0;
     background: #ffffff !important;
+    table-layout: fixed; /* force cells to wrap instead of expanding */
 }
 
 .table thead th {
@@ -455,7 +459,8 @@ body {
     padding: 12px 10px;
     border-bottom: 2px solid #e5e7eb !important;
     letter-spacing: 0.5px;
-    white-space: nowrap;
+    white-space: normal; /* allow header to wrap */
+    overflow-wrap: anywhere;
 }
 
 .table tbody td {
@@ -464,6 +469,8 @@ body {
     border-top: 1px solid #f3f4f6 !important;
     color: #130325 !important;
     background: #ffffff !important;
+    white-space: normal; /* allow content to wrap */
+    overflow-wrap: anywhere;
 }
 
 .table tbody tr {
@@ -649,9 +656,9 @@ body {
 .return-reason {
     max-width: 200px;
     display: block;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    white-space: normal; /* allow reason to wrap on small screens */
+    overflow: visible;
+    text-overflow: clip;
     color: #130325 !important;
 }
 
@@ -1099,7 +1106,7 @@ body {
     background: #ffffff !important;
     border: 2px solid #e5e7eb !important;
     border-radius: 10px;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15) !important;
+    box-shadow: none !important;
     position: relative;
     z-index: 10001;
 }
@@ -1126,42 +1133,42 @@ body {
 }
 
 .modal-footer {
-    border-top: 1px solid rgba(255, 215, 54, 0.2);
-    padding: 15px 20px;
-    background: #130325;
+    border-top: 1px solid #f3f4f6;
+    padding: 12px 16px;
+    background: #ffffff !important;
 }
 
 /* Form Styling */
 .form-label {
-    font-weight: 500;
-    color: #F9F9F9;
+    font-weight: 600;
+    color: #130325;
     margin-bottom: 6px;
     font-size: 0.9rem;
 }
 
 .form-select,
 .form-control {
-    background: #1a0a2e;
-    border: 1px solid rgba(255, 215, 54, 0.3);
-    border-radius: 6px;
+    background: #ffffff;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
     padding: 10px 12px;
     font-size: 0.9rem;
-    color: #F9F9F9;
-    transition: all 0.3s ease;
+    color: #130325;
+    transition: all 0.2s ease;
 }
 
 .form-select:focus,
 .form-control:focus {
-    background: rgba(19, 3, 37, 0.9);
+    background: #ffffff;
     border-color: #FFD736;
-    box-shadow: 0 0 0 0.2rem rgba(255, 215, 54, 0.25);
+    box-shadow: 0 0 0 3px rgba(255, 215, 54, 0.15);
     outline: none;
-    color: #F9F9F9;
+    color: #130325;
 }
 
 .form-select option {
-    background: #130325;
-    color: #F9F9F9;
+    background: #ffffff;
+    color: #130325;
     padding: 8px;
 }
 
@@ -1199,9 +1206,7 @@ body {
         gap: 12px;
     }
     
-    .page-title {
-        font-size: 1.8rem;
-    }
+    .page-title { font-size: 20px; }
 }
 
 @media (max-width: 768px) {
@@ -1236,9 +1241,7 @@ body {
         font-size: 1.8rem;
     }
     
-    .page-title {
-        font-size: 1.5rem;
-    }
+    .page-title { font-size: 20px; }
     
     .page-header {
         margin-bottom: 20px;
@@ -1257,6 +1260,7 @@ body {
     
     .table-responsive {
         font-size: 0.8rem;
+        overflow-x: hidden; /* avoid horizontal scrollbar */
     }
     
     .product-info {
@@ -1277,12 +1281,31 @@ body {
     .table tbody td {
         padding: 10px 6px;
     }
+
+    /* Hide less critical columns on small screens: Order Date (4), Amount (5) */
+    .table thead th:nth-child(4),
+    .table thead th:nth-child(5),
+    .table tbody td:nth-child(4),
+    .table tbody td:nth-child(5) {
+        display: none;
+    }
+
+    /* Ensure action buttons are reachable and compact */
+    .action-buttons-new { align-items: flex-start; }
+    .action-buttons-new .action-icons {
+        gap: 6px;
+        flex-wrap: wrap;
+        justify-content: flex-start;
+    }
+    .action-buttons-new .btn-icon {
+        width: 30px;
+        height: 30px;
+        font-size: 12px;
+    }
 }
 
 @media (max-width: 576px) {
-    .page-title {
-        font-size: 1.5rem;
-    }
+    .page-title { font-size: 20px; }
     
     .page-title i {
         font-size: 1.5rem;
@@ -1301,6 +1324,10 @@ body {
         padding: 12px 8px;
         font-size: 0.85rem;
     }
+
+    /* Keep product visuals compact */
+    .product-thumb { width: 40px; height: 40px; }
+    .product-info { gap: 6px; }
 }
 </style>
 
@@ -1408,7 +1435,6 @@ body {
                                     <th>Customer</th>
                                     <th>Product</th>
                                     <th>Order Date</th>
-                                    <th>Reason</th>
                                     <th>Amount</th>
                                     <th>Status</th>
                                     <th>Actions</th>
@@ -1445,9 +1471,7 @@ body {
                                             <?php echo date('M d, Y', strtotime($request['order_date'])); ?>
                                         </td>
                                         <td>
-                                            <span class="return-reason" title="<?php echo htmlspecialchars($request['reason']); ?>">
-                                                <?php echo htmlspecialchars($request['reason']); ?>
-                                            </span>
+                                            
                                         </td>
                                         <td>
                                             <strong>₱<?php echo number_format($request['item_price'] * $request['quantity'], 2); ?></strong>

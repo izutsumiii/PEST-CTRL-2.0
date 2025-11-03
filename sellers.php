@@ -14,9 +14,9 @@ $whereClause = "u.user_type = 'seller'";
 $params = [];
 
 if (!empty($search)) {
-    $whereClause .= " AND (u.username LIKE ? OR u.first_name LIKE ? OR u.last_name LIKE ? OR CONCAT(u.first_name, ' ', u.last_name) LIKE ?)";
+    $whereClause .= " AND (u.username LIKE ? OR u.first_name LIKE ? OR u.last_name LIKE ? OR u.display_name LIKE ? OR CONCAT(u.first_name, ' ', u.last_name) LIKE ?)";
     $searchTerm = "%$search%";
-    $params = [$searchTerm, $searchTerm, $searchTerm, $searchTerm];
+    $params = [$searchTerm, $searchTerm, $searchTerm, $searchTerm, $searchTerm];
 }
 
 // Count total sellers
@@ -34,6 +34,7 @@ $sql = "SELECT
             u.username,
             u.first_name,
             u.last_name,
+            u.display_name,
             u.email,
             u.created_at,
             COUNT(DISTINCT p.id) as product_count,
@@ -41,7 +42,7 @@ $sql = "SELECT
         FROM users u
         LEFT JOIN products p ON u.id = p.seller_id
         WHERE $whereClause
-        GROUP BY u.id, u.username, u.first_name, u.last_name, u.email, u.created_at
+        GROUP BY u.id, u.username, u.first_name, u.last_name, u.display_name, u.email, u.created_at
         ORDER BY u.created_at DESC
         LIMIT $perPage OFFSET $offset";
 $stmt = $pdo->prepare($sql);
@@ -300,7 +301,7 @@ $sellers = $stmt->fetchAll(PDO::FETCH_ASSOC);
     <?php else: ?>
         <div class="sellers-grid">
             <?php foreach ($sellers as $seller): 
-                $sellerName = trim(($seller['first_name'] ?? '') . ' ' . ($seller['last_name'] ?? '')) ?: ($seller['username'] ?? 'Seller');
+                $sellerName = $seller['display_name'] ?? trim(($seller['first_name'] ?? '') . ' ' . ($seller['last_name'] ?? '')) ?: ($seller['username'] ?? 'Seller');
                 $initials = strtoupper(substr($seller['username'] ?? 'S', 0, 1));
                 $activeProducts = (int)($seller['active_products'] ?? 0);
                 $totalProducts = (int)($seller['product_count'] ?? 0);

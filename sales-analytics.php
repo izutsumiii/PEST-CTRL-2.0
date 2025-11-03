@@ -200,6 +200,32 @@ p, span, div {
     color: #130325 !important;
 }
 
+/* Fix user dropdown text color - should be dark, not white */
+.invisible-header .header-dropdown,
+.invisible-header .header-dropdown *,
+.invisible-header .header-dropdown a,
+.invisible-header .header-dropdown a i {
+    color: #130325 !important;
+}
+
+.invisible-header .header-dropdown a:hover {
+    color: #FFD736 !important;
+}
+
+/* Ensure notification dropdown uses dark text on this page (overrides broad invisible-header white) */
+.invisible-header .notification-dropdown,
+.invisible-header .notification-dropdown *,
+.invisible-header .notification-dropdown a,
+.invisible-header .notification-dropdown a i,
+.invisible-header .notification-header h6,
+.invisible-header .notification-title,
+.invisible-header .notification-message,
+.invisible-header .notification-time {
+    color: #130325 !important;
+}
+
+/* Notification dropdown styles are now global in seller_header.php */
+
 main {
     padding-top: 0 !important;
     margin-top: 0 !important;

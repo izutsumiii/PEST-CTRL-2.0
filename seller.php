@@ -10,7 +10,7 @@ if ($sellerId <= 0) {
 }
 
 // Fetch seller info
-$stmt = $pdo->prepare("SELECT id, username, first_name, last_name, email, created_at FROM users WHERE id = ?");
+$stmt = $pdo->prepare("SELECT id, username, first_name, last_name, display_name, email, created_at FROM users WHERE id = ?");
 $stmt->execute([$sellerId]);
 $seller = $stmt->fetch(PDO::FETCH_ASSOC);
 if (!$seller) {
@@ -18,7 +18,7 @@ if (!$seller) {
     exit();
 }
 
-$sellerName = trim(($seller['first_name'] ?? '') . ' ' . ($seller['last_name'] ?? '')) ?: ($seller['username'] ?? 'Seller');
+$sellerName = $seller['display_name'] ?? trim(($seller['first_name'] ?? '') . ' ' . ($seller['last_name'] ?? '')) ?: ($seller['username'] ?? 'Seller');
 
 // Pagination & sorting
 $page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;

@@ -261,16 +261,16 @@ $pathPrefix = ($currentDir === 'paymongo') ? '../' : '';
     position: absolute;
     top: 100%;
     right: 0;
-    width: 340px;
-    max-height: 500px;
+    width: 350px;
+    max-height: none;
     background: #ffffff;
-    border: 1px solid rgba(0, 0, 0, 0.1);
+    border: 1px solid #e5e7eb;
     border-radius: 10px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.15);
     display: none;
     z-index: 1200;
     padding: 10px;
-    overflow-y: auto;
+    overflow-y: visible;
 }
 
 /* Custom scrollbar styles for notif-popper */
@@ -299,10 +299,15 @@ $pathPrefix = ($currentDir === 'paymongo') ? '../' : '';
 }
         
         .notif-popper.show { display: block; }
-        .notif-item-ui { display:flex; gap:10px; padding:10px; border-radius:8px; border:1px solid rgba(0,0,0,0.1); background: rgba(248,249,250,0.5); margin: 6px 0; color:#130325; text-decoration:none; }
-        .notif-item-ui:hover { background: rgba(248,249,250,0.8); }
-        .notif-item-ui .icon { width:28px; height:28px; display:flex; align-items:center; justify-content:center; background: rgba(255,215,54,0.2); color:#FFD736; border-radius:6px; }
-        .notif-header { display:flex; align-items:center; justify-content:space-between; color:#130325; margin-bottom:6px; }
+        /* Seller-style dropdown structure */
+        .notification-header { display:flex; align-items:center; justify-content:space-between; color:#130325; padding: 6px 4px; border-bottom: 1px solid #e5e7eb; margin-bottom: 6px; }
+        .notification-list { max-height: 380px; overflow-y: auto; padding-right: 2px; }
+        .notification-item { display:flex; gap:10px; padding:12px; border-radius:8px; border:1px solid #f3f4f6; background:#ffffff; margin: 6px 0; color:#130325; text-decoration:none; transition: background 0.2s ease; cursor: pointer; }
+        .notification-item:hover { background:#f9fafb; }
+        .notification-title { font-weight: 700; color:#130325; font-size: 13px; }
+        .notification-message { color:#130325; opacity:0.9; font-size: 12px; }
+        .notification-time { color:#9ca3af; font-size: 11px; margin-top: 2px; }
+        .notification-icon { width:28px; height:28px; display:flex; align-items:center; justify-content:center; background: rgba(255,215,54,0.2); color:#FFD736; border-radius:6px; flex: 0 0 28px; }
         .notif-empty { color:#130325; opacity:0.7; text-align:center; padding:16px 8px; }
         
         .clear-all-btn {
@@ -322,32 +327,24 @@ $pathPrefix = ($currentDir === 'paymongo') ? '../' : '';
         }
         
         .notif-footer {
-            border-top: 1px solid rgba(0, 0, 0, 0.1);
+            border-top: 1px solid #e5e7eb;
             padding: 8px 0 0 0;
             margin-top: 8px;
             text-align: center;
         }
         
         .see-all-btn {
-            display: block !important;
+            display: inline-block !important;
             text-align: center !important;
             color: #130325 !important;
             text-decoration: none !important;
-            font-size: 15px !important;
-            font-weight: 300 !important;
-            text-transform: none !important;
-            padding: 4px 8px !important;
+            font-size: 13px !important;
+            font-weight: 600 !important;
+            padding: 6px 8px !important;
             border-radius: 4px !important;
-            border: 1px solid rgba(0, 0, 0, 0.1) !important;
-            background: rgba(248, 249, 250, 0.8) !important;
-            margin: 0 auto !important;
-            width: fit-content !important;
         }
         
-        .see-all-btn:hover {
-            color: #130325 !important;
-            background: rgba(248, 249, 250, 0.8) !important;
-        }
+        .see-all-btn:hover { text-decoration: underline !important; }
         
         
         .notif-delete-btn {
@@ -679,10 +676,10 @@ $pathPrefix = ($currentDir === 'paymongo') ? '../' : '';
                             <span id="notif-badge" class="notif-badge" style="display: none;">0</span>
                         <?php endif; ?>
                         <div class="notif-popper" id="notifPopper">
-                            <div class="notif-header">
+                            <div class="notification-header">
                                 <strong>Notifications</strong>
                             </div>
-                            <div id="notifList"></div>
+                            <div id="notifList" class="notification-list"></div>
                             <div class="notif-footer">
                                 <a href="<?php echo $pathPrefix; ?>customer-notifications.php" class="see-all-btn">See All</a>
                             </div>
@@ -892,26 +889,37 @@ $pathPrefix = ($currentDir === 'paymongo') ? '../' : '';
                 items.forEach(it => {
                     const url = '<?php echo $pathPrefix; ?>user-dashboard.php#order-' + it.order_id;
                     const item = document.createElement('div');
-                    item.className = 'notif-item-ui';
+                    item.className = 'notification-item';
                     item.style.position = 'relative';
-                    let content = '';
+                    let title = '';
+                    let message = '';
+                    let icon = it.status === 'notification' ? 'fa-info-circle' : 'fa-bell';
                     if (it.status === 'notification') {
-                        content = '<div class="icon"><i class="fas fa-info-circle"></i></div>'+ '<div style="flex:1;"><div style="font-weight:700; color:#130325;">' + it.message + '</div>'+ '<div style="opacity:0.9; font-size:12px; color:#130325;">' + it.updated_at_human + '</div></div>';
+                        title = 'Notification';
+                        message = it.message;
                     } else {
                         let statusText = it.status;
-                        if (it.return_status) {
-                            statusText += ' | Return: ' + it.return_status;
-                        }
-                        content = '<div class="icon"><i class="fas fa-bell"></i></div>'+
-                                  '<div style="flex:1;"><div style="font-weight:700; color:#130325;">Order #' + it.order_id + ' update</div>'+ '<div style="opacity:0.9; font-size:12px; color:#130325;">Status: ' + statusText + ' • ' + it.updated_at_human + '</div></div>';
+                        if (it.return_status) { statusText += ' | Return: ' + it.return_status; }
+                        title = 'Order #' + it.order_id + ' update';
+                        message = 'Status: ' + statusText;
                     }
-                    content += '<button class="notif-delete-btn" onclick="deleteNotification(' + it.order_id + ', this, ' + (it.status === 'notification' ? 'true' : 'false') + '); event.stopPropagation();" title="Delete notification">' + '<i class="fas fa-times"></i></button>';
-                    item.innerHTML = content;
-                    item.addEventListener('click', function(e) {
-                        if (!e.target.closest('.notif-delete-btn')) {
-                            window.location.href = url;
-                        }
+                    item.innerHTML =
+                        '<div class="notification-icon"><i class="fas ' + icon + '"></i></div>'+
+                        '<div style="flex:1; min-width:0;">'+
+                          '<div class="notification-title">' + title + '</div>'+
+                          '<div class="notification-message">' + message + '</div>'+
+                          '<div class="notification-time">' + it.updated_at_human + '</div>'+
+                        '</div>';
+                    const closeBtn = document.createElement('button');
+                    closeBtn.className = 'notif-delete-btn';
+                    closeBtn.title = 'Delete notification';
+                    closeBtn.innerHTML = '<i class="fas fa-times"></i>';
+                    closeBtn.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        deleteNotification(it.order_id, closeBtn, (it.status === 'notification'));
                     });
+                    item.appendChild(closeBtn);
+                    item.addEventListener('click', function() { window.location.href = url; });
                     list.appendChild(item);
                 });
             }
