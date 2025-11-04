@@ -66,32 +66,55 @@ if (isset($_GET['delete'])) {
             $cartResult = $stmt->fetch(PDO::FETCH_ASSOC);
             $cartCount = intval($cartResult['count'] ?? 0);
             
-            // Only prevent deletion if there are actual completed/pending orders (not cancelled)
-            // Check for orders that are not cancelled
-            $stmt = $pdo->prepare("
-                SELECT COUNT(*) as count 
-                FROM order_items oi 
-                INNER JOIN orders o ON oi.order_id = o.id 
-                WHERE oi.product_id = ? AND o.status != 'cancelled'
-            ");
-            $stmt->execute([$productId]);
-            $activeOrderResult = $stmt->fetch(PDO::FETCH_ASSOC);
-            $activeOrderCount = intval($activeOrderResult['count'] ?? 0);
-            
-            if ($activeOrderCount > 0) {
-                // Product has orders - cannot delete, only deactivate
-                $stmt = $pdo->prepare("UPDATE products SET status = 'inactive' WHERE id = ?");
-                $stmt->execute([$productId]);
-                
-                // Remove from cart if present
-                if ($cartCount > 0) {
-                    $stmt = $pdo->prepare("DELETE FROM cart WHERE product_id = ?");
-                    $stmt->execute([$productId]);
-                }
-                
-                $pdo->commit();
-                $_SESSION['product_message'] = ['type' => 'success', 'text' => 'Product deactivated successfully. Cannot delete product with existing active orders.'];
-            } else {
+            // Check for orders that are not cancelled AND not fully returned/refunded
+$stmt = $pdo->prepare("
+SELECT COUNT(DISTINCT o.id) as count 
+FROM order_items oi 
+INNER JOIN orders o ON oi.order_id = o.id 
+LEFT JOIN return_requests rr ON o.id = rr.order_id AND rr.status = 'completed'
+WHERE oi.product_id = ? 
+AND o.status NOT IN ('cancelled', 'return_completed')
+AND (rr.id IS NULL OR rr.status != 'completed')
+");
+$stmt->execute([$productId]);
+$activeOrderResult = $stmt->fetch(PDO::FETCH_ASSOC);
+$activeOrderCount = intval($activeOrderResult['count'] ?? 0);
+
+// Additional check: If all orders are either cancelled or have completed returns, allow deletion
+if ($activeOrderCount > 0) {
+// Double-check if there are ANY pending/processing/shipped/delivered orders without completed returns
+$stmt = $pdo->prepare("
+    SELECT COUNT(DISTINCT o.id) as count 
+    FROM order_items oi 
+    INNER JOIN orders o ON oi.order_id = o.id 
+    LEFT JOIN return_requests rr ON o.id = rr.order_id
+    WHERE oi.product_id = ? 
+    AND o.status IN ('pending', 'processing', 'shipped', 'delivered')
+    AND (rr.id IS NULL OR rr.status NOT IN ('completed', 'rejected'))
+");
+$stmt->execute([$productId]);
+$strictCheckResult = $stmt->fetch(PDO::FETCH_ASSOC);
+$strictActiveCount = intval($strictCheckResult['count'] ?? 0);
+
+if ($strictActiveCount > 0) {
+    // Product has active orders - cannot delete, only deactivate
+    $stmt = $pdo->prepare("UPDATE products SET status = 'inactive' WHERE id = ?");
+    $stmt->execute([$productId]);
+    
+    // Remove from cart if present
+    if ($cartCount > 0) {
+        $stmt = $pdo->prepare("DELETE FROM cart WHERE product_id = ?");
+        $stmt->execute([$productId]);
+    }
+    
+    $pdo->commit();
+    $_SESSION['product_message'] = ['type' => 'success', 'text' => 'Product deactivated successfully. Cannot delete product with existing active orders.'];
+} else {
+    // All orders are either cancelled or have completed returns - safe to delete
+    goto safeDelete;
+}
+} else {
+safeDelete:
                 // No orders - safe to delete
                 // First, delete from cart if present
                 if ($cartCount > 0) {
