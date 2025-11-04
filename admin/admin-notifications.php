@@ -177,6 +177,7 @@ function getNotificationBadgeClass($title, $type) {
     if (strpos($titleLower, 'low stock') !== false) { return 'notification-status-lowstock'; }
     if (strpos($titleLower, 'processing') !== false || strpos($titleLower, 'order status') !== false) { return 'notification-status-processing'; }
     if (strpos($titleLower, 'new seller') !== false || $type === 'new_seller') { return 'notification-status-new-seller'; }
+    if (strpos($titleLower, 'product') !== false || strpos($titleLower, 'pending approval') !== false) { return 'notification-status-processing'; }
     return 'notification-status-order';
 }
 
@@ -187,6 +188,7 @@ function getNotificationBadgeText($title, $type) {
     if (strpos($titleLower, 'low stock') !== false) { return 'Low Stocks'; }
     if (strpos($titleLower, 'processing') !== false || strpos($titleLower, 'order status') !== false) { return 'Processing'; }
     if (strpos($titleLower, 'new seller') !== false || $type === 'new_seller') { return 'New Seller'; }
+    if (strpos($titleLower, 'product') !== false || strpos($titleLower, 'pending approval') !== false) { return 'Product'; }
     return 'Info';
 }
 ?>

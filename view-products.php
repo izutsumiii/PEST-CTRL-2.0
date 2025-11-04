@@ -26,11 +26,16 @@ if (isset($_GET['toggle_status'])) {
     $product = $stmt->fetch();
     
     if ($product) {
-        $newStatus = $product['status'] == 'active' ? 'inactive' : 'active';
-        $stmt = $pdo->prepare("UPDATE products SET status = ? WHERE id = ?");
-        if ($stmt->execute([$newStatus, $productId])) {
-            $statusText = $newStatus == 'active' ? 'activated' : 'deactivated';
-            $_SESSION['product_message'] = ['type' => 'success', 'text' => "Product $statusText successfully!"];
+        // Prevent sellers from toggling products that were suspended or rejected by admin
+        if (in_array($product['status'], ['suspended', 'rejected'])) {
+            $_SESSION['product_message'] = ['type' => 'error', 'text' => "Cannot toggle product status. This product was {$product['status']} by admin and requires admin approval to reactivate."];
+        } else {
+            $newStatus = $product['status'] == 'active' ? 'inactive' : 'active';
+            $stmt = $pdo->prepare("UPDATE products SET status = ? WHERE id = ?");
+            if ($stmt->execute([$newStatus, $productId])) {
+                $statusText = $newStatus == 'active' ? 'activated' : 'deactivated';
+                $_SESSION['product_message'] = ['type' => 'success', 'text' => "Product $statusText successfully!"];
+            }
         }
     }
     header("Location: view-products.php");
@@ -49,37 +54,94 @@ if (isset($_GET['delete'])) {
         try {
             $pdo->beginTransaction();
             
-            $stmt = $pdo->prepare("SELECT COUNT(*) as count FROM cart WHERE product_id = ?");
-            $stmt->execute([$productId]);
-            $cartCount = $stmt->fetch(PDO::FETCH_ASSOC)['count'];
-            
+            // Check if product has orders - ensure we get an integer
             $stmt = $pdo->prepare("SELECT COUNT(*) as count FROM order_items WHERE product_id = ?");
             $stmt->execute([$productId]);
-            $orderItemsCount = $stmt->fetch(PDO::FETCH_ASSOC)['count'];
+            $orderResult = $stmt->fetch(PDO::FETCH_ASSOC);
+            $orderItemsCount = intval($orderResult['count'] ?? 0);
             
-            if ($cartCount > 0 || $orderItemsCount > 0) {
+            // Check if product is in cart
+            $stmt = $pdo->prepare("SELECT COUNT(*) as count FROM cart WHERE product_id = ?");
+            $stmt->execute([$productId]);
+            $cartResult = $stmt->fetch(PDO::FETCH_ASSOC);
+            $cartCount = intval($cartResult['count'] ?? 0);
+            
+            // Only prevent deletion if there are actual completed/pending orders (not cancelled)
+            // Check for orders that are not cancelled
+            $stmt = $pdo->prepare("
+                SELECT COUNT(*) as count 
+                FROM order_items oi 
+                INNER JOIN orders o ON oi.order_id = o.id 
+                WHERE oi.product_id = ? AND o.status != 'cancelled'
+            ");
+            $stmt->execute([$productId]);
+            $activeOrderResult = $stmt->fetch(PDO::FETCH_ASSOC);
+            $activeOrderCount = intval($activeOrderResult['count'] ?? 0);
+            
+            if ($activeOrderCount > 0) {
+                // Product has orders - cannot delete, only deactivate
                 $stmt = $pdo->prepare("UPDATE products SET status = 'inactive' WHERE id = ?");
                 $stmt->execute([$productId]);
                 
+                // Remove from cart if present
                 if ($cartCount > 0) {
                     $stmt = $pdo->prepare("DELETE FROM cart WHERE product_id = ?");
                     $stmt->execute([$productId]);
                 }
                 
                 $pdo->commit();
-                $_SESSION['product_message'] = ['type' => 'success', 'text' => 'Product deactivated successfully.'];
+                $_SESSION['product_message'] = ['type' => 'success', 'text' => 'Product deactivated successfully. Cannot delete product with existing active orders.'];
             } else {
-                $stmt = $pdo->prepare("DELETE FROM products WHERE id = ?");
-                $stmt->execute([$productId]);
+                // No orders - safe to delete
+                // First, delete from cart if present
+                if ($cartCount > 0) {
+                    $stmt = $pdo->prepare("DELETE FROM cart WHERE product_id = ?");
+                    $stmt->execute([$productId]);
+                }
                 
-                $pdo->commit();
-                $_SESSION['product_message'] = ['type' => 'success', 'text' => 'Product deleted successfully!'];
+                // Delete from product_categories if table exists
+                try {
+                    $stmt = $pdo->prepare("DELETE FROM product_categories WHERE product_id = ?");
+                    $stmt->execute([$productId]);
+                } catch (PDOException $e) {
+                    // Table might not exist, ignore
+                }
+                
+                // Delete from reviews if table exists
+                try {
+                    $stmt = $pdo->prepare("DELETE FROM reviews WHERE product_id = ?");
+                    $stmt->execute([$productId]);
+                } catch (PDOException $e) {
+                    // Table might not exist, ignore
+                }
+                
+                // Delete from wishlist if table exists
+                try {
+                    $stmt = $pdo->prepare("DELETE FROM wishlist WHERE product_id = ?");
+                    $stmt->execute([$productId]);
+                } catch (PDOException $e) {
+                    // Table might not exist, ignore
+                }
+                
+                // Delete the product
+                $stmt = $pdo->prepare("DELETE FROM products WHERE id = ?");
+                $result = $stmt->execute([$productId]);
+                
+                if ($result && $stmt->rowCount() > 0) {
+                    $pdo->commit();
+                    $_SESSION['product_message'] = ['type' => 'success', 'text' => 'Product deleted successfully!'];
+                } else {
+                    $pdo->rollback();
+                    $_SESSION['product_message'] = ['type' => 'error', 'text' => 'Failed to delete product. The product may have existing dependencies.'];
+                }
             }
             
         } catch (Exception $e) {
             $pdo->rollback();
-            $_SESSION['product_message'] = ['type' => 'error', 'text' => 'Error deleting product.'];
+            $_SESSION['product_message'] = ['type' => 'error', 'text' => 'Error deleting product: ' . $e->getMessage()];
         }
+    } else {
+        $_SESSION['product_message'] = ['type' => 'error', 'text' => 'Product not found or you do not have permission to delete it.'];
     }
     header("Location: view-products.php");
     exit();
@@ -766,23 +828,29 @@ h1 {
                                 </td>
                                 <td>
                                     <div class="table-actions">
-                                        <a href="edit-product.php?id=<?php echo $product['id']; ?>" class="action-btn edit-btn" title="Edit">
-                                            <i class="fas fa-edit"></i>
-                                        </a>
-                                        <a href="?toggle_status=<?php echo $product['id']; ?>" 
-                                           class="action-btn status-btn product-toggle"
-                                           title="<?php echo ($product['status'] == 'active') ? 'Toggle Inactive' : 'Toggle Active'; ?>"
-                                           data-action="<?php echo ($product['status'] == 'active') ? 'deactivate' : 'activate'; ?>"
-                                           data-product-name="<?php echo htmlspecialchars($product['name']); ?>">
-                                            <i class="fas fa-<?php echo ($product['status'] == 'active') ? 'toggle-on' : 'toggle-off'; ?>"></i>
-                                        </a>
-                                        <a href="?delete=<?php echo $product['id']; ?>" 
-                                           class="action-btn delete-btn product-delete"
-                                           title="Delete"
-                                           data-action="delete"
-                                           data-product-name="<?php echo htmlspecialchars($product['name']); ?>">
-                                            <i class="fas fa-trash"></i>
-                                        </a>
+                                        <?php if (in_array($product['status'], ['suspended', 'rejected'])): ?>
+                                            <a href="edit-product.php?id=<?php echo $product['id']; ?>" class="action-btn edit-btn" title="View Details (Read-Only)">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                        <?php else: ?>
+                                            <a href="edit-product.php?id=<?php echo $product['id']; ?>" class="action-btn edit-btn" title="Edit">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <a href="?toggle_status=<?php echo $product['id']; ?>" 
+                                               class="action-btn status-btn product-toggle"
+                                               title="<?php echo ($product['status'] == 'active') ? 'Toggle Inactive' : 'Toggle Active'; ?>"
+                                               data-action="<?php echo ($product['status'] == 'active') ? 'deactivate' : 'activate'; ?>"
+                                               data-product-name="<?php echo htmlspecialchars($product['name']); ?>">
+                                                <i class="fas fa-<?php echo ($product['status'] == 'active') ? 'toggle-on' : 'toggle-off'; ?>"></i>
+                                            </a>
+                                            <a href="?delete=<?php echo $product['id']; ?>" 
+                                               class="action-btn delete-btn product-delete"
+                                               title="Delete Product"
+                                               data-action="delete"
+                                               data-product-name="<?php echo htmlspecialchars($product['name']); ?>">
+                                                <i class="fas fa-trash"></i>
+                                            </a>
+                                        <?php endif; ?>
                                     </div>
                                 </td>
                             </tr>

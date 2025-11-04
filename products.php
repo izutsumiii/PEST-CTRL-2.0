@@ -183,7 +183,7 @@ body {
 /* Products Layout */
 .products-layout {
     display: grid;
-    grid-template-columns: 300px 1fr;
+    grid-template-columns: 220px 1fr;
     align-items: start;
     gap: 30px;
     max-width: 1400px;
@@ -487,7 +487,7 @@ body {
     color: #130325;
     grid-column: 1;
     grid-row: 1;
-    max-width: 300px;
+    max-width: 220px;
     align-self: start;
     position: sticky;
     top: 100px;
@@ -861,7 +861,7 @@ body {
 /* Responsive */
 @media (max-width: 1200px) {
     .products-layout {
-        grid-template-columns: 250px 1fr;
+        grid-template-columns: 200px 1fr;
         gap: 20px;
     }
 }

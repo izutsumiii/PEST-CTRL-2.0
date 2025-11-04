@@ -69,232 +69,445 @@ if (isset($_POST['update_settings'])) {
 ?>
 
 <style>
-/* Settings Container - White Theme */
-.settings-container {
-    max-width: 900px !important;
-    margin: 32px auto !important;
-    padding: 32px 28px !important;
-    background: #ffffff !important;
-    border: 2px solid #e5e7eb !important;
-    border-radius: 12px !important;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.06) !important;
-    color: #130325 !important;
-}
+    body {
+        background: #f0f2f5 !important;
+        color: #130325 !important;
+        min-height: 100vh;
+        margin: 0;
+        font-family: 'Inter', 'Segoe UI', sans-serif;
+    }
 
-.setting-group {
-    margin-bottom: 28px !important;
-    padding: 24px 20px !important;
-    background: #ffffff !important;
-    border: 2px solid #e5e7eb !important;
-    border-radius: 12px !important;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.06) !important;
-}
+    .page-header {
+        font-size: 18px !important;
+        font-weight: 800 !important;
+        color: #130325 !important;
+        margin: 20px auto 20px auto !important;
+        padding: 0 20px !important;
+        display: flex !important;
+        align-items: center !important;
+        gap: 12px !important;
+        flex-wrap: wrap !important;
+        max-width: 1400px !important;
+        text-shadow: none !important;
+        position: relative !important;
+        z-index: 1 !important;
+    }
 
-.setting-group h3 {
-    color: #130325 !important;
-    font-size: 18px !important;
-    font-weight: 700 !important;
-    margin-top: 0 !important;
-    margin-bottom: 16px !important;
-    border-bottom: 2px solid #f3f4f6 !important;
-    padding-bottom: 12px !important;
-}
+    .page-header h1,
+    .page-heading-title {
+        font-size: 20px !important;
+        font-weight: 800 !important;
+        color: #130325 !important;
+        margin-top: 0 !important;
+        margin-bottom: 0 !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        text-shadow: none !important;
+    }
 
-.setting-description {
-    color: #6b7280 !important;
-    font-size: 14px !important;
-    line-height: 1.6 !important;
-}
+    .settings-container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 0 24px 24px;
+    }
 
-.setting-description ul,
-.setting-description ol {
-    margin-top: 8px;
-    padding-left: 20px;
-}
+    .settings-card {
+        background: #ffffff;
+        border: 1px solid rgba(0,0,0,0.1);
+        border-radius: 12px;
+        padding: 24px;
+        margin-bottom: 24px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
 
-.setting-description li {
-    margin-bottom: 8px;
-}
+    .settings-card h3 {
+        font-size: 18px;
+        font-weight: 600;
+        color: #130325;
+        margin: 0 0 20px 0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        text-shadow: none !important;
+    }
 
-.settings-container input,
-.settings-container select,
-.settings-container textarea {
-    background: #ffffff !important;
-    border: 2px solid #e5e7eb !important;
-    color: #130325 !important;
-    padding: 10px 14px !important;
-    border-radius: 8px !important;
-    font-size: 14px !important;
-    transition: all 0.2s ease !important;
-}
+    .form-group {
+        margin-bottom: 20px;
+    }
 
-.settings-container input:focus,
-.settings-container select:focus,
-.settings-container textarea:focus {
-    border-color: #FFD736 !important;
-    box-shadow: 0 0 0 3px rgba(255, 215, 54, 0.1) !important;
-    outline: none !important;
-}
+    .form-group label {
+        font-size: 13px;
+        font-weight: 600;
+        color: #130325;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
 
-.settings-container label {
-    font-size: 13px !important;
-    font-weight: 600 !important;
-    color: #130325 !important;
-    margin-bottom: 8px !important;
-    display: block;
-}
+    .info-icon {
+        color: #3b82f6;
+        cursor: pointer;
+        font-size: 16px;
+        transition: all 0.2s ease;
+    }
 
-.input-group {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-top: 12px;
-}
+    .info-icon:hover {
+        color: #2563eb;
+        transform: scale(1.1);
+    }
 
-.input-suffix {
-    color: #6b7280 !important;
-    font-weight: 600 !important;
-    font-size: 14px !important;
-}
+    .input-group {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
 
-.current-value {
-    background: #f9fafb !important;
-    border: 2px solid #e5e7eb !important;
-    border-left: 4px solid #FFD736 !important;
-    padding: 12px 16px !important;
-    border-radius: 8px !important;
-    margin-top: 12px !important;
-    color: #130325 !important;
-    font-size: 14px !important;
-}
+    .form-group input {
+        padding: 10px 12px;
+        border: 1px solid rgba(0,0,0,0.1);
+        border-radius: 8px;
+        font-size: 14px;
+        background: #ffffff;
+        color: #130325;
+        width: 150px;
+        transition: border-color 0.2s;
+    }
 
-.warning-box {
-    background: #fffbeb !important;
-    border: 2px solid #fde68a !important;
-    color: #92400e !important;
-    padding: 14px 16px !important;
-    border-radius: 8px !important;
-    margin-top: 16px !important;
-    font-size: 13px !important;
-}
+    .form-group input:focus {
+        outline: none;
+        border-color: #130325;
+    }
 
-.btn {
-    background: linear-gradient(135deg, #FFD736 0%, #FFC107 100%) !important;
-    color: #130325 !important;
-    padding: 12px 24px !important;
-    border: 2px solid #FFD736 !important;
-    border-radius: 8px !important;
-    font-size: 14px !important;
-    font-weight: 700 !important;
-    cursor: pointer !important;
-    transition: all 0.2s ease !important;
-    box-shadow: 0 2px 6px rgba(255, 215, 54, 0.2) !important;
-}
+    .input-suffix {
+        color: #6b7280;
+        font-weight: 600;
+        font-size: 14px;
+    }
 
-.btn:hover {
-    transform: translateY(-2px) !important;
-    box-shadow: 0 4px 12px rgba(255, 215, 54, 0.3) !important;
-}
+    .current-value-badge {
+        display: inline-block;
+        background: rgba(255, 215, 54, 0.1);
+        color: #130325;
+        padding: 6px 12px;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 600;
+        margin-top: 12px;
+    }
 
-.success-message {
-    background: #f0fdf4 !important;
-    color: #166534 !important;
-    border: 2px solid #86efac !important;
-    border-radius: 8px !important;
-    padding: 14px 18px !important;
-    margin-bottom: 20px !important;
-    font-size: 14px !important;
-    font-weight: 600 !important;
-}
+    .btn-save {
+        background: linear-gradient(135deg, #FFD736 0%, #FFC107 100%);
+        color: #130325;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 8px;
+        font-weight: 700;
+        font-size: 14px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
 
-.error-message {
-    background: #fef2f2 !important;
-    color: #991b1b !important;
-    border: 2px solid #fca5a5 !important;
-    border-radius: 8px !important;
-    padding: 14px 18px !important;
-    margin-bottom: 20px !important;
-    font-size: 14px !important;
-    font-weight: 600 !important;
-}
+    .btn-save:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(255, 215, 54, 0.3);
+    }
 
-.page-header {
-    margin-top: 50px;
-    margin-bottom: 20px;
-}
+    /* Toast Notification */
+    .toast-notification {
+        position: fixed;
+        top: 80px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 10000;
+        min-width: 300px;
+        max-width: 500px;
+        padding: 16px 20px;
+        border-radius: 12px;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+        animation: toastSlideIn 0.3s ease-out;
+        opacity: 0;
+        pointer-events: none;
+    }
 
-.page-header h1 {
-    color: #130325;
-    font-size: 24px;
-    font-weight: 700;
-}
+    .toast-notification.show {
+        opacity: 1;
+        pointer-events: auto;
+    }
+
+    .toast-success {
+        background: #10b981;
+        color: #ffffff;
+    }
+
+    .toast-error {
+        background: #ef4444;
+        color: #ffffff;
+    }
+
+    @keyframes toastSlideIn {
+        from {
+            opacity: 0;
+            transform: translateX(-50%) translateY(-20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+    }
+
+    /* Modal Styles */
+    .info-modal-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 10000;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .info-modal-overlay.show {
+        display: flex;
+    }
+
+    .info-modal-dialog {
+        background: #ffffff;
+        padding: 32px;
+        border-radius: 12px;
+        max-width: 600px;
+        width: 90%;
+        max-height: 80vh;
+        overflow-y: auto;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        position: relative;
+        border: none;
+    }
+
+    .info-modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid rgba(0,0,0,0.1);
+    }
+
+    .info-modal-title {
+        font-size: 20px;
+        font-weight: 700;
+        color: #130325;
+        margin: 0;
+        text-shadow: none !important;
+    }
+
+    .info-modal-close {
+        background: none;
+        border: none;
+        font-size: 28px;
+        cursor: pointer;
+        color: #130325;
+        line-height: 1;
+        padding: 0;
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 6px;
+        transition: all 0.2s ease;
+    }
+
+    .info-modal-close:hover {
+        background: rgba(0,0,0,0.05);
+        color: #6b7280;
+    }
+
+    .info-modal-body {
+        color: #130325;
+        line-height: 1.6;
+    }
+
+    .info-modal-body h4 {
+        font-size: 16px;
+        font-weight: 600;
+        color: #130325;
+        margin: 16px 0 8px 0;
+        text-shadow: none !important;
+    }
+
+    .info-modal-body ul,
+    .info-modal-body ol {
+        margin: 12px 0;
+        padding-left: 24px;
+    }
+
+    .info-modal-body li {
+        margin-bottom: 8px;
+        color: #374151;
+    }
+
+    .info-modal-body strong {
+        color: #130325;
+        font-weight: 600;
+    }
 </style>
 
-<main>
-<div class="page-header" style="margin-top: 50px;">
-    <h1>System Settings</h1>
+<div class="page-header">
+    <h1 class="page-heading-title">System Settings</h1>
 </div>
 
+<?php if (!empty($success)): ?>
+    <div class="toast-notification toast-success" id="successToast">
+        <i class="fas fa-check-circle"></i>
+        <span><?php echo htmlspecialchars($success); ?></span>
+    </div>
+<?php endif; ?>
+
+<?php if (!empty($error)): ?>
+    <div class="toast-notification toast-error" id="errorToast">
+        <i class="fas fa-exclamation-circle"></i>
+        <span><?php echo htmlspecialchars($error); ?></span>
+    </div>
+<?php endif; ?>
+
 <div class="settings-container">
-    <?php if (!empty($success)): ?>
-        <div class="success-message"><?php echo htmlspecialchars($success); ?></div>
-    <?php endif; ?>
-    <?php if (!empty($error)): ?>
-        <div class="error-message"><?php echo htmlspecialchars($error); ?></div>
-    <?php endif; ?>
-    
     <form method="POST" action="">
-        <div class="setting-group">
-            <h3>Order Grace Period</h3>
-            <label for="grace_period">Customer Cancellation Grace Period:</label>
+        <div class="settings-card">
+            <h3>
+                Order Grace Period
+                <i class="fas fa-info-circle info-icon" onclick="openInfoModal('gracePeriod')" title="Click for instructions"></i>
+            </h3>
             
-            <div class="input-group">
-                <input type="number" 
-                       id="grace_period" 
-                       name="grace_period" 
-                       value="<?php echo $currentGracePeriod; ?>" 
-                       min="1" 
-                       max="60" 
-                       required>
-                <span class="input-suffix">minutes</span>
+            <div class="form-group">
+                <label for="grace_period">
+                    Customer Cancellation Grace Period
+                    <i class="fas fa-info-circle info-icon" onclick="openInfoModal('gracePeriod')" title="Click for instructions"></i>
+                </label>
+                
+                <div class="input-group">
+                    <input type="number" 
+                           id="grace_period" 
+                           name="grace_period" 
+                           value="<?php echo $currentGracePeriod; ?>" 
+                           min="1" 
+                           max="60" 
+                           required>
+                    <span class="input-suffix">minutes</span>
+                </div>
+                
+                <div class="current-value-badge">
+                    Current Setting: <?php echo $currentGracePeriod; ?> minutes
+                </div>
             </div>
             
-            <div class="current-value">
-                <strong>Current Setting:</strong> <?php echo $currentGracePeriod; ?> minutes
-            </div>
-            
-            <div class="setting-description">
-                This is the time period after an order is placed during which:
-                <ul>
-                    <li>Customers have priority to cancel their orders</li>
-                    <li>Sellers cannot process orders (orders remain in "pending" status)</li>
-                    <li>This protects customers from immediate processing and allows cancellation flexibility</li>
-                </ul>
-            </div>
-            
-            <div class="warning-box">
-                <strong>Important:</strong> Changing this setting will affect all new orders going forward. 
-                Existing orders will continue to use the grace period that was active when they were placed.
-            </div>
+            <button type="submit" name="update_settings" class="btn-save">
+                <i class="fas fa-save"></i> Save Settings
+            </button>
         </div>
-        
-        <button type="submit" name="update_settings" class="btn">Update Settings</button>
     </form>
-    
-    <div class="setting-group" style="margin-top: 30px;">
-        <h3>How Grace Period Works</h3>
-        <div class="setting-description">
+</div>
+
+<!-- Info Modal -->
+<div id="infoModal" class="info-modal-overlay" onclick="closeInfoModalOnOverlay(event)">
+    <div class="info-modal-dialog" onclick="event.stopPropagation()">
+        <div class="info-modal-header">
+            <h3 class="info-modal-title">Order Grace Period Instructions</h3>
+            <button class="info-modal-close" onclick="closeInfoModal()" aria-label="Close">&times;</button>
+        </div>
+        <div class="info-modal-body" id="infoModalContent">
+            <p><strong>What is the Grace Period?</strong></p>
+            <p>The grace period is the time period after an order is placed during which customers have priority to cancel their orders without seller intervention.</p>
+            
+            <h4>How It Works:</h4>
             <ol>
-                <li><strong>Order Placed:</strong> Customer places an order (status: "pending")</li>
-                <li><strong>Grace Period Active:</strong> For the set duration, sellers cannot process the order</li>
-                <li><strong>Customer Priority:</strong> During this time, customers can cancel without seller intervention</li>
-                <li><strong>Grace Period Ends:</strong> Sellers can now process the order (change to "processing")</li>
-                <li><strong>Order Locked:</strong> Once processing starts, customer cancellation requires seller approval</li>
+                <li><strong>Order Placed:</strong> When a customer places an order, it starts with "pending" status.</li>
+                <li><strong>Grace Period Active:</strong> For the set duration (in minutes), sellers cannot process the order. The order remains in "pending" status.</li>
+                <li><strong>Customer Priority:</strong> During this time, customers can cancel their orders directly without requiring seller approval.</li>
+                <li><strong>Grace Period Ends:</strong> Once the grace period expires, sellers can process the order (change status to "processing").</li>
+                <li><strong>Order Locked:</strong> After processing starts, customer cancellation requires seller approval.</li>
             </ol>
+            
+            <h4>Important Notes:</h4>
+            <ul>
+                <li>Grace period must be between 1 and 60 minutes.</li>
+                <li>Changing this setting only affects new orders going forward.</li>
+                <li>Existing orders will continue to use the grace period that was active when they were placed.</li>
+                <li>This protects customers from immediate processing and allows cancellation flexibility.</li>
+            </ul>
+            
+            <h4>Example:</h4>
+            <p>If you set the grace period to 15 minutes:</p>
+            <ul>
+                <li>Customer places order at 10:00 AM</li>
+                <li>Grace period active until 10:15 AM</li>
+                <li>Customer can cancel anytime before 10:15 AM</li>
+                <li>Seller can process order starting at 10:15 AM</li>
+            </ul>
         </div>
     </div>
 </div>
-</main>
 
-</body>
-</html>
+<script>
+function openInfoModal(type) {
+    const modal = document.getElementById('infoModal');
+    if (modal) {
+        modal.classList.add('show');
+        document.body.style.overflow = 'hidden';
+    }
+}
+
+function closeInfoModal() {
+    const modal = document.getElementById('infoModal');
+    if (modal) {
+        modal.classList.remove('show');
+        document.body.style.overflow = '';
+    }
+}
+
+function closeInfoModalOnOverlay(event) {
+    if (event.target.classList.contains('info-modal-overlay')) {
+        closeInfoModal();
+    }
+}
+
+// Close modal on Escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeInfoModal();
+    }
+});
+
+// Auto-dismiss toast notifications
+document.addEventListener('DOMContentLoaded', function() {
+    const successToast = document.getElementById('successToast');
+    const errorToast = document.getElementById('errorToast');
+    
+    function showAndDismissToast(toast) {
+        if (toast) {
+            setTimeout(() => {
+                toast.classList.add('show');
+            }, 10);
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => {
+                    toast.remove();
+                }, 300);
+            }, 3000);
+        }
+    }
+    
+    showAndDismissToast(successToast);
+    showAndDismissToast(errorToast);
+});
+</script>

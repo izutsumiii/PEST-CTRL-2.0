@@ -146,28 +146,18 @@ $totalPages = ceil($totalSellers / $limit);
     }
 
     body {
-        background: linear-gradient(135deg, var(--secondary-dark) 0%, var(--primary-dark) 100%);
-        color: var(--text-light);
+        background: #f0f2f5 !important;
+        color: #130325 !important;
         min-height: 100vh;
         margin: 0;
         font-family: 'Inter', 'Segoe UI', sans-serif;
     }
 
     /* Message Alerts */
-    .alert {
-        max-width: 1400px;
-        margin: 20px auto 0;
-        padding: 14px 18px;
-        border-radius: 10px;
-        font-weight: 700;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        border: 2px solid transparent;
-    }
-    .alert-success { background: rgba(40,167,69,0.15); color: var(--success-green); border-color: var(--success-green); }
-    .alert-error { background: rgba(220,53,69,0.15); color: var(--danger-red); border-color: var(--danger-red); }
-    .alert-warning { background: rgba(255,193,7,0.15); color: var(--warning-yellow); border-color: var(--warning-yellow); }
+    .alert { max-width: 1400px; margin: 20px auto 0; padding: 14px 18px; border-radius: 10px; font-weight: 700; display: flex; align-items: center; gap: 10px; border: 2px solid transparent; }
+    .alert-success { background: #f0fdf4; color: #166534; border-color: #86efac; }
+    .alert-error { background: #fef2f2; color: #991b1b; border-color: #fca5a5; }
+    .alert-warning { background: #fffbeb; color: #92400e; border-color: #fde68a; }
 
     /* Custom Confirmation Dialog Styles (shared) */
     .custom-confirm-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 10000; opacity: 0; visibility: hidden; transition: all 0.25s ease; }
@@ -196,33 +186,71 @@ $totalPages = ceil($totalSellers / $limit);
         font-size: 28px;
         font-weight: 800;
         color: var(--text-light);
+        text-shadow: none !important;
     }
-    .container > h1 { padding: 0; margin: 0 0 10px 0; }
-    .page-heading-title { font-size: 20px; font-weight: 800; color: var(--text-light); margin: 0; }
+    .container > h1 { 
+        padding: 0; 
+        margin: 0 0 10px 0; 
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+        text-shadow: none !important;
+    }
+    .page-heading-title { font-size: 20px; font-weight: 800; color: #130325; margin: 0; text-shadow: none !important; }
+    
+    /* Total count styling */
+    .total-count-badge {
+        display: inline-flex;
+        align-items: center;
+        background: #130325;
+        color: #ffffff;
+        padding: 6px 14px;
+        border-radius: 20px;
+        font-size: 14px;
+        font-weight: 700;
+        margin-left: 0;
+        border: 1px solid #130325;
+        vertical-align: middle;
+    }
 
     /* Main Container */
     .container {
         max-width: 1400px;
-        margin: 0 auto 30px;
-        padding: 0 20px;
+        margin: -30px auto 30px;
+        padding: 5px 20px 0;
     }
 
-    /* Filter Section */
-    .filter-section {
-        background: var(--primary-dark);
-        border: 1px solid var(--border-color);
-        border-radius: 12px;
-        padding: 20px;
-        margin-bottom: 20px;
-        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+    /* Filter Section - same width as table container */
+    .filter-section { 
+        background: #ffffff; 
+        border: 1px solid rgba(0,0,0,0.1); 
+        border-radius: 8px; 
+        padding: 16px 24px; 
+        margin-bottom: 16px; 
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        width: 100%;
+        box-sizing: border-box;
     }
 
     .status-filters { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: center; }
-    .seller-filter-form { display: flex; align-items: center; gap: 10px; flex-wrap: nowrap; justify-content: center; }
-    .seller-filter-form .filter-select { min-width: 160px; padding: 12px 16px; background: #0f0a1f; border: 2px solid var(--accent-yellow); border-radius: 8px; color: #F9F9F9; font-size: 14px; height: 42px; }
-    .seller-filter-form .search-input { flex: 1; min-width: 260px; padding: 12px 16px; background: #0f0a1f; border: 1px solid #3a2b55; border-radius: 8px; color: #F9F9F9; font-size: 14px; height: 42px; transition: all 0.25s ease; }
-    .seller-filter-form .search-input:focus { border-color: var(--accent-yellow); box-shadow: 0 0 0 3px rgba(255, 215, 54, 0.12); outline: none; }
-    .seller-filter-form .btn-search { background: linear-gradient(135deg, var(--accent-yellow), var(--accent-yellow)); color: #1a0a2e; border: 2px solid var(--accent-yellow); height: 40px; width: 40px; display: inline-flex; align-items: center; justify-content: center; border-radius: 8px; }
+    .seller-filter-form { display: flex; align-items: center; gap: 12px; flex-wrap: nowrap; justify-content: center; }
+    .seller-filter-form .filter-select { min-width: 160px; padding: 10px 14px; background: #ffffff; border: 2px solid #e5e7eb; border-radius: 8px; color: #130325; font-size: 14px; height: 40px; }
+    .seller-filter-form .search-input { flex: 1; min-width: 260px; padding: 10px 14px; background: #ffffff; border: 2px solid #e5e7eb; border-radius: 8px; color: #130325; font-size: 14px; height: 40px; transition: all 0.2s ease; }
+    .seller-filter-form .search-input:focus { border-color: #FFD736; box-shadow: 0 0 0 3px rgba(255,215,54,0.12); outline: none; }
+    .seller-filter-form .btn-search { 
+        background: linear-gradient(135deg, #FFD736, #FFC107); 
+        color: #130325; 
+        border: none; 
+        height: 40px; 
+        width: 40px; 
+        min-width: 40px;
+        display: inline-flex; 
+        align-items: center; 
+        justify-content: center; 
+        border-radius: 8px; 
+        flex-shrink: 0;
+    }
 
     /* Page Title */
     .page-title {
@@ -239,56 +267,144 @@ $totalPages = ceil($totalSellers / $limit);
         font-size: 28px;
     }
 
-    /* Table Container */
+    /* Table Container - exact match from manage-products.php */
     .table-container {
-        background: var(--primary-dark);
-        border: 1px solid var(--border-color);
-        border-radius: 12px;
-        overflow: hidden;
-        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+        background: #ffffff;
+        border: 1px solid rgba(0,0,0,0.1);
+        border-radius: 8px;
+        padding: 24px;
         margin-bottom: 20px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .table-wrapper {
+        overflow-x: visible;
+        overflow-y: visible;
     }
 
     table {
         width: 100%;
         border-collapse: collapse;
+        font-size: 14px;
+        min-width: 800px;
+    }
+    
+    /* Responsive table */
+    @media (max-width: 1200px) {
+        .table-wrapper {
+            overflow-x: visible;
+            overflow-y: visible;
+        }
+        
+        table {
+            font-size: 13px;
+        }
+        
+        th, td {
+            padding: 10px 12px;
+            font-size: 12px;
+        }
+        
+        .status-badge {
+            min-width: 85px;
+            max-width: 85px;
+            font-size: 10px;
+            padding: 3px 8px;
+        }
     }
 
     thead {
-        background: rgba(255, 215, 54, 0.1);
+        background: #130325 !important;
+        border-bottom: 2px solid #130325;
     }
 
     th {
-        padding: 16px 12px;
+        padding: 12px 16px;
         text-align: left;
-        font-size: 13px;
-        color: var(--accent-yellow);
         font-weight: 700;
+        color: #ffffff !important;
+        background: #130325 !important;
+        font-size: 13px;
         text-transform: uppercase;
         letter-spacing: 0.5px;
-        border-bottom: 2px solid var(--accent-yellow);
+        position: relative;
+        user-select: none;
+        vertical-align: middle;
+    }
+
+    th.sortable {
+        cursor: pointer;
+        transition: background 0.2s ease;
+        padding-right: 32px;
+    }
+
+    th.sortable:hover {
+        background: #130325 !important;
     }
 
     td {
-        padding: 16px 12px;
-        border-bottom: 1px solid var(--border-color);
+        padding: 14px 16px;
+        color: #130325;
+        vertical-align: middle;
+        border-bottom: 1px solid #f0f0f0;
+        background: #ffffff;
         font-size: 14px;
-        color: var(--text-light);
     }
 
-    tr:hover {
-        background: rgba(255, 255, 255, 0.02);
+    tbody tr {
+        border-bottom: 1px solid #f0f0f0;
+        transition: background 0.2s ease;
     }
 
-    /* Status Badges */
+    tbody tr:hover {
+        background: rgba(255, 215, 54, 0.05);
+    }
+
+    /* Sortable headers */
+    .sort-indicator {
+        position: absolute;
+        right: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 10px;
+        color: rgba(255, 255, 255, 0.7);
+        transition: all 0.2s ease;
+    }
+
+    .sort-indicator::before {
+        content: '↕';
+        display: block;
+    }
+
+    th.sort-asc .sort-indicator::before {
+        content: '↑';
+        color: rgba(255, 255, 255, 0.9);
+    }
+
+    th.sort-desc .sort-indicator::before {
+        content: '↓';
+        color: rgba(255, 255, 255, 0.9);
+    }
+
+    /* Status Badges - fixed size */
     .status-badge {
-        display: inline-block;
-        padding: 6px 12px;
-        border-radius: 20px;
-        font-size: 12px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        padding: 4px 10px;
+        border-radius: 12px;
+        font-size: 11px;
         font-weight: 700;
-        letter-spacing: 0.5px;
+        letter-spacing: 0.3px;
         text-transform: uppercase;
+        min-width: 90px;
+        max-width: 90px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
     .status-pending {
@@ -323,90 +439,113 @@ $totalPages = ceil($totalSellers / $limit);
         display: block;
     }
 
-    /* Action Buttons */
-    .action-buttons {
+    /* Action Buttons - no borders */
+    .action-buttons, .table-actions {
         display: flex;
         gap: 8px;
-        flex-wrap: wrap;
+        flex-wrap: nowrap;
     }
 
-    .btn {
-        display: inline-flex;
+    .action-btn {
+        width: 32px;
+        height: 32px;
+        display: flex;
         align-items: center;
-        gap: 8px;
-        padding: 12px 20px;
-        border-radius: 8px;
-        font-size: 14px;
-        font-weight: 700;
+        justify-content: center;
+        border-radius: 4px;
+        transition: all 0.2s ease;
         text-decoration: none;
+        color: #130325;
         border: none;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
+        position: relative;
+    }
+    
+    .action-btn i {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 14px;
+        line-height: 1;
     }
 
-    .btn:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    .btn-view, .edit-btn {
+        background: #130325;
+        color: #ffffff;
     }
 
-    .btn-view { background: linear-gradient(135deg, #3498db, #5dade2); color: white; }
+    .btn-view:hover, .edit-btn:hover {
+        background: #0a0218;
+        transform: scale(1.1);
+    }
 
-    .btn-approve { background: linear-gradient(135deg, var(--success-green), #20c997); color: white; }
+    .btn-approve {
+        background: #28a745;
+        color: #ffffff;
+    }
 
-    .btn-reject { background: linear-gradient(135deg, var(--danger-red), #e74c3c); color: white; }
+    .btn-approve:hover {
+        background: #218838;
+        transform: scale(1.1);
+    }
 
-    .btn-suspend { background: linear-gradient(135deg, #6c757d, #95a5a6); color: white; }
+    .btn-reject {
+        background: #dc3545;
+        color: #ffffff;
+    }
 
-    .btn-ban { background: linear-gradient(135deg, #c0392b, #e74c3c); color: white; }
+    .btn-reject:hover {
+        background: #c82333;
+        transform: scale(1.1);
+    }
 
-    .btn-restore { background: linear-gradient(135deg, #3498db, #5dade2); color: white; }
+    .btn-suspend {
+        background: #6c757d;
+        color: #ffffff;
+    }
+
+    .btn-suspend:hover {
+        background: #5a6268;
+        transform: scale(1.1);
+    }
+
+    .btn-ban {
+        background: #c0392b;
+        color: #ffffff;
+    }
+
+    .btn-ban:hover {
+        background: #a93226;
+        transform: scale(1.1);
+    }
+
+    .btn-restore {
+        background: #3498db;
+        color: #ffffff;
+    }
+
+    .btn-restore:hover {
+        background: #2980b9;
+        transform: scale(1.1);
+    }
+
+    .status-btn {
+        background: #FFD736;
+        color: #130325;
+    }
+
+    .status-btn:hover {
+        background: #f5d026;
+        transform: scale(1.1);
+    }
 
     /* Pagination */
-    .pagination {
-        display: flex;
-        justify-content: center;
-        gap: 8px;
-        margin-top: 20px;
-    }
-
-    .page-link {
-        padding: 10px 16px;
-        background: var(--primary-dark);
-        color: var(--accent-yellow);
-        text-decoration: none;
-        border-radius: 6px;
-        border: 1px solid var(--border-color);
-        font-weight: 700;
-        font-size: 14px;
-        transition: all 0.3s ease;
-    }
-
-    .page-link:hover {
-        background: var(--accent-yellow);
-        color: var(--primary-dark);
-        transform: translateY(-2px);
-    }
-
-    .page-link.active {
-        background: var(--accent-yellow);
-        color: var(--primary-dark);
-    }
-
-    .page-ellipsis {
-        padding: 10px 8px;
-        color: rgba(249, 249, 249, 0.5);
-        font-weight: 700;
-    }
-
-    .pagination-info {
-        text-align: center;
-        margin-top: 16px;
-        color: rgba(249, 249, 249, 0.7);
-        font-size: 14px;
-        font-weight: 500;
-    }
+    .pagination { display: flex; justify-content: center; gap: 8px; margin-top: 20px; }
+    .page-link { padding: 8px 14px; background: #ffffff; color: #130325; text-decoration: none; border-radius: 6px; border: 1px solid #e5e7eb; font-weight: 700; font-size: 13px; transition: all 0.2s ease; }
+    .page-link:hover { background: #FFD736; color: #130325; transform: translateY(-2px); }
+    .page-link.active { background: #FFD736; color: #130325; border-color: #FFD736; }
+    .page-ellipsis { padding: 8px 8px; color: #9ca3af; font-weight: 700; }
+    .pagination-info { text-align: center; margin-top: 12px; color: #6b7280; font-size: 13px; font-weight: 500; }
 
     /* Responsive */
     @media (max-width: 768px) {
@@ -414,8 +553,9 @@ $totalPages = ceil($totalSellers / $limit);
             flex-direction: column;
         }
         
-        .action-buttons {
-            flex-direction: column;
+        .action-buttons, .table-actions {
+            flex-direction: row;
+            flex-wrap: nowrap;
         }
         
         .btn {
@@ -474,7 +614,12 @@ function showCustomConfirm(title, message, type = 'warning', onConfirm) {
 <?php endif; ?>
 
 <div class="container">
-    <h1 style="padding:0; margin: 0 0 10px 0;"><span class="page-heading-title">Manage Sellers</span></h1>
+    <h1 style="padding:0; margin: 0 0 10px 0;">
+        <span class="page-heading-title">Manage Sellers</span>
+        <span class="total-count-badge">
+            <?php echo $totalSellers; ?> total
+        </span>
+    </h1>
     <!-- Filter Section -->
     <div class="filter-section">
         <div class="status-filters">
@@ -492,13 +637,6 @@ function showCustomConfirm(title, message, type = 'warning', onConfirm) {
             </form>
         </div>
     </div>
-
-    <div class="page-title">
-        Sellers List 
-        <span style="color: var(--text-light); font-size: 18px; font-weight: 500;">
-            (<?php echo $totalSellers; ?> total)
-        </span>
-    </div>
     
     <?php if (empty($sellers)): ?>
         <div style="text-align: center; padding: 40px; color: rgba(249, 249, 249, 0.6);">
@@ -507,14 +645,15 @@ function showCustomConfirm(title, message, type = 'warning', onConfirm) {
         </div>
     <?php else: ?>
         <div class="table-container">
-            <table>
+            <div class="table-wrapper">
+                <table class="admin-table" id="sellersTable">
                 <thead>
                     <tr>
-                        <th>ID</th>
-                        <th>Username</th>
-                        <th>Email</th>
-                        <th>Status</th>
-                        <th>Registered</th>
+                        <th class="sortable">ID <span class="sort-indicator"></span></th>
+                        <th class="sortable">Username <span class="sort-indicator"></span></th>
+                        <th class="sortable">Email <span class="sort-indicator"></span></th>
+                        <th class="sortable">Status <span class="sort-indicator"></span></th>
+                        <th class="sortable">Registered <span class="sort-indicator"></span></th>
                         <th>Actions</th>
                     </tr>
                 </thead>
@@ -545,33 +684,33 @@ function showCustomConfirm(title, message, type = 'warning', onConfirm) {
                             <td><?php echo date('M j, Y', strtotime($seller['created_at'])); ?></td>
                             <td>
                                 <div class="action-buttons">
-                                    <a href="seller-details.php?id=<?php echo $seller['id']; ?>" class="btn btn-view">
-                                        <i class="fas fa-eye"></i> View
+                                    <a href="seller-details.php?id=<?php echo $seller['id']; ?>" class="action-btn btn-view" title="View">
+                                        <i class="fas fa-eye"></i>
                                     </a>
                                     <?php if ($seller['seller_status'] === 'pending'): ?>
-                                        <a href="admin-sellers.php?action=approve&id=<?php echo $seller['id']; ?>" class="btn btn-approve">
-                                            <i class="fas fa-check"></i> Approve
+                                        <a href="admin-sellers.php?action=approve&id=<?php echo $seller['id']; ?>" class="action-btn btn-approve" title="Approve">
+                                            <i class="fas fa-check"></i>
                                         </a>
-                                        <a href="admin-sellers.php?action=reject&id=<?php echo $seller['id']; ?>" class="btn btn-reject">
-                                            <i class="fas fa-times"></i> Reject
+                                        <a href="admin-sellers.php?action=reject&id=<?php echo $seller['id']; ?>" class="action-btn btn-reject" title="Reject">
+                                            <i class="fas fa-times"></i>
                                         </a>
                                     <?php endif; ?>
                                     
                                     <?php if ($seller['seller_status'] === 'approved'): ?>
-                                        <a href="admin-sellers.php?action=suspend&id=<?php echo $seller['id']; ?>" class="btn btn-suspend">
-                                            <i class="fas fa-pause"></i> Suspend
+                                        <a href="admin-sellers.php?action=suspend&id=<?php echo $seller['id']; ?>" class="action-btn btn-suspend" title="Suspend">
+                                            <i class="fas fa-pause"></i>
                                         </a>
                                     <?php endif; ?>
                                     
                                     <?php if (in_array($seller['seller_status'], ['approved', 'suspended'])): ?>
-                                        <a href="admin-sellers.php?action=ban&id=<?php echo $seller['id']; ?>" class="btn btn-ban">
-                                            <i class="fas fa-ban"></i> Ban
+                                        <a href="admin-sellers.php?action=ban&id=<?php echo $seller['id']; ?>" class="action-btn btn-ban" title="Ban">
+                                            <i class="fas fa-ban"></i>
                                         </a>
                                     <?php endif; ?>
                                     
                                     <?php if (in_array($seller['seller_status'], ['suspended', 'banned'])): ?>
-                                        <a href="admin-sellers.php?action=restore&id=<?php echo $seller['id']; ?>" class="btn btn-restore">
-                                            <i class="fas fa-undo"></i> Restore
+                                        <a href="admin-sellers.php?action=restore&id=<?php echo $seller['id']; ?>" class="action-btn btn-restore" title="Restore">
+                                            <i class="fas fa-undo"></i>
                                         </a>
                                     <?php endif; ?>
                                 </div>
@@ -580,6 +719,7 @@ function showCustomConfirm(title, message, type = 'warning', onConfirm) {
                     <?php endforeach; ?>
             </tbody>
         </table>
+        </div>
 
         <!-- Pagination -->
         <?php if ($totalPages > 1): ?>
@@ -660,5 +800,40 @@ document.addEventListener('DOMContentLoaded', function() {
             );
         });
     });
+
+    // Sortable table headers
+    function getCellValue(row, idx) {
+        const cell = row.children[idx];
+        return cell ? cell.textContent.trim() : '';
+    }
+    function comparer(idx, asc) {
+        return (a, b) => {
+            const v1 = getCellValue(asc ? a : b, idx);
+            const v2 = getCellValue(asc ? b : a, idx);
+            const n1 = parseFloat(v1.replace(/[^0-9.]/g, ''));
+            const n2 = parseFloat(v2.replace(/[^0-9.]/g, ''));
+            if (!isNaN(n1) && !isNaN(n2)) return n1 - n2;
+            const d1 = Date.parse(v1);
+            const d2 = Date.parse(v2);
+            if (!isNaN(d1) && !isNaN(d2)) return d1 - d2;
+            return v1.localeCompare(v2);
+        };
+    }
+    const table = document.getElementById('sellersTable');
+    if (table) {
+        const headers = table.querySelectorAll('thead th.sortable');
+        headers.forEach((th, idx) => {
+            th.addEventListener('click', () => {
+                headers.forEach(h => h.classList.remove('sort-asc','sort-desc'));
+                const asc = !th.classList.contains('sort-asc');
+                th.classList.toggle('sort-asc', asc);
+                th.classList.toggle('sort-desc', !asc);
+                const tbody = table.tBodies[0];
+                Array.from(tbody.querySelectorAll('tr'))
+                    .sort(comparer(idx, asc))
+                    .forEach(tr => tbody.appendChild(tr));
+            });
+        });
+    }
 });
 </script>

@@ -27,6 +27,13 @@ if (!$product) {
 
 // Handle form submission
 if (isset($_POST['update_product'])) {
+    // Prevent sellers from editing products that were suspended or rejected by admin
+    if (in_array($product['status'], ['suspended', 'rejected'])) {
+        $_SESSION['product_toast'] = ['type' => 'error', 'text' => 'This product was ' . $product['status'] . ' by admin and cannot be edited. Please contact admin for assistance.'];
+        header("Location: edit-product.php?id=" . $productId);
+        exit();
+    }
+    
     $name = sanitizeInput($_POST['name']);
     $description = sanitizeInput($_POST['description']);
     $price = floatval($_POST['price']);
@@ -88,6 +95,10 @@ if (isset($_POST['update_product'])) {
 $stmt = $pdo->prepare("SELECT * FROM categories WHERE seller_id IS NULL ORDER BY name");
 $stmt->execute();
 $categories = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+// Check if product is suspended or rejected by admin (read-only mode)
+$isReadOnly = in_array($product['status'], ['suspended', 'rejected']);
+
 // Include header after form processing is complete (to avoid headers already sent)
 require_once 'includes/seller_header.php';
 ?>
@@ -118,42 +129,56 @@ require_once 'includes/seller_header.php';
         <?php unset($_SESSION['product_toast']); ?>
     <?php endif; ?>
 
-    <h1>Edit Product</h1>
+    <h1><?php echo $isReadOnly ? 'View Product Details' : 'Edit Product'; ?></h1>
+
+    <?php if ($isReadOnly): ?>
+        <div style="background: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; padding: 16px; margin-bottom: 20px; color: #92400e;">
+            <strong><i class="fas fa-exclamation-triangle"></i> This product was <?php echo ucfirst($product['status']); ?> by admin.</strong>
+            <p style="margin: 8px 0 0 0; font-size: 14px;">You can only view the product details. This product cannot be edited or reactivated. Please contact admin for assistance.</p>
+        </div>
+    <?php endif; ?>
 
 <div class="product-management">
     <div class="edit-product-form">
-        <form method="POST" action="" enctype="multipart/form-data">
+        <form method="POST" action="" enctype="multipart/form-data" <?php echo $isReadOnly ? 'onsubmit="return false;"' : ''; ?>>
             <div class="form-grid">
                 <div class="form-left">
                     <div class="form-group">
                         <label for="product_name">Product Name:</label>
-                        <input type="text" id="product_name" name="name" value="<?php echo htmlspecialchars($product['name']); ?>" required>
+                        <input type="text" id="product_name" name="name" value="<?php echo htmlspecialchars($product['name']); ?>" <?php echo $isReadOnly ? 'readonly' : 'required'; ?> style="<?php echo $isReadOnly ? 'background: #f3f4f6; cursor: not-allowed;' : ''; ?>">
                     </div>
                     
                     <div class="form-group">
                         <label for="product_description">Description:</label>
-                        <textarea id="product_description" name="description" required><?php echo htmlspecialchars($product['description']); ?></textarea>
+                        <textarea id="product_description" name="description" <?php echo $isReadOnly ? 'readonly' : 'required'; ?> style="<?php echo $isReadOnly ? 'background: #f3f4f6; cursor: not-allowed;' : ''; ?>"><?php echo htmlspecialchars($product['description']); ?></textarea>
                     </div>
                     
                     <div class="form-row">
                         <div class="form-group">
                             <label for="price">Price (₱):</label>
-                            <input type="number" id="price" name="price" step="0.01" min="0" value="<?php echo htmlspecialchars($product['price']); ?>" required>
+                            <input type="number" id="price" name="price" step="0.01" min="0" value="<?php echo htmlspecialchars($product['price']); ?>" <?php echo $isReadOnly ? 'readonly' : 'required'; ?> style="<?php echo $isReadOnly ? 'background: #f3f4f6; cursor: not-allowed;' : ''; ?>">
                         </div>
                         
                         <div class="form-group">
                             <label for="stock_quantity">Stock Quantity:</label>
-                            <input type="number" id="stock_quantity" name="stock_quantity" min="0" value="<?php echo htmlspecialchars($product['stock_quantity']); ?>" required>
+                            <input type="number" id="stock_quantity" name="stock_quantity" min="0" value="<?php echo htmlspecialchars($product['stock_quantity']); ?>" <?php echo $isReadOnly ? 'readonly' : 'required'; ?> style="<?php echo $isReadOnly ? 'background: #f3f4f6; cursor: not-allowed;' : ''; ?>">
                         </div>
                     </div>
                     
                     <div class="form-row">
                         <div class="form-group">
                             <label for="status">Status:</label>
-                            <select id="status" name="status" required>
-                                <option value="active" <?php echo $product['status'] == 'active' ? 'selected' : ''; ?>>Active</option>
-                                <option value="inactive" <?php echo $product['status'] == 'inactive' ? 'selected' : ''; ?>>Inactive</option>
-                            </select>
+                            <?php if (in_array($product['status'], ['suspended', 'rejected'])): ?>
+                                <div style="padding: 10px 12px; border: 1px solid rgba(0,0,0,0.1); border-radius: 8px; background: #f3f4f6; color: #6b7280;">
+                                    <strong><?php echo ucfirst($product['status']); ?></strong> - Cannot be changed. This product was <?php echo $product['status']; ?> by admin and requires admin approval to reactivate.
+                                </div>
+                                <input type="hidden" name="status" value="<?php echo htmlspecialchars($product['status']); ?>">
+                            <?php else: ?>
+                                <select id="status" name="status" required>
+                                    <option value="active" <?php echo $product['status'] == 'active' ? 'selected' : ''; ?>>Active</option>
+                                    <option value="inactive" <?php echo $product['status'] == 'inactive' ? 'selected' : ''; ?>>Inactive</option>
+                                </select>
+                            <?php endif; ?>
                         </div>
                     </div>
                     
@@ -212,13 +237,14 @@ require_once 'includes/seller_header.php';
                                         <?php if ($hasChildren): ?>
                                             <div class="child-categories collapsed" id="children_<?php echo $parent['id']; ?>">
                                                 <?php foreach ($data['children'] as $child): ?>
-                                                    <label class="category-checkbox-label child-label">
+                                                    <label class="category-checkbox-label child-label" style="<?php echo $isReadOnly ? 'opacity: 0.6; cursor: not-allowed;' : ''; ?>">
                                                         <input type="checkbox" 
                                                             name="category_id[]" 
                                                             value="<?php echo $child['id']; ?>" 
                                                             class="category-checkbox child-checkbox"
                                                             data-parent="<?php echo $parent['id']; ?>"
-                                                            <?php echo ($child['id'] == $product['category_id']) ? 'checked' : ''; ?>>
+                                                            <?php echo ($child['id'] == $product['category_id']) ? 'checked' : ''; ?>
+                                                            <?php echo $isReadOnly ? 'disabled' : ''; ?>>
                                                         <span class="category-name child-name">
                                                             <?php 
                                                                 $cleanChildName = preg_replace('/[\x{1F300}-\x{1F9FF}]|[\x{2600}-\x{26FF}]|[\x{2700}-\x{27BF}]|[\x{FE0F}]|[\x{200D}]|[\x{1F600}-\x{1F64F}]|[\x{1F1E0}-\x{1F1FF}]/u', '', $child['name']);
@@ -238,12 +264,13 @@ require_once 'includes/seller_header.php';
                                             <span style="color: #FFD736; font-size: 14px; font-weight: 600;">Other Categories</span>
                                         </div>
                                         <?php foreach ($orphanChildren as $orphan): ?>
-                                            <label class="category-checkbox-label child-label">
+                                            <label class="category-checkbox-label child-label" style="<?php echo $isReadOnly ? 'opacity: 0.6; cursor: not-allowed;' : ''; ?>">
                                                 <input type="checkbox" 
                                                     name="category_id[]" 
                                                     value="<?php echo $orphan['id']; ?>" 
                                                     class="category-checkbox"
-                                                    <?php echo ($orphan['id'] == $product['category_id']) ? 'checked' : ''; ?>>
+                                                    <?php echo ($orphan['id'] == $product['category_id']) ? 'checked' : ''; ?>
+                                                    <?php echo $isReadOnly ? 'disabled' : ''; ?>>
                                                 <span class="category-name child-name">
                                                     <?php 
                                                         $cleanOrphanName = preg_replace('/[\x{1F300}-\x{1F9FF}]|[\x{2600}-\x{26FF}]|[\x{2700}-\x{27BF}]|[\x{FE0F}]|[\x{200D}]|[\x{1F600}-\x{1F64F}]|[\x{1F1E0}-\x{1F1FF}]/u', '', $orphan['name']);
@@ -272,39 +299,47 @@ require_once 'includes/seller_header.php';
                     
                     <div class="form-group">
                         <label for="image">Change Product Image:</label>
-                        <div class="upload-area" id="upload-area">
-                            <div class="upload-placeholder" id="upload-placeholder">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                                    <circle cx="8.5" cy="8.5" r="1.5"></circle>
-                                    <polyline points="21 15 16 10 5 21"></polyline>
-                                </svg>
-                                <p>Click to upload or drag and drop</p>
-                                <small>PNG, JPG, GIF up to 10MB</small>
+                        <?php if ($isReadOnly): ?>
+                            <div style="padding: 10px 12px; border: 1px solid rgba(0,0,0,0.1); border-radius: 8px; background: #f3f4f6; color: #6b7280;">
+                                Image cannot be changed. This product is <?php echo $product['status']; ?> by admin.
                             </div>
-                            <img id="image-preview" src="" alt="Preview" class="image-preview" style="display: none;">
-                        </div>
-                        <input type="file" id="image" name="image" accept="image/*" onchange="previewImage(event)" style="display: none;">
-                        <small class="form-help">Leave empty to keep current image.</small>
+                        <?php else: ?>
+                            <div class="upload-area" id="upload-area">
+                                <div class="upload-placeholder" id="upload-placeholder">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                                        <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                                        <polyline points="21 15 16 10 5 21"></polyline>
+                                    </svg>
+                                    <p>Click to upload or drag and drop</p>
+                                    <small>PNG, JPG, GIF up to 10MB</small>
+                                </div>
+                                <img id="image-preview" src="" alt="Preview" class="image-preview" style="display: none;">
+                            </div>
+                            <input type="file" id="image" name="image" accept="image/*" onchange="previewImage(event)" style="display: none;">
+                            <small class="form-help">Leave empty to keep current image.</small>
+                        <?php endif; ?>
                     </div>
                 </div>
             </div>
             
             <div class="form-actions">
-                <button type="submit" name="update_product">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 8px;">
-                        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
-                        <polyline points="17 21 17 13 7 13 7 21"></polyline>
-                        <polyline points="7 3 7 8 15 8"></polyline>
-                    </svg>
-                    Update Product
-                </button>
+                <?php if (!$isReadOnly): ?>
+                    <button type="submit" name="update_product">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 8px;">
+                            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                            <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                            <polyline points="7 3 7 8 15 8"></polyline>
+                        </svg>
+                        Update Product
+                    </button>
+                <?php endif; ?>
                 <a href="manage-products.php" class="btn-cancel">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 8px;">
                         <line x1="18" y1="6" x2="6" y2="18"></line>
                         <line x1="6" y1="6" x2="18" y2="18"></line>
                     </svg>
-                    Cancel
+                    <?php echo $isReadOnly ? 'Back to Products' : 'Cancel'; ?>
                 </a>
             </div>
         </form>

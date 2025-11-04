@@ -502,19 +502,24 @@ require_once $rootPath . '/includes/functions.php';
         /* Status badge inside admin notifications */
         .notification-status-badge {
             display: inline-block;
-            padding: 3px 8px;
-            border-radius: 999px;
+            padding: 4px 10px;
+            border-radius: 4px;
             font-size: 10px;
             font-weight: 700;
-            letter-spacing: 0.3px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
             white-space: nowrap;
             margin-left: 8px;
         }
-        .notification-status-info { background: #3b82f6; color: #ffffff; }
-        .notification-status-warning { background: #f59e0b; color: #ffffff; }
-        .notification-status-success { background: #10b981; color: #ffffff; }
-        .notification-status-error { background: #ef4444; color: #ffffff; }
-        .notification-status-new_seller { background: #8b5cf6; color: #ffffff; }
+        .notification-status-order { background: #3b82f6; color: #ffffff; }
+        .notification-status-return { background: #dc3545; color: #ffffff; }
+        .notification-status-lowstock { background: #f97316; color: #ffffff; }
+        .notification-status-processing { background: #10b981; color: #ffffff; }
+        .notification-status-new-seller { background: #8b5cf6; color: #ffffff; }
+        .notification-status-info { background: #17a2b8; color: #ffffff; }
+        .notification-status-warning { background: #ffc107; color: #130325; }
+        .notification-status-success { background: #28a745; color: #ffffff; }
+        .notification-status-error { background: #dc3545; color: #ffffff; }
         
         .notification-content {
             flex: 1;
@@ -1098,6 +1103,86 @@ require_once $rootPath . '/includes/functions.php';
         /* Narrow search bar and center it */
         .search-section { display: flex; justify-content: center; }
         .search-form { width: 100%; max-width: 420px; }
+
+        /* Logout Confirmation Modal */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.35);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+        .modal-dialog {
+            width: 360px;
+            max-width: 90vw;
+            background: #ffffff;
+            border: none;
+            border-radius: 12px;
+        }
+        .modal-header {
+            padding: 8px 12px;
+            background: #130325;
+            color: #F9F9F9;
+            border-bottom: none;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-radius: 12px 12px 0 0;
+        }
+        .modal-title {
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: .3px;
+        }
+        .modal-close {
+            background: transparent;
+            border: none;
+            color: #F9F9F9;
+            font-size: 16px;
+            line-height: 1;
+            cursor: pointer;
+        }
+        .modal-body {
+            padding: 12px;
+            color: #130325;
+            font-size: 13px;
+        }
+        .modal-actions {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+            padding: 0 12px 12px 12px;
+        }
+        .btn-outline {
+            background: #ffffff;
+            color: #130325;
+            border: none;
+            border-radius: 8px;
+            padding: 6px 10px;
+            font-weight: 700;
+            font-size: 12px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .btn-primary-y {
+            background: linear-gradient(135deg, #FFD736 0%, #FFC107 100%);
+            color: #130325;
+            border: none;
+            border-radius: 8px;
+            padding: 6px 10px;
+            font-weight: 700;
+            font-size: 12px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
     </style>
 </head>
 <body class="<?php echo 'page-' . strtolower(pathinfo($_SERVER['PHP_SELF'], PATHINFO_FILENAME)); ?>">
@@ -1140,7 +1225,7 @@ require_once $rootPath . '/includes/functions.php';
                     <i class="fas fa-chevron-down"></i>
                 </div>
                 <div class="header-dropdown" id="adminHeaderDropdown">
-                    <a href="../logout.php"><i class="fas fa-sign-out-alt"></i>Logout</a>
+                    <a href="#" onclick="openLogoutModal(); return false;"><i class="fas fa-sign-out-alt"></i>Logout</a>
                 </div>
             </div>
         </div>
@@ -1203,8 +1288,7 @@ require_once $rootPath . '/includes/functions.php';
                 <div class="section-title hide-on-collapse">System</div>
                 <div class="nav-links">
                     <a href="admin-settings.php" data-tooltip="Settings"><i class="fas fa-cogs"></i><span class="hide-on-collapse"> Settings</span></a>
-                    <a href="admin-reports.php" data-tooltip="Reports"><i class="fas fa-chart-bar"></i><span class="hide-on-collapse"> Reports</span></a>
-                    </div>
+                </div>
 
 
             <?php else: ?>
@@ -1341,35 +1425,94 @@ require_once $rootPath . '/includes/functions.php';
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        document.getElementById('adminNotificationBadge').textContent = data.unreadCount;
-                        document.getElementById('adminNotificationBadge').classList.toggle('hidden', data.unreadCount === 0);
-                        displayAdminNotifications(data.notifications);
+                        const badge = document.getElementById('adminNotificationBadge');
+                        if (badge) {
+                            badge.textContent = data.unreadCount || 0;
+                            badge.classList.toggle('hidden', (data.unreadCount || 0) === 0);
+                        }
+                        displayAdminNotifications(data.notifications || []);
+                    } else {
+                        console.error('Failed to load notifications:', data.message);
+                        const list = document.getElementById('adminNotificationList');
+                        if (list) {
+                            list.innerHTML = '<div class="notification-item"><span>Error loading notifications</span></div>';
+                        }
                     }
                 })
                 .catch(error => {
                     console.error('Error loading admin notifications:', error);
+                    const list = document.getElementById('adminNotificationList');
+                    if (list) {
+                        list.innerHTML = '<div class="notification-item"><span>Error loading notifications</span></div>';
+                    }
                 });
             }
 
             function displayAdminNotifications(notifications) {
                 const list = document.getElementById('adminNotificationList');
                 
-                if (notifications.length === 0) {
+                if (!notifications || notifications.length === 0) {
                     list.innerHTML = '<div class="notification-item"><span>No notifications</span></div>';
                     return;
                 }
                 
-                list.innerHTML = notifications.map(notification => `
-                    <div class="notification-item ${!notification.is_read ? 'unread' : ''}" 
-                         onclick="markAdminNotificationAsRead(${notification.id})">
-                        <i class="fas fa-${getNotificationIcon(notification.type)} notification-type-${notification.type}"></i>
+                list.innerHTML = notifications.map(notification => {
+                    const notificationType = notification.type || 'info';
+                    const isRead = notification.is_read == 1 || notification.is_read === true || notification.is_read === 1;
+                    const badgeInfo = getNotificationBadge(notification.title || '', notificationType);
+                    const actionUrl = (notification.action_url || '').replace(/'/g, "\\'");
+                    
+                    return `
+                    <div class="notification-item ${!isRead ? 'unread' : ''}" 
+                         onclick="handleAdminNotificationClick(${notification.id}, '${actionUrl}')">
+                        <span class="notification-status-badge ${badgeInfo.class}">${badgeInfo.text}</span>
                         <div class="notification-content">
-                            <div class="notification-title">${notification.title} ${renderNotificationBadge(notification.type)}</div>
-                            <div class="notification-message">${notification.message}</div>
-                            <div class="notification-time">${formatTime(notification.created_at)}</div>
+                            <div class="notification-title">${escapeHtml(notification.title || 'Notification')}</div>
+                            <div class="notification-message">${escapeHtml(notification.message || '')}</div>
+                            <div class="notification-time">${formatTime(notification.created_at || '')}</div>
                         </div>
                     </div>
-                `).join('');
+                    `;
+                }).join('');
+            }
+            
+            function getNotificationBadge(title, type) {
+                const titleLower = (title || '').toLowerCase();
+                
+                if (titleLower.includes('product') || titleLower.includes('pending approval')) {
+                    return { class: 'notification-status-processing', text: 'Product' };
+                }
+                if (titleLower.includes('new seller') || type === 'new_seller') {
+                    return { class: 'notification-status-new-seller', text: 'New Seller' };
+                }
+                if (titleLower.includes('order') || titleLower.includes('order received')) {
+                    return { class: 'notification-status-order', text: 'Order' };
+                }
+                if (titleLower.includes('return') || titleLower.includes('refund')) {
+                    return { class: 'notification-status-return', text: 'Return/Refund' };
+                }
+                if (titleLower.includes('low stock')) {
+                    return { class: 'notification-status-lowstock', text: 'Low Stocks' };
+                }
+                
+                return { class: 'notification-status-info', text: 'Info' };
+            }
+            
+            function handleAdminNotificationClick(notificationId, actionUrl) {
+                // Mark as read
+                markAdminNotificationAsRead(notificationId);
+                
+                // Navigate to action URL if provided
+                if (actionUrl) {
+                    window.location.href = actionUrl;
+                }
+            }
+            
+            function escapeHtml(text) {
+                if (!text) return '';
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
             }
 
             function markAdminNotificationAsRead(notificationId) {
@@ -1383,7 +1526,7 @@ require_once $rootPath . '/includes/functions.php';
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        loadAdminNotifications(); // Reload to update badge
+                        loadAdminNotifications(); // Reload to update badge and list
                     }
                 })
                 .catch(error => {
@@ -1400,13 +1543,33 @@ require_once $rootPath . '/includes/functions.php';
                 }
             }
 
-            function renderNotificationBadge(type) {
+            function renderNotificationBadge(type, title) {
+                const titleLower = (title || '').toLowerCase();
+                
+                // Check title for specific notification types
+                if (titleLower.includes('product') || titleLower.includes('pending approval')) {
+                    return `<span class="notification-status-badge notification-status-processing">Product</span>`;
+                }
+                if (titleLower.includes('new seller') || type === 'new_seller') {
+                    return `<span class="notification-status-badge notification-status-new-seller">New Seller</span>`;
+                }
+                if (titleLower.includes('order') || titleLower.includes('order received')) {
+                    return `<span class="notification-status-badge notification-status-order">Order</span>`;
+                }
+                if (titleLower.includes('return') || titleLower.includes('refund')) {
+                    return `<span class="notification-status-badge notification-status-return">Return/Refund</span>`;
+                }
+                if (titleLower.includes('low stock')) {
+                    return `<span class="notification-status-badge notification-status-lowstock">Low Stocks</span>`;
+                }
+                
+                // Fallback to type-based mapping
                 const map = {
                     info: { label: 'Info', cls: 'notification-status-info' },
                     warning: { label: 'Warning', cls: 'notification-status-warning' },
                     success: { label: 'Success', cls: 'notification-status-success' },
                     error: { label: 'Error', cls: 'notification-status-error' },
-                    new_seller: { label: 'New Seller', cls: 'notification-status-new_seller' },
+                    new_seller: { label: 'New Seller', cls: 'notification-status-new-seller' },
                 };
                 const conf = map[type] || map.info;
                 return `<span class="notification-status-badge ${conf.cls}">${conf.label}</span>`;
@@ -1453,6 +1616,58 @@ require_once $rootPath . '/includes/functions.php';
                 // Load admin notifications on page load
                 loadAdminNotifications();
             });
+
+            // Logout Modal Functions
+            function openLogoutModal() {
+                const modal = document.getElementById('logoutModal');
+                if (modal) {
+                    modal.style.display = 'flex';
+                    modal.setAttribute('aria-hidden', 'false');
+                }
+            }
+
+            function closeLogoutModal() {
+                const modal = document.getElementById('logoutModal');
+                if (modal) {
+                    modal.style.display = 'none';
+                    modal.setAttribute('aria-hidden', 'true');
+                }
+            }
+
+            // Close modal on overlay click
+            document.addEventListener('click', function(e) {
+                const modal = document.getElementById('logoutModal');
+                if (modal && e.target === modal) {
+                    closeLogoutModal();
+                }
+            });
+
+            // Close modal on Escape key
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    const modal = document.getElementById('logoutModal');
+                    if (modal) {
+                        closeLogoutModal();
+                    }
+                }
+            });
         </script>
+
+    <!-- Logout Confirmation Modal -->
+    <div id="logoutModal" class="modal-overlay" role="dialog" aria-modal="true" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-header">
+                <div class="modal-title">Confirm Logout</div>
+                <button class="modal-close" aria-label="Close" onclick="closeLogoutModal()">×</button>
+            </div>
+            <div class="modal-body">
+                Are you sure you want to logout? You will need to sign in again to access the admin panel.
+            </div>
+            <div class="modal-actions">
+                <button class="btn-outline" onclick="closeLogoutModal()">Cancel</button>
+                <a href="../logout.php" class="btn-primary-y">Logout</a>
+            </div>
+        </div>
+    </div>
 
     <main>

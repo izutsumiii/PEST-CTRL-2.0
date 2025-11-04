@@ -29,11 +29,11 @@ function getAdminUnreadCount($adminId) {
         $stmt = $pdo->prepare("
             SELECT COUNT(*) as count 
             FROM admin_notifications 
-            WHERE admin_id = ? AND is_read = FALSE
+            WHERE admin_id = ? AND (is_read = 0 OR is_read = FALSE)
         ");
         $stmt->execute([$adminId]);
         $result = $stmt->fetch(PDO::FETCH_ASSOC);
-        return $result['count'] ?? 0;
+        return (int)($result['count'] ?? 0);
     } catch (Exception $e) {
         error_log("Error getting admin unread count: " . $e->getMessage());
         return 0;
@@ -51,9 +51,9 @@ function getAdminNotifications($adminId, $limit = 10) {
             SELECT * FROM admin_notifications 
             WHERE admin_id = ? 
             ORDER BY created_at DESC 
-            LIMIT ?
-        ");
-        $stmt->execute([$adminId, $limit]);
+            LIMIT " . intval($limit)
+        );
+        $stmt->execute([$adminId]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     } catch (Exception $e) {
         error_log("Error getting admin notifications: " . $e->getMessage());

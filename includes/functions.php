@@ -280,15 +280,107 @@ function validateCartForCheckout() {
 /* -----------------------------
    PRODUCT MANAGEMENT FUNCTIONS
 ------------------------------ */
-function addProduct($name, $description, $price, $categoryId, $sellerId, $stockQuantity, $imageUrl, $status = 'active') {
+function addProduct($name, $description, $price, $categoryId, $sellerId, $stockQuantity, $imageUrl, $status = 'pending', $categoryIds = []) {
     global $pdo;
     
     // Ensure AUTO_INCREMENT is set on products table
     ensureAutoIncrementPrimary('products');
     
+    // Update products.status column to support new status values if it's still an old ENUM
+    try {
+        $pdo->exec("ALTER TABLE products MODIFY COLUMN status ENUM('pending', 'active', 'inactive', 'suspended', 'rejected') DEFAULT 'pending'");
+    } catch (Exception $e) {
+        // Column might already be updated or error occurred, continue anyway
+        error_log("Error updating products.status column: " . $e->getMessage());
+    }
+    
+    // Create product_categories table if it doesn't exist (do this BEFORE inserting product)
+    try {
+        $pdo->exec("CREATE TABLE IF NOT EXISTS product_categories (
+            id INT(11) AUTO_INCREMENT PRIMARY KEY,
+            product_id INT(11) NOT NULL,
+            category_id INT(11) NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE KEY unique_product_category (product_id, category_id),
+            FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
+            FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+    } catch (Exception $e) {
+        // If table creation fails, log error but continue (table might already exist)
+        error_log("Error creating product_categories table: " . $e->getMessage());
+    }
+    
+    // Ensure status is valid - default to 'pending' if empty or invalid
+    if (empty($status) || !in_array($status, ['pending', 'active', 'inactive', 'suspended', 'rejected'])) {
+        $status = 'pending';
+    }
+    
+    // Use first category as primary category_id for backward compatibility
+    $primaryCategoryId = !empty($categoryIds) ? intval($categoryIds[0]) : ($categoryId ? intval($categoryId) : null);
+    
     $stmt = $pdo->prepare("INSERT INTO products (name, description, price, category_id, seller_id, stock_quantity, image_url, status) 
                           VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
-    return $stmt->execute([$name, $description, $price, $categoryId, $sellerId, $stockQuantity, $imageUrl, $status]);
+    
+    if ($stmt->execute([$name, $description, $price, $primaryCategoryId, $sellerId, $stockQuantity, $imageUrl, $status])) {
+        $productId = $pdo->lastInsertId();
+        
+        // Create admin notification for new product
+        try {
+            require_once __DIR__ . '/admin_notification_functions.php';
+            // Get seller info for notification
+            $sellerStmt = $pdo->prepare("SELECT username, first_name, last_name FROM users WHERE id = ?");
+            $sellerStmt->execute([$sellerId]);
+            $seller = $sellerStmt->fetch(PDO::FETCH_ASSOC);
+            $sellerName = $seller ? ($seller['first_name'] . ' ' . $seller['last_name'] ?: $seller['username']) : 'Unknown Seller';
+            
+            // Get all admin users
+            $adminStmt = $pdo->query("SELECT id FROM users WHERE user_type = 'admin'");
+            $admins = $adminStmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            // Create notification for each admin
+            foreach ($admins as $admin) {
+                createAdminNotification(
+                    $admin['id'],
+                    "New Product Pending Approval",
+                    "Seller '{$sellerName}' has added a new product '{$name}' (ID: #{$productId}) that requires your approval.",
+                    'info',
+                    'admin/admin-products.php?status=pending&product_id=' . $productId
+                );
+            }
+        } catch (Exception $e) {
+            // If notification creation fails, log but don't fail the whole operation
+            error_log("Error creating admin notification for new product: " . $e->getMessage());
+        }
+        
+        // Add multiple categories
+        if (!empty($categoryIds)) {
+            try {
+                $insertStmt = $pdo->prepare("INSERT IGNORE INTO product_categories (product_id, category_id) VALUES (?, ?)");
+                foreach ($categoryIds as $catId) {
+                    $catId = intval($catId);
+                    if ($catId > 0) {
+                        $insertStmt->execute([$productId, $catId]);
+                    }
+                }
+            } catch (Exception $e) {
+                // If insertion fails, log but don't fail the whole operation
+                error_log("Error inserting into product_categories: " . $e->getMessage());
+            }
+        } elseif ($primaryCategoryId) {
+            // If no array but single category provided, add it
+            try {
+                $insertStmt = $pdo->prepare("INSERT IGNORE INTO product_categories (product_id, category_id) VALUES (?, ?)");
+                $insertStmt->execute([$productId, $primaryCategoryId]);
+            } catch (Exception $e) {
+                // If insertion fails, log but don't fail the whole operation
+                error_log("Error inserting into product_categories: " . $e->getMessage());
+            }
+        }
+        
+        return true;
+    }
+    
+    return false;
 }
 // Update product
 function updateProduct($productId, $name, $description, $price, $categoryId, $stockQuantity, $status) {

@@ -455,14 +455,14 @@ if ($selectedPeriod === 'weekly') {
 
         /* Import/Export Modal */
         .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.35); display: none; align-items: center; justify-content: center; z-index: 9999; }
-        .modal-dialog { width: 360px; max-width: 90vw; background: #ffffff; border: 2px solid #e5e7eb; border-radius: 12px; }
-        .modal-header { padding: 8px 12px; background: #130325; color: #F9F9F9; border-bottom: 2px solid #FFD736; display: flex; align-items: center; justify-content: space-between; border-radius: 12px 12px 0 0; }
+        .modal-dialog { width: 360px; max-width: 90vw; background: #ffffff; border: none; border-radius: 12px; }
+        .modal-header { padding: 8px 12px; background: #130325; color: #F9F9F9; border-bottom: none; display: flex; align-items: center; justify-content: space-between; border-radius: 12px 12px 0 0; }
         .modal-title { font-size: 12px; font-weight: 800; letter-spacing: .3px; }
         .modal-close { background: transparent; border: none; color: #F9F9F9; font-size: 16px; line-height: 1; cursor: pointer; }
         .modal-body { padding: 12px; color: #130325; font-size: 13px; }
         .modal-actions { display: flex; gap: 8px; justify-content: flex-end; padding: 0 12px 12px 12px; }
-        .btn-outline { background: #ffffff; color: #130325; border: 2px solid #e5e7eb; border-radius: 8px; padding: 6px 10px; font-weight: 700; font-size: 12px; }
-        .btn-primary-y { background: linear-gradient(135deg, #FFD736 0%, #FFC107 100%); color: #130325; border: 2px solid #FFD736; border-radius: 8px; padding: 6px 10px; font-weight: 700; font-size: 12px; }
+        .btn-outline { background: #ffffff; color: #130325; border: none; border-radius: 8px; padding: 6px 10px; font-weight: 700; font-size: 12px; }
+        .btn-primary-y { background: linear-gradient(135deg, #FFD736 0%, #FFC107 100%); color: #130325; border: none; border-radius: 8px; padding: 6px 10px; font-weight: 700; font-size: 12px; }
         
         .analytics-filter::before { content: none; }
         

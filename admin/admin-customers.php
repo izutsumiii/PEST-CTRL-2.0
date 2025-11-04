@@ -200,8 +200,8 @@ function getCustomerOrderCount($pdo, $customerId) {
     }
 
     body {
-        background: linear-gradient(135deg, var(--secondary-dark) 0%, var(--primary-dark) 100%);
-        color: var(--text-light);
+        background: #f0f2f5 !important;
+        color: #130325 !important;
         min-height: 100vh;
         margin: 0;
         font-family: 'Inter', 'Segoe UI', sans-serif;
@@ -237,80 +237,139 @@ function getCustomerOrderCount($pdo, $customerId) {
         border: 2px solid var(--danger-red);
     }
 
-    /* Page Header */
+    /* Page Header - override admin_header.php */
+    .page-admin-customers .page-heading,
     .page-heading {
-        font-size: 18px;
-        font-weight: 800;
-        color: var(--text-light);
-        margin: 0 0 10px 0;
-        padding: 0;
-        display: flex;
-        align-items: center;
-        gap: 10px;
+        font-size: 18px !important;
+        font-weight: 800 !important;
+        color: #130325 !important;
+        margin: -80px 0 20px 0 !important;
+        padding: 0 20px !important;
+        display: flex !important;
+        align-items: center !important;
+        gap: 12px !important;
+        flex-wrap: wrap !important;
+        max-width: 1400px !important;
+        margin-left: auto !important;
+        margin-right: auto !important;
+        text-shadow: none !important;
     }
-    .page-heading-title { font-size: 20px; font-weight: 800; color: var(--text-light); margin-left: 28px; margin-bottom: 20px;} 
+    .page-heading-title { 
+        font-size: 20px; 
+        font-weight: 800; 
+        color: #130325; 
+        margin-top: 60px;
+        margin-bottom: 0;
+        margin-left: 0;
+        margin-right: 0;
+        display: inline-flex;
+        align-items: center;
+        text-shadow: none !important;
+    }
+    
+    /* Total count styling */
+    .total-count-badge {
+        display: inline-flex;
+        align-items: center;
+        background: #130325;
+        color: #ffffff;
+        padding: 6px 14px;
+        border-radius: 20px;
+        font-size: 14px;
+        font-weight: 700;
+        margin-top: 60px;
+        margin-bottom: 0;
+        margin-left: 0;
+        margin-right: 0;
+        border: 1px solid #130325;
+    } 
 
     /* Main Container */
     .container {
         max-width: 1400px;
-        margin: 0 auto 30px;
+        margin: -10px auto 30px;
         padding: 0 20px;
     }
 
-    /* Search Section */
-    .search-section {
-        background: #1a0a2e !important; /* force dark background on the container */
-        border: 1px solid var(--border-color);
-        border-radius: 12px;
-        padding: 20px;
-        margin-bottom: 16px;
-        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
-        color: #f9f9f9;
+    /* Search Section - same width as table container - override admin_header.php */
+    body.page-admin-customers .search-section,
+    .page-admin-customers .container .search-section,
+    .page-admin-customers .search-section,
+    .container .search-section,
+    .search-section { 
+        background: #ffffff !important; 
+        border: 1px solid rgba(0,0,0,0.1) !important; 
+        border-radius: 8px !important; 
+        padding: 24px !important; 
+        margin: 0 0 16px 0 !important;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1) !important; 
+        color: #130325 !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+        display: block !important;
+        min-width: 0 !important;
+        max-width: 100% !important;
     }
     .search-section .search-form { background: transparent !important; }
 
-    .search-form { display: flex; gap: 12px; align-items: center; flex-wrap: nowrap; }
-
-    .search-input {
-        flex: 1;
-        min-width: 300px;
-        padding: 12px 16px;
-        background: #0f0a1f; /* dark field */
-        border: 1px solid #3a2b55;
-        border-radius: 8px;
-        color: #f9f9f9;
-        font-size: 14px;
-        transition: all 0.3s ease;
-        height: 42px;
+    .page-admin-customers .search-form,
+    .container .search-form,
+    .search-section .search-form,
+    .search-form { 
+        display: flex !important; 
+        gap: 12px !important; 
+        align-items: center !important; 
+        justify-content: center !important;
+        flex-wrap: nowrap !important;
+        width: 100% !important;
+        max-width: 100% !important;
     }
 
-    .search-input:focus {
-        outline: none;
-        border-color: #ffd736;
-        box-shadow: 0 0 0 3px rgba(255, 215, 54, 0.12);
+    /* Search Input - override admin_header.php width: 360px - match admin-sellers.PHP */
+    body.page-admin-customers .search-input,
+    .page-admin-customers .search-form .search-input,
+    .page-admin-customers .search-section .search-input,
+    .container .search-form .search-input,
+    .search-section .search-form .search-input,
+    .search-form .search-input,
+    .search-input { 
+        flex: 1 !important; 
+        min-width: 260px !important; 
+        max-width: 320px !important;
+        width: auto !important;
+        padding: 10px 14px !important; 
+        background: #ffffff !important; 
+        border: 2px solid #e5e7eb !important; 
+        border-radius: 8px !important; 
+        color: #130325 !important; 
+        font-size: 14px !important; 
+        transition: all 0.2s ease !important; 
+        height: 40px !important; 
     }
 
-    .search-input::placeholder { color: rgba(249, 249, 249, 0.6); }
-
-    .filter-select {
-        min-width: 150px;
-        padding: 12px 16px;
-        background: #0f0a1f; /* dark select */
-        border: 2px solid #ffd736;
-        border-radius: 8px;
-        color: #f9f9f9;
-        font-size: 14px;
-        transition: all 0.3s ease;
-        height: 42px;
+    body.page-admin-customers .search-input:focus,
+    .page-admin-customers .search-form .search-input:focus,
+    .search-section .search-form .search-input:focus,
+    .search-form .search-input:focus,
+    .search-input:focus { 
+        outline: none !important; 
+        border-color: #FFD736 !important; 
+        box-shadow: 0 0 0 3px rgba(255,215,54,0.12) !important; 
     }
 
-    .filter-select:focus {
-        outline: none;
-        border-color: #ffd736;
-        box-shadow: 0 0 0 3px rgba(255, 215, 54, 0.12);
+    body.page-admin-customers .search-input::placeholder,
+    .page-admin-customers .search-form .search-input::placeholder,
+    .search-section .search-form .search-input::placeholder,
+    .search-form .search-input::placeholder,
+    .search-input::placeholder { 
+        color: #9ca3af !important; 
     }
 
-    .filter-select option { background: #1a0a2e; color: #f9f9f9; }
+    .filter-select { min-width: 150px; padding: 10px 14px; background: #ffffff; border: 2px solid #e5e7eb; border-radius: 8px; color: #130325; font-size: 14px; transition: all 0.2s ease; height: 40px; }
+
+    .filter-select:focus { outline: none; border-color: #FFD736; box-shadow: 0 0 0 3px rgba(255,215,54,0.12); }
+
+    .filter-select option { background: #ffffff; color: #130325; }
 
     /* Buttons */
     .btn {
@@ -334,19 +393,21 @@ function getCustomerOrderCount($pdo, $customerId) {
         box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
     }
 
-    .btn-search {
-        background: linear-gradient(135deg, #ffd736, #FFE066);
-        color: #1a0a2e;
-        border: 2px solid #ffd736;
-        height: 40px;
-        width: 40px; /* square icon button */
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        line-height: 1;
-        box-sizing: border-box;
-        border-radius: 8px;
-        padding: 0;
+    .btn-search { 
+        background: linear-gradient(135deg, #FFD736, #FFC107); 
+        color: #130325; 
+        border: none; 
+        height: 40px; 
+        width: 40px; 
+        min-width: 40px;
+        display: inline-flex; 
+        align-items: center; 
+        justify-content: center; 
+        line-height: 1; 
+        box-sizing: border-box; 
+        border-radius: 8px; 
+        padding: 0; 
+        flex-shrink: 0;
     }
     .btn-search i {
         color: #1a0a2e;
@@ -368,11 +429,7 @@ function getCustomerOrderCount($pdo, $customerId) {
         background: linear-gradient(135deg, #FFE066, var(--accent-yellow));
     }
 
-    .btn-clear {
-        background: rgba(108, 117, 125, 0.2);
-        color: #6c757d;
-        border: 2px solid #6c757d;
-    }
+    .btn-clear { background: #ffffff; color: #6b7280; border: 2px solid #e5e7eb; }
 
     .btn-clear:hover {
         background: #6c757d;
@@ -394,59 +451,150 @@ function getCustomerOrderCount($pdo, $customerId) {
         font-size: 28px;
     }
 
-    /* Table Container */
+    /* Table Container - exact match from manage-products.php - override admin_header.php */
+    .page-admin-customers .table-container,
+    .container .table-container,
     .table-container {
-        background: var(--primary-dark);
-        border: 1px solid var(--border-color);
-        border-radius: 12px;
-        overflow: hidden;
-        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
-        margin-bottom: 20px;
+        background: #ffffff !important;
+        border: 1px solid rgba(0,0,0,0.1) !important;
+        border-radius: 8px !important;
+        padding: 24px !important;
+        margin: 0 0 20px 0 !important;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1) !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+        display: block !important;
+        min-width: 0 !important;
+        max-width: 100% !important;
+        overflow-x: visible !important;
+    }
+
+    .table-wrapper {
+        overflow-x: visible;
+        overflow-y: visible;
     }
 
     table {
         width: 100%;
         border-collapse: collapse;
+        font-size: 14px;
+        min-width: 800px;
+    }
+    
+    /* Responsive table */
+    @media (max-width: 1200px) {
+        .table-wrapper {
+            overflow-x: visible;
+            overflow-y: visible;
+        }
+        
+        table {
+            font-size: 13px;
+        }
+        
+        th, td {
+            padding: 10px 12px;
+            font-size: 12px;
+        }
+        
+        .status-badge {
+            min-width: 70px;
+            max-width: 70px;
+            font-size: 10px;
+            padding: 3px 8px;
+        }
     }
 
     thead {
-        background: rgba(255, 215, 54, 0.1);
+        background: #130325 !important;
+        border-bottom: 2px solid #130325;
     }
 
     th {
-        padding: 16px 12px;
+        padding: 12px 16px;
         text-align: left;
-        font-size: 13px;
-        color: var(--accent-yellow);
         font-weight: 700;
+        color: #ffffff !important;
+        background: #130325 !important;
+        font-size: 13px;
         text-transform: uppercase;
         letter-spacing: 0.5px;
-        border-bottom: 2px solid var(--accent-yellow);
+        position: relative;
+        user-select: none;
         vertical-align: middle;
     }
 
-    thead th i { font-size: 14px; position: relative; top: 1px; margin-right: 6px; }
+    th.sortable {
+        cursor: pointer;
+        transition: background 0.2s ease;
+        padding-right: 32px;
+    }
+
+    th.sortable:hover {
+        background: #130325 !important;
+    }
 
     td {
-        padding: 16px 12px;
-        border-bottom: 1px solid var(--border-color);
+        padding: 14px 16px;
+        color: #130325;
+        vertical-align: middle;
+        border-bottom: 1px solid #f0f0f0;
+        background: #ffffff;
         font-size: 14px;
-        color: var(--text-light);
     }
 
-    tr:hover {
-        background: rgba(255, 255, 255, 0.02);
+    tbody tr {
+        border-bottom: 1px solid #f0f0f0;
+        transition: background 0.2s ease;
     }
 
-    /* Status Badges */
+    tbody tr:hover {
+        background: rgba(255, 215, 54, 0.05);
+    }
+
+    /* Sortable headers */
+    .sort-indicator {
+        position: absolute;
+        right: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 10px;
+        color: rgba(255, 255, 255, 0.7);
+        transition: all 0.2s ease;
+    }
+
+    .sort-indicator::before {
+        content: '↕';
+        display: block;
+    }
+
+    th.sort-asc .sort-indicator::before {
+        content: '↑';
+        color: rgba(255, 255, 255, 0.9);
+    }
+
+    th.sort-desc .sort-indicator::before {
+        content: '↓';
+        color: rgba(255, 255, 255, 0.9);
+    }
+
+    /* Status Badges - fixed size */
     .status-badge {
-        display: inline-block;
-        padding: 6px 12px;
-        border-radius: 20px;
-        font-size: 12px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        padding: 4px 10px;
+        border-radius: 12px;
+        font-size: 11px;
         font-weight: 700;
-        letter-spacing: 0.5px;
+        letter-spacing: 0.3px;
         text-transform: uppercase;
+        min-width: 75px;
+        max-width: 75px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
     .status-active {
@@ -461,64 +609,63 @@ function getCustomerOrderCount($pdo, $customerId) {
         border: 1px solid var(--danger-red);
     }
 
-    /* Action Buttons */
-    .action-buttons { display: flex; gap: 8px; flex-wrap: wrap; }
+    /* Action Buttons - no borders */
+    .table-actions {
+        display: flex;
+        gap: 8px;
+        flex-wrap: nowrap;
+    }
 
-    .btn { display: inline-flex; align-items: center; gap: 8px; padding: 12px 20px; border-radius: 8px; font-size: 14px; font-weight: 700; text-decoration: none; border: none; cursor: pointer; transition: all 0.3s ease; text-transform: uppercase; letter-spacing: 0.5px; }
-    .btn:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+    .action-btn {
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 4px;
+        transition: all 0.2s ease;
+        text-decoration: none;
+        color: #130325;
+        border: none;
+        position: relative;
+    }
+    
+    .action-btn i {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 14px;
+        line-height: 1;
+    }
 
-    .btn-view { background: linear-gradient(135deg, #3498db, #5dade2); color: white; }
-    .btn-activate { background: linear-gradient(135deg, var(--success-green), #20c997); color: white; }
-    .btn-deactivate { background: linear-gradient(135deg, var(--warning-yellow), #e6a800); color: #1a0a2e; }
-    .btn-delete { background: linear-gradient(135deg, var(--danger-red), #e74c3c); color: white; }
+    .btn-view, .edit-btn {
+        background: #130325;
+        color: #ffffff;
+    }
 
-    /* Change Status button */
-    .btn-change-status { background: linear-gradient(135deg, var(--accent-yellow), var(--accent-yellow)); color: #1a0a2e; border: 2px solid var(--accent-yellow); }
+    .btn-view:hover, .edit-btn:hover {
+        background: #0a0218;
+        transform: scale(1.1);
+    }
+
+    .btn-change-status, .status-btn {
+        background: #FFD736;
+        color: #130325;
+    }
+
+    .btn-change-status:hover, .status-btn:hover {
+        background: #f5d026;
+        transform: scale(1.1);
+    }
 
     /* Pagination */
-    .pagination {
-        display: flex;
-        justify-content: center;
-        gap: 8px;
-        margin-top: 20px;
-    }
-
-    .page-link {
-        padding: 10px 16px;
-        background: var(--primary-dark);
-        color: var(--accent-yellow);
-        text-decoration: none;
-        border-radius: 6px;
-        border: 1px solid var(--border-color);
-        font-weight: 700;
-        font-size: 14px;
-        transition: all 0.3s ease;
-    }
-
-    .page-link:hover {
-        background: var(--accent-yellow);
-        color: var(--primary-dark);
-        transform: translateY(-2px);
-    }
-
-    .page-link.active {
-        background: var(--accent-yellow);
-        color: var(--primary-dark);
-    }
-
-    .page-ellipsis {
-        padding: 10px 8px;
-        color: rgba(249, 249, 249, 0.5);
-        font-weight: 700;
-    }
-
-    .pagination-info {
-        text-align: center;
-        margin-top: 16px;
-        color: rgba(249, 249, 249, 0.7);
-        font-size: 14px;
-        font-weight: 500;
-    }
+    .pagination { display: flex; justify-content: center; gap: 8px; margin-top: 20px; }
+    .page-link { padding: 8px 14px; background: #ffffff; color: #130325; text-decoration: none; border-radius: 6px; border: 1px solid #e5e7eb; font-weight: 700; font-size: 13px; transition: all 0.2s ease; }
+    .page-link:hover { background: #FFD736; color: #130325; transform: translateY(-2px); }
+    .page-link.active { background: #FFD736; color: #130325; border-color: #FFD736; }
+    .page-ellipsis { padding: 8px 8px; color: #9ca3af; font-weight: 700; }
+    .pagination-info { text-align: center; margin-top: 12px; color: #6b7280; font-size: 13px; font-weight: 500; }
 
     /* Custom Confirmation Dialog Styles */
     .custom-confirm-overlay {
@@ -575,8 +722,9 @@ function getCustomerOrderCount($pdo, $customerId) {
             min-width: auto;
         }
         
-        .action-buttons {
-            flex-direction: column;
+        .action-buttons, .table-actions {
+            flex-direction: row;
+            flex-wrap: nowrap;
         }
         
         .btn {
@@ -601,8 +749,8 @@ function getCustomerOrderCount($pdo, $customerId) {
 
     <h1 class="page-heading">
         <span class="page-heading-title">Manage Customers</span>
-        <span style="color: rgba(249,249,249,0.7); font-size: 16px; font-weight: 600; margin-bottom: 20px;">
-        (<?php echo $totalCustomers; ?> total<?php echo !empty($searchTerm) ? ', filtered results' : ''; ?>)
+        <span class="total-count-badge">
+            <?php echo $totalCustomers; ?> total<?php echo !empty($searchTerm) ? ', filtered' : ''; ?>
         </span>
     </h1>
 
@@ -646,17 +794,18 @@ function getCustomerOrderCount($pdo, $customerId) {
         </div>
     <?php else: ?>
         <div class="table-container">
-            <table>
+            <div class="table-wrapper">
+                <table class="admin-table" id="customersTable">
                 <thead>
                     <tr>
-                        <th>ID</th>
-                        <th>Username</th>
-                        <th>Email</th>
-                        <th>Name</th>
-                        <th>Phone</th>
+                        <th class="sortable">ID <span class="sort-indicator"></span></th>
+                        <th class="sortable">Username <span class="sort-indicator"></span></th>
+                        <th class="sortable">Email <span class="sort-indicator"></span></th>
+                        <th class="sortable">Name <span class="sort-indicator"></span></th>
+                        <th class="sortable">Phone <span class="sort-indicator"></span></th>
                         <th>Status</th>
-                        <th>Registered</th>
-                        <th>Orders</th>
+                        <th class="sortable">Registered <span class="sort-indicator"></span></th>
+                        <th class="sortable">Orders <span class="sort-indicator"></span></th>
                         <th>Actions</th>
                     </tr>
                 </thead>
@@ -691,16 +840,17 @@ function getCustomerOrderCount($pdo, $customerId) {
                                 </span>
                             </td>
                             <td>
-                                <div class="action-buttons">
+                                <div class="table-actions">
                                     <a href="user-details.php?id=<?php echo $customer['id']; ?>" 
-                                       class="btn btn-view" title="View Customer Details">
-                                        <i class="fas fa-eye"></i> View
+                                       class="action-btn btn-view" title="View">
+                                        <i class="fas fa-eye"></i>
                                     </a>
                                     <?php if ($columnExists): ?>
-                                        <button type="button" class="btn btn-change-status" 
+                                        <button type="button" class="action-btn btn-change-status" 
                                                 data-user-id="<?php echo $customer['id']; ?>" 
-                                                data-current-status="<?php echo $customer['active_status'] ? 'active' : 'inactive'; ?>">
-                                            <i class="fas fa-exchange-alt"></i> Change Status
+                                                data-current-status="<?php echo $customer['active_status'] ? 'active' : 'inactive'; ?>"
+                                                title="Toggle Status">
+                                            <i class="fas fa-<?php echo $customer['active_status'] ? 'toggle-on' : 'toggle-off'; ?>"></i>
                                         </button>
                                     <?php else: ?>
                                         <span style="color: #6c757d; font-size: 12px;" title="Database column missing">Action unavailable</span>
@@ -711,6 +861,7 @@ function getCustomerOrderCount($pdo, $customerId) {
                     <?php endforeach; ?>
                 </tbody>
             </table>
+            </div>
         </div>
 
         <!-- Pagination -->
@@ -930,6 +1081,41 @@ document.addEventListener('DOMContentLoaded', function() {
         const url = `admin-customers.php?action=${action}&id=${encodeURIComponent(statusTargetUserId)}&page=${encodeURIComponent(<?php echo json_encode($page); ?>)}`;
         window.location.href = url;
     });
+
+    // Sortable table headers
+    function getCellValue(row, idx) {
+        const cell = row.children[idx];
+        return cell ? cell.textContent.trim() : '';
+    }
+    function comparer(idx, asc) {
+        return (a, b) => {
+            const v1 = getCellValue(asc ? a : b, idx);
+            const v2 = getCellValue(asc ? b : a, idx);
+            const n1 = parseFloat(v1.replace(/[^0-9.]/g, ''));
+            const n2 = parseFloat(v2.replace(/[^0-9.]/g, ''));
+            if (!isNaN(n1) && !isNaN(n2)) return n1 - n2;
+            const d1 = Date.parse(v1);
+            const d2 = Date.parse(v2);
+            if (!isNaN(d1) && !isNaN(d2)) return d1 - d2;
+            return v1.localeCompare(v2);
+        };
+    }
+    const table = document.getElementById('customersTable');
+    if (table) {
+        const headers = table.querySelectorAll('thead th.sortable');
+        headers.forEach((th, idx) => {
+            th.addEventListener('click', () => {
+                headers.forEach(h => h.classList.remove('sort-asc','sort-desc'));
+                const asc = !th.classList.contains('sort-asc');
+                th.classList.toggle('sort-asc', asc);
+                th.classList.toggle('sort-desc', !asc);
+                const tbody = table.tBodies[0];
+                Array.from(tbody.querySelectorAll('tr'))
+                    .sort(comparer(idx, asc))
+                    .forEach(tr => tbody.appendChild(tr));
+            });
+        });
+    }
 });
 </script>
 

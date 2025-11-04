@@ -41,7 +41,6 @@ if (isset($_GET['action'])) {
                 break;
                 
             case 'delete':
-                // Check for orders first
                 $stmt = $pdo->prepare("SELECT COUNT(*) as count FROM orders WHERE user_id = ?");
                 $stmt->execute([$userId]);
                 $orderCount = $stmt->fetch(PDO::FETCH_ASSOC)['count'];
@@ -92,13 +91,11 @@ $orderLimit = 10;
 $orderOffset = ($orderPage - 1) * $orderLimit;
 
 try {
-    // Get orders count
     $stmt = $pdo->prepare("SELECT COUNT(*) as total FROM orders WHERE user_id = ?");
     $stmt->execute([$userId]);
     $totalOrders = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
     $totalOrderPages = ceil($totalOrders / $orderLimit);
     
-    // Get orders with details
     $stmt = $pdo->prepare("
         SELECT o.*, 
                COALESCE(o.total_amount, 0) as total_amount,
@@ -117,7 +114,7 @@ try {
     $totalOrderPages = 0;
 }
 
-// Get user statistics - optimized with single query
+// Get user statistics
 try {
     $stats = [
         'total_orders' => $totalOrders,
@@ -130,7 +127,6 @@ try {
     ];
     
     if ($totalOrders > 0) {
-        // Get all order statistics in one query
         $stmt = $pdo->prepare("
             SELECT 
                 COALESCE(SUM(total_amount), 0) as total_spent,
@@ -151,7 +147,6 @@ try {
         $stats['cancelled_orders'] = $orderStats['cancelled_orders'];
     }
     
-    // Account age
     if ($user['created_at']) {
         $stats['account_age_days'] = floor((time() - strtotime($user['created_at'])) / (60 * 60 * 24));
     }
@@ -179,610 +174,377 @@ try {
 ?>
 
 <style>
-    :root {
-        --primary-dark: #1a0a2e;
-        --secondary-dark: #130325;
-        --accent-yellow: #FFD736;
-        --text-light: #F9F9F9;
-        --border-color: rgba(255, 215, 54, 0.3);
-        --success-green: #28a745;
-        --warning-yellow: #ffc107;
-        --danger-red: #dc3545;
-    }
-
     body {
-        background: linear-gradient(135deg, var(--secondary-dark) 0%, var(--primary-dark) 100%);
-        color: var(--text-light);
+        background: #f0f2f5 !important;
+        color: #130325 !important;
         min-height: 100vh;
         margin: 0;
         font-family: 'Inter', 'Segoe UI', sans-serif;
     }
 
-    /* Message Alerts */
     .alert {
         max-width: 1400px;
-        margin: 20px auto;
-        padding: 16px 20px;
-        border-radius: 10px;
+        margin: 0 auto 10px;
+        padding: 14px 18px;
+        border-radius: 8px;
         font-weight: 600;
         display: flex;
         align-items: center;
-        gap: 12px;
+        gap: 10px;
     }
-    
-    .alert-success {
-        background: rgba(40, 167, 69, 0.15);
-        color: var(--success-green);
-        border: 2px solid var(--success-green);
-    }
-    
-    .alert-warning {
-        background: rgba(255, 193, 7, 0.15);
-        color: var(--warning-yellow);
-        border: 2px solid var(--warning-yellow);
-    }
-    
-    .alert-error {
-        background: rgba(220, 53, 69, 0.15);
-        color: var(--danger-red);
-        border: 2px solid var(--danger-red);
-    }
+    .alert-success { background: #f0fdf4; color: #166534; border: 1px solid #86efac; }
+    .alert-warning { background: #fffbeb; color: #92400e; border: 1px solid #fde68a; }
+    .alert-error { background: #fef2f2; color: #991b1b; border: 1px solid #fca5a5; }
 
-    /* Breadcrumb */
     .breadcrumb {
         max-width: 1400px;
-        margin: 10px auto 5px;
+        margin: 0 auto;
         padding: 0 20px;
     }
-    
     .breadcrumb a {
-        color: var(--accent-yellow);
+        color: #130325;
         text-decoration: none;
-        font-weight: 700;
+        font-weight: 600;
         font-size: 14px;
         display: inline-flex;
         align-items: center;
-        gap: 8px;
-        transition: all 0.3s ease;
-    }
-    
-    .breadcrumb a:hover {
-        color: #e6c230;
-        transform: translateX(-3px);
+        gap: 6px;
     }
 
-    /* Page Header */
-    h1 {
+    .page-header {
         max-width: 1400px;
-        margin: 5px auto 20px;
+        margin: 0 auto 10px;
         padding: 0 20px;
-        font-size: 28px;
-        font-weight: 800;
-        color: var(--text-light);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+    .page-header h1 {
+        margin: 0;
+        font-size: 24px;
+        font-weight: 700;
+        color: #130325;
+        text-shadow: none !important;
+    }
+    .page-actions {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
     }
 
-    /* Main Container */
     .container {
         max-width: 1400px;
         margin: 0 auto 30px;
         padding: 0 20px;
     }
 
-    /* Grid Layout */
-    .grid {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 20px;
-        margin-bottom: 20px;
-    }
-
-    /* Card Styles */
-    .card {
-        background: var(--primary-dark);
-        border: 1px solid var(--border-color);
+    /* Main Profile Section - Horizontal Layout */
+    .profile-section {
+        background: #ffffff;
+        border: 1px solid rgba(0,0,0,0.1);
         border-radius: 12px;
-        overflow: hidden;
-        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
-        transition: all 0.3s ease;
-    }
-
-    .card:hover {
-        border-color: var(--accent-yellow);
-        box-shadow: 0 8px 24px rgba(255, 215, 54, 0.2);
-    }
-
-    .card-header {
+        padding: 24px;
+        margin-bottom: 20px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 18px 20px;
-        border-bottom: 2px solid var(--accent-yellow);
-        background: rgba(255, 215, 54, 0.06);
+        gap: 32px;
+        flex-wrap: wrap;
     }
 
-    .card-header h2 {
-        margin: 0;
+    .profile-info {
+        flex: 1;
+        min-width: 280px;
+    }
+    .profile-info h2 {
+        margin: 0 0 16px 0;
         font-size: 18px;
-        color: var(--accent-yellow);
         font-weight: 700;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-    }
-
-    .card-header-actions {
+        color: #130325;
         display: flex;
         align-items: center;
         gap: 8px;
     }
-
-    .action-icon {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        width: 32px;
-        height: 32px;
-        border-radius: 6px;
-        text-decoration: none;
-        transition: all 0.3s ease;
-        cursor: pointer;
-        border: none;
-        font-size: 14px;
-    }
-
-    .action-icon:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-    }
-
-    .action-icon-deactivate {
-        background: rgba(255, 193, 7, 0.2);
-        color: var(--warning-yellow);
-        border: 1px solid var(--warning-yellow);
-    }
-
-    .action-icon-deactivate:hover {
-        background: var(--warning-yellow);
-        color: #1a0a2e;
-    }
-
-    .action-icon-delete {
-        background: rgba(220, 53, 69, 0.2);
-        color: var(--danger-red);
-        border: 1px solid var(--danger-red);
-    }
-
-    .action-icon-delete:hover {
-        background: var(--danger-red);
-        color: white;
-    }
-
-    /* Custom Confirmation Dialog Styles */
-    .custom-confirm-overlay {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.8);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 10000;
-        opacity: 0;
-        visibility: hidden;
-        transition: all 0.3s ease;
-    }
-
-    .custom-confirm-overlay.show {
-        opacity: 1;
-        visibility: visible;
-    }
-
-    .custom-confirm-dialog {
-        background: linear-gradient(135deg, var(--primary-dark) 0%, var(--secondary-dark) 100%);
-        border: 2px solid var(--accent-yellow);
-        border-radius: 12px;
-        padding: 30px;
-        max-width: 400px;
-        width: 90%;
-        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
-        transform: scale(0.8) translateY(-20px);
-        transition: all 0.3s ease;
-        position: relative;
-        overflow: hidden;
-    }
-
-    .custom-confirm-overlay.show .custom-confirm-dialog {
-        transform: scale(1) translateY(0);
-    }
-
-    .custom-confirm-dialog::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 4px;
-        background: linear-gradient(90deg, 
-            var(--accent-yellow) 0%, 
-            #FFE066 25%, 
-            var(--accent-yellow) 50%, 
-            #FFE066 75%, 
-            var(--accent-yellow) 100%);
-        background-size: 200% 100%;
-        animation: shimmer 3s linear infinite;
-    }
-
-    .custom-confirm-header {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        margin-bottom: 20px;
-    }
-
-    .custom-confirm-icon {
-        width: 48px;
-        height: 48px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 24px;
-        color: white;
-    }
-
-    .custom-confirm-icon.warning {
-        background: linear-gradient(135deg, var(--warning-yellow), #e6a800);
-    }
-
-    .custom-confirm-icon.danger {
-        background: linear-gradient(135deg, var(--danger-red), #e74c3c);
-    }
-
-    .custom-confirm-title {
-        font-size: 20px;
-        font-weight: 700;
-        color: var(--text-light);
-        margin: 0;
-    }
-
-    .custom-confirm-message {
-        color: rgba(249, 249, 249, 0.8);
-        font-size: 16px;
-        line-height: 1.5;
-        margin-bottom: 30px;
-    }
-
-    .custom-confirm-buttons {
-        display: flex;
-        gap: 12px;
-        justify-content: flex-end;
-    }
-
-    .custom-confirm-btn {
-        padding: 12px 24px;
-        border-radius: 8px;
-        font-size: 14px;
-        font-weight: 700;
-        border: none;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-
-    .custom-confirm-btn:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
-    }
-
-    .custom-confirm-btn.cancel {
-        background: rgba(108, 117, 125, 0.2);
-        color: #6c757d;
-        border: 2px solid #6c757d;
-    }
-
-    .custom-confirm-btn.cancel:hover {
-        background: #6c757d;
-        color: white;
-    }
-
-    .custom-confirm-btn.confirm {
-        background: linear-gradient(135deg, var(--danger-red), #e74c3c);
-        color: white;
-        border: 2px solid var(--danger-red);
-    }
-
-    .custom-confirm-btn.confirm:hover {
-        background: linear-gradient(135deg, #c82333, #dc3545);
-    }
-
-    .custom-confirm-btn.warning {
-        background: linear-gradient(135deg, var(--warning-yellow), #e6a800);
-        color: #1a0a2e;
-        border: 2px solid var(--warning-yellow);
-    }
-
-    .custom-confirm-btn.warning:hover {
-        background: linear-gradient(135deg, #e6a800, #ffc107);
-    }
-
-    .card-content {
-        padding: 20px;
-    }
-
-    /* Info Grid */
-    .info-grid {
+    .info-row {
         display: grid;
         grid-template-columns: repeat(2, 1fr);
         gap: 16px;
+        margin-bottom: 16px;
     }
-
     .info-item {
-        padding: 14px;
-        background: rgba(255, 255, 255, 0.03);
-        border-radius: 8px;
-        border: 1px solid var(--border-color);
-        transition: all 0.3s ease;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
     }
-
-    .info-item:hover {
-        background: rgba(255, 255, 255, 0.05);
-        transform: translateX(3px);
-    }
-
     .info-item label {
-        display: block;
-        font-size: 12px;
-        color: rgba(249, 249, 249, 0.7);
-        margin-bottom: 8px;
+        font-size: 11px;
+        font-weight: 600;
+        color: #6b7280;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .info-item span {
+        font-size: 14px;
+        font-weight: 500;
+        color: #130325;
+        word-break: break-word;
+    }
+
+    .profile-stats {
+        flex: 1;
+        min-width: 280px;
+    }
+    .profile-stats h2 {
+        margin: 0 0 16px 0;
+        font-size: 18px;
+        font-weight: 700;
+        color: #130325;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+    }
+    .stat-card {
+        background: #f8f9fa;
+        border: 1px solid rgba(0,0,0,0.08);
+        border-radius: 8px;
+        padding: 16px;
+        text-align: center;
+    }
+    .stat-number {
+        font-size: 24px;
+        font-weight: 700;
+        color: #130325;
+        margin-bottom: 4px;
+    }
+    .stat-label {
+        font-size: 11px;
+        color: #6b7280;
         text-transform: uppercase;
         letter-spacing: 0.5px;
         font-weight: 600;
     }
 
-    .info-item span {
-        font-size: 15px;
-        color: var(--text-light);
-        font-weight: 500;
-        display: block;
-        word-break: break-word;
-    }
-
-    /* Stats Grid */
-    .stats-grid {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 16px;
-    }
-
-    .stat-item {
-        padding: 20px;
-        background: rgba(255, 215, 54, 0.05);
-        border: 1px solid var(--border-color);
-        border-radius: 10px;
-        text-align: center;
-        transition: all 0.3s ease;
-    }
-
-    .stat-item:hover {
-        background: rgba(255, 215, 54, 0.1);
-        transform: translateY(-3px);
-        box-shadow: 0 8px 20px rgba(255, 215, 54, 0.2);
-    }
-
-    .stat-number {
-        font-size: 32px;
-        font-weight: 800;
-        color: var(--accent-yellow);
-        margin-bottom: 8px;
-    }
-
-    .stat-label {
-        font-size: 13px;
-        color: rgba(249, 249, 249, 0.8);
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-
-    /* Status Badges */
     .status-badge {
-        display: inline-block;
-        padding: 8px 16px;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 12px;
         border-radius: 20px;
-        font-size: 13px;
+        font-size: 12px;
         font-weight: 700;
-        letter-spacing: 0.5px;
         text-transform: uppercase;
+        letter-spacing: 0.3px;
+    }
+    .status-active {
+        background: #d1fae5;
+        color: #065f46;
+    }
+    .status-inactive {
+        background: #fee2e2;
+        color: #991b1b;
     }
 
-    .status-active, .status-completed, .status-approved {
-        background: rgba(40, 167, 69, 0.2);
-        color: var(--success-green);
-        border: 2px solid var(--success-green);
-    }
-
-    .status-inactive, .status-cancelled, .status-rejected, .status-banned {
-        background: rgba(220, 53, 69, 0.2);
-        color: var(--danger-red);
-        border: 2px solid var(--danger-red);
-    }
-
-    .status-pending {
-        background: rgba(255, 193, 7, 0.2);
-        color: var(--warning-yellow);
-        border: 2px solid var(--warning-yellow);
-    }
-
-    .status-suspended {
-        background: rgba(108, 117, 125, 0.2);
-        color: #6c757d;
-        border: 2px solid #6c757d;
-    }
-
-    .user-type-badge {
-        display: inline-block;
+    .action-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
         padding: 8px 16px;
-        border-radius: 20px;
+        border-radius: 6px;
         font-size: 13px;
+        font-weight: 600;
+        text-decoration: none;
+        border: none;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    .action-btn:hover { transform: translateY(-1px); }
+    .btn-activate { background: #28a745; color: #ffffff; }
+    .btn-activate:hover { background: #218838; }
+    .btn-deactivate { background: #ffc107; color: #130325; }
+    .btn-deactivate:hover { background: #e0a800; }
+    .btn-delete { background: #dc3545; color: #ffffff; }
+    .btn-delete:hover { background: #c82333; }
+
+    /* Orders Section */
+    .orders-section {
+        background: #ffffff;
+        border: 1px solid rgba(0,0,0,0.1);
+        border-radius: 12px;
+        padding: 24px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .orders-section h2 {
+        margin: 0 0 20px 0;
+        font-size: 18px;
         font-weight: 700;
-        background: rgba(52, 152, 219, 0.2);
-        color: #3498db;
-        border: 2px solid #3498db;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        margin-left: 8px;
+        color: #130325;
+        display: flex;
+        align-items: center;
+        gap: 8px;
     }
 
-    /* Tables */
     .table-container {
         overflow-x: auto;
         border-radius: 8px;
-        border: 1px solid var(--border-color);
+        border: 1px solid rgba(0,0,0,0.08);
     }
-
     table {
         width: 100%;
         border-collapse: collapse;
     }
-
     thead {
-        background: rgba(255, 215, 54, 0.1);
+        background: #130325;
     }
-
     th {
-        padding: 14px 12px;
+        padding: 12px 16px;
         text-align: left;
-        font-size: 13px;
-        color: var(--accent-yellow);
+        font-size: 12px;
+        color: #ffffff;
         font-weight: 700;
         text-transform: uppercase;
         letter-spacing: 0.5px;
     }
-
     td {
-        padding: 14px 12px;
-        border-bottom: 1px solid var(--border-color);
+        padding: 12px 16px;
+        border-bottom: 1px solid #f0f0f0;
         font-size: 14px;
-        color: var(--text-light);
+        color: #130325;
     }
-
-    tr:hover {
-        background: rgba(255, 255, 255, 0.02);
+    tbody tr:hover {
+        background: rgba(255, 215, 54, 0.05);
     }
+    .status-pending { background: #fef3c7; color: #92400e; }
+    .status-completed { background: #d1fae5; color: #065f46; }
+    .status-cancelled { background: #fee2e2; color: #991b1b; }
 
-    /* Action Buttons */
-    .action-buttons {
-        display: flex;
-        gap: 12px;
-        flex-wrap: wrap;
-        margin-top: 20px;
-    }
-
-    .btn {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        padding: 12px 20px;
-        border-radius: 8px;
-        font-size: 14px;
-        font-weight: 700;
-        text-decoration: none;
-        border: none;
-        cursor: pointer;
-        transition: all 0.3s ease;
-    }
-
-    .btn:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
-    }
-
-    .btn-activate {
-        background: linear-gradient(135deg, var(--success-green), #20c997);
-        color: white;
-    }
-
-    .btn-deactivate {
-        background: linear-gradient(135deg, var(--warning-yellow), #e6a800);
-        color: #1a0a2e;
-    }
-
-    .btn-delete {
-        background: linear-gradient(135deg, var(--danger-red), #e74c3c);
-        color: white;
-    }
-
-    .btn-view {
-        background: linear-gradient(135deg, #3498db, #5dade2);
-        color: white;
-        font-size: 13px;
-        padding: 8px 16px;
-    }
-
-    /* Pagination */
     .pagination {
         display: flex;
         justify-content: center;
         gap: 8px;
         margin-top: 20px;
     }
-
     .page-link {
-        padding: 10px 16px;
-        background: var(--primary-dark);
-        color: var(--accent-yellow);
+        padding: 8px 14px;
+        background: #ffffff;
+        color: #130325;
         text-decoration: none;
         border-radius: 6px;
-        border: 1px solid var(--border-color);
+        border: 1px solid #e5e7eb;
+        font-weight: 600;
+        font-size: 13px;
+        transition: all 0.2s ease;
+    }
+    .page-link:hover { background: #FFD736; color: #130325; }
+    .page-link.active { background: #FFD736; color: #130325; border-color: #FFD736; }
+
+    /* Confirmation Modal - Same style as admin-dashboard.php */
+    .modal-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.35);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+    }
+    .modal-dialog {
+        width: 360px;
+        max-width: 90vw;
+        background: #ffffff;
+        border: none;
+        border-radius: 12px;
+    }
+    .modal-header {
+        padding: 8px 12px;
+        background: #130325;
+        color: #F9F9F9;
+        border-bottom: none;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-radius: 12px 12px 0 0;
+    }
+    .modal-title {
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: .3px;
+    }
+    .modal-close {
+        background: transparent;
+        border: none;
+        color: #F9F9F9;
+        font-size: 16px;
+        line-height: 1;
+        cursor: pointer;
+    }
+    .modal-body {
+        padding: 12px;
+        color: #130325;
+        font-size: 13px;
+    }
+    .modal-actions {
+        display: flex;
+        gap: 8px;
+        justify-content: flex-end;
+        padding: 0 12px 12px 12px;
+    }
+    .btn-outline {
+        background: #ffffff;
+        color: #130325;
+        border: none;
+        border-radius: 8px;
+        padding: 6px 10px;
         font-weight: 700;
-        font-size: 14px;
-        transition: all 0.3s ease;
+        font-size: 12px;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
     }
-
-    .page-link:hover {
-        background: var(--accent-yellow);
-        color: var(--primary-dark);
-        transform: translateY(-2px);
+    .btn-primary-y {
+        background: linear-gradient(135deg, #FFD736 0%, #FFC107 100%);
+        color: #130325;
+        border: none;
+        border-radius: 8px;
+        padding: 6px 10px;
+        font-weight: 700;
+        font-size: 12px;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
     }
-
-    .page-link.active {
-        background: var(--accent-yellow);
-        color: var(--primary-dark);
-    }
-
-    /* Full Width Cards */
-    .full-width {
-        grid-column: 1 / -1;
-    }
-
-    /* Responsive */
-    @media (max-width: 1200px) {
-        .grid {
-            grid-template-columns: repeat(2, 1fr);
-        }
+    .btn-danger {
+        background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+        color: #ffffff;
+        border: none;
+        border-radius: 8px;
+        padding: 6px 10px;
+        font-weight: 700;
+        font-size: 12px;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
     }
 
     @media (max-width: 768px) {
-        .grid {
-            grid-template-columns: 1fr;
-        }
-        
-        .info-grid, .stats-grid {
-            grid-template-columns: 1fr;
-        }
-        
-        .action-buttons {
+        .profile-section {
             flex-direction: column;
         }
-        
-        .btn {
-            width: 100%;
+        .info-row, .stats-grid {
+            grid-template-columns: 1fr;
         }
     }
-
-
 </style>
 
 <?php if ($message): ?>
@@ -798,331 +560,233 @@ try {
     </a>
 </div>
 
-<h1><i class="fas fa-user"></i> Customer Details</h1>
+<div class="page-header">
+    <h1><i class="fas fa-user"></i> Customer Details</h1>
+    <div class="page-actions">
+        <?php if ($isActiveExists): ?>
+            <?php if ($user['active_status']): ?>
+                <a href="#" onclick="openConfirmModal('deactivate'); return false;" 
+                   class="action-btn btn-deactivate">
+                    <i class="fas fa-user-slash"></i> Deactivate
+                </a>
+            <?php else: ?>
+                <a href="user-details.php?id=<?php echo $userId; ?>&action=activate" 
+                   class="action-btn btn-activate">
+                    <i class="fas fa-user-check"></i> Activate
+                </a>
+            <?php endif; ?>
+            <a href="#" onclick="openConfirmModal('delete'); return false;" 
+               class="action-btn btn-delete">
+                <i class="fas fa-trash-alt"></i> Delete
+            </a>
+        <?php endif; ?>
+    </div>
+</div>
 
 <div class="container">
-    <div class="grid">
-        <!-- User Profile Card -->
-        <div class="card">
-            <div class="card-header">
-                <h2><i class="fas fa-user-circle"></i> User Profile</h2>
-                <div class="card-header-actions">
-                    <span class="status-badge status-<?php echo $user['active_status'] ? 'active' : 'inactive'; ?>">
-                        <?php echo $user['active_status'] ? 'Active' : 'Inactive'; ?>
+    <!-- Profile Section - Horizontal Layout -->
+    <div class="profile-section">
+        <div class="profile-info">
+            <h2><i class="fas fa-user-circle"></i> Profile Information</h2>
+            <div class="info-row">
+                <div class="info-item">
+                    <label>User ID</label>
+                    <span>#<?php echo (int)$user['id']; ?></span>
+                </div>
+                <div class="info-item">
+                    <label>Status</label>
+                    <span>
+                        <span class="status-badge status-<?php echo $user['active_status'] ? 'active' : 'inactive'; ?>">
+                            <?php echo $user['active_status'] ? 'Active' : 'Inactive'; ?>
+                        </span>
                     </span>
-                    <?php if ($isActiveExists): ?>
-                        <?php if ($user['active_status']): ?>
-                            <a href="user-details.php?id=<?php echo $userId; ?>&action=deactivate" 
-                               class="action-icon action-icon-deactivate"
-                               title="Deactivate User">
-                                <i class="fas fa-user-slash"></i>
-                            </a>
-                        <?php else: ?>
-                            <a href="user-details.php?id=<?php echo $userId; ?>&action=activate" 
-                               class="action-icon action-icon-deactivate"
-                               title="Activate User">
-                                <i class="fas fa-user-check"></i>
-                            </a>
-                        <?php endif; ?>
-                        <a href="user-details.php?id=<?php echo $userId; ?>&action=delete" 
-                           class="action-icon action-icon-delete"
-                           title="Delete User">
-                            <i class="fas fa-trash-alt"></i>
+                </div>
+                <div class="info-item">
+                    <label>Username</label>
+                    <span><?php echo htmlspecialchars($user['username'] ?? ''); ?></span>
+                </div>
+                <div class="info-item">
+                    <label>Email</label>
+                    <span><?php echo htmlspecialchars($user['email'] ?? ''); ?></span>
+                </div>
+                <div class="info-item">
+                    <label>Full Name</label>
+                    <span><?php echo htmlspecialchars(trim(($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? '')) ?: 'N/A'); ?></span>
+                </div>
+                <div class="info-item">
+                    <label>Phone</label>
+                    <span><?php echo htmlspecialchars($user['phone'] ?? 'Not provided'); ?></span>
+                </div>
+                <div class="info-item">
+                    <label>Address</label>
+                    <span><?php echo htmlspecialchars($user['address'] ?? 'Not provided'); ?></span>
+                </div>
+                <div class="info-item">
+                    <label>Registered</label>
+                    <span><?php echo $user['created_at'] ? date('M j, Y', strtotime($user['created_at'])) : 'N/A'; ?></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="profile-stats">
+            <h2><i class="fas fa-chart-line"></i> Statistics</h2>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-number"><?php echo number_format($stats['total_orders']); ?></div>
+                    <div class="stat-label">Total Orders</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">₱<?php echo number_format($stats['total_spent'], 2); ?></div>
+                    <div class="stat-label">Total Spent</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number"><?php echo number_format($stats['completed_orders']); ?></div>
+                    <div class="stat-label">Completed</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number"><?php echo number_format($stats['pending_orders']); ?></div>
+                    <div class="stat-label">Pending</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number"><?php echo number_format($stats['cancelled_orders']); ?></div>
+                    <div class="stat-label">Cancelled</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number"><?php echo $stats['account_age_days']; ?></div>
+                    <div class="stat-label">Account Age (Days)</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Orders Section -->
+    <div class="orders-section">
+        <h2><i class="fas fa-receipt"></i> Recent Orders (<?php echo count($orders); ?>)</h2>
+        <?php if (empty($orders)): ?>
+            <p style="text-align: center; color: #6b7280; padding: 40px;">No orders found.</p>
+        <?php else: ?>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Order ID</th>
+                            <th>Date</th>
+                            <th>Status</th>
+                            <th>Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($orders as $order): ?>
+                            <tr>
+                                <td><strong>#<?php echo htmlspecialchars($order['id']); ?></strong></td>
+                                <td><?php echo date('M j, Y g:i A', strtotime($order['created_at'])); ?></td>
+                                <td>
+                                    <span class="status-badge status-<?php echo strtolower($order['status']); ?>">
+                                        <?php echo ucfirst($order['status']); ?>
+                                    </span>
+                                </td>
+                                <td>₱<?php echo number_format($order['total_amount'], 2); ?></td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+
+            <?php if ($totalOrderPages > 1): ?>
+                <div class="pagination">
+                    <?php if ($orderPage > 1): ?>
+                        <a href="user-details.php?id=<?php echo $userId; ?>&order_page=<?php echo $orderPage - 1; ?>" class="page-link">
+                            <i class="fas fa-chevron-left"></i> Previous
+                        </a>
+                    <?php endif; ?>
+                    
+                    <?php for ($i = 1; $i <= $totalOrderPages; $i++): ?>
+                        <a href="user-details.php?id=<?php echo $userId; ?>&order_page=<?php echo $i; ?>" 
+                           class="page-link <?php echo $i === $orderPage ? 'active' : ''; ?>">
+                            <?php echo $i; ?>
+                        </a>
+                    <?php endfor; ?>
+                    
+                    <?php if ($orderPage < $totalOrderPages): ?>
+                        <a href="user-details.php?id=<?php echo $userId; ?>&order_page=<?php echo $orderPage + 1; ?>" class="page-link">
+                            Next <i class="fas fa-chevron-right"></i>
                         </a>
                     <?php endif; ?>
                 </div>
-            </div>
-            <div class="card-content">
-                <div class="info-grid">
-                    <div class="info-item">
-                        <label><i class="fas fa-hashtag"></i> User ID</label>
-                        <span><?php echo (int)$user['id']; ?></span>
-                    </div>
-                    <div class="info-item">
-                        <label><i class="fas fa-user"></i> Username</label>
-                        <span><?php echo htmlspecialchars($user['username'] ?? ''); ?></span>
-                    </div>
-                    <div class="info-item">
-                        <label><i class="fas fa-signature"></i> Full Name</label>
-                        <span><?php echo htmlspecialchars(trim(($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? ''))); ?></span>
-                    </div>
-                    <div class="info-item">
-                        <label><i class="fas fa-envelope"></i> Email</label>
-                        <span><?php echo htmlspecialchars($user['email'] ?? ''); ?></span>
-                    </div>
-                    <div class="info-item">
-                        <label><i class="fas fa-phone"></i> Phone</label>
-                        <span><?php echo htmlspecialchars($user['phone'] ?? 'Not provided'); ?></span>
-                    </div>
-                    <div class="info-item">
-                        <label><i class="fas fa-map-marker-alt"></i> Address</label>
-                        <span><?php echo htmlspecialchars($user['address'] ?? 'Not provided'); ?></span>
-                    </div>
-                    <div class="info-item">
-                        <label><i class="fas fa-calendar-alt"></i> Registration Date</label>
-                        <span><?php echo $user['created_at'] ? date('F j, Y g:i A', strtotime($user['created_at'])) : 'N/A'; ?></span>
-                    </div>
-                    <div class="info-item">
-                        <label><i class="fas fa-clock"></i> Account Age</label>
-                        <span><?php echo $stats['account_age_days']; ?> days</span>
-                    </div>
-                </div>
-            </div>
-        </div>
+            <?php endif; ?>
+        <?php endif; ?>
+    </div>
+</div>
 
-        <!-- User Statistics Card -->
-        <div class="card">
-            <div class="card-header">
-                <h2><i class="fas fa-chart-line"></i> Statistics</h2>
-            </div>
-            <div class="card-content">
-                <div class="stats-grid">
-                    <div class="stat-item">
-                        <div class="stat-number"><?php echo number_format($stats['total_orders']); ?></div>
-                        <div class="stat-label">Total Orders</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-number">₱<?php echo number_format($stats['total_spent'], 2); ?></div>
-                        <div class="stat-label">Total Spent</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-number"><?php echo number_format($stats['completed_orders']); ?></div>
-                        <div class="stat-label">Completed Orders</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-number">
-                            <?php 
-                            echo $stats['total_orders'] > 0 
-                                ? '₱' . number_format($stats['total_spent'] / $stats['total_orders'], 2)
-                                : '₱0.00';
-                            ?>
-                        </div>
-                        <div class="stat-label">Avg Order Value</div>
-                    </div>
-                </div>
-            </div>
+<!-- Confirmation Modals -->
+<!-- Deactivate Modal -->
+<div id="deactivateModal" class="modal-overlay" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-header">
+            <div class="modal-title">Confirm Deactivation</div>
+            <button class="modal-close" aria-label="Close" onclick="closeConfirmModal('deactivate')">×</button>
         </div>
-
-        <!-- Order Analytics Card -->
-        <div class="card">
-            <div class="card-header">
-                <h2><i class="fas fa-box"></i> Order Analytics</h2>
-            </div>
-            <div class="card-content">
-                <div class="stats-grid">
-                    <div class="stat-item">
-                        <div class="stat-number"><?php echo number_format($stats['pending_orders']); ?></div>
-                        <div class="stat-label">Pending Orders</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-number"><?php echo number_format($stats['cancelled_orders']); ?></div>
-                        <div class="stat-label">Cancelled Orders</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-number">
-                            <?php 
-                            $successRate = $stats['total_orders'] > 0 
-                                ? round(($stats['completed_orders'] / $stats['total_orders']) * 100) 
-                                : 0;
-                            echo $successRate . '%';
-                            ?>
-                        </div>
-                        <div class="stat-label">Success Rate</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-number">
-                            <?php 
-                            if ($stats['last_order_date']) {
-                                echo date('M j, Y', strtotime($stats['last_order_date']));
-                            } else {
-                                echo 'Never';
-                            }
-                            ?>
-                        </div>
-                        <div class="stat-label">Last Order</div>
-                    </div>
-                </div>
-            </div>
+        <div class="modal-body">
+            Are you sure you want to deactivate this user? They will not be able to log in.
         </div>
+        <div class="modal-actions">
+            <button class="btn-outline" onclick="closeConfirmModal('deactivate')">Cancel</button>
+            <a href="user-details.php?id=<?php echo $userId; ?>&action=deactivate" class="btn-primary-y">Confirm</a>
+        </div>
+    </div>
+</div>
 
-        <!-- Recent Orders Card -->
-        <div class="card full-width">
-            <div class="card-header">
-                <h2><i class="fas fa-receipt"></i> Recent Orders (<?php echo count($orders); ?>)</h2>
-            </div>
-            <div class="card-content">
-                <?php if (empty($orders)): ?>
-                    <p style="text-align: center; color: rgba(249, 249, 249, 0.6);">No orders found.</p>
-                <?php else: ?>
-                    <div class="table-container">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Order ID</th>
-                                    <th>Date</th>
-                                    <th>Status</th>
-                                    <th>Amount</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php foreach ($orders as $order): ?>
-                                    <tr>
-                                        <td>#<?php echo htmlspecialchars($order['id']); ?></td>
-                                        <td><?php echo date('M j, Y g:i A', strtotime($order['created_at'])); ?></td>
-                                        <td>
-                                            <span class="status-badge status-<?php echo strtolower($order['status']); ?>">
-                                                <?php echo ucfirst($order['status']); ?>
-                                            </span>
-                                        </td>
-                                        <td>₱<?php echo number_format($order['total_amount'], 2); ?></td>
-                                    </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
-                    </div>
-                <?php endif; ?>
-            </div>
+<!-- Delete Modal -->
+<div id="deleteModal" class="modal-overlay" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-header">
+            <div class="modal-title">Confirm Deletion</div>
+            <button class="modal-close" aria-label="Close" onclick="closeConfirmModal('delete')">×</button>
+        </div>
+        <div class="modal-body">
+            Are you sure you want to delete this user? This action cannot be undone. Users with orders cannot be deleted.
+        </div>
+        <div class="modal-actions">
+            <button class="btn-outline" onclick="closeConfirmModal('delete')">Cancel</button>
+            <a href="user-details.php?id=<?php echo $userId; ?>&action=delete" class="btn-danger">Delete</a>
         </div>
     </div>
 </div>
 
 <script>
-// Custom Confirmation Dialog System
-function showCustomConfirm(title, message, type = 'warning', onConfirm) {
-    // Create overlay
-    const overlay = document.createElement('div');
-    overlay.className = 'custom-confirm-overlay';
-    
-    // Create dialog
-    const dialog = document.createElement('div');
-    dialog.className = 'custom-confirm-dialog';
-    
-    // Create header
-    const header = document.createElement('div');
-    header.className = 'custom-confirm-header';
-    
-    const icon = document.createElement('div');
-    icon.className = `custom-confirm-icon ${type}`;
-    icon.innerHTML = type === 'danger' ? '<i class="fas fa-exclamation-triangle"></i>' : '<i class="fas fa-question-circle"></i>';
-    
-    const titleEl = document.createElement('h3');
-    titleEl.className = 'custom-confirm-title';
-    titleEl.textContent = title;
-    
-    header.appendChild(icon);
-    header.appendChild(titleEl);
-    
-    // Create message
-    const messageEl = document.createElement('div');
-    messageEl.className = 'custom-confirm-message';
-    messageEl.textContent = message;
-    
-    // Create buttons
-    const buttons = document.createElement('div');
-    buttons.className = 'custom-confirm-buttons';
-    
-    const cancelBtn = document.createElement('button');
-    cancelBtn.className = 'custom-confirm-btn cancel';
-    cancelBtn.textContent = 'Cancel';
-    cancelBtn.onclick = () => closeDialog();
-    
-    const confirmBtn = document.createElement('button');
-    confirmBtn.className = `custom-confirm-btn ${type}`;
-    confirmBtn.textContent = type === 'danger' ? 'Delete' : 'Confirm';
-    confirmBtn.onclick = () => {
-        closeDialog();
-        onConfirm();
-    };
-    
-    buttons.appendChild(cancelBtn);
-    buttons.appendChild(confirmBtn);
-    
-    // Assemble dialog
-    dialog.appendChild(header);
-    dialog.appendChild(messageEl);
-    dialog.appendChild(buttons);
-    overlay.appendChild(dialog);
-    
-    // Add to page
-    document.body.appendChild(overlay);
-    
-    // Show with animation
-    setTimeout(() => overlay.classList.add('show'), 10);
-    
-    // Close function
-    function closeDialog() {
-        overlay.classList.remove('show');
-        setTimeout(() => {
-            if (overlay.parentNode) {
-                overlay.parentNode.removeChild(overlay);
-            }
-        }, 300);
+function openConfirmModal(action) {
+    const modal = document.getElementById(action + 'Modal');
+    if (modal) {
+        modal.style.display = 'flex';
+        modal.setAttribute('aria-hidden', 'false');
     }
-    
-    // Close on overlay click
-    overlay.onclick = (e) => {
-        if (e.target === overlay) {
-            closeDialog();
-        }
-    };
-    
-    // Close on escape key
-    const handleEscape = (e) => {
-        if (e.key === 'Escape') {
-            closeDialog();
-            document.removeEventListener('keydown', handleEscape);
-        }
-    };
-    document.addEventListener('keydown', handleEscape);
 }
 
-// Override default confirm for action icons
-document.addEventListener('DOMContentLoaded', function() {
-    // Handle deactivate/activate actions
-    const deactivateLinks = document.querySelectorAll('a[href*="action=deactivate"]');
-    deactivateLinks.forEach(link => {
-        link.onclick = function(e) {
-            e.preventDefault();
-            showCustomConfirm(
-                'Deactivate User',
-                'Are you sure you want to deactivate this user? They will not be able to log in.',
-                'warning',
-                () => {
-                    window.location.href = this.href;
-                }
-            );
-        };
+function closeConfirmModal(action) {
+    const modal = document.getElementById(action + 'Modal');
+    if (modal) {
+        modal.style.display = 'none';
+        modal.setAttribute('aria-hidden', 'true');
+    }
+}
+
+// Close modal on overlay click
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+    overlay.addEventListener('click', function(e) {
+        if (e.target === this) {
+            this.style.display = 'none';
+            this.setAttribute('aria-hidden', 'true');
+        }
     });
-    
-    const activateLinks = document.querySelectorAll('a[href*="action=activate"]');
-    activateLinks.forEach(link => {
-        link.onclick = function(e) {
-            e.preventDefault();
-            showCustomConfirm(
-                'Activate User',
-                'Are you sure you want to activate this user?',
-                'warning',
-                () => {
-                    window.location.href = this.href;
-                }
-            );
-        };
-    });
-    
-    // Handle delete actions
-    const deleteLinks = document.querySelectorAll('a[href*="action=delete"]');
-    deleteLinks.forEach(link => {
-        link.onclick = function(e) {
-            e.preventDefault();
-            showCustomConfirm(
-                'Delete User',
-                'Are you sure you want to delete this user? This action cannot be undone. Users with orders cannot be deleted.',
-                'danger',
-                () => {
-                    window.location.href = this.href;
-                }
-            );
-        };
-    });
+});
+
+// Close modal on Escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        document.querySelectorAll('.modal-overlay').forEach(modal => {
+            modal.style.display = 'none';
+            modal.setAttribute('aria-hidden', 'true');
+        });
+    }
 });
 </script>
