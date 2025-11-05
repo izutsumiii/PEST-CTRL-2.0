@@ -1,1094 +1,1102 @@
 <?php
+// Ensure output buffering is enabled so including this file early doesn't break redirects
+if (session_status() === PHP_SESSION_NONE) {
+    if (!ob_get_level()) ob_start();
+}
 require_once 'functions.php';
-?>
-<!DOCTYPE html>
+require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/maintenance_check.php';
+// FIXED: Better path detection
+$currentFile = basename($_SERVER['PHP_SELF']);
+$currentDir = basename(dirname($_SERVER['PHP_SELF']));
+
+// Determine if we need to go up one directory
+$pathPrefix = ($currentDir === 'paymongo') ? '../' : '';
+?><!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Seller Dashboard - PEST-CTRL</title>
-    <link rel="icon" type="image/x-icon" href="assets/uploads/pest_icon_216780.ico">
-    <link href="assets/css/pest-ctrl.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <title>PEST-CTRL - Professional Pest Control Solutions</title>
+    <link rel="icon" type="image/x-icon" href="<?php echo $pathPrefix; ?>assets/uploads/pest_icon_216780.ico">
+    <link href="<?php echo $pathPrefix; ?>assets/css/pest-ctrl.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="<?php echo $pathPrefix; ?>assets/script.js"></script>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body { font-family: var(--font-primary); background-color: var(--bg-secondary); }
-
-        :root {
-            --sidebar-width: 240px;
-            --sidebar-width-collapsed: 70px;
-        }
-        
-        .sidebar {
-            position: fixed;
-            top: 60px;
-            left: 0;
-            bottom: 0;
-            width: var(--sidebar-width);
+        /* Keep all your existing styles */
+        .site-header {
             background: #130325;
-            border-right: 1px solid rgba(255, 215, 54, 0.2);
-            padding: 16px 12px;
-            z-index: 100;
-            transition: all 0.3s ease;
-            overflow-y: auto;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.06);
         }
-
-        /* Normalize seller notifications footer and See All */
-        .notification-footer { text-align: center; padding: 10px; border-top: 1px solid #e5e7eb; }
-        .notification-footer .see-all-btn { color: #1f2937; text-decoration: none; font-size: 12px; display: inline-block; }
-        .notification-footer .see-all-btn:hover { text-decoration: none; background: transparent; color: #1f2937; }
         
-        .sidebar.collapsed {
-            width: var(--sidebar-width-collapsed);
-        }
-
-        .sidebar-logo {
-            padding: 20px 15px;
-            border-bottom: 1px solid rgba(255, 215, 54, 0.15);
-            margin-bottom: 20px;
-            text-align: center;
-            height: 60px;
+        .site-header .container {
             display: flex;
             align-items: center;
-            justify-content: center;
-        }
-        
-        .sidebar-logo a {
-            color: #FFD736;
-            text-decoration: none;
-            font-family: 'Libre Barcode 128 Text', monospace;
-            font-size: 24px;
-            font-weight: 400;
-            transition: all 0.3s ease;
-        }
-        
-        .sidebar-logo a:hover {
-            color: #F9F9F9;
-        }
-        
-        .sidebar-logo .full-logo {
-            transition: opacity 0.4s ease, visibility 0.4s ease, transform 0.4s ease;
-        }
-        
-        .sidebar-logo .short-logo {
-            opacity: 0;
-            visibility: hidden;
-            position: absolute;
-            transition: opacity 0.4s ease, visibility 0.4s ease, transform 0.4s ease;
-            font-size: 18px;
-            top: 5%;
-            left: 50%;
-            transform: translate(-50%, -50%) scale(0.8);
-        }
-        
-        .sidebar.collapsed .sidebar-logo .full-logo {
-            opacity: 0;
-            visibility: hidden;
-            transform: scale(0.9);
-        }
-        
-        .sidebar.collapsed .sidebar-logo .short-logo {
-            opacity: 1;
-            visibility: visible;
-            position: absolute;
-            top: 5%;
-            left: 50%;
-            transform: translate(-50%, -50%) scale(1);
-        }
-
-        .user-profile-section {
-            margin-top: auto;
-            padding: 15px 10px;
-            border-top: 1px solid rgba(255, 215, 54, 0.15);
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 8px;
-            margin: 20px 8px 10px 8px;
-            transition: all 0.3s ease;
-        }
-        
-        .user-profile-info {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-            transition: opacity 0.3s ease, visibility 0.3s ease;
-        }
-        
-        .sidebar.collapsed .user-profile-info {
-            opacity: 0;
-            visibility: hidden;
-        }
-        
-        
-        .user-name {
-            color: #F9F9F9;
-            font-size: 14px;
-            font-weight: 700;
-            margin: 0;
-        }
-        
-        .user-role {
-            color: rgba(249, 249, 249, 0.7);
-            font-size: 12px;
-            margin: 0;
-        }
-
-        .section-title {
-            color: #9ca3af;
-            font-size: 11px;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            margin: 14px 8px 6px;
-            transition: opacity 0.3s ease, visibility 0.3s ease;
-        }
-        
-        .sidebar.collapsed .section-title {
-            opacity: 0;
-            visibility: hidden;
-        }
-
-        .nav-links {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-            margin-top: 10px;
-        }
-        
-        .nav-links > a,
-        .nav-dropdown-toggle {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            color: #F9F9F9;
-            text-decoration: none;
-            padding: 10px 12px;
-            border-radius: 8px;
-            font-size: 13px;
-            width: 100%;
-            transition: all 0.3s ease;
-            position: relative;
-            background: transparent;
-            border: none;
-            cursor: pointer;
-            text-align: left;
-        }
-        
-        .nav-links > a:hover,
-        .nav-dropdown-toggle:hover {
-            background: rgba(255, 215, 54, 0.1);
-            color: #FFD736;
-        }
-        
-        .nav-links > a.active {
-            background: rgba(255, 215, 54, 0.15);
-            color: #FFD736;
-            border: 1px solid rgba(255, 215, 54, 0.25);
-        }
-
-        /* Dropdown Styles - Fixed positioning and sizing */
-        .nav-dropdown {
-            display: flex;
-            flex-direction: column;
-            width: 100%;
-        }
-        
-        .nav-dropdown-toggle {
+            gap: 16px;
+            padding: 0px 18px;
             justify-content: space-between;
-        }
-        
-        .nav-dropdown-toggle-content {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        
-        .nav-dropdown-arrow {
-            transition: transform 0.3s ease;
-            font-size: 12px;
-            margin-left: auto;
-        }
-        
-        .nav-dropdown-arrow.rotated {
-            transform: rotate(90deg);
-        }
-        
-        .nav-dropdown-content {
-            max-height: 0;
-            overflow: hidden;
-            transition: max-height 0.3s ease;
-            display: flex;
-            flex-direction: column;
-            gap: 2px;
-            padding: 0;
-        }
-        
-        .nav-dropdown-content.show {
-            max-height: 300px;
-            padding: 4px 0;
-        }
-        
-        .nav-dropdown-content a {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 10px 12px 10px 24px;
-            color: #F9F9F9;
-            text-decoration: none;
-            font-size: 13px;
-            border-radius: 8px;
-            transition: all 0.3s ease;
-            background: rgba(0, 0, 0, 0.2);
-            margin: 0;
-            width: 100%;
-        }
-        
-        .nav-dropdown-content a:hover {
-            background: rgba(255, 215, 54, 0.1);
-            color: #FFD736;
-        }
-        
-        .nav-dropdown-content a i {
-            font-size: 13px;
-            width: 16px;
-        }
-
-        /* Collapsed sidebar tooltips */
-        .sidebar.collapsed .nav-links > a::after,
-        .sidebar.collapsed .nav-dropdown-toggle::after {
-            content: attr(data-tooltip);
-            position: absolute;
-            left: 100%;
-            top: 50%;
-            transform: translateY(-50%);
-            background: rgba(19, 3, 37, 0.95);
-            color: #F9F9F9;
-            padding: 12px 16px;
-            border-radius: 4px;
-            font-size: 12px;
-            white-space: nowrap;
-            opacity: 0;
-            visibility: hidden;
-            transition: all 0.3s ease;
-            z-index: 1000;
-            margin-left: 15px;
-            border: 1px solid rgba(255, 215, 54, 0.2);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-            min-width: 80px;
-            text-align: center;
-        }
-        
-        .sidebar.collapsed .nav-links > a:hover::after,
-        .sidebar.collapsed .nav-dropdown-toggle:hover::after {
-            opacity: 1;
-            visibility: visible;
-        }
-        
-        .sidebar.collapsed .nav-dropdown-content {
-            display: none;
-        }
-        
-        .sidebar.collapsed .nav-links > a,
-        .sidebar.collapsed .nav-dropdown-toggle {
-            justify-content: center;
-            padding: 10px 8px;
-        }
-        
-        .sidebar.collapsed .hide-on-collapse {
-            opacity: 0;
-            visibility: hidden;
-            position: absolute;
-            pointer-events: none;
-        }
-
-        /* Header Styles */
-        .invisible-header {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 60px;
-            background: rgba(19, 3, 37, 0.95);
-            backdrop-filter: blur(10px);
-            border-bottom: 1px solid rgba(255, 215, 54, 0.2);
-            z-index: 1000;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 20px;
         }
         
         .header-left {
             display: flex;
             align-items: center;
-            gap: 15px;
+            gap: 16px;
         }
         
-        .header-hamburger {
-            background: transparent;
-            border: none;
-            color: #FFD736;
-            font-size: 18px;
-            cursor: pointer;
-            padding: 8px;
-            border-radius: 4px;
-            transition: all 0.3s ease;
-        }
-        
-        .header-hamburger:hover {
-            background: rgba(255, 215, 54, 0.1);
-            transform: scale(1.1);
+        .header-center {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            max-width: 600px;
         }
         
         .header-right {
             display: flex;
             align-items: center;
-            gap: 15px;
+            gap: 12px;
         }
         
-        .header-user {
+        .brand {
             display: flex;
             align-items: center;
-            gap: 15px;
+            gap: 12px;
+            font-weight: 700;
+        }
+        
+        .brand-logo {
+            padding: 10px 22px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #F9F9F9;
+            font-size: 20px;
+            font-family: 'Libre Barcode 128 Text', monospace;
+            font-weight: 400;
+            text-decoration: none;
+        }
+        
+        .brand-text {
+            font-size: 14px;
+            color: #F9F9F9;
+            font-family: 'Libre Barcode 128 Text', monospace;
+        }
+        
+        .search-box {
+            flex: 1;
+            max-width: 600px;
+        }
+        
+        .search-box form {
+            display: flex;
+            gap: 0;
+            align-items: center;
+            width: 100%;
+        }
+        
+        .search-box select {
+            padding: 8px 10px !important;
+            height: 36px !important;
+            border-radius: 6px 0 0 6px !important;
+            border: 1px solid rgba(249, 249, 249, 0.3) !important;
+            border-right: 1px solid rgba(249, 249, 249, 0.3) !important;
+            background: rgba(249, 249, 249, 0.1) !important;
+            color: #F9F9F9 !important;
+            font-size: 14px !important;
+            cursor: pointer !important;
+            outline: none !important;
+            margin-right: 0 !important;
+            width: auto !important;
+            min-width: 100px !important;
+        }
+        
+        .search-box select option {
+            background: #130325 !important;
+            color: #F9F9F9 !important;
+        }
+        
+        .search-box input {
+            flex: 1 1 0% !important;
+            padding: 8px 12px !important;
+            height: 36px !important;
+            max-height: 36px !important;
+            border-radius: 0 !important;
+            border: 1px solid rgba(249, 249, 249, 0.3) !important;
+            border-left: none !important;
+            border-right: none !important;
+            background: rgba(249, 249, 249, 0.1) !important;
+            color: #F9F9F9 !important;
+            min-width: 0;
+            margin-left: 0 !important;
+        }
+
+        .site-header .search-box { max-width: 600px; }
+        .site-header .search-box form { width: 100%; }
+        .site-header .search-box input { height: 36px; padding: 8px 12px; font-size: 14px; }
+        .site-header .search-box button { height: 36px; padding: 0 10px; white-space: nowrap; flex: 0 0 auto !important; width: auto !important; }
+        
+        .search-box input::placeholder {
+            color: rgba(249, 249, 249, 0.7);
+        }
+        
+        .search-box button {
+            padding: 0 14px !important;
+            border-radius: 0 6px 6px 0 !important;
+            background: #FFD736;
+            color: #130325;
+            border: none;
+            border-left: 1px solid rgba(249, 249, 249, 0.3) !important;
+            height: 36px;
+            flex: 0 0 auto !important;
+            width: auto !important;
+            margin-left: 0 !important;
+        }
+        
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .action-btn {
+            background: transparent;
+            border: 1px solid transparent;
+            padding: 8px 12px;
+            border-radius: 10px;
+            cursor: pointer;
+            color: #F9F9F9;
+        }
+        
+        .cart-link { 
+            position: relative; 
+            display: inline-flex; 
+            align-items: center; 
+        }
+        
+        .cart-notification {
+            position: absolute !important;
+            top: -8px !important;
+            right: -8px !important;
+            background: #FFD736 !important;
+            color: #130325 !important;
+            border-radius: 50% !important;
+            width: 20px !important;
+            height: 20px !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            font-size: 12px !important;
+            font-weight: bold !important;
+            min-width: 20px !important;
+            opacity: 0;
+            transform: scale(0);
+            transition: all 0.3s ease;
+            z-index: 1000 !important;
+        }
+        
+        .notif-badge {
+            position: absolute !important;
+            top: -10px !important;
+            right: -8px !important;
+            background: #FFD736 !important;
+            color: #130325 !important;
+            border-radius: 50% !important;
+            width: 20px !important;
+            height: 20px !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            font-size: 12px !important;
+            font-weight: bold !important;
+            min-width: 20px !important;
+            opacity: 0;
+            transform: scale(0);
+            transition: all 0.3s ease;
+            z-index: 1000 !important;
+            visibility: hidden;
+        }
+        
+        .notif-badge.show {
+            opacity: 1 !important;
+            transform: scale(1) !important;
+            visibility: visible !important;
+            display: flex !important;
+        }
+        
+        .cart-notification.show {
+            opacity: 1;
+            transform: scale(1);
+        }
+        
+        .nav-links {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+        
+        .nav-links .cart-link { 
+            margin-right: 12px; 
+        }
+        
+        .nav-links a {
+            color: #F9F9F9;
+            text-decoration: none;
+            padding: 8px 10px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+        
+        .nav-links a:hover {
+            color: #FFD736;
+            background: rgba(19, 3, 37, 0.8);
+        }
+
+        .notif-bell {
             position: relative;
-        }
-        
-        .header-user-info {
-            display: flex;
-            align-items: center;
-            gap: 10px;
             color: #F9F9F9;
             cursor: pointer;
-            padding: 8px 12px;
-            border-radius: 8px;
-            transition: all 0.3s ease;
         }
         
-        .header-user-info:hover {
-            background: rgba(255, 215, 54, 0.1);
-            color: #FFD736;
-        }
+.notif-popper {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    width: 350px;
+    max-height: none;
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+    display: none;
+    z-index: 1200;
+    padding: 10px;
+    overflow-y: visible;
+}
+
+/* Custom scrollbar styles for notif-popper */
+.notif-popper::-webkit-scrollbar {
+    width: 8px;
+}
+
+.notif-popper::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+.notif-popper::-webkit-scrollbar-thumb {
+    background: #FFD736;
+    border-radius: 10px;
+}
+
+.notif-popper::-webkit-scrollbar-thumb:hover {
+    background: #e6c230;
+}
+
+/* For Firefox */
+.notif-popper {
+    scrollbar-width: thin;
+    scrollbar-color: #FFD736 #f1f1f1;
+}
         
-        /* Seller Notifications */
-        .seller-notifications {
-            position: relative;
-            margin-right: 15px;
-        }
+        .notif-popper.show { display: block; }
+        /* Seller-style dropdown structure */
+        .notification-header { display:flex; align-items:center; justify-content:space-between; color:#130325; padding: 6px 4px; border-bottom: 1px solid #e5e7eb; margin-bottom: 6px; }
+        .notification-list { max-height: 380px; overflow-y: auto; padding-right: 2px; }
+        .notification-item { display:flex; gap:10px; padding:12px; border-radius:8px; border:1px solid #f3f4f6; background:#ffffff; margin: 6px 0; color:#130325; text-decoration:none; transition: background 0.2s ease; cursor: pointer; }
+        .notification-item:hover { background:#f9fafb; }
+        .notification-title { font-weight: 700; color:#130325; font-size: 13px; }
+        .notification-message { color:#130325; opacity:0.9; font-size: 12px; }
+        .notification-time { color:#9ca3af; font-size: 11px; margin-top: 2px; }
+        .notification-icon { width:28px; height:28px; display:flex; align-items:center; justify-content:center; background: rgba(255,215,54,0.2); color:#FFD736; border-radius:6px; flex: 0 0 28px; }
+        .notif-empty { color:#130325; opacity:0.7; text-align:center; padding:16px 8px; }
         
-        .notification-bell {
-            position: relative;
-            background: none;
-            border: none;
-            padding: 8px;
+        .clear-all-btn {
+            background: rgba(220, 53, 69, 0.2);
+            border: 1px solid rgba(220, 53, 69, 0.4);
+            color: #dc3545;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
             cursor: pointer;
             transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
         }
         
-        .notification-bell:hover {
-            transform: scale(1.1);
+        .clear-all-btn:hover {
+            background: rgba(220, 53, 69, 0.4);
+            border-color: #dc3545;
         }
         
-        .notification-bell i {
-            color: #FFD736;
-            font-size: 16px;
+        .notif-footer {
+            border-top: 1px solid #e5e7eb;
+            padding: 8px 0 0 0;
+            margin-top: 8px;
+            text-align: center;
         }
         
-        .notification-badge {
-            background: #dc3545;
-            color: white;
-            border-radius: 50%;
-            width: 18px;
-            height: 18px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 10px;
-            font-weight: bold;
-            position: absolute;
-            top: -5px;
-            right: -5px;
-            min-width: 18px;
-        }
-        
-        .notification-badge.hidden {
-            display: none;
-        }
-        
-        .notification-dropdown {
-            position: absolute;
-            top: 100%;
-            right: 0;
-            background: #ffffff;
-            border: 1px solid #e5e7eb;
-            border-radius: 8px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
-            width: 350px;
-            max-height: 400px;
-            z-index: 1000;
-            display: none;
-            overflow: hidden;
-        }
-        
-        .notification-dropdown.show {
-            display: block;
-        }
-        
-        /* Ensure notification dropdown uses dark text globally, even on invisible headers */
-        .notification-dropdown,
-        .notification-dropdown *,
-        .notification-dropdown a,
-        .notification-dropdown a i,
-        .notification-header h6,
-        .notification-title,
-        .notification-message,
-        .notification-time {
+        .see-all-btn {
+            display: inline-block !important;
+            text-align: center !important;
             color: #130325 !important;
-        }
-        .notification-dropdown { background: #ffffff !important; border-color: #e5e7eb !important; }
-        .notification-item:hover { background: #f9fafb !important; }
-        
-        .notification-header {
-            padding: 15px;
-            border-bottom: 1px solid #e5e7eb;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            text-decoration: none !important;
+            font-size: 13px !important;
+            font-weight: 600 !important;
+            padding: 6px 8px !important;
+            border-radius: 4px !important;
         }
         
-        .notification-header h6 {
-            margin: 0;
-            color: #1f2937;
-            font-weight: 600;
-        }
+        .see-all-btn:hover { text-decoration: underline !important; }
         
-        .notification-item-close-btn {
+        
+        .notif-delete-btn {
             position: absolute;
             top: 8px;
             right: 8px;
             background: transparent !important;
             border: none !important;
             color: #dc3545;
-            font-size: 12px;
-            cursor: pointer;
-            padding: 0;
-            width: 18px;
-            height: 18px;
+            width: 20px;
+            height: 20px;
+            border-radius: 0;
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: all 0.2s ease;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
             z-index: 10;
-            opacity: 0.7;
+            padding: 0;
         }
         
-        .notification-item-close-btn:hover {
+        .notif-delete-btn:hover {
+            background: transparent !important;
             color: #c82333;
             transform: scale(1.1);
-            opacity: 1;
         }
         
-        .notification-item:hover .notification-item-close-btn {
-            opacity: 1;
+        .cart-link {
+            background: none !important;
         }
         
-        .mark-all-read {
-            background: none;
+        .dropdown {
+            position: relative;
+            display: inline-block;
+        }
+        
+        .action-btn {
+            background: #FFD736;
+            color: #130325;
             border: none;
-            color: #FFD736;
-            font-size: 12px;
+            padding: 8px 16px;
+            border-radius: 8px;
             cursor: pointer;
-            padding: 4px 8px;
-            border-radius: 4px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .action-btn:hover {
+            background: #e6c230;
+            transform: translateY(-1px);
+        }
+        
+        .dropdown-menu {
+            position: absolute;
+            right: 0;
+            top: 100%;
+            min-width: 220px;
+            background: #ffffff;
+            border: 1px solid rgba(0,0,0,0.1);
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            z-index: 1000;
+            margin-top: 8px;
+            overflow: hidden;
+            display: none;
+        }
+        
+        .dropdown-menu.show {
+            display: block;
+        }
+        
+        .dropdown-item {
+            display: block;
+            padding: 14px 18px;
+            color: #130325;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            border-bottom: 1px solid #f8f9fa;
+        }
+        
+        .dropdown-item:last-child {
+            border-bottom: none;
+        }
+        
+        .dropdown-item:hover {
+            background: #FFD736;
+            color: #130325;
+        }
+        
+        .nav-link {
+            color: #F9F9F9 !important;
+            text-decoration: none;
+            padding: 8px 10px;
+            border-radius: 8px;
             transition: all 0.3s ease;
         }
         
-        .mark-all-read:hover {
-            background: rgba(255, 215, 54, 0.1);
+        .nav-link:hover {
+            color: #FFD736 !important;
+            background: rgba(19, 3, 37, 0.8) !important;
+        }
+
+        .mobile-menu {
+            display: none;
         }
         
-        .notification-list {
+        .hamburger {
+            display: none;
+            border: none;
+            background: transparent;
+            font-size: 22px;
+            color: #F9F9F9;
+        }
+
+        @media (max-width: 900px) {
+            .header-center {
+                display: flex !important;
+            }
+            .header-right .nav-links {
+                display: none;
+            }
+            .hamburger {
+                display: block;
+            }
+            .brand-text {
+                font-size: 16px;
+            }
+            .site-header .container {
+                justify-content: space-between;
+            }
+        }
+
+        .mobile-drawer {
+            position: fixed;
+            top: 0;
+            left: -100%;
+            width: 280px;
+            height: 100vh;
+            background: #F9F9F9;
+            box-shadow: 6px 0 18px rgba(0,0,0,0.08);
+            transition: all 280ms ease;
+            z-index: 1050;
+            padding: 18px;
+        }
+        
+        .mobile-drawer.show {
+            left: 0;
+        }
+        
+        .mobile-drawer .close-btn {
+            background: transparent;
+            border: none;
+            font-size: 20px;
+        }
+        
+        .mobile-drawer .links {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 12px;
+        }
+        
+        .mobile-drawer .links a {
+            color: #130325;
+        }
+        
+        .categories-nav {
+            background: #130325;
+            border-top: 1px solid #2d1b4e;
+            border-bottom: 1px solid #2d1b4e;
+            padding: 0px 0;
+        }
+        
+        .categories-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .category-group {
+            position: relative;
+        }
+        
+        .category-dropdown {
+            position: relative;
+            display: inline-block;
+        }
+        
+        .category-btn {
+            background: none;
+            border: none;
+            color: #ffffff;
+            font-size: 14px;
+            font-weight: 500;
+            padding: 8px 12px;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .category-btn:hover {
+            background: #2d1b4e;
+            color: #FFD736;
+        }
+        
+        .category-btn i {
+            font-size: 12px;
+            transition: transform 0.3s ease;
+        }
+        
+        .category-dropdown:hover .category-btn i {
+            transform: rotate(180deg);
+        }
+        
+        .category-menu {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            background: white;
+            border: 1px solid #e9ecef;
+            border-radius: 6px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            min-width: 200px;
+            max-width: 300px;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.3s ease;
             max-height: 300px;
             overflow-y: auto;
         }
         
-        .notification-item {
-            padding: 12px 15px;
-            border-bottom: 1px solid #f3f4f6;
-            display: flex;
-            align-items: flex-start;
-            gap: 10px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            position: relative;
+        .category-dropdown:hover .category-menu {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
         }
         
-        .notification-item:hover {
-            background: #f9fafb;
-        }
-        
-        .notification-item.unread {
-            background: #fef3c7;
-            border-left: 3px solid #f59e0b;
-        }
-        
-        .notification-status-badge {
-            display: inline-block;
-            padding: 3px 8px;
-            border-radius: 4px;
-            font-size: 10px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            white-space: nowrap;
-        }
-        
-        .notification-status-order {
-            background: #3b82f6;
-            color: #ffffff;
-        }
-        
-        .notification-status-return {
-            background: #dc3545;
-            color: #ffffff;
-        }
-        
-        .notification-status-lowstock {
-            background: #f97316;
-            color: #ffffff;
-        }
-        
-        .notification-status-processing {
-            background: #10b981;
-            color: #ffffff;
-        }
-        
-        .notification-content {
-            flex: 1;
-        }
-        
-        .notification-title {
-            font-weight: 600;
-            color: #1f2937;
-            font-size: 13px;
-            margin-bottom: 4px;
-        }
-        
-        .notification-message {
-            color: #6b7280;
-            font-size: 12px;
-            line-height: 1.4;
-        }
-        
-        .notification-time {
-            color: #9ca3af;
-            font-size: 11px;
-            margin-top: 4px;
-        }
-        
-        .notification-type-info i { color: #17a2b8; }
-        .notification-type-warning i { color: #ffc107; }
-        .notification-type-success i { color: #28a745; }
-        .notification-type-error i { color: #dc3545; }
-        
-        .header-user-avatar {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #FFD736, #e6c230);
+        .category-menu a {
+            display: block;
+            padding: 10px 15px;
             color: #130325;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 700;
-            font-size: 14px;
-        }
-        
-        .header-dropdown {
-            position: absolute;
-            top: 100%;
-            right: 0;
-            background: #ffffff;
-            min-width: 180px;
-            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
-            border-radius: 8px;
-            z-index: 1000;
-            display: none;
-            margin-top: 8px;
-        }
-        
-        .header-dropdown.show {
-            display: block;
-        }
-        
-        .header-dropdown a {
-            display: block;
-            padding: 12px 16px;
-            color: #2c3e50;
             text-decoration: none;
-            transition: background-color 0.3s ease;
-            font-size: 14px;
-        }
-        
-        .header-dropdown a:hover {
-            background-color: #f1f1f1;
-        }
-        
-        .header-dropdown a i {
-            margin-right: 8px;
-            width: 16px;
-        }
-
-        /* Main content offset */
-        main {
-            margin-left: var(--sidebar-width);
-            margin-top: 20px;
+            font-size: 13px;
+            border-bottom: 1px solid #f8f9fa;
             transition: all 0.3s ease;
         }
-
-        @media (max-width: 768px) {
-            main { margin-left: 0; }
-            .sidebar { width: 100%; position: static; border-right: none; }
+        
+        .category-menu a:last-child {
+            border-bottom: none;
         }
+        
+        .category-menu a:hover {
+            background: #130325;
+            color: #FFD736;
+            padding-left: 20px;
+        }
+        
+        @media (max-width: 768px) {
+            .categories-nav {
+                display: none;
+            }
+        }
+        #notifList {
+    max-height: 380px;
+    overflow-y: auto;
+}
+
+#notifList::-webkit-scrollbar {
+    width: 6px;
+}
+
+#notifList::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+#notifList::-webkit-scrollbar-thumb {
+    background: #FFD736;
+    border-radius: 10px;
+}
+
+#notifList::-webkit-scrollbar-thumb:hover {
+    background: #e6c230;
+}
     </style>
 </head>
 <body>
-    <div class="invisible-header">
-        <div class="header-left">
-            <button class="header-hamburger" onclick="toggleSellerSidebar()">
-                <i class="fas fa-bars"></i>
-            </button>
-        </div>
-        
-        <?php if (isLoggedIn() && isSeller()): ?>
-        <div class="header-right">
-            <!-- Seller Notifications -->
-            <div class="seller-notifications">
-                <div class="notification-bell" onclick="toggleSellerNotifications()">
-                    <i class="fas fa-bell"></i>
-                    <span class="notification-badge" id="sellerNotificationBadge">0</span>
-                </div>
-                <div class="notification-dropdown" id="sellerNotificationDropdown">
-                    <div class="notification-header" style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
-                        <h6 style="margin:0;">Notifications</h6>
-                        <button type="button" onclick="clearAllSellerNotifications()" style="background:#f3f4f6; border:1px solid #e5e7eb; color:#130325; padding:4px 8px; border-radius:6px; font-weight:700; cursor:pointer; font-size:12px;">Clear All</button>
-                    </div>
-                    <div class="notification-list" id="sellerNotificationList">
-                        <div class="notification-item">
-                            <span style="color: #1f2937;">Loading notifications...</span>
-                        </div>
-                    </div>
-                    <div class="notification-footer" style="text-align:center;">
-                        <a class="see-all-btn" href="seller-notifications.php" style="display:inline-block; margin:0 auto;">See All</a>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="header-user">
-                <div class="header-user-info" onclick="toggleHeaderDropdown()">
-                    <div class="header-user-avatar"><?php echo strtoupper(substr($_SESSION['username'], 0, 1)); ?></div>
-                    <span><?php echo htmlspecialchars($_SESSION['username']); ?></span>
-                    <i class="fas fa-chevron-down"></i>
-                </div>
-                <div class="header-dropdown" id="headerDropdown">
-                    <a href="seller-edit-profile.php"><i class="fas fa-user"></i>My Account</a>
-                    <a href="logout.php"><i class="fas fa-sign-out-alt"></i>Logout</a>
-                </div>
-            </div>
-        </div>
-        <?php endif; ?>
-    </div>
-
-    <div class="seller-layout">
-        <aside class="sidebar" id="sellerSidebar">
-            <div class="sidebar-logo">
-                <a href="seller-dashboard.php">
-                    <span class="full-logo barcode-text">PEST-CTRL</span>
-                    <span class="short-logo barcode-text">PC</span>
+    <header class="site-header">
+        <div class="container">
+            <div class="header-left">
+                <button class="hamburger" id="hamburgerBtn"><i class="fas fa-bars"></i></button>
+                <a class="brand" href="<?php echo $pathPrefix; ?>index.php">
+                    <div class="brand-logo">PEST-CTRL</div>
                 </a>
             </div>
 
-            <?php if (isLoggedIn() && isSeller()): ?>
-                <div class="user-profile-section">
-                    <div class="user-profile-info">
-                        <div class="user-name"><?php echo htmlspecialchars($_SESSION['username']); ?></div>
-                        <div class="user-role">Seller</div>
-                    </div>
+            <div class="header-center">
+                <div class="search-box">
+                    <form action="<?php echo $pathPrefix; ?>products.php" method="GET" role="search" id="headerSearchForm">
+                        <select name="search_type" id="searchTypeSelect">
+                            <option value="products" <?php echo (isset($_GET['search_type']) && $_GET['search_type'] === 'sellers') ? '' : 'selected'; ?>>Products</option>
+                            <option value="sellers" <?php echo (isset($_GET['search_type']) && $_GET['search_type'] === 'sellers') ? 'selected' : ''; ?>>Sellers</option>
+                        </select>
+                        <input name="search" type="text" placeholder="Search..." id="headerSearchInput" value="<?php echo isset($_GET['search']) ? htmlspecialchars($_GET['search']) : ''; ?>">
+                        <button type="submit"><i class="fas fa-search"></i></button>
+                    </form>
                 </div>
+            </div>
 
-                <div class="section-title hide-on-collapse">Overview</div>
+            <div class="header-right">
                 <div class="nav-links">
-                    <a href="seller-dashboard.php" data-tooltip="Dashboard">
-                        <i class="fas fa-tachometer-alt"></i>
-                        <span class="hide-on-collapse">Dashboard</span>
-                    </a>
-                    <a href="sales-analytics.php" data-tooltip="Sales Analytics">
-                        <i class="fas fa-chart-bar"></i>
-                        <span class="hide-on-collapse">Sales Analytics</span>
-                    </a>
-                </div>
-
-                <div class="section-title hide-on-collapse">Orders</div>
-                <div class="nav-links">
-                    <a href="view-orders.php" data-tooltip="View Orders">
-                        <i class="fas fa-clipboard-list"></i>
-                        <span class="hide-on-collapse">View Orders</span>
-                    </a>
-                </div>
-
-                <div class="section-title hide-on-collapse">Return/Refund Request</div>
-                <div class="nav-links">
-                    <a href="seller-returns.php" data-tooltip="View Return Request">
-                        <i class="fas fa-undo-alt"></i>
-                        <span class="hide-on-collapse">View Return/Refund</span>
-                    </a>
-                </div>
-
-                <div class="section-title hide-on-collapse">Catalog</div>
-                <div class="nav-links">
-                    <div class="nav-dropdown">
-                        <button class="nav-dropdown-toggle" onclick="toggleNavDropdown(event, 'manage-products')" data-tooltip="Manage Products">
-                            <div class="nav-dropdown-toggle-content">
-                                <i class="fas fa-boxes"></i>
-                                <span class="hide-on-collapse">Manage Products</span>
+                    <a href="<?php echo $pathPrefix; ?>index.php">Home</a>
+                    <a href="<?php echo $pathPrefix; ?>products.php">Products</a>
+                    <div class="notif-bell" id="notifBell" title="Notifications">
+                        <i class="fas fa-bell"></i>
+                        <?php if (isLoggedIn()): ?>
+                            <span id="notif-badge" class="notif-badge" style="display: none;">0</span>
+                        <?php endif; ?>
+                        <div class="notif-popper" id="notifPopper">
+                            <div class="notification-header">
+                                <strong>Notifications</strong>
                             </div>
-                            <i class="fas fa-chevron-right nav-dropdown-arrow hide-on-collapse" id="manage-products-arrow"></i>
-                        </button>
-                        <div class="nav-dropdown-content" id="manage-products-dropdown">
-                            <a href="manage-products.php">
-                                <i class="fas fa-plus"></i>
-                                <span>Add Product</span>
-                            </a>
-                            <a href="view-products.php">
-                                <i class="fas fa-list"></i>
-                                <span>View Products</span>
-                            </a>
+                            <div id="notifList" class="notification-list"></div>
+                            <div class="notif-footer">
+                                <a href="<?php echo $pathPrefix; ?>customer-notifications.php" class="see-all-btn">See All</a>
+                            </div>
                         </div>
                     </div>
-                </div>
-
-            <?php else: ?>
-                <div class="nav-links">
-                    <a href="login_seller.php">
-                        <i class="fas fa-sign-in-alt"></i>
-                        <span class="hide-on-collapse">Seller Login</span>
+                    <a href="<?php echo $pathPrefix; ?>cart.php" class="cart-link">
+                        <i class="fas fa-shopping-cart"></i>
+                        <?php if (isLoggedIn()): ?>
+                            <span id="cart-notification" class="cart-notification">0</span>
+                        <?php endif; ?>
                     </a>
                 </div>
-            <?php endif; ?>
-        </aside>
-    </div>
-    
-    <script>
-        function toggleSellerSidebar() {
-            const sidebar = document.getElementById('sellerSidebar');
-            const main = document.querySelector('main');
-            
-            sidebar.classList.toggle('collapsed');
-            
-            if (sidebar.classList.contains('collapsed')) {
-                main.style.marginLeft = '70px';
-            } else {
-                main.style.marginLeft = '240px';
-            }
-            
-            localStorage.setItem('sellerSidebarCollapsed', sidebar.classList.contains('collapsed'));
-        }
 
-        function toggleHeaderDropdown() {
-            const dropdown = document.getElementById('headerDropdown');
-            dropdown.classList.toggle('show');
-        }
-
-        function toggleNavDropdown(event, dropdownId) {
-            event.preventDefault();
-            event.stopPropagation();
-            
-            const dropdown = document.getElementById(dropdownId + '-dropdown');
-            const arrow = document.getElementById(dropdownId + '-arrow');
-            
-            if (dropdown.classList.contains('show')) {
-                dropdown.classList.remove('show');
-                if (arrow) arrow.classList.remove('rotated');
-            } else {
-                document.querySelectorAll('.nav-dropdown-content.show').forEach(d => {
-                    d.classList.remove('show');
-                });
-                document.querySelectorAll('.nav-dropdown-arrow.rotated').forEach(a => {
-                    a.classList.remove('rotated');
-                });
-                
-                dropdown.classList.add('show');
-                if (arrow) arrow.classList.add('rotated');
-            }
-        }
-
-        document.addEventListener('click', function(event) {
-            const headerUser = document.querySelector('.header-user');
-            const dropdown = document.getElementById('headerDropdown');
-            
-            if (headerUser && !headerUser.contains(event.target)) {
-                dropdown.classList.remove('show');
-            }
-        });
-
-        document.addEventListener('DOMContentLoaded', () => {
-            const sidebar = document.getElementById('sellerSidebar');
-            const main = document.querySelector('main');
-            const isCollapsed = localStorage.getItem('sellerSidebarCollapsed') === 'true';
-            
-            if (isCollapsed) {
-                sidebar.classList.add('collapsed');
-                main.style.marginLeft = '70px';
-            }
-            
-            // Load seller notifications on page load
-            loadSellerNotifications();
-        });
-
-        // Seller Notification Functions
-        function toggleSellerNotifications() {
-    const dropdown = document.getElementById('sellerNotificationDropdown');
-    const isVisible = dropdown.classList.contains('show');
-    
-    // Close other dropdowns
-    document.getElementById('headerDropdown').classList.remove('show');
-    
-    if (isVisible) {
-        dropdown.classList.remove('show');
-    } else {
-        dropdown.classList.add('show');
-        loadSellerNotifications();
-    }
-}
-function markAllSellerNotificationsAsRead() {
-    fetch('ajax/mark-all-seller-notifications-read.php', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            // Update badge to 0
-            updateSellerNotificationBadge(0);
-            // Reload notifications to show them as read
-            loadSellerNotifications();
-        }
-    })
-    .catch(error => {
-        console.error('Error marking all notifications as read:', error);
-    });
-}
-
-// Clear All: mark all read then clear dropdown UI immediately
-function clearAllSellerNotifications() {
-    const list = document.getElementById('sellerNotificationList');
-    if (list) {
-        list.innerHTML = '<div class="notification-item"><span>No notifications</span></div>';
-    }
-    const badge = document.getElementById('sellerNotificationBadge');
-    if (badge) { badge.classList.add('hidden'); badge.style.display = 'none'; }
-    // call backend
-    markAllSellerNotificationsAsRead();
-}
-
-// Remove confirmation; provide direct clear-all behavior
-        function loadSellerNotifications() {
-            fetch('ajax/get-seller-notifications.php')
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        updateSellerNotificationBadge(data.unreadCount);
-                        displaySellerNotifications(data.notifications);
+                <?php if (isLoggedIn()): ?>
+                    <?php
+                    // Get user's actual name from database
+                    $userName = 'User';
+                    try {
+                        $stmt = $pdo->prepare("SELECT first_name, last_name FROM users WHERE id = ?");
+                        $stmt->execute([$_SESSION['user_id']]);
+                        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+                        if ($user) {
+                            $userName = trim($user['first_name'] . ' ' . $user['last_name']);
+                        }
+                    } catch (Exception $e) {
+                        // Fallback to default
                     }
-                })
-                .catch(error => {
-                    console.error('Error loading notifications:', error);
+                    ?>
+                    <div class="dropdown">
+                       <button class="action-btn" id="userMenuBtn"><?php echo htmlspecialchars($userName); ?> <i class="fas fa-caret-down"></i></button>
+                                    <div class="dropdown-menu" id="userMenu">
+                                        <?php if (isAdmin()): ?>
+                                            <a class="dropdown-item" href="<?php echo $pathPrefix; ?>admin-dashboard.php">Admin Dashboard</a>
+                                        <?php elseif (isSeller()): ?>
+                                            <a class="dropdown-item" href="<?php echo $pathPrefix; ?>seller-dashboard.php">Seller Dashboard</a>
+                                             <a class="dropdown-item" href="<?php echo $pathPrefix; ?>seller-orders.php">View Orders</a>
+                                            <a class="dropdown-item" href="<?php echo $pathPrefix; ?>sales-analytics.php">Seller Analytics</a>
+                                             <a class="dropdown-item" href="<?php echo $pathPrefix; ?>manage-products.php">Manage Products</a>
+                                        <?php else: ?>
+                                            <a class="dropdown-item" href="<?php echo $pathPrefix; ?>user-dashboard.php">My Orders</a>
+                                            <a class="dropdown-item" href="<?php echo $pathPrefix; ?>customer-notifications.php">Notifications</a>
+                                        <?php endif; ?>
+                                        <a class="dropdown-item" href="<?php echo $pathPrefix; ?>edit-profile.php">My Account</a>
+                                        <a class="dropdown-item" href="<?php echo $pathPrefix; ?>logout.php">Logout</a>
+                                    </div>
+                    </div>
+                <?php else: ?>
+                    <div class="nav-links">
+                        <a href="<?php echo $pathPrefix; ?>login.php">Login</a>
+                        <a href="<?php echo $pathPrefix; ?>register.php">Register</a>
+                    </div>
+                <?php endif; ?>
+            </div>
+        </div>
+        
+        <!-- Categories Navigation -->
+        <div class="categories-nav">
+            <div class="container">
+                <div class="categories-container">
+                    <?php
+                    $stmt = $pdo->query('SELECT * FROM categories ORDER BY name');
+                    $categories = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                    
+                    $mainCategories = [];
+                    $subCategories = [];
+                    
+                    foreach($categories as $category) {
+                        $cleanName = preg_replace('/^[\x{1F300}-\x{1FAFF}\x{2600}-\x{27BF}\x{FE0F}\x{200D}\s]+/u', '', (string)$category['name']);
+                        $cleanName = html_entity_decode($cleanName, ENT_QUOTES, 'UTF-8');
+                        $category['clean_name'] = trim($cleanName);
+                        
+                        if(empty($category['parent_id']) || $category['parent_id'] == 0) {
+                            $mainCategories[] = $category;
+                        } else {
+                            $subCategories[] = $category;
+                        }
+                    }
+                    
+                    foreach($mainCategories as $mainCategory) {
+                        $subCats = array_filter($subCategories, function($cat) use ($mainCategory) {
+                            return $cat['parent_id'] == $mainCategory['id'];
+                        });
+                        
+                        echo '<div class="category-group">';
+                        echo '<div class="category-dropdown">';
+                        echo '<button class="category-btn">' . htmlspecialchars($mainCategory['clean_name']) . ' <i class="fas fa-caret-down"></i></button>';
+                        echo '<div class="category-menu">';
+                        
+                        echo '<a href="' . $pathPrefix . 'products.php?categories[]=' . $mainCategory['id'] . '">' . htmlspecialchars($mainCategory['clean_name']) . '</a>';
+                        
+                        foreach($subCats as $subCat) {
+                            echo '<a href="' . $pathPrefix . 'products.php?categories[]=' . $subCat['id'] . '">' . htmlspecialchars($subCat['clean_name']) . '</a>';
+                        }
+                        
+                        echo '</div>';
+                        echo '</div>';
+                        echo '</div>';
+                    }
+                    ?>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Mobile Drawer -->
+    <nav class="mobile-drawer" id="mobileDrawer">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+            <a class="brand" href="<?php echo $pathPrefix; ?>index.php"><div class="brand-logo">PEST-CTRL</div></a>
+            <button class="close-btn" id="drawerClose"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="links">
+            <a href="<?php echo $pathPrefix; ?>index.php">Home</a>
+            <a href="<?php echo $pathPrefix; ?>products.php">Products</a>
+            <a href="<?php echo $pathPrefix; ?>cart.php" class="cart-link">
+                Cart
+                <?php if (isLoggedIn()): ?>
+                    <span id="cart-notification-mobile" class="cart-notification">0</span>
+                <?php endif; ?>
+            </a>
+            <?php if (isLoggedIn()): ?>
+                <?php if (isSeller()): ?>
+                    <a href="<?php echo $pathPrefix; ?>seller-dashboard.php">Seller Dashboard</a>
+                <?php elseif (isAdmin()): ?>
+                    <a href="<?php echo $pathPrefix; ?>admin-dashboard.php">Admin Dashboard</a>
+                <?php else: ?>
+                    <a href="<?php echo $pathPrefix; ?>user-dashboard.php">My Orders</a>
+                <?php endif; ?>
+                <a href="<?php echo $pathPrefix; ?>edit-profile.php">Edit Profile</a>
+                <a href="<?php echo $pathPrefix; ?>customer-notifications.php">Notifications</a>
+                <a href="<?php echo $pathPrefix; ?>logout.php">Logout</a>
+            <?php else: ?>
+                <a href="<?php echo $pathPrefix; ?>login.php">Login</a>
+                <a href="<?php echo $pathPrefix; ?>register.php">Register</a>
+            <?php endif; ?>
+        </div>
+    </nav>
+
+    <script>
+        // Mobile drawer toggle
+        (function(){
+            const hb = document.getElementById('hamburgerBtn');
+            const drawer = document.getElementById('mobileDrawer');
+            const closeBtn = document.getElementById('drawerClose');
+            const userMenuBtn = document.getElementById('userMenuBtn');
+            const userMenu = document.getElementById('userMenu');
+            if (hb && drawer) hb.addEventListener('click', ()=> drawer.classList.add('show'));
+            if (closeBtn && drawer) closeBtn.addEventListener('click', ()=> drawer.classList.remove('show'));
+            if (userMenuBtn && userMenu) {
+                userMenuBtn.addEventListener('click', (e)=> {
+                    e.stopPropagation();
+                    userMenu.classList.toggle('show');
                 });
-        }
-
-        function updateSellerNotificationBadge(count) {
-            const badge = document.getElementById('sellerNotificationBadge');
-            if (count > 0) {
-                badge.textContent = count;
-                badge.classList.remove('hidden');
-            } else {
-                badge.classList.add('hidden');
+                document.addEventListener('click', (e)=>{
+                    if (!userMenu.contains(e.target) && e.target !== userMenuBtn) {
+                        userMenu.classList.remove('show');
+                    }
+                });
             }
-        }
+        })();
+        
+       // Notifications header popup
+(function(){
+    const bell = document.getElementById('notifBell');
+    const pop = document.getElementById('notifPopper');
+    const list = document.getElementById('notifList');
+    if (!bell || !pop || !list) return;
+    function closePop(e){ if (!pop.contains(e.target) && e.target !== bell && !bell.contains(e.target)) pop.classList.remove('show'); }
 
-        function displaySellerNotifications(notifications) {
-            const list = document.getElementById('sellerNotificationList');
-            
-            if (notifications.length === 0) {
-                list.innerHTML = '<div class="notification-item"><span>No notifications</span></div>';
+    bell.addEventListener('click', function() {
+        // If popup is already showing, just close it
+        if (pop.classList.contains('show')) {
+            pop.classList.remove('show');
+            return;
+        }
+        
+        // Show popup first for better UX
+        pop.classList.add('show');
+        setTimeout(()=> document.addEventListener('click', closePop, { once:true }), 0);
+        
+        // Mark all notifications as read FIRST
+        fetch('<?php echo $pathPrefix; ?>ajax/mark-all-notifications-read.php', {
+            method: 'POST',
+            credentials: 'same-origin'
+        })
+        .then(response => response.json())
+        .then(markResult => {
+            if (markResult.success) {
+                // Immediately update badge to 0
+                updateNotificationBadge(0);
+            }
+            // Now fetch notifications to display
+            return fetch('<?php echo $pathPrefix; ?>customer-notifications.php?as=json', { 
+                credentials: 'same-origin' 
+            });
+        })
+        .then(r => r.json())
+        .then(data => {
+            list.innerHTML = '';
+            if (data && data.success === false && data.message === 'Not logged in') {
+                list.innerHTML = '<div class="notif-empty">Please log in to view notifications.</div>';
                 return;
             }
-            
-            list.innerHTML = notifications.map(notification => {
-                const badgeInfo = getNotificationBadge(notification.title, notification.type);
-                return `
-                <div class="notification-item ${!notification.is_read ? 'unread' : ''}" 
-                    onclick="handleSellerNotificationClick(event, this, ${notification.id}, '${notification.action_url || ''}')">
-                    <span class="notification-status-badge ${badgeInfo.class}">${badgeInfo.text}</span>
-                    <div class="notification-content">
-                        <div class="notification-title">${notification.title}</div>
-                        <div class="notification-message">${notification.message}</div>
-                        <div class="notification-time">${formatTime(notification.created_at)}</div>
-                    </div>
-                </div>
-            `;
-            }).join('');
-        }
-        function handleSellerNotificationClick(event, element, notificationId, actionUrl) {
-    event.preventDefault();
-    // Optimistically remove item from dropdown
-    try {
-        if (element && element.classList) {
-            element.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
-            element.style.opacity = '0';
-            element.style.transform = 'translateX(8px)';
-            setTimeout(() => {
-                const parent = element.parentElement;
-                element.remove();
-                // If list empty, show placeholder
-                if (parent && parent.children.length === 0) {
-                    parent.innerHTML = '<div class="notification-item"><span>No notifications</span></div>';
-                }
-            }, 180);
-        }
-        // Decrement badge
-        const badge = document.getElementById('sellerNotificationBadge');
-        if (badge && !badge.classList.contains('hidden')) {
-            const current = parseInt(badge.textContent || '0', 10) || 0;
-            const next = Math.max(0, current - 1);
-            if (next === 0) {
-                badge.classList.add('hidden');
-                badge.style.display = 'none';
+            const items = (data && data.items) ? data.items.slice(0,6) : [];
+            if (!items.length) {
+                list.innerHTML = '<div class="notif-empty">No notifications yet.</div>';
             } else {
-                badge.textContent = String(next);
+                items.forEach(it => {
+                    const url = '<?php echo $pathPrefix; ?>user-dashboard.php#order-' + it.order_id;
+                    const item = document.createElement('div');
+                    item.className = 'notification-item';
+                    item.style.position = 'relative';
+                    let title = '';
+                    let message = '';
+                    let icon = it.status === 'notification' ? 'fa-info-circle' : 'fa-bell';
+                    if (it.status === 'notification') {
+                        title = 'Notification';
+                        message = it.message;
+                    } else {
+                        let statusText = it.status;
+                        if (it.return_status) { statusText += ' | Return: ' + it.return_status; }
+                        title = 'Order #' + it.order_id + ' update';
+                        message = 'Status: ' + statusText;
+                    }
+                    item.innerHTML =
+                        '<div class="notification-icon"><i class="fas ' + icon + '"></i></div>'+
+                        '<div style="flex:1; min-width:0;">'+
+                          '<div class="notification-title">' + title + '</div>'+
+                          '<div class="notification-message">' + message + '</div>'+
+                          '<div class="notification-time">' + it.updated_at_human + '</div>'+
+                        '</div>';
+                    const closeBtn = document.createElement('button');
+                    closeBtn.className = 'notif-delete-btn';
+                    closeBtn.title = 'Delete notification';
+                    closeBtn.innerHTML = '<i class="fas fa-times"></i>';
+                    closeBtn.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        deleteNotification(it.order_id, closeBtn, (it.status === 'notification'));
+                    });
+                    item.appendChild(closeBtn);
+                    item.addEventListener('click', function() { window.location.href = url; });
+                    list.appendChild(item);
+                });
             }
-        }
-    } catch (_) {}
-
-    // Mark as read reliably using sendBeacon, fallback to fetch keepalive
-    const payload = JSON.stringify({ notification_id: notificationId });
-    let sent = false;
-    try {
-        const blob = new Blob([payload], { type: 'application/json' });
-        sent = navigator.sendBeacon && navigator.sendBeacon('ajax/mark-seller-notification-read.php', blob);
-    } catch (_) { sent = false; }
-    if (!sent) {
-        fetch('ajax/mark-seller-notification-read.php', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: payload,
-            keepalive: true
-        }).catch(() => {});
-    }
-
-    // Redirect after a tiny delay to allow beacon to flush
-    if (actionUrl && actionUrl !== '' && actionUrl !== 'null') {
-        setTimeout(() => { window.location.href = actionUrl; }, 120);
+        })
+        .catch((error)=>{
+            console.error('Notification fetch error:', error);
+            list.innerHTML = '<div class="notif-empty">Error loading notifications.</div>';
+        });
+    });
+})();
+// MOVED OUTSIDE - This function must be global
+function updateNotificationBadge(count) {
+    const badge = document.getElementById('notif-badge');
+    if (!badge) return;
+    
+    console.log('Updating badge to:', count);
+    
+    if (count > 0) {
+        badge.textContent = count;
+        badge.style.display = 'flex';
+        badge.style.visibility = 'visible';
+        badge.style.opacity = '1';
+        badge.classList.add('show');
+    } else {
+        badge.textContent = '';
+        badge.style.display = 'none';
+        badge.style.visibility = 'hidden';
+        badge.style.opacity = '0';
+        badge.classList.remove('show');
     }
 }
-
-function markSellerNotificationAsRead(notificationId) {
-    fetch('ajax/mark-seller-notification-read.php', {
+        
+function deleteNotification(orderId, button, isCustomNotification) {
+    // Show loading state
+    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    button.disabled = true;
+    
+    // Make AJAX request to delete notification
+    fetch('<?php echo $pathPrefix; ?>ajax/delete-notification.php', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ notification_id: notificationId })
+        body: JSON.stringify({
+            order_id: orderId,
+            is_custom: isCustomNotification
+        })
     })
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            loadSellerNotifications(); // Reload to update badge
-        }
-    })
-    .catch(error => {
-        console.error('Error marking notification as read:', error);
-    });
-}
-
-
-        function getNotificationIcon(type) {
-            switch(type) {
-                case 'warning': return 'exclamation-triangle';
-                case 'success': return 'check-circle';
-                case 'error': return 'times-circle';
-                default: return 'info-circle';
-            }
-        }
-
-        function getNotificationBadge(title, type) {
-            const titleLower = title.toLowerCase();
-            
-            if (titleLower.includes('new order') || titleLower.includes('order received')) {
-                return { class: 'notification-status-order', text: 'Order' };
-            }
-            if (titleLower.includes('return request') || titleLower.includes('return/refund') || titleLower.includes('refund')) {
-                return { class: 'notification-status-return', text: 'Return/Refund' };
-            }
-            if (titleLower.includes('low stock')) {
-                return { class: 'notification-status-lowstock', text: 'Low Stocks' };
-            }
-            if (titleLower.includes('processing') || titleLower.includes('order status')) {
-                return { class: 'notification-status-processing', text: 'Processing' };
-            }
-            
-            // Default fallback
-            return { class: 'notification-status-order', text: 'Order' };
-        }
-
-        function formatTime(timestamp) {
-            const date = new Date(timestamp);
-            const now = new Date();
-            const diff = now - date;
-            
-            if (diff < 60000) return 'Just now';
-            if (diff < 3600000) return Math.floor(diff / 60000) + 'm ago';
-            if (diff < 86400000) return Math.floor(diff / 3600000) + 'h ago';
-            return Math.floor(diff / 86400000) + 'd ago';
-        }
-
-        function removeNotificationFromDropdown(button, notificationId) {
-            // Just remove from dropdown view, don't delete from database
-            const notificationItem = button.closest('.notification-item');
+            // Remove the notification item from the list
+            const notificationItem = button.closest('.notif-item-ui');
             if (notificationItem) {
-                notificationItem.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
                 notificationItem.style.opacity = '0';
-                notificationItem.style.transform = 'translateX(20px)';
+                notificationItem.style.transform = 'translateX(100%)';
                 setTimeout(() => {
                     notificationItem.remove();
                     
-                    // Check if list is now empty
-                    const list = document.getElementById('sellerNotificationList');
-                    if (list && list.children.length === 0) {
-                        list.innerHTML = '<div class="notification-item"><span>No notifications</span></div>';
+                    // Check if notification list is empty after deletion
+                    const remainingNotifs = document.querySelectorAll('.notif-item-ui').length;
+                    if (remainingNotifs === 0) {
+                        list.innerHTML = '<div class="notif-empty">No notifications yet.</div>';
                     }
+                    
+                    // Refresh notification count from server
+                    fetch('<?php echo $pathPrefix; ?>customer-notifications.php?as=json')
+                        .then(r => r.json())
+                        .then(data => {
+                            if (data && data.success !== false) {
+                                updateNotificationBadge(data.unread_count || 0);
+                            }
+                        });
                 }, 300);
             }
+        } else {
+            // Show error and restore button
+            button.innerHTML = '<i class="fas fa-times"></i>';
+            button.disabled = false;
+            alert('Error deleting notification: ' + (data.message || 'Unknown error'));
         }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        button.innerHTML = '<i class="fas fa-times"></i>';
+        button.disabled = false;
+        alert('Error deleting notification');
+    });
+}
 
-        // Close notification dropdown when clicking outside
-        document.addEventListener('click', function(event) {
-            const notifications = document.querySelector('.seller-notifications');
-            const dropdown = document.getElementById('sellerNotificationDropdown');
+function clearAllNotifications() {
+    const list = document.getElementById('notifList');
+    if (list) {
+        list.innerHTML = '<div class="notif-empty">No notifications to show.</div>';
+        updateNotificationBadge(0);
+    }
+}
+
+// Load notification count on page load
+document.addEventListener('DOMContentLoaded', function() {
+    if (document.getElementById('notif-badge')) {
+        fetch('<?php echo $pathPrefix; ?>customer-notifications.php?as=json')
+            .then(r => r.json())
+            .then(data => {
+                console.log('Notification data:', data);
+                if (data && data.success !== false) {
+                    // Use unread_count from server
+                    const count = data.unread_count || 0;
+                    console.log('Badge count:', count);
+                    updateNotificationBadge(count);
+                }
+            })
+            .catch(error => {
+                console.error('Error loading notification count:', error);
+            });
+    }
+    
+    // Also update badge every 30 seconds to stay in sync
+    setInterval(function() {
+        if (document.getElementById('notif-badge')) {
+            fetch('<?php echo $pathPrefix; ?>customer-notifications.php?as=json')
+                .then(r => r.json())
+                .then(data => {
+                    if (data && data.success !== false) {
+                        updateNotificationBadge(data.unread_count || 0);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error refreshing notification count:', error);
+                });
+        }
+    }, 30000); // Every 30 seconds
+});
+
+// Handle search type dropdown - redirect to sellers.php if sellers selected
+document.addEventListener('DOMContentLoaded', function() {
+    const searchForm = document.getElementById('headerSearchForm');
+    const searchTypeSelect = document.getElementById('searchTypeSelect');
+    
+    if (searchForm && searchTypeSelect) {
+        // Store the selected value in localStorage to persist across page loads
+        const savedSearchType = localStorage.getItem('headerSearchType') || 'products';
+        if (savedSearchType) {
+            searchTypeSelect.value = savedSearchType;
+        }
+        
+        searchForm.addEventListener('submit', function(e) {
+            const searchType = searchTypeSelect.value;
+            const searchQuery = document.getElementById('headerSearchInput').value;
             
-            if (notifications && !notifications.contains(event.target)) {
-                dropdown.classList.remove('show');
+            // Save the selected search type
+            localStorage.setItem('headerSearchType', searchType);
+            
+            if (searchType === 'sellers') {
+                e.preventDefault();
+                window.location.href = '<?php echo $pathPrefix; ?>sellers.php?search=' + encodeURIComponent(searchQuery);
+                return false;
+            }
+            // For products, let the form submit normally to products.php
+            // But add the search_type parameter to preserve it
+            const formAction = searchForm.getAttribute('action');
+            if (formAction && !formAction.includes('search_type=')) {
+                const url = new URL(formAction, window.location.origin);
+                url.searchParams.set('search_type', searchType);
+                searchForm.setAttribute('action', url.pathname + '?' + url.searchParams.toString());
             }
         });
+        
+        // Update localStorage when dropdown changes
+        searchTypeSelect.addEventListener('change', function() {
+            localStorage.setItem('headerSearchType', this.value);
+        });
+    }
+});
+
     </script>
-    
+
     <!-- Logout Confirmation Modal -->
     <script>
     document.addEventListener('DOMContentLoaded', function() {
@@ -1106,7 +1114,7 @@ function markSellerNotificationAsRead(notificationId) {
         
         const modalBody = document.createElement('div');
         modalBody.style.cssText = 'padding: 20px; color: #130325;';
-        modalBody.innerHTML = '<p style="margin: 0; font-size: 13px; line-height: 1.5; color: #130325;">Are you sure you want to logout? You will need to login again to access your seller account.</p>';
+        modalBody.innerHTML = '<p style="margin: 0; font-size: 13px; line-height: 1.5; color: #130325;">Are you sure you want to logout? You will need to login again to access your account.</p>';
         
         const modalFooter = document.createElement('div');
         modalFooter.style.cssText = 'padding: 16px 24px; border-top: 1px solid #e5e7eb; display: flex; gap: 10px; justify-content: flex-end;';
@@ -1165,9 +1173,10 @@ function markSellerNotificationAsRead(notificationId) {
             document.head.appendChild(style);
         }
     });
+
+
+
+    
     </script>
-    
-    <!-- Bootstrap JavaScript -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    
+
     <main>
