@@ -5,7 +5,7 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 require_once 'functions.php';
 require_once __DIR__ . '/../config/database.php';
-
+require_once __DIR__ . '/maintenance_check.php';
 // FIXED: Better path detection
 $currentFile = basename($_SERVER['PHP_SELF']);
 $currentDir = basename(dirname($_SERVER['PHP_SELF']));
