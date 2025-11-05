@@ -79,7 +79,7 @@ $stmt = $pdo->prepare("
         o.created_at, 
         o.updated_at,
         COALESCE(pt.payment_status, '') as payment_status,
-        IF(nr.id IS NULL OR GREATEST(COALESCE(o.updated_at, o.created_at), COALESCE(rr.processed_at, o.created_at), COALESCE(n.created_at, o.created_at)) > nr.read_at, 0, 1) as is_read,
+        IF(nr.read_at IS NULL OR GREATEST(COALESCE(o.updated_at, o.created_at), COALESCE(rr.processed_at, o.created_at), COALESCE(n.created_at, o.created_at)) > nr.read_at, 0, 1) as is_read,
         rr.status as return_status,
         rr.processed_at as return_updated_at,
         n.message,
@@ -92,9 +92,11 @@ $stmt = $pdo->prepare("
     FROM orders o
     LEFT JOIN payment_transactions pt ON pt.id = o.payment_transaction_id
     LEFT JOIN hidden_notifications hn ON hn.user_id = o.user_id AND hn.order_id = o.id
-    LEFT JOIN notification_reads nr ON nr.user_id = o.user_id 
-        AND nr.order_id = o.id 
-        AND nr.notification_type = 'order_update'
+    LEFT JOIN (
+        SELECT user_id, order_id, MAX(read_at) as read_at
+        FROM notification_reads
+        GROUP BY user_id, order_id
+    ) nr ON nr.user_id = o.user_id AND nr.order_id = o.id
     LEFT JOIN return_requests rr ON rr.order_id = o.id
     LEFT JOIN (
         SELECT order_id, user_id, message, type, created_at
@@ -441,7 +443,7 @@ if (!empty($e['return_status'])) {
     $filterStatus = 'return_requested';
 }
 ?>
-<a href="user-dashboard.php?status=<?php echo $filterStatus; ?>" style="text-decoration:none; display: block;">              <div style="display:flex; gap:12px; align-items:center; background:#ffffff; border:1px solid rgba(0,0,0,0.1); padding:14px; border-radius:10px; box-shadow: 0 2px 10px rgba(0,0,0,0.15);">
+<a href="order-details.php?id=<?php echo (int)$e['order_id']; ?>" data-order-id="<?php echo (int)$e['order_id']; ?>" data-is-custom="<?php echo isset($e['message']) ? '1' : '0'; ?>" style="text-decoration:none; display: block;">              <div style="display:flex; gap:12px; align-items:center; background:#ffffff; border:1px solid rgba(0,0,0,0.1); padding:14px; border-radius:10px; box-shadow: 0 2px 10px rgba(0,0,0,0.15);">
                 <div style="width:36px; height:36px; display:flex; align-items:center; justify-content:center; background:rgba(255,215,54,0.15); color:#FFD736; border-radius:8px;">
                   <i class="fas fa-bell"></i>
                 </div>
@@ -464,15 +466,12 @@ if (!empty($e['return_status'])) {
   </div>
             
                 </div>
-                <div style="color:#130325; opacity:0.8; font-size:0.85rem; white-space:nowrap; margin-right: 40px;">
-                  <?php echo htmlspecialchars(date('M d, Y h:i A', strtotime($e['updated_at'] ?: $e['created_at']))); ?>
+                <div style="display:flex; align-items:center; gap:10px; white-space:nowrap;">
+                  <span style="color:#130325; opacity:0.8; font-size:0.85rem;"><?php echo htmlspecialchars(date('M d, Y h:i A', strtotime($e['updated_at'] ?: $e['created_at']))); ?></span>
+                  <i class="fas fa-eye" style="color:#130325; font-size:14px;"></i>
                 </div>
               </div>
             </a>
-            <!-- X button for ALL notifications -->
-            <button class="notif-delete-btn-page" onclick="deleteNotificationFromPage(<?php echo (int)$e['order_id']; ?>, this, <?php echo isset($e['message']) ? 'true' : 'false'; ?>)" title="Delete notification">
-              <i class="fas fa-times"></i>
-            </button>
           </div>
         <?php endforeach; ?>
       </div>
@@ -539,6 +538,20 @@ function confirmDeleteAll() {
         document.getElementById('deleteAllForm').submit();
     });
 }
+
+// Intercept clicks on server-rendered notification links to mark as read
+document.addEventListener('click', function(e) {
+    const link = e.target.closest('a[data-order-id]');
+    if (!link) return;
+    const orderId = parseInt(link.getAttribute('data-order-id') || '0', 10);
+    const isCustom = link.getAttribute('data-is-custom') === '1';
+    if (orderId > 0) {
+        e.preventDefault();
+        markNotificationAsRead(orderId, isCustom);
+        const href = link.getAttribute('href');
+        setTimeout(function(){ window.location.href = href; }, 250);
+    }
+});
 
 // Main notification update function
 function updateNotifications() {
@@ -660,24 +673,20 @@ if (item.return_status) {
     filterStatus = 'return_requested';
 }
 
-// Create the link element instead of using onclick
-notifDiv.href = `user-dashboard.php?status=${filterStatus}`;
+// Link directly to order details for precision
+const targetUrl = item.order_id ? `order-details.php?id=${item.order_id}` : 'customer-notifications.php';
+notifDiv.href = targetUrl;
 notifDiv.style.textDecoration = 'none';
 notifDiv.style.display = 'block';
 
 // Mark as read when clicked
-notifDiv.onclick = function(e) {
-    e.preventDefault(); // Prevent default link behavior
-    
+notifDiv.addEventListener('click', function(e) {
+    e.preventDefault();
     if (!item.is_read) {
         markNotificationAsRead(item.order_id, item.status === 'notification');
     }
-    
-    // Redirect to the correct status page with a small delay to allow read marking
-    setTimeout(function() {
-        window.location.href = `user-dashboard.php?status=${filterStatus}`;
-    }, 100);
-};
+    setTimeout(function() { window.location.href = targetUrl; }, 250);
+});
     
     let content = '';
     if (item.status === 'notification') {
@@ -690,7 +699,10 @@ notifDiv.onclick = function(e) {
                     <div style="color:#130325; font-weight:700;">${escapeHtml(item.message)}</div>
                     <div style="color:#130325; opacity:0.9; font-size:0.9rem;">Order #${item.order_id}</div>
                 </div>
-                <div style="color:#130325; opacity:0.8; font-size:0.85rem; white-space:nowrap; margin-right: 40px;">${item.updated_at_human}</div>
+                <div style="display:flex; align-items:center; gap:10px; white-space:nowrap;">
+                    <span style="color:#130325; opacity:0.8; font-size:0.85rem;">${item.updated_at_human}</span>
+                    <i class=\"fas fa-eye\" style=\"color:#130325; font-size:14px;\"></i>
+                </div>
             </div>
         `;
     } else {
@@ -707,7 +719,10 @@ notifDiv.onclick = function(e) {
                         ${item.payment_status && item.payment_status.toLowerCase() !== 'pending' ? `<span style="margin-left:8px; opacity:0.9;">Payment: ${escapeHtml(item.payment_status)}</span>` : ''}
                     </div>
                 </div>
-                <div style="color:#130325; opacity:0.8; font-size:0.85rem; white-space:nowrap; margin-right: 40px;">${item.updated_at_human}</div>
+                <div style="display:flex; align-items:center; gap:10px; white-space:nowrap;">
+                    <span style="color:#130325; opacity:0.8; font-size:0.85rem;">${item.updated_at_human}</span>
+                    <i class=\"fas fa-eye\" style=\"color:#130325; font-size:14px;\"></i>
+                </div>
             </div>
         `;
     }
@@ -715,17 +730,7 @@ notifDiv.onclick = function(e) {
     notifDiv.innerHTML = content;
     notifContainer.appendChild(notifDiv);
     
-    // Add X button for ALL notifications
-    const deleteBtn = document.createElement('button');
-    deleteBtn.className = 'notif-delete-btn-page';
-    deleteBtn.onclick = function(e) { 
-        e.preventDefault();
-        e.stopPropagation();
-        deleteNotificationFromPage(item.order_id, this, item.status === 'notification'); 
-    };
-    deleteBtn.title = 'Delete notification';
-    deleteBtn.innerHTML = '<i class="fas fa-times"></i>';
-    notifContainer.appendChild(deleteBtn);
+    // No per-item delete in page list
     
     return notifContainer;
 }

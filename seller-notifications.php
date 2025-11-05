@@ -79,95 +79,34 @@ require_once 'includes/seller_header.php';
   }
 
   
-  /* Custom confirmation dialog styles */
+  /* Confirmation dialog (match logout modal design) */
   .confirm-dialog {
     position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.7);
+    inset: 0;
+    background: rgba(0,0,0,0.5);
     display: flex;
     align-items: center;
     justify-content: center;
     z-index: 10000;
-    backdrop-filter: blur(5px);
   }
-  
   .confirm-content {
     background: #ffffff;
     border-radius: 12px;
-    padding: 30px;
-    max-width: 400px;
+    padding: 0;
+    max-width: 420px;
     width: 90%;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-    text-align: center;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.2);
     animation: confirmSlideIn 0.3s ease-out;
+    overflow: hidden;
   }
-  
-  @keyframes confirmSlideIn {
-    from {
-      opacity: 0;
-      transform: scale(0.8) translateY(-20px);
-    }
-    to {
-      opacity: 1;
-      transform: scale(1) translateY(0);
-    }
-  }
-  
-  .confirm-title {
-    font-size: 20px;
-    font-weight: 700;
-    color: #130325;
-    margin-bottom: 15px;
-  }
-  
-  .confirm-message {
-    font-size: 16px;
-    color: #666;
-    margin-bottom: 25px;
-    line-height: 1.5;
-  }
-  
-  .confirm-buttons {
-    display: flex;
-    gap: 12px;
-    justify-content: center;
-  }
-  
-  .confirm-btn {
-    padding: 12px 24px;
-    border: none;
-    border-radius: 8px;
-    font-weight: 600;
-    font-size: 14px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    min-width: 80px;
-  }
-  
-  .confirm-btn-yes {
-    background: #dc3545;
-    color: white;
-  }
-  
-  .confirm-btn-yes:hover {
-    background: #c82333;
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(220, 53, 69, 0.4);
-  }
-  
-  .confirm-btn-no {
-    background: #6c757d;
-    color: white;
-  }
-  
-  .confirm-btn-no:hover {
-    background: #5a6268;
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(108, 117, 125, 0.4);
-  }
+  @keyframes confirmSlideIn { from { opacity:0; transform: translateY(-20px);} to { opacity:1; transform: translateY(0);} }
+  .confirm-header { background:#130325; color:#ffffff; padding:16px 20px; display:flex; align-items:center; gap:10px; }
+  .confirm-header h3 { margin:0; font-size:14px; font-weight:700; }
+  .confirm-body { padding:20px; color:#130325; font-size:13px; line-height:1.5; }
+  .confirm-footer { padding:16px 24px; border-top:1px solid #e5e7eb; display:flex; gap:10px; justify-content:flex-end; }
+  .confirm-btn { padding:8px 20px; border-radius:6px; font-size:14px; font-weight:600; border:none; cursor:pointer; }
+  .confirm-btn-cancel { background:#f3f4f6; color:#130325; border:1px solid #e5e7eb; }
+  .confirm-btn-primary { background:#130325; color:#ffffff; }
 </style>
 
 <main style="background:#f8f9fa; min-height:100vh; padding: 0 0 60px 0;">
@@ -214,52 +153,27 @@ require_once 'includes/seller_header.php';
 <script>
 // Custom styled confirmation dialog function
 function openConfirm(message, onConfirm) {
-    // Create dialog overlay
     const dialog = document.createElement('div');
     dialog.className = 'confirm-dialog';
     dialog.innerHTML = `
-        <div class="confirm-content">
-            <div class="confirm-title">Confirm Action</div>
-            <div class="confirm-message">${message}</div>
-            <div class="confirm-buttons">
-                <button class="confirm-btn confirm-btn-yes">Yes</button>
-                <button class="confirm-btn confirm-btn-no">No</button>
-            </div>
+      <div class="confirm-content">
+        <div class="confirm-header">
+          <i class="fas fa-bell" style="font-size:16px; color:#FFD736;"></i>
+          <h3>Confirm Action</h3>
         </div>
-    `;
-    
-    // Add to page
+        <div class="confirm-body">${message}</div>
+        <div class="confirm-footer">
+          <button class="confirm-btn confirm-btn-cancel">Cancel</button>
+          <button class="confirm-btn confirm-btn-primary">Confirm</button>
+        </div>
+      </div>`;
     document.body.appendChild(dialog);
-    
-    // Handle button clicks
-    const yesBtn = dialog.querySelector('.confirm-btn-yes');
-    const noBtn = dialog.querySelector('.confirm-btn-no');
-    
-    yesBtn.addEventListener('click', () => {
-        document.body.removeChild(dialog);
-        if (onConfirm) onConfirm();
-    });
-    
-    noBtn.addEventListener('click', () => {
-        document.body.removeChild(dialog);
-    });
-    
-    // Handle escape key
-    const handleEscape = (e) => {
-        if (e.key === 'Escape') {
-            document.body.removeChild(dialog);
-            document.removeEventListener('keydown', handleEscape);
-        }
-    };
-    document.addEventListener('keydown', handleEscape);
-    
-    // Handle click outside
-    dialog.addEventListener('click', (e) => {
-        if (e.target === dialog) {
-            document.body.removeChild(dialog);
-            document.removeEventListener('keydown', handleEscape);
-        }
-    });
+    const onClose = () => { if (dialog && dialog.parentNode) dialog.parentNode.removeChild(dialog); };
+    dialog.addEventListener('click', (e)=>{ if (e.target === dialog) onClose(); });
+    const esc = (e)=>{ if (e.key === 'Escape') { onClose(); document.removeEventListener('keydown', esc); } };
+    document.addEventListener('keydown', esc);
+    dialog.querySelector('.confirm-btn-cancel').addEventListener('click', onClose);
+    dialog.querySelector('.confirm-btn-primary').addEventListener('click', ()=>{ onClose(); if (onConfirm) onConfirm(); });
 }
 
 function deleteSellerNotification(notificationId, buttonElement) {

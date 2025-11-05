@@ -437,8 +437,9 @@ section.featured-products .products-container {
      transition: all 0.3s ease;
      display: flex;
      flex-direction: column;
-     flex: 0 0 19%;
-     min-width: 250px;
+    flex: 0 0 19%;
+    min-width: 250px;
+    height: 420px; /* uniform taller cards */
  }
 
 .product-card:hover {
@@ -503,9 +504,9 @@ section.featured-products .product-card .product-name {
 
 section.featured-products .product-card .price {
      color: #212529 !important;
-     font-weight: 800 !important;
-     font-size: 1.5rem !important;
-     margin: 5px 0 !important;
+     font-weight: 700 !important;
+     font-size: 1.2rem !important;
+     margin: 4px 0 !important;
  }
 
 section.featured-products .product-card .rating {

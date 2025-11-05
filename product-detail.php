@@ -133,6 +133,24 @@ $sellerProductCount = $sellerStats['product_count'];
 require_once 'includes/header.php';
 ?>
 
+<?php if (isset($_GET['review_success']) && $_GET['review_success'] == '1'): ?>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const toast = document.createElement('div');
+    toast.className = 'floating-toast';
+    toast.style.cssText = 'position:fixed; left:50%; bottom:24px; transform:translateX(-50%); background:#ffffff; color:#130325; border:1px solid #e5e7eb; border-radius:12px; padding:12px 16px; z-index:10000; box-shadow:0 10px 30px rgba(0,0,0,0.2); max-width:90%; width:auto; text-align:center; font-weight:700;';
+    toast.textContent = 'Review submitted successfully!';
+    document.body.appendChild(toast);
+    setTimeout(function(){
+        toast.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
+        toast.style.opacity = '0';
+        toast.style.transform = 'translate(-50%, 10px)';
+        setTimeout(function(){ if (toast.parentElement) toast.remove(); }, 400);
+    }, 2500);
+});
+</script>
+<?php endif; ?>
+
 <style>
 /* Base Styles */
 body {
@@ -1424,25 +1442,16 @@ main {
             </div>
 
             <!-- Add Review Form -->
-            <?php if (isLoggedIn()): ?>
+            <?php if (isLoggedIn() && !$hasReviewed && $canReview && empty($_GET['review_success'])): ?>
                 <div class="review-form-container">
                     <h4>Write a Review</h4>
                     
-                    <?php if (!empty($reviewMessage)): ?>
-                        <div class="alert <?php echo strpos($reviewMessage, 'Error') !== false ? 'alert-error' : 'alert-success'; ?>">
-                            <?php echo htmlspecialchars($reviewMessage); ?>
-                        </div>
-                    <?php endif; ?>
+<?php if (!empty($reviewMessage) && strpos($reviewMessage, 'Error') !== false): ?>
+    <div class="alert alert-error">
+        <?php echo htmlspecialchars($reviewMessage); ?>
+    </div>
+<?php endif; ?>
 
-                    <?php if ($hasReviewed): ?>
-                        <div class="alert alert-success">
-                            You've already reviewed this product. Thank you for your feedback!
-                        </div>
-                    <?php elseif (!$canReview): ?>
-                        <div class="alert alert-error">
-                            You can only review this product after your order has been delivered.
-                        </div>
-                    <?php else: ?>
                         <form method="POST" action="">
                             <div class="form-group">
                                 <label class="form-label">Your Rating</label>
@@ -1470,14 +1479,6 @@ main {
                                 <i class="fas fa-paper-plane"></i> Submit
                             </button>
                         </form>
-                    <?php endif; ?>
-                </div>
-            <?php else: ?>
-                <div class="review-form-container">
-                    <div class="alert alert-error">
-                        <strong>Please log in to write a review.</strong><br>
-                        <a href="login.php" style="color: #721c24; text-decoration: underline;">Login here</a>
-                    </div>
                 </div>
             <?php endif; ?>
         </div>

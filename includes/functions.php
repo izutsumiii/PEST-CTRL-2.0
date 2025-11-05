@@ -1412,7 +1412,7 @@ function processMultiSellerCheckout($shippingAddress, $paymentMethod, $customerN
                 '🎉 New Order Received!',
                 'You have a new order #' . str_pad($orderId, 6, '0', STR_PAD_LEFT) . ' totaling ₱' . number_format($sellerGroup['subtotal'], 2) . '. Please review and process it.',
                 'success',
-                'view-orders.php'
+                'seller-order-details.php?order_id=' . $orderId
             );
             $createdOrders[] = [
                 'order_id' => $orderId,

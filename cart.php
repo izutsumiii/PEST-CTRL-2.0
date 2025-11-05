@@ -388,10 +388,10 @@ h1 {
     color: #dc3545;
     border: none;
     border-radius: 0;
-    width: 36px;
-    height: 36px;
-    font-size: 18px;
-    font-weight: 800;
+    width: 32px;
+    height: 32px;
+    font-size: 14px;
+    font-weight: 700;
     cursor: pointer;
     display: inline-flex;
     align-items: center;
@@ -402,8 +402,21 @@ h1 {
 .btn-remove:hover {
     background: transparent;
     color: #b02a37;
-    transform: scale(1.15);
+    transform: scale(1.08);
 }
+
+/* Solid danger button for confirmations */
+.btn-danger {
+    background: #dc3545;
+    color: #ffffff;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 14px;
+    font-size: 0.85rem;
+    font-weight: 700;
+}
+
+.btn-danger:hover { background: #c82333; }
 
 .btn-update {
     background: #28a745;
@@ -489,16 +502,16 @@ h1 {
         <p>Do you want to remove this product from your cart?</p>
         <div class="remove-modal-actions">
             <button id="removeCancel" class="btn btn-secondary">Cancel</button>
-            <button id="removeConfirm" class="btn btn-remove" style="width:auto;height:auto;border-radius:4px;">Remove</button>
+            <button id="removeConfirm" class="btn btn-danger">Remove</button>
         </div>
     </div>
     <div class="remove-modal-backdrop"></div>
     <style>
     .remove-modal { position: fixed; inset: 0; z-index: 10000; }
     .remove-modal-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,0.5); }
-    .remove-modal-content { position: relative; z-index: 10001; max-width: 400px; margin: 15vh auto; background: #fff; color: #130325; border-radius: 8px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.25); }
-    .remove-modal-content h3 { margin: 0 0 10px 0; font-size: 14px; font-weight: 600; color: #000; }
-    .remove-modal-content p { margin: 0 0 16px 0; color: #000; font-size: 12px; font-weight: 500; }
+    .remove-modal-content { position: relative; z-index: 10001; max-width: 380px; margin: 15vh auto; background: #ffffff; color: #130325; border-radius: 10px; padding: 18px; box-shadow: 0 10px 30px rgba(0,0,0,0.25); }
+    .remove-modal-content h3 { margin: 0 0 8px 0; font-size: 16px; font-weight: 800; color: #130325; }
+    .remove-modal-content p { margin: 0 0 14px 0; color: #4b5563; font-size: 13px; font-weight: 600; }
     .remove-modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
     .btn.btn-secondary { background: #6c757d; color: #fff; }
     .btn.btn-secondary:hover { background: #5a6268; }

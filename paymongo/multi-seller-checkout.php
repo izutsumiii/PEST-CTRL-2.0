@@ -168,7 +168,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['checkout'])) {
                 try {
                     $stmt = $pdo->prepare("UPDATE payment_transactions SET status = 'completed' WHERE id = ?");
                     $stmt->execute([$result['payment_transaction_id']]);
-                    
                     $stmt = $pdo->prepare("UPDATE orders SET payment_status = 'completed' WHERE payment_transaction_id = ?");
                     $stmt->execute([$result['payment_transaction_id']]);
                     
@@ -205,7 +204,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['checkout'])) {
                                     'New Order Received',
                                     'You have a new order #' . str_pad($orderId, 6, '0', STR_PAD_LEFT) . ' for: ' . $seller['product_names'] . '. Please review and process it.',
                                     'success',
-                                    'view-orders.php'
+                                    'seller-order-details.php?order_id=' . $orderId
                                 );
                             }
                         }
@@ -283,9 +282,6 @@ require_once '../includes/header.php';
                                 <div class="item-total">
                                     ₱<?php echo number_format($item['price'] * $item['quantity'], 2); ?>
                                 </div>
-                                <button class="remove-item-btn" 
-                                        data-product-id="<?php echo $item['product_id']; ?>"
-                                        title="Remove item"><i class="fas fa-trash"></i></button>
                             </div>
                         <?php endforeach; ?>
                     </div>
@@ -333,10 +329,7 @@ require_once '../includes/header.php';
 
                 <div class="form-group payment-method-group">
                     <label for="payment_method" class="payment-method-label">Payment Method *</label>
-                    <div id="payment-warning" class="payment-warning" style="display: none;">
-                        <i class="fas fa-exclamation-triangle"></i>
-                        <strong>Important:</strong> Please select your preferred payment method. This cannot be changed after checkout.
-                    </div>
+                    
                     <select id="payment_method" name="payment_method" required>
                         <option value="">Please select a payment method</option>
                         <option value="card" <?php echo ($_POST['payment_method'] ?? '') === 'card' ? 'selected' : ''; ?>>Debit/Credit Card</option>
@@ -346,6 +339,10 @@ require_once '../includes/header.php';
                         <option value="billease" <?php echo ($_POST['payment_method'] ?? '') === 'billease' ? 'selected' : ''; ?>>Billease</option>
                         <option value="cod" <?php echo ($_POST['payment_method'] ?? '') === 'cod' ? 'selected' : ''; ?>>Cash on Delivery (COD)</option>
                     </select>
+                    <div id="payment-warning" class="payment-warning" style="display: none;">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <strong>Important:</strong> Please select your preferred payment method. This cannot be changed after checkout.
+                    </div>
                     <small class="payment-method-note">Choose your preferred payment method to continue</small>
                 </div>
 
@@ -634,35 +631,7 @@ h1 {
     color: var(--text-dark) !important; 
 }
 
-.remove-item-btn { 
-    background: transparent !important; 
-    color: #dc3545 !important; 
-    border: none !important; 
-    border-radius: 0; 
-    width: 24px; 
-    height: 24px; 
-    font-size: 14px; 
-    font-weight: bold; 
-    cursor: pointer; 
-    display: flex; 
-    align-items: center; 
-    justify-content: center; 
-    transition: all 0.2s ease; 
-    line-height: 1; 
-    padding: 0;
-}
-
-.remove-item-btn:hover { 
-    background: transparent !important; 
-    color: #c82333 !important; 
-    transform: scale(1.1); 
-}
-
-.remove-item-btn:disabled { 
-    background-color: #6c757d; 
-    cursor: not-allowed; 
-    transform: none; 
-}
+/* removed trash/remove button styles in order summary */
 
 .order-total { 
     border-top: 2px solid var(--primary-dark); 
@@ -774,25 +743,25 @@ h1 {
     display: block; 
 }
 
+/* Inline payment warning (white theme) */
 .payment-warning { 
-    background: #fff3e0; 
-    border: 1px solid #ff9800; 
+    background: #ffffff !important; 
+    border: 1px solid #e5e7eb !important; 
     border-radius: 8px; 
     padding: 12px; 
     margin: 10px 0; 
-    color: #f57c00; 
+    color: #130325 !important; 
     font-size: 14px; 
     display: flex; 
     align-items: center; 
     gap: 8px; 
 }
-
 .payment-warning i { 
     font-size: 16px; 
+    color: #130325 !important; 
 }
-
 .payment-warning strong { 
-    color: #f57c00; 
+    color: #130325 !important; 
 }
 
 /* Custom Notification Styles */
@@ -978,7 +947,7 @@ h1 {
   .order-item { flex-direction: column; text-align: center; padding: 20px 15px; }
   .item-image { margin: 0 0 10px 0; }
   .item-total { margin-right: 0; margin-top: 10px; }
-  .remove-item-btn { position: absolute; top: 10px; right: 10px; }
+  /* removed position for deleted remove button */
 }
 </style>
 
@@ -1218,7 +1187,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (paymentMethodSelect) {
         paymentMethodSelect.addEventListener('change', function() {
             if (this.value && this.value !== '') {
-                paymentWarning.style.display = 'none';
+                if (paymentWarning) paymentWarning.style.display = 'none';
                 this.classList.remove('error');
                 this.style.borderColor = '#ced4da';
             }
@@ -1230,9 +1199,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const paymentMethod = paymentMethodSelect.value;
         
         if (!paymentMethod || paymentMethod === '') {
-            // Show warning message
-            paymentWarning.style.display = 'flex';
-            
             // Highlight the payment method field
             paymentMethodSelect.classList.add('error');
             paymentMethodSelect.style.borderColor = '#dc3545';
@@ -1244,8 +1210,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 block: 'center' 
             });
             
-             // Show custom styled notification
-             showCustomNotification('Please select a payment method before proceeding with checkout.', 'warning');
+            // Show inline warning inside container
+            if (paymentWarning) paymentWarning.style.display = 'flex';
             
             return false;
         }

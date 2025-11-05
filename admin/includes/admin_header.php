@@ -761,6 +761,11 @@ require_once $rootPath . '/includes/functions.php';
             color: #111827 !important;
             transform: none;
         }
+
+        /* Normalize notifications footer and See All across admin */
+        .notification-footer { text-align: center; padding: 10px; border-top: 1px solid #e5e7eb; }
+        .notification-footer .see-all-btn { color: #1f2937; text-decoration: none; font-size: 12px; display: inline-block; }
+        .notification-footer .see-all-btn:hover { text-decoration: none; background: transparent; color: #1f2937; }
         
         .dropdown.show .dropdown-content {
             display: block;
@@ -1212,8 +1217,8 @@ require_once $rootPath . '/includes/functions.php';
                             <span style="color: #1f2937;">Loading notifications...</span>
                         </div>
                     </div>
-                    <div class="notification-footer" style="text-align: center; padding: 10px; border-top: 1px solid #e5e7eb;">
-                        <a href="admin-notifications.php" style="color: #1f2937; text-decoration: none; font-size: 12px;">See All</a>
+                    <div class="notification-footer">
+                        <a class="see-all-btn" href="admin-notifications.php">See All</a>
                     </div>
                 </div>
             </div>

@@ -22,8 +22,8 @@ if ($orderId <= 0) {
 try {
     $notificationType = $isCustom ? 'custom' : 'order_update';
     
-    $stmt = $pdo->prepare("INSERT INTO notification_reads (user_id, order_id, notification_type) 
-                           VALUES (?, ?, ?) 
+    $stmt = $pdo->prepare("INSERT INTO notification_reads (user_id, order_id, notification_type, read_at) 
+                           VALUES (?, ?, ?, CURRENT_TIMESTAMP) 
                            ON DUPLICATE KEY UPDATE read_at = CURRENT_TIMESTAMP");
     $stmt->execute([$userId, $orderId, $notificationType]);
     

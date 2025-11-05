@@ -542,9 +542,9 @@ body {
 
 /* Main Container */
 .returns-container {
-    max-width: 98%;
-    width: 98%;
-    margin: 100px auto 40px;
+    max-width: 1200px;
+    width: 100%;
+    margin: 20px auto 40px;
     padding: 0 20px;
 }
 
@@ -559,26 +559,26 @@ body {
 
 /* Return Form Container */
 .return-form {
-    background: #f8f9fa;
-    border: 2px solid #e9ecef;
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
     border-radius: 12px;
-    padding: 35px;
-    margin-bottom: 30px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+    padding: 24px;
+    margin-bottom: 24px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
 }
 
 /* Request Return Header - Dark Purple */
 .return-title {
     background: var(--primary-dark);
     color: var(--accent-yellow);
-    font-size: 1.3rem;
+    font-size: 1.1rem;
     font-weight: 800;
-    margin: -35px -35px 30px -35px;
-    padding: 20px 35px;
+    margin: -24px -24px 18px -24px;
+    padding: 14px 20px;
     border-radius: 12px 12px 0 0;
-    text-align: center;
-    text-transform: uppercase;
-    letter-spacing: 1px;
+    text-align: left;
+    text-transform: none;
+    letter-spacing: 0;
 }
 
 /* Order Information Container */
@@ -984,17 +984,17 @@ body {
 /* Responsive */
 @media (max-width: 768px) {
     .returns-container {
-        margin-top: 80px;
+        margin-top: 12px;
     }
     
     .return-form {
-        padding: 25px 20px;
+        padding: 20px 16px;
     }
     
     .return-title {
-        margin: -25px -20px 25px -20px;
-        padding: 18px 20px;
-        font-size: 1.1rem;
+        margin: -16px -16px 16px -16px;
+        padding: 12px 16px;
+        font-size: 1rem;
     }
     
     .image-upload-grid {

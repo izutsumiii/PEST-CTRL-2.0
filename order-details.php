@@ -54,9 +54,17 @@ try {
 require_once 'includes/header.php';
 
 // Get order items
-$stmt = $pdo->prepare("SELECT oi.*, p.name, p.image_url 
+$stmt = $pdo->prepare("SELECT oi.*, p.name, p.image_url, 
+                              COALESCE(u.display_name, CONCAT(u.first_name, ' ', u.last_name), u.username) AS seller_name
                       FROM order_items oi 
                       JOIN products p ON oi.product_id = p.id 
+                      JOIN users u ON p.seller_id = u.id
+                      WHERE oi.order_id = ?");
+$stmt = $pdo->prepare("SELECT oi.*, p.name, p.image_url,
+                              COALESCE(u.display_name, CONCAT(u.first_name, ' ', u.last_name), u.username) AS seller_name
+                      FROM order_items oi 
+                      JOIN products p ON oi.product_id = p.id 
+                      JOIN users u ON p.seller_id = u.id
                       WHERE oi.order_id = ?");
 $stmt->execute([$orderId]);
 $orderItems = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -127,18 +135,18 @@ h1 {
 .page-header h1 { font-weight: 700 !important; }
 
 .order-details {
-    max-width: 1400px;
-    margin: 0 60px;
+    max-width: 1200px;
+    margin: 0 auto;
     background: #ffffff;
-    border: 1px solid rgba(0,0,0,0.1);
-    border-radius: 8px;
-    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.08);
     overflow: hidden;
 }
 
 .order-card {
-    padding: 25px;
-    border-bottom: 1px solid rgba(0,0,0,0.1);
+    padding: 22px;
+    border-bottom: 1px solid #f1f5f9;
     background: #ffffff;
 }
 
@@ -148,18 +156,18 @@ h1 {
 
 .order-card h3 {
     color: #130325;
-    margin: 0 0 20px 0;
-    font-size: 1.4rem;
-    font-weight: 600;
+    margin: 0 0 16px 0;
+    font-size: 1.1rem;
+    font-weight: 800;
     border-bottom: 2px solid #FFD736;
-    padding-bottom: 12px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
+    padding-bottom: 10px;
+    text-transform: none;
+    letter-spacing: 0;
 }
 
 .status-card {
     background: #130325;
-    padding: 20px 25px;
+    padding: 18px 22px;
     border-bottom: 1px solid rgba(0,0,0,0.1);
 }
 
@@ -264,21 +272,22 @@ h1 {
 }
 
 .order-items-table th {
-    background: #f8f9fa;
+    background: #f8fafc;
     color: #130325;
-    padding: 15px;
+    padding: 14px 16px;
     text-align: left;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    border-bottom: 1px solid rgba(0,0,0,0.1);
+    font-weight: 700;
+    text-transform: none;
+    letter-spacing: 0;
+    border-bottom: 1px solid #eef2f7;
 }
 
 .order-items-table td {
-    padding: 15px;
-    border-bottom: 1px solid rgba(0,0,0,0.1);
+    padding: 14px 16px;
+    border-bottom: 1px solid #f1f5f9;
     vertical-align: middle;
     color: #130325;
+    font-size: 0.95rem;
 }
 
 .order-items-table tbody tr:hover {
@@ -292,10 +301,10 @@ h1 {
 }
 
 .product-info img {
-    width: 60px;
-    height: 60px;
+    width: 64px;
+    height: 64px;
     object-fit: cover;
-    border-radius: 8px;
+    border-radius: 10px;
     border: 2px solid #FFD736;
 }
 
@@ -305,8 +314,8 @@ h1 {
 }
 
 .order-items-table tfoot {
-    background: rgba(255, 215, 54, 0.1);
-    font-weight: 600;
+    background: #f9fafb;
+    font-weight: 700;
 }
 
 .order-items-table tfoot td {
@@ -316,23 +325,23 @@ h1 {
 }
 
 .order-actions {
-    padding: 25px;
+    padding: 18px 22px;
     background: #ffffff;
     display: flex;
-    gap: 12px;
+    gap: 10px;
     flex-wrap: wrap;
     justify-content: flex-end;
-    border-top: 1px solid rgba(0,0,0,0.1);
+    border-top: 1px solid #f1f5f9;
 }
 
 .action-btn {
-    padding: 10px 20px;
+    padding: 10px 16px;
     border: none;
-    border-radius: 6px;
-    font-weight: 600;
+    border-radius: 8px;
+    font-weight: 700;
     text-decoration: none;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.2s ease;
     font-size: 0.9rem;
     display: inline-flex;
     align-items: center;
@@ -341,7 +350,7 @@ h1 {
 
 .btn-cancel {
     background: #dc3545;
-    color: white;
+    color: #ffffff;
 }
 
 .btn-cancel:hover {
@@ -351,7 +360,7 @@ h1 {
 
 .btn-buy-again {
     background: #130325;
-    color: white;
+    color: #ffffff;
 }
 
 .btn-buy-again:hover {
@@ -662,8 +671,11 @@ h1 {
                     <tr>
                         <td>
                             <div class="product-info">
-                                <img src="<?php echo $item['image_url']; ?>" alt="<?php echo $item['name']; ?>" width="50">
-                                <span><?php echo $item['name']; ?></span>
+                                <img src="<?php echo $item['image_url']; ?>" alt="<?php echo htmlspecialchars($item['name']); ?>" width="50">
+                                <div>
+                                    <div style="font-weight:700; color:#130325;"><?php echo htmlspecialchars($item['name']); ?></div>
+                                    <div class="product-seller" style="color:#6b7280; font-size:12px; margin-top:2px;">Seller: <?php echo htmlspecialchars($item['seller_name'] ?? 'Unknown'); ?></div>
+                                </div>
                             </div>
                         </td>
                         <td>₱<?php echo number_format($item['price'], 2); ?></td>

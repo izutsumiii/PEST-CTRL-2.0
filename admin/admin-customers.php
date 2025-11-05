@@ -661,9 +661,13 @@ function getCustomerOrderCount($pdo, $customerId) {
 
     /* Pagination */
     .pagination { display: flex; justify-content: center; gap: 8px; margin-top: 20px; }
-    .page-link { padding: 8px 14px; background: #ffffff; color: #130325; text-decoration: none; border-radius: 6px; border: 1px solid #e5e7eb; font-weight: 700; font-size: 13px; transition: all 0.2s ease; }
-    .page-link:hover { background: #FFD736; color: #130325; transform: translateY(-2px); }
-    .page-link.active { background: #FFD736; color: #130325; border-color: #FFD736; }
+    .pagination { display: flex; justify-content: center; gap: 8px; margin-top: 20px; }
+    .page-link { padding: 8px 14px; background: #ffffff !important; color: #130325 !important; text-decoration: none; border-radius: 6px; border: 1px solid #e5e7eb !important; font-weight: 600; font-size: 13px; transition: all 0.2s ease; }
+    .page-link i { color: #130325 !important; }
+    .page-link:hover { background: #f8f9fa !important; color: #130325 !important; border-color: #130325 !important; transform: translateY(-1px); }
+    .page-link:hover i { color: #130325 !important; }
+    .page-link.active { background: #130325 !important; color: #ffffff !important; border-color: #130325 !important; box-shadow: 0 2px 8px rgba(19, 3, 37, 0.3); }
+    .page-link.active i { color: #ffffff !important; }
     .page-ellipsis { padding: 8px 8px; color: #9ca3af; font-weight: 700; }
     .pagination-info { text-align: center; margin-top: 12px; color: #6b7280; font-size: 13px; font-weight: 500; }
 

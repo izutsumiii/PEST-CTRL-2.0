@@ -406,11 +406,11 @@ if (isset($_POST['cancel_order'])) {
                         $customerEmail = $userInfo['email'];
                         sendCancellationEmail($orderId, $customerName, $customerEmail, $cancellationReason, $order['total_amount'], $orderItemsText);
                     }
-                    $cancelMessage = "<div class='alert alert-success'>
-                    <strong>Order Cancelled Successfully!</strong><br>
-                    Order #" . str_pad($orderId, 6, '0', STR_PAD_LEFT) . " has been cancelled.<br>
-                    The seller has been notified. If you made a payment, the refund will be processed within 3-5 business days.
-                  </div>";
+                    $cancelMessage = "<div class=\"floating-toast\" style=\"position:fixed; left:50%; bottom:24px; transform:translateX(-50%); background:#ffffff; color:#130325; border:1px solid #e5e7eb; border-radius:12px; padding:16px 18px; z-index:10000; box-shadow:0 10px 30px rgba(0,0,0,0.2); max-width:90%; width:520px; text-align:center;\">\n"
+                      . "<div style=\"font-weight:800; margin-bottom:6px;\">Order Cancelled Successfully!</div>\n"
+                      . "<div style=\"font-weight:600;\">Order #" . str_pad($orderId, 6, '0', STR_PAD_LEFT) . " has been cancelled.</div>\n"
+                      . "<div style=\"margin-top:6px; font-size:13px; color:#4b5563;\">The seller has been notified. If you made a payment, the refund will be processed within 3-5 business days.</div>\n"
+                      . "</div>";
                 } else {
                     $pdo->rollback();
                     $cancelMessage = "<div class='alert alert-error'>Error cancelling order. Please try again.</div>";
@@ -1597,15 +1597,16 @@ body {
 }
 
 .cancel-modal-content {
-    background: white;
-    margin: 10% auto;
-    padding: 30px;
-    border-radius: 15px;
-    width: 90%;
-    max-width: 500px;
+    background: #ffffff;
+    margin: 12% auto;
+    padding: 20px;
+    border-radius: 12px;
+    width: 92%;
+    max-width: 420px;
     position: relative;
-    animation: modalSlideIn 0.3s ease;
-    box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+    animation: modalSlideIn 0.25s ease;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+    border: 1px solid #e5e7eb;
 }
 
 @keyframes modalSlideIn {
@@ -1621,44 +1622,50 @@ body {
 
 .close-modal {
     position: absolute;
-    right: 15px;
-    top: 15px;
-    background: none;
+    right: 10px;
+    top: 10px;
+    background: transparent;
     border: none;
-    font-size: 2rem;
+    font-size: 22px;
+    line-height: 1;
     cursor: pointer;
-    color: #ccc;
-    transition: all 0.2s ease;
-    width: 40px;
-    height: 40px;
+    color: #6b7280;
+    transition: color 0.2s ease;
+    width: 30px;
+    height: 30px;
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 50%;
 }
 
 .close-modal:hover {
-    color: #e74c3c;
-    background: #f8f9fa;
+    color: #dc3545;
 }
 
 .cancel-modal-content h3 {
-    font-size: 1.5rem;
-    margin-bottom: 15px;
-    color: #2c3e50;
+    font-size: 16px;
+    font-weight: 800;
+    margin: 0 0 8px 0;
+    color: #130325;
 }
 
 .cancel-modal-content p {
-    margin-bottom: 15px;
-    color: #495057;
+    margin-bottom: 12px;
+    color: #4b5563;
+    font-size: 13px;
+    font-weight: 600;
 }
 
 .cancel-modal-buttons {
     display: flex;
-    gap: 15px;
-    justify-content: center;
-    margin-top: 25px;
+    gap: 10px;
+    justify-content: flex-end;
+    margin-top: 16px;
 }
+
+/* Make modal buttons compact */
+.cancel-modal-buttons .btn { padding: 8px 12px; font-weight: 700; }
+.cancel-modal-buttons .btn.btn-danger { padding: 8px 12px; }
 
 /* Responsive Design */
 @media (max-width: 768px) {
@@ -2446,8 +2453,8 @@ function openConfirm(message, onConfirm) {
 
 // Auto-dismiss alert notifications after 4 seconds
 document.addEventListener('DOMContentLoaded', function() {
-    // Find all alert messages
-    const alerts = document.querySelectorAll('.alert, .alert-success, .alert-error, .alert-warning, .success-message, .error-message');
+    // Find all alert messages (including floating toasts)
+    const alerts = document.querySelectorAll('.alert, .alert-success, .alert-error, .alert-warning, .success-message, .error-message, .floating-toast');
     
     alerts.forEach(function(alert) {
         // Add fade-out animation styles if not already present
@@ -2459,7 +2466,9 @@ document.addEventListener('DOMContentLoaded', function() {
         setTimeout(function() {
             // Add fade-out effect
             alert.style.opacity = '0';
-            alert.style.transform = 'translateY(-20px)';
+            // If floating toast, slide down slightly; else slide up
+            const isFloating = alert.classList.contains('floating-toast') || (alert.style.position === 'fixed');
+            alert.style.transform = isFloating ? 'translate(-50%, 10px)' : 'translateY(-20px)';
             
             // Remove element from DOM after animation completes
             setTimeout(function() {
@@ -2474,8 +2483,9 @@ document.addEventListener('DOMContentLoaded', function() {
         alert.title = 'Click to dismiss';
         
         alert.addEventListener('click', function() {
+            const isFloating = this.classList.contains('floating-toast') || (this.style.position === 'fixed');
             this.style.opacity = '0';
-            this.style.transform = 'translateY(-20px)';
+            this.style.transform = isFloating ? 'translate(-50%, 10px)' : 'translateY(-20px)';
             
             setTimeout(() => {
                 this.remove();
@@ -2512,17 +2522,14 @@ class OrderManager {
             }
 
             // Handle close modal clicks
-            if (e.target.classList.contains('close-modal') || e.target === document.getElementById('cancelModal')) {
+            if (e.target.classList.contains('close-modal') || e.target.hasAttribute('data-close-cancel-modal') || e.target === document.getElementById('cancelModal')) {
                 this.closeCancelModal();
             }
 
-            // Handle direct cancel form submissions from status grid
+            // Handle direct cancel form submissions from status grid (no extra confirm)
             if (e.target.type === 'submit' && e.target.textContent.includes('Cancel Order')) {
-                openConfirm('Cancel this order?', function(){
-                    // proceed
-                    e.target.closest('form')?.submit();
-                });
-                e.preventDefault();
+                // submit immediately
+                return;
             }
         });
 
@@ -2914,9 +2921,14 @@ document.addEventListener('DOMContentLoaded', function() {
                             <div class="order-number">Order #<?php echo str_pad($order['id'], 6, '0', STR_PAD_LEFT); ?></div>
                             <div class="order-date-time" style="color: #666; font-size: 0.85rem; font-weight: 400;">
                                 <?php 
-                                $orderDate = isset($order['created_at']) ? $order['created_at'] : (isset($order['order_date']) ? $order['order_date'] : '');
-                                if ($orderDate) {
-                                    $dateTime = new DateTime($orderDate);
+                                $createdAt = $order['created_at'] ?? ($order['order_date'] ?? null);
+                                $updatedAt = $order['updated_at'] ?? null;
+                                $chosenDate = $createdAt;
+                                if (!empty($updatedAt) && strtotime($updatedAt) > strtotime((string)$createdAt)) {
+                                    $chosenDate = $updatedAt;
+                                }
+                                if ($chosenDate) {
+                                    $dateTime = new DateTime($chosenDate);
                                     echo $dateTime->format('M d, Y h:i A');
                                 }
                                 ?>
@@ -2956,7 +2968,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 <!-- Bottom: PRICE | BUTTONS -->
                 <div class="order-bottom">
                     <div class="order-total">
-                        <div class="order-total-amount">₱<?php echo number_format($order['total_amount'], 2); ?></div>
+                        <?php 
+                        $displayTotal = isset($order['total_amount']) ? (float)$order['total_amount'] : 0.0;
+                        if ($displayTotal <= 0 && !empty($order['order_items'])) {
+                            $sum = 0.0;
+                            foreach ($order['order_items'] as $it) {
+                                $price = isset($it['price']) ? (float)$it['price'] : (isset($it['product_price']) ? (float)$it['product_price'] : 0.0);
+                                $qty = (int)($it['quantity'] ?? 0);
+                                $sum += $price * $qty;
+                            }
+                            $displayTotal = $sum;
+                        }
+                        ?>
+                        <div class="order-total-amount">₱<?php echo number_format($displayTotal, 2); ?></div>
                     </div>
                     
                     <div class="order-actions">
@@ -3185,8 +3209,8 @@ document.addEventListener('DOMContentLoaded', function() {
             </p>
             
             <div class="cancel-modal-buttons">
-                <button type="button" class="btn btn-primary close-modal">Keep Order</button>
-                <button type="submit" class="btn btn-danger">Submit & Cancel Order</button>
+                <button type="button" class="btn btn-primary" data-close-cancel-modal="1">Keep Order</button>
+                <button type="submit" class="btn btn-danger">Cancel Order</button>
             </div>
         </form>
     </div>

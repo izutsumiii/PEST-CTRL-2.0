@@ -75,7 +75,7 @@ if ($result && in_array($newStatus, ['processing', 'shipped', 'delivered'])) {
         'Order Status Updated',
         $statusMessages[$newStatus] ?? 'Order status changed',
         'info',
-        'view-orders.php'
+        'seller-order-details.php?order_id=' . $orderId
     );
 }
     }
@@ -829,7 +829,7 @@ h1 {
                 data-status="<?php echo strtolower($order['status']); ?>" 
                 data-date="<?php echo strtotime($order['created_at']); ?>">
                             <td>
-                                <span class="order-id">#<?php echo str_pad($order['order_id'], 6, '0', STR_PAD_LEFT); ?></span>
+                                <a href="seller-order-details.php?order_id=<?php echo (int)$order['order_id']; ?>" class="order-id">#<?php echo str_pad($order['order_id'], 6, '0', STR_PAD_LEFT); ?></a>
                             </td>
                             <td>
                                 <span class="customer-name"><?php echo htmlspecialchars($order['customer_name']); ?></span>
@@ -859,6 +859,7 @@ h1 {
                                 </div>
                 </td>
                             <td class="actions-cell">
+                                
     <?php if ($order['status'] === 'pending'): ?>
         <?php if ($withinGracePeriod): ?>
                                         <div class="grace-period-timer" id="timer-<?php echo $order['order_id']; ?>">
@@ -1143,6 +1144,8 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
     }
+    // expose data for modal
+    window.sellerOrdersData = <?php echo json_encode($groupedOrders, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_AMP|JSON_HEX_QUOT); ?>;
 });
 </script>
 <script>
@@ -1173,4 +1176,59 @@ function confirmStatusChange(nextStatus) {
       overlay.querySelector('.primary').addEventListener('click', ()=>{ close(); resolve(true); });
     }).then(ok=> ok);
 }
+</script>
+<script>
+function showSellerOrderDetails(orderId) {
+    const order = (window.sellerOrdersData || {})[orderId];
+    if (!order) return;
+    let modal = document.getElementById('sellerOrderDetailsModal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'sellerOrderDetailsModal';
+        modal.style.cssText = 'position:fixed; inset:0; background:rgba(0, 0, 0, 0.6); display:flex; align-items:center; justify-content:center; z-index:10001;';
+        modal.innerHTML = '<div id="sellerOrderDetailsDialog" style="background:#ffffff; border-radius:12px; width:92%; max-width:720px; box-shadow:0 20px 40px rgba(0,0,0,0.25); overflow:hidden;">\
+            <div style="background:#130325; color:#fff; padding:14px 18px; display:flex; align-items:center; justify-content:space-between;">\
+                <div style="font-weight:800; font-size:14px;">Order Details</div>\
+                <button id="sellerOrderDetailsClose" style="background:transparent; border:none; color:#fff; font-size:18px; cursor:pointer;">&times;</button>\
+            </div>\
+            <div id="sellerOrderDetailsBody" style="padding:16px; color:#130325;"></div>\
+        </div>';
+        document.body.appendChild(modal);
+        modal.addEventListener('click', (e)=>{ if (e.target.id === 'sellerOrderDetailsModal' || e.target.id === 'sellerOrderDetailsClose') modal.remove(); });
+    }
+    const body = modal.querySelector('#sellerOrderDetailsBody');
+    const itemsHtml = (order.items || []).map(it => `\
+        <tr>\
+          <td style="padding:8px; border-bottom:1px solid #eef2f7;">${escapeHtml(it.product_name)}</td>\
+          <td style="padding:8px; border-bottom:1px solid #eef2f7; text-align:center;">x${parseInt(it.quantity||0,10)}</td>\
+          <td style="padding:8px; border-bottom:1px solid #eef2f7; text-align:right;">₱${Number(it.item_price||0).toFixed(2)}</td>\
+          <td style="padding:8px; border-bottom:1px solid #eef2f7; text-align:right;">₱${(Number(it.item_price||0)*Number(it.quantity||0)).toFixed(2)}</td>\
+        </tr>`).join('');
+    const total = Number(order.total_amount||0).toFixed(2);
+    body.innerHTML = `\
+      <div style=\"display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;\">\
+        <div style=\"font-weight:800;\">Order #${String(order.order_id).padStart(6,'0')}</div>\
+        <span class=\"order-status status-${escapeHtml(String(order.status).toLowerCase())}\" style=\"margin-left:12px;\">${escapeHtml(String(order.status))}</span>\
+      </div>\
+      <div style=\"margin-bottom:12px; color:#6b7280; font-size:13px;\">Customer: ${escapeHtml(order.customer_name||'')}</div>\
+      <table style=\"width:100%; border-collapse:collapse;\">\
+        <thead>\
+          <tr style=\"background:#f9fafb;\">\
+            <th style=\"text-align:left; padding:8px;\">Product</th>\
+            <th style=\"text-align:center; padding:8px;\">Qty</th>\
+            <th style=\"text-align:right; padding:8px;\">Price</th>\
+            <th style=\"text-align:right; padding:8px;\">Total</th>\
+          </tr>\
+        </thead>\
+        <tbody>${itemsHtml}</tbody>\
+        <tfoot>\
+          <tr>\
+            <td colspan=\"3\" style=\"text-align:right; padding:10px; font-weight:800;\">Grand Total</td>\
+            <td style=\"text-align:right; padding:10px; font-weight:800;\">₱${total}</td>\
+          </tr>\
+        </tfoot>\
+      </table>`;
+    modal.style.display = 'flex';
+}
+function escapeHtml(t){ const d=document.createElement('div'); d.textContent=t==null?'':String(t); return d.innerHTML; }
 </script>

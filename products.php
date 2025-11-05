@@ -321,9 +321,9 @@ body {
 .products-layout .product-card .price,
 .products-list .product-card .price {
     color: #212529 !important;
-    font-weight: 800 !important;
-    font-size: 1.5rem !important;
-    margin: 5px 0 !important;
+    font-weight: 700 !important;
+    font-size: 1.2rem !important;
+    margin: 4px 0 !important;
 }
 
 /* Rating - EXACT MATCH */
@@ -675,9 +675,9 @@ body {
 
 .sort-select,
 .order-select {
-    background: #130325;
-    color: white;
-    border: 2px solid #130325; /* match background */
+    background: #ffffff;
+    color: #130325;
+    border: 2px solid #e5e7eb; /* light border */
     padding: 8px 12px;
     border-radius: 6px; /* slight rounding */
     font-size: 0.9rem;
@@ -689,7 +689,15 @@ body {
 .sort-select:focus,
 .order-select:focus {
     outline: none;
-    background: #FFD736;
+    background: #ffffff;
+    color: #130325;
+    border-color: #130325;
+}
+
+/* Ensure dropdown options are white */
+.sort-select option,
+.order-select option {
+    background: #ffffff;
     color: #130325;
 }
 

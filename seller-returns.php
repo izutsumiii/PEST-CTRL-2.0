@@ -120,8 +120,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             elseif ($action === 'reject') {
                 $rejectionReason = $_POST['rejection_reason'] ?? '';
                 
-                // Get return request details
-                $stmt = $pdo->prepare("SELECT order_id FROM return_requests WHERE id = ? AND seller_id = ?");
+                // Get return request details and customer id
+                $stmt = $pdo->prepare("SELECT rr.order_id, o.user_id as customer_id FROM return_requests rr JOIN orders o ON rr.order_id = o.id WHERE rr.id = ? AND rr.seller_id = ?");
                 $stmt->execute([$returnId, $sellerId]);
                 $returnDetails = $stmt->fetch(PDO::FETCH_ASSOC);
                 
@@ -145,6 +145,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     ");
                     $notificationMessage = "Your return request has been rejected. Reason: " . $rejectionReason;
                     $stmt->execute([$returnDetails['order_id'], $notificationMessage]);
+
+                    // Create explicit app notification for customer
+                    if (!empty($returnDetails['customer_id'])) {
+                        try {
+                            $stmt = $pdo->prepare("INSERT INTO notifications (user_id, order_id, message, type, created_at) VALUES (?, ?, ?, 'warning', NOW())");
+                            $stmt->execute([$returnDetails['customer_id'], $returnDetails['order_id'], $notificationMessage]);
+                        } catch (Exception $e) { /* ignore */ }
+                    }
                     
                     $message = "Return request rejected.";
                 }
@@ -153,7 +161,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
            elseif ($action === 'complete_refund') {
             // Get return request details
-            $stmt = $pdo->prepare("SELECT order_id FROM return_requests WHERE id = ? AND seller_id = ?");
+            $stmt = $pdo->prepare("SELECT rr.order_id, o.user_id as customer_id FROM return_requests rr JOIN orders o ON rr.order_id = o.id WHERE rr.id = ? AND rr.seller_id = ?");
             $stmt->execute([$returnId, $sellerId]);  
             $returnDetails = $stmt->fetch(PDO::FETCH_ASSOC);
             
@@ -192,6 +200,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ");
                 $notificationMessage = "Your refund has been completed successfully.";
                 $stmt->execute([$returnDetails['order_id'], $notificationMessage]);
+
+                // Explicit app notification for customer
+                if (!empty($returnDetails['customer_id'])) {
+                    try {
+                        $stmt = $pdo->prepare("INSERT INTO notifications (user_id, order_id, message, type, created_at) VALUES (?, ?, ?, 'success', NOW())");
+                        $stmt->execute([$returnDetails['customer_id'], $returnDetails['order_id'], $notificationMessage]);
+                    } catch (Exception $e) { /* ignore */ }
+                }
                 
                 $message = "Refund completed and stock restored.";
             }

@@ -37,6 +37,11 @@ require_once 'functions.php';
             transition: all 0.3s ease;
             overflow-y: auto;
         }
+
+        /* Normalize seller notifications footer and See All */
+        .notification-footer { text-align: center; padding: 10px; border-top: 1px solid #e5e7eb; }
+        .notification-footer .see-all-btn { color: #1f2937; text-decoration: none; font-size: 12px; display: inline-block; }
+        .notification-footer .see-all-btn:hover { text-decoration: none; background: transparent; color: #1f2937; }
         
         .sidebar.collapsed {
             width: var(--sidebar-width-collapsed);
@@ -669,16 +674,17 @@ require_once 'functions.php';
                     <span class="notification-badge" id="sellerNotificationBadge">0</span>
                 </div>
                 <div class="notification-dropdown" id="sellerNotificationDropdown">
-                    <div class="notification-header">
-                        <h6>Notifications</h6>
+                    <div class="notification-header" style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
+                        <h6 style="margin:0;">Notifications</h6>
+                        <button type="button" onclick="clearAllSellerNotifications()" style="background:#f3f4f6; border:1px solid #e5e7eb; color:#130325; padding:4px 8px; border-radius:6px; font-weight:700; cursor:pointer; font-size:12px;">Clear All</button>
                     </div>
                     <div class="notification-list" id="sellerNotificationList">
                         <div class="notification-item">
                             <span style="color: #1f2937;">Loading notifications...</span>
                         </div>
                     </div>
-                    <div class="notification-footer" style="text-align: center; padding: 10px; border-top: 1px solid #e5e7eb;">
-                        <a href="seller-notifications.php" style="color: #1f2937; text-decoration: none; font-size: 12px;">See All</a>
+                    <div class="notification-footer" style="text-align:center;">
+                        <a class="see-all-btn" href="seller-notifications.php" style="display:inline-block; margin:0 auto;">See All</a>
                     </div>
                 </div>
             </div>
@@ -857,11 +863,6 @@ require_once 'functions.php';
     } else {
         dropdown.classList.add('show');
         loadSellerNotifications();
-        
-        // Mark all notifications as read when bell is clicked
-        setTimeout(() => {
-            markAllSellerNotificationsAsRead();
-        }, 500); // Small delay to let dropdown open first
     }
 }
 function markAllSellerNotificationsAsRead() {
@@ -884,6 +885,20 @@ function markAllSellerNotificationsAsRead() {
         console.error('Error marking all notifications as read:', error);
     });
 }
+
+// Clear All: mark all read then clear dropdown UI immediately
+function clearAllSellerNotifications() {
+    const list = document.getElementById('sellerNotificationList');
+    if (list) {
+        list.innerHTML = '<div class="notification-item"><span>No notifications</span></div>';
+    }
+    const badge = document.getElementById('sellerNotificationBadge');
+    if (badge) { badge.classList.add('hidden'); badge.style.display = 'none'; }
+    // call backend
+    markAllSellerNotificationsAsRead();
+}
+
+// Remove confirmation; provide direct clear-all behavior
         function loadSellerNotifications() {
             fetch('ajax/get-seller-notifications.php')
                 .then(response => response.json())
@@ -920,42 +935,68 @@ function markAllSellerNotificationsAsRead() {
                 const badgeInfo = getNotificationBadge(notification.title, notification.type);
                 return `
                 <div class="notification-item ${!notification.is_read ? 'unread' : ''}" 
-                    onclick="handleNotificationClick(${notification.id}, '${notification.action_url || ''}')">
+                    onclick="handleSellerNotificationClick(event, this, ${notification.id}, '${notification.action_url || ''}')">
                     <span class="notification-status-badge ${badgeInfo.class}">${badgeInfo.text}</span>
                     <div class="notification-content">
                         <div class="notification-title">${notification.title}</div>
                         <div class="notification-message">${notification.message}</div>
                         <div class="notification-time">${formatTime(notification.created_at)}</div>
                     </div>
-                    <button class="notification-item-close-btn" onclick="event.stopPropagation(); removeNotificationFromDropdown(this, ${notification.id})" title="Remove from dropdown">×</button>
                 </div>
             `;
             }).join('');
         }
-        function handleNotificationClick(notificationId, actionUrl) {
-    // Mark as read
-    fetch('ajax/mark-seller-notification-read.php', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ notification_id: notificationId })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            // Redirect if action URL exists
-            if (actionUrl && actionUrl !== '' && actionUrl !== 'null') {
-                window.location.href = actionUrl;
+        function handleSellerNotificationClick(event, element, notificationId, actionUrl) {
+    event.preventDefault();
+    // Optimistically remove item from dropdown
+    try {
+        if (element && element.classList) {
+            element.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
+            element.style.opacity = '0';
+            element.style.transform = 'translateX(8px)';
+            setTimeout(() => {
+                const parent = element.parentElement;
+                element.remove();
+                // If list empty, show placeholder
+                if (parent && parent.children.length === 0) {
+                    parent.innerHTML = '<div class="notification-item"><span>No notifications</span></div>';
+                }
+            }, 180);
+        }
+        // Decrement badge
+        const badge = document.getElementById('sellerNotificationBadge');
+        if (badge && !badge.classList.contains('hidden')) {
+            const current = parseInt(badge.textContent || '0', 10) || 0;
+            const next = Math.max(0, current - 1);
+            if (next === 0) {
+                badge.classList.add('hidden');
+                badge.style.display = 'none';
             } else {
-                // Just reload notifications if no URL
-                loadSellerNotifications();
+                badge.textContent = String(next);
             }
         }
-    })
-    .catch(error => {
-        console.error('Error handling notification click:', error);
-    });
+    } catch (_) {}
+
+    // Mark as read reliably using sendBeacon, fallback to fetch keepalive
+    const payload = JSON.stringify({ notification_id: notificationId });
+    let sent = false;
+    try {
+        const blob = new Blob([payload], { type: 'application/json' });
+        sent = navigator.sendBeacon && navigator.sendBeacon('ajax/mark-seller-notification-read.php', blob);
+    } catch (_) { sent = false; }
+    if (!sent) {
+        fetch('ajax/mark-seller-notification-read.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: payload,
+            keepalive: true
+        }).catch(() => {});
+    }
+
+    // Redirect after a tiny delay to allow beacon to flush
+    if (actionUrl && actionUrl !== '' && actionUrl !== 'null') {
+        setTimeout(() => { window.location.href = actionUrl; }, 120);
+    }
 }
 
 function markSellerNotificationAsRead(notificationId) {
