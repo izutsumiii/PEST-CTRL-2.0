@@ -66,6 +66,72 @@ if (isset($_POST['update_settings'])) {
         }
     }
 }
+
+
+
+
+// Handle maintenance mode toggle
+if (isset($_POST['toggle_maintenance'])) {
+    $maintenanceMode = isset($_POST['maintenance_mode']) ? '1' : '0';
+    $maintenanceMessage = isset($_POST['maintenance_message']) ? sanitizeInput($_POST['maintenance_message']) : 'We are currently performing scheduled maintenance. Please check back soon!';
+    $maintenanceStart = $_POST['maintenance_start'] ?? '';
+    $maintenanceEnd = $_POST['maintenance_end'] ?? '';
+    $maintenanceAuto = isset($_POST['maintenance_auto_enable']) ? '1' : '0';
+    
+    try {
+        // Ensure site_settings table exists
+        $pdo->exec("CREATE TABLE IF NOT EXISTS site_settings (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            setting_key VARCHAR(100) NOT NULL UNIQUE,
+            setting_value TEXT NOT NULL,
+            updated_by INT NULL,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            FOREIGN KEY (updated_by) REFERENCES users(id) ON DELETE SET NULL
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+        
+        // Update all maintenance settings
+        $settings = [
+            'maintenance_mode' => $maintenanceMode,
+            'maintenance_message' => $maintenanceMessage,
+            'maintenance_start' => $maintenanceStart,
+            'maintenance_end' => $maintenanceEnd,
+            'maintenance_auto_enable' => $maintenanceAuto
+        ];
+        
+        foreach ($settings as $key => $value) {
+            $stmt = $pdo->prepare("INSERT INTO site_settings (setting_key, setting_value, updated_by) 
+                                   VALUES (?, ?, ?) 
+                                   ON DUPLICATE KEY UPDATE setting_value = ?, updated_by = ?");
+            $stmt->execute([$key, $value, $_SESSION['user_id'], $value, $_SESSION['user_id']]);
+        }
+        
+        $success = "Maintenance settings updated successfully!";
+    } catch (PDOException $e) {
+        $error = "Error updating maintenance mode: " . $e->getMessage();
+    }
+}
+
+// Get current maintenance settings
+try {
+    $stmt = $pdo->prepare("SELECT setting_key, setting_value FROM site_settings 
+                           WHERE setting_key IN ('maintenance_mode', 'maintenance_message', 'maintenance_start', 'maintenance_end', 'maintenance_auto_enable')");
+    $stmt->execute();
+    $settings = $stmt->fetchAll(PDO::FETCH_KEY_PAIR);
+    
+    $maintenanceMode = isset($settings['maintenance_mode']) ? $settings['maintenance_mode'] : '0';
+    $maintenanceMessage = isset($settings['maintenance_message']) ? $settings['maintenance_message'] : 'We are currently performing scheduled maintenance. Please check back soon!';
+    $maintenanceStart = isset($settings['maintenance_start']) ? $settings['maintenance_start'] : '';
+    $maintenanceEnd = isset($settings['maintenance_end']) ? $settings['maintenance_end'] : '';
+    $maintenanceAuto = isset($settings['maintenance_auto_enable']) ? $settings['maintenance_auto_enable'] : '0';
+} catch (PDOException $e) {
+    // Table might not exist yet
+    $maintenanceMode = '0';
+    $maintenanceMessage = 'We are currently performing scheduled maintenance. Please check back soon!';
+    $maintenanceStart = '';
+    $maintenanceEnd = '';
+    $maintenanceAuto = '0';
+}
 ?>
 
 <style>
@@ -360,6 +426,290 @@ if (isset($_POST['update_settings'])) {
         color: #130325;
         font-weight: 600;
     }
+
+
+
+    /* Maintenance Mode Styles */
+    .settings-card h3 {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+
+    .status-badge {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 14px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+    }
+
+    .status-badge i {
+        font-size: 8px;
+    }
+
+    .status-active {
+        background: #fee2e2;
+        color: #dc2626;
+    }
+
+    .status-active i {
+        color: #dc2626;
+        animation: pulse 2s infinite;
+    }
+
+    .status-inactive {
+        background: #d1fae5;
+        color: #059669;
+    }
+
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+    }
+
+    .toggle-container {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 16px;
+        background: #f9fafb;
+        border-radius: 8px;
+        border: 1px solid rgba(0,0,0,0.05);
+    }
+
+    .toggle-label {
+        position: relative;
+        display: inline-block;
+        width: 56px;
+        height: 28px;
+        cursor: pointer;
+        margin: 0;
+        flex-shrink: 0;
+    }
+
+    .toggle-label input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+
+    .toggle-slider {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #cbd5e1;
+        transition: 0.3s;
+        border-radius: 28px;
+    }
+
+    .toggle-slider:before {
+        position: absolute;
+        content: "";
+        height: 20px;
+        width: 20px;
+        left: 4px;
+        bottom: 4px;
+        background-color: white;
+        transition: 0.3s;
+        border-radius: 50%;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+
+    input:checked + .toggle-slider {
+        background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+    }
+
+    input:checked + .toggle-slider:before {
+        transform: translateX(28px);
+    }
+
+    .toggle-slider-schedule {
+        background-color: #cbd5e1 !important;
+    }
+
+    input:checked + .toggle-slider-schedule {
+        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
+    }
+
+    .toggle-info {
+        flex: 1;
+    }
+
+    .toggle-info strong {
+        display: block;
+        font-size: 15px;
+        color: #130325;
+        margin-bottom: 4px;
+    }
+
+    .toggle-info p {
+        font-size: 13px;
+        color: #6b7280;
+        margin: 0;
+    }
+
+    .form-group textarea {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid rgba(0,0,0,0.1);
+        border-radius: 8px;
+        font-size: 14px;
+        background: #ffffff;
+        color: #130325;
+        resize: vertical;
+        font-family: inherit;
+    }
+
+    .form-group textarea:focus {
+        outline: none;
+        border-color: #130325;
+    }
+
+    .form-help-text {
+        display: block;
+        font-size: 12px;
+        color: #6b7280;
+        margin-top: 6px;
+    }
+
+    .schedule-header {
+        margin-bottom: 20px;
+    }
+
+    .schedule-header h4 {
+        font-size: 16px;
+        font-weight: 600;
+        color: #130325;
+        margin: 0 0 8px 0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        text-shadow: none !important;
+    }
+
+    .schedule-header p {
+        font-size: 13px;
+        color: #6b7280;
+        margin: 0;
+    }
+
+    .schedule-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+        margin-bottom: 20px;
+    }
+
+    .form-group input[type="datetime-local"] {
+        width: 100%;
+    }
+
+    .info-box-maintenance {
+        display: flex;
+        gap: 12px;
+        padding: 16px;
+        background: #e7f3ff;
+        border: 1px solid #bfdbfe;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        color: #1e40af;
+    }
+
+    .info-box-maintenance i {
+        font-size: 20px;
+        color: #3b82f6;
+        flex-shrink: 0;
+    }
+
+    .info-box-maintenance strong {
+        display: block;
+        margin-bottom: 8px;
+        color: #1e40af;
+    }
+
+    .info-box-maintenance ul {
+        margin: 8px 0 0 0;
+        padding-left: 20px;
+        list-style: disc;
+    }
+
+    .info-box-maintenance li {
+        margin: 4px 0;
+        font-size: 13px;
+        color: #1e40af;
+    }
+
+    .maintenance-warning {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 16px;
+        background: #fee2e2;
+        border: 1px solid #fecaca;
+        border-radius: 8px;
+        margin-top: 20px;
+        color: #991b1b;
+    }
+
+    .maintenance-warning i {
+        font-size: 20px;
+        color: #dc2626;
+        flex-shrink: 0;
+    }
+
+    .maintenance-warning strong {
+        color: #991b1b;
+    }
+
+    .schedule-info-box {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 16px;
+        background: #dbeafe;
+        border: 1px solid #93c5fd;
+        border-radius: 8px;
+        margin-top: 20px;
+        color: #1e3a8a;
+    }
+
+    .schedule-info-box i {
+        font-size: 20px;
+        color: #3b82f6;
+        flex-shrink: 0;
+    }
+
+    .schedule-info-box strong {
+        display: block;
+        margin-bottom: 4px;
+        color: #1e3a8a;
+    }
+
+    .schedule-info-box p {
+        margin: 2px 0;
+        font-size: 13px;
+        color: #1e3a8a;
+    }
+
+    @media (max-width: 768px) {
+        .schedule-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .toggle-container {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+    }
+
 </style>
 
 <div class="page-header">
@@ -413,6 +763,120 @@ if (isset($_POST['update_settings'])) {
             <button type="submit" name="update_settings" class="btn-save">
                 <i class="fas fa-save"></i> Save Settings
             </button>
+        </div>
+    </form>
+
+
+
+
+
+    <!-- Maintenance Mode Settings Card -->
+    <form method="POST" action="">
+        <div class="settings-card">
+            <h3>
+                <i class="fas fa-tools"></i> Maintenance Mode Control
+                <div class="status-badge <?php echo $maintenanceMode === '1' ? 'status-active' : 'status-inactive'; ?>">
+                    <i class="fas fa-circle"></i>
+                    <?php echo $maintenanceMode === '1' ? 'ACTIVE' : 'INACTIVE'; ?>
+                </div>
+            </h3>
+            
+            <!-- Manual Maintenance Mode -->
+            <div class="form-group">
+                <div class="toggle-container">
+                    <label class="toggle-label">
+                        <input type="checkbox" name="maintenance_mode" id="maintenance_mode" 
+                               <?php echo $maintenanceMode === '1' ? 'checked' : ''; ?>>
+                        <span class="toggle-slider"></span>
+                    </label>
+                    <div class="toggle-info">
+                        <strong>Enable Maintenance Mode (Manual Override)</strong>
+                        <p>When enabled, visitors will see a maintenance page immediately. Admins can still access the site.</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="maintenance_message">Maintenance Message</label>
+                <textarea name="maintenance_message" id="maintenance_message" rows="4" 
+                          placeholder="Enter the message to display to visitors during maintenance..."><?php echo htmlspecialchars($maintenanceMessage); ?></textarea>
+                <small class="form-help-text">This message will be displayed to visitors when maintenance mode is active.</small>
+            </div>
+
+            <!-- Scheduled Maintenance -->
+            <hr style="margin: 30px 0; border: none; border-top: 2px solid rgba(0,0,0,0.05);">
+            
+            <div class="schedule-header">
+                <h4><i class="fas fa-calendar-alt"></i> Scheduled Maintenance</h4>
+                <p>Automatically enable maintenance mode during a specific time window</p>
+            </div>
+
+            <div class="form-group">
+                <div class="toggle-container">
+                    <label class="toggle-label">
+                        <input type="checkbox" name="maintenance_auto_enable" id="maintenance_auto_enable"
+                               <?php echo $maintenanceAuto === '1' ? 'checked' : ''; ?>>
+                        <span class="toggle-slider toggle-slider-schedule"></span>
+                    </label>
+                    <div class="toggle-info">
+                        <strong>Enable Automatic Scheduled Maintenance</strong>
+                        <p>Site will automatically enter maintenance mode during the scheduled window below.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="schedule-grid">
+                <div class="form-group">
+                    <label for="maintenance_start"><i class="fas fa-play-circle"></i> Start Date & Time</label>
+                    <input type="datetime-local" id="maintenance_start" name="maintenance_start" 
+                           value="<?php echo htmlspecialchars($maintenanceStart); ?>">
+                    <small class="form-help-text">When maintenance mode should automatically start</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="maintenance_end"><i class="fas fa-stop-circle"></i> End Date & Time</label>
+                    <input type="datetime-local" id="maintenance_end" name="maintenance_end" 
+                           value="<?php echo htmlspecialchars($maintenanceEnd); ?>">
+                    <small class="form-help-text">When maintenance mode should automatically end</small>
+                </div>
+            </div>
+
+            <div class="info-box-maintenance">
+                <i class="fas fa-info-circle"></i>
+                <div>
+                    <strong>How it works:</strong>
+                    <ul>
+                        <li><strong>Manual Mode:</strong> Toggle "Enable Maintenance Mode" to activate immediately</li>
+                        <li><strong>Scheduled Mode:</strong> Set start/end times and enable "Automatic Scheduled Maintenance"</li>
+                        <li>Site will automatically enter maintenance during the scheduled window</li>
+                        <li>Admins can always access the site regardless of maintenance mode</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <button type="submit" name="toggle_maintenance" class="btn-save">
+                <i class="fas fa-save"></i> Save Maintenance Settings
+            </button>
+            
+            <?php if ($maintenanceMode === '1'): ?>
+            <div class="maintenance-warning">
+                <i class="fas fa-exclamation-triangle"></i>
+                <div>
+                    <strong>Warning:</strong> Your website is currently in maintenance mode. Regular users cannot access the site.
+                </div>
+            </div>
+            <?php endif; ?>
+
+            <?php if ($maintenanceAuto === '1' && !empty($maintenanceStart) && !empty($maintenanceEnd)): ?>
+            <div class="schedule-info-box">
+                <i class="fas fa-clock"></i>
+                <div>
+                    <strong>Scheduled Maintenance Active</strong>
+                    <p>Start: <?php echo date('F j, Y g:i A', strtotime($maintenanceStart)); ?></p>
+                    <p>End: <?php echo date('F j, Y g:i A', strtotime($maintenanceEnd)); ?></p>
+                </div>
+            </div>
+            <?php endif; ?>
         </div>
     </form>
 </div>
@@ -510,4 +974,31 @@ document.addEventListener('DOMContentLoaded', function() {
     showAndDismissToast(successToast);
     showAndDismissToast(errorToast);
 });
+
+
+    // Auto-refresh settings to check scheduled maintenance status
+    if (document.getElementById('maintenance_auto_enable')) {
+    setInterval(function() {
+        // Only refresh if scheduled maintenance is enabled
+        const autoEnableCheckbox = document.getElementById('maintenance_auto_enable');
+        if (autoEnableCheckbox && autoEnableCheckbox.checked) {
+            // Silent check without full page reload
+            fetch(window.location.href)
+                .then(response => response.text())
+                .then(html => {
+                    // Parse the response to check current status
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+                    const statusBadge = doc.querySelector('.status-badge');
+                    const currentStatusBadge = document.querySelector('.status-badge');
+                    
+                    // Update status badge if it changed
+                    if (statusBadge && currentStatusBadge && 
+                        statusBadge.className !== currentStatusBadge.className) {
+                        location.reload();
+                    }
+                });
+        }
+    }, 30000); // Check every 30 seconds
+}
 </script>
