@@ -159,24 +159,7 @@ $totalPages = ceil($totalSellers / $limit);
     .alert-error { background: #fef2f2; color: #991b1b; border-color: #fca5a5; }
     .alert-warning { background: #fffbeb; color: #92400e; border-color: #fde68a; }
 
-    /* Custom Confirmation Dialog Styles (shared) */
-    .custom-confirm-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 10000; opacity: 0; visibility: hidden; transition: all 0.25s ease; }
-    .custom-confirm-overlay.show { opacity: 1; visibility: visible; }
-    .custom-confirm-dialog { background: linear-gradient(135deg, var(--primary-dark) 0%, var(--secondary-dark) 100%); border: 2px solid var(--accent-yellow); border-radius: 12px; padding: 24px; max-width: 420px; width: 92%; box-shadow: 0 20px 40px rgba(0,0,0,0.5); transform: translateY(-8px) scale(0.98); transition: transform 0.25s ease; }
-    .custom-confirm-overlay.show .custom-confirm-dialog { transform: translateY(0) scale(1); }
-    .custom-confirm-header { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
-    .custom-confirm-icon { width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 20px; }
-    .custom-confirm-icon.warning { background: linear-gradient(135deg, var(--warning-yellow), #e6a800); color: #1a0a2e; }
-    .custom-confirm-icon.danger { background: linear-gradient(135deg, var(--danger-red), #e74c3c); }
-    .custom-confirm-title { font-size: 18px; font-weight: 800; color: var(--text-light); margin: 0; }
-    .custom-confirm-message { color: rgba(249,249,249,0.85); font-size: 14px; line-height: 1.5; margin-bottom: 18px; }
-    .custom-confirm-buttons { display: flex; gap: 10px; justify-content: flex-end; }
-    .custom-confirm-btn { padding: 10px 16px; border-radius: 8px; font-size: 12px; font-weight: 800; border: 2px solid transparent; cursor: pointer; transition: all 0.2s ease; text-transform: uppercase; letter-spacing: 0.5px; }
-    .custom-confirm-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0,0,0,0.3); }
-    .custom-confirm-btn.cancel { background: rgba(108,117,125,0.15); color: #adb5bd; border-color: #6c757d; }
-    .custom-confirm-btn.cancel:hover { background: #6c757d; color: #fff; }
-    .custom-confirm-btn.warning { background: linear-gradient(135deg, var(--warning-yellow), #e6a800); color: #1a0a2e; border-color: var(--warning-yellow); }
-    .custom-confirm-btn.confirm { background: linear-gradient(135deg, var(--danger-red), #e74c3c); color: #fff; border-color: var(--danger-red); }
+    /* Removed legacy custom confirm styles; using unified logout-style confirm */
 
     /* Page Header */
     h1 {
@@ -570,45 +553,46 @@ $totalPages = ceil($totalSellers / $limit);
 </style>
 
 <script>
-// Shared custom confirmation used for restore action
-function showCustomConfirm(title, message, type = 'warning', onConfirm) {
-    const existing = document.querySelector('.custom-confirm-overlay');
-    if (existing) existing.remove();
+// Uniform confirm dialog for admin seller actions
+function adminConfirmSeller(message, label){
+  return new Promise(function(resolve){
     const overlay = document.createElement('div');
-    overlay.className = 'custom-confirm-overlay';
-    const dialog = document.createElement('div');
-    dialog.className = 'custom-confirm-dialog';
-    const header = document.createElement('div');
-    header.className = 'custom-confirm-header';
-    const icon = document.createElement('div');
-    icon.className = `custom-confirm-icon ${type === 'danger' ? 'danger' : 'warning'}`;
-    icon.innerHTML = type === 'danger' ? '<i class="fas fa-exclamation-circle"></i>' : '<i class="fas fa-exclamation-triangle"></i>';
-    const titleEl = document.createElement('h3');
-    titleEl.className = 'custom-confirm-title';
-    titleEl.textContent = title;
-    const msgEl = document.createElement('div');
-    msgEl.className = 'custom-confirm-message';
-    msgEl.textContent = message;
-    const btns = document.createElement('div');
-    btns.className = 'custom-confirm-buttons';
-    const cancelBtn = document.createElement('button');
-    cancelBtn.className = 'custom-confirm-btn cancel';
-    cancelBtn.textContent = 'Cancel';
-    const confirmBtn = document.createElement('button');
-    confirmBtn.className = `custom-confirm-btn ${type === 'danger' ? 'confirm' : 'warning'}`;
-    confirmBtn.textContent = 'Confirm';
-    header.appendChild(icon); header.appendChild(titleEl);
-    dialog.appendChild(header); dialog.appendChild(msgEl);
-    btns.appendChild(cancelBtn); btns.appendChild(confirmBtn);
-    dialog.appendChild(btns); overlay.appendChild(dialog);
-    document.body.appendChild(overlay);
-    requestAnimationFrame(() => overlay.classList.add('show'));
-    function close() { overlay.classList.remove('show'); setTimeout(() => overlay.remove(), 250); }
-    cancelBtn.addEventListener('click', close);
-    overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
-    confirmBtn.addEventListener('click', () => { close(); if (typeof onConfirm === 'function') onConfirm(); });
+    overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:10000;opacity:0;transition:opacity .2s ease';
+    const dialog=document.createElement('div');
+    dialog.style.cssText='background:#ffffff;border-radius:12px;overflow:hidden;min-width:320px;max-width:420px;box-shadow:0 10px 40px rgba(0,0,0,0.2)';
+    const header=document.createElement('div'); header.style.cssText='background:#130325;color:#ffffff;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;'; header.innerHTML='<h3 style="margin:0;font-size:14px;font-weight:700;color:#ffffff;">Confirm Action</h3>';
+    const body=document.createElement('div'); body.style.cssText='padding:20px;color:#130325;font-size:13px;'; body.textContent=message;
+    const footer=document.createElement('div'); footer.style.cssText='padding:12px 16px;display:flex;gap:10px;justify-content:flex-end;border-top:1px solid #e5e7eb;';
+    const cancelBtn=document.createElement('button'); cancelBtn.textContent='Cancel'; cancelBtn.style.cssText='padding:8px 16px;background:#f3f4f6;color:#130325;border:1px solid #e5e7eb;border-radius:6px;font-weight:600;cursor:pointer;';
+    const okBtn=document.createElement('button'); okBtn.textContent=label||'Confirm'; okBtn.style.cssText='padding:8px 16px;background:#130325;color:#ffffff;border:none;border-radius:6px;font-weight:600;cursor:pointer;';
+    footer.appendChild(cancelBtn); footer.appendChild(okBtn); dialog.appendChild(header); dialog.appendChild(body); dialog.appendChild(footer); overlay.appendChild(dialog); document.body.appendChild(overlay);
+    requestAnimationFrame(()=> overlay.style.opacity='1');
+    function close(res){ overlay.style.opacity='0'; setTimeout(()=>overlay.remove(),150); resolve(res); }
+    overlay.addEventListener('click',(e)=>{ if(e.target===overlay) close(false); }); cancelBtn.addEventListener('click',()=>close(false)); okBtn.addEventListener('click',()=>close(true));
+  });
 }
+
+document.addEventListener('DOMContentLoaded', function(){
+  document.querySelectorAll('a[href*="admin-sellers.PHP?action="], a[href*="admin-sellers.php?action="]').forEach(function(link){
+    link.addEventListener('click', function(e){
+      e.preventDefault();
+      const url = new URL(link.href, window.location.origin);
+      const action = (url.searchParams.get('action')||'').toLowerCase();
+      let msg='Proceed with this action?'; let label='Confirm';
+      if (action==='approve') { msg='Approve this seller?'; label='Approve'; }
+      else if (action==='reject') { msg='Reject this seller?'; label='Reject'; }
+      else if (action==='suspend') { msg='Suspend this seller?'; label='Suspend'; }
+      else if (action==='ban') { msg='Ban this seller?'; label='Ban'; }
+      else if (action==='restore') { msg='Restore this seller to approved?'; label='Restore'; }
+      else if (action==='verify_documents') { msg='Verify this seller\'s documents?'; label='Verify'; }
+      else if (action==='unverify_documents') { msg='Remove document verification for this seller?'; label='Unverify'; }
+      adminConfirmSeller(msg, label).then((ok)=>{ if (ok) window.location.href = link.href; });
+    });
+  });
+});
 </script>
+
+<!-- Removed legacy showCustomConfirm; unified confirm is used above -->
 
 <?php if (!empty($message)): ?>
     <div class="alert alert-<?php echo $messageType; ?>" id="page-alert">
@@ -766,44 +750,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 1200);
     }
 
-    // Wire restore confirmation
-    document.querySelectorAll('a[href*="action=restore"]').forEach(link => {
-        link.addEventListener('click', function(e) {
-            e.preventDefault();
-            showCustomConfirm(
-                'Restore Seller',
-                'Are you sure you want to restore this seller to approved status?',
-                'warning',
-                () => { window.location.href = link.href; }
-            );
-        });
-    });
-
-    // Wire suspend confirmation
-    document.querySelectorAll('a[href*="action=suspend"]').forEach(link => {
-        link.addEventListener('click', function(e) {
-            e.preventDefault();
-            showCustomConfirm(
-                'Suspend Seller',
-                'Suspend this seller account? They will not be able to list or sell items until restored.',
-                'warning',
-                () => { window.location.href = link.href; }
-            );
-        });
-    });
-
-    // Wire ban confirmation
-    document.querySelectorAll('a[href*="action=ban"]').forEach(link => {
-        link.addEventListener('click', function(e) {
-            e.preventDefault();
-            showCustomConfirm(
-                'Ban Seller',
-                'Are you sure you want to permanently ban this seller? This action is intended for severe violations.',
-                'danger',
-                () => { window.location.href = link.href; }
-            );
-        });
-    });
+    // Removed legacy showCustomConfirm wiring; unified confirm handler already attached
 
     // Sortable table headers
     function getCellValue(row, idx) {

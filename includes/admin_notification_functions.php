@@ -100,6 +100,21 @@ function markAllAdminNotificationsAsRead($adminId) {
 }
 
 /**
+ * Delete all admin notifications
+ */
+function deleteAllAdminNotifications($adminId) {
+    global $pdo;
+    
+    try {
+        $stmt = $pdo->prepare("DELETE FROM admin_notifications WHERE admin_id = ?");
+        return $stmt->execute([$adminId]);
+    } catch (Exception $e) {
+        error_log("Error deleting all admin notifications: " . $e->getMessage());
+        return false;
+    }
+}
+
+/**
  * Check for new seller requests and create notifications
  */
 function checkAdminNewSellerRequests($adminId) {

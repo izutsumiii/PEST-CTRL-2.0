@@ -134,51 +134,7 @@ function removeEmojis($text) {
 }
 ?>
 
-<!-- Edit Category Modal -->
-<div id="editCategoryModal" class="modal">
-    <div class="modal-content">
-        <button class="close" onclick="closeEditModal()">&times;</button>
-        <h3>Edit Category</h3>
-        <form method="POST" action="">
-            <input type="hidden" id="edit_category_id" name="category_id">
-            
-            <label for="edit_name">Category Name <span style="color: #dc3545;">*</span></label>
-            <input type="text" id="edit_name" name="name" required placeholder="Enter category name">
-            
-            <label for="edit_parent_id">Parent Category (Optional)</label>
-            <select id="edit_parent_id" name="parent_id">
-                <option value="">-- None (Top-Level Category) --</option>
-                <?php foreach ($parentCategories as $parent): ?>
-                    <option value="<?php echo $parent['id']; ?>">
-                        <?php echo htmlspecialchars(trim(removeEmojis($parent['name']))); ?>
-                    </option>
-                <?php endforeach; ?>
-            </select>
-            <small class="form-help">Leave as "None" to make it a main category</small>
-            
-            <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
-                <button type="button" class="btn btn-secondary" onclick="closeEditModal()">Cancel</button>
-                <button type="submit" name="update_category" class="btn btn-primary">Update Category</button>
-            </div>
-        </form>
-    </div>
-</div>
-
-<!-- Delete Category Modal -->
-<div id="deleteCategoryModal" class="modal">
-    <div class="modal-content">
-        <button class="close" onclick="closeDeleteModal()">&times;</button>
-        <h3>Delete Category</h3>
-        <form id="deleteCategoryForm" method="GET" action="admin-categories.php">
-            <input type="hidden" name="delete_category" id="delete_category_id">
-            <p id="deleteCategoryName"></p>
-            <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
-                <button type="button" class="btn btn-secondary" onclick="closeDeleteModal()">Cancel</button>
-                <button type="submit" class="btn btn-danger">Delete</button>
-            </div>
-        </form>
-    </div>
-</div>
+<!-- Static modals removed; dynamic overlays will be created via JS to match logout confirmation design -->
 
 <div class="page-header">
     <h1 class="page-heading-title">Category Management</h1>
@@ -643,126 +599,7 @@ function removeEmojis($text) {
         }
     }
 
-    /* Modal Styles */
-    .modal {
-        display: none;
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.5);
-        z-index: 10000;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .modal-content {
-        background: #ffffff;
-        padding: 32px;
-        border-radius: 12px;
-        max-width: 500px;
-        width: 90%;
-        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-        position: relative;
-        border: none;
-    }
-
-    .modal-content h3 {
-        font-size: 20px;
-        font-weight: 700;
-        color: #130325;
-        margin: 0 0 20px 0;
-        text-shadow: none !important;
-    }
-
-    .modal-content .close {
-        position: absolute;
-        top: 12px;
-        right: 18px;
-        font-size: 28px;
-        cursor: pointer;
-        color: #130325;
-        line-height: 1;
-        border: none;
-        background: none;
-    }
-
-    .modal-content .close:hover {
-        color: #6b7280;
-    }
-
-    .modal-content label {
-        display: block;
-        margin-bottom: 8px;
-        font-weight: 600;
-        color: #130325;
-        font-size: 14px;
-    }
-
-    .modal-content input,
-    .modal-content select {
-        width: 100%;
-        padding: 10px 12px;
-        border: 1px solid rgba(0,0,0,0.1);
-        border-radius: 8px;
-        font-size: 14px;
-        background: #ffffff;
-        color: #130325;
-        margin-bottom: 16px;
-    }
-
-    .modal-content input:focus,
-    .modal-content select:focus {
-        outline: none;
-        border-color: #130325;
-    }
-
-    .modal-content p {
-        color: #130325;
-        margin-bottom: 20px;
-    }
-
-    .modal-content .btn {
-        padding: 10px 20px;
-        border: none;
-        border-radius: 8px;
-        font-weight: 700;
-        font-size: 14px;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        border: none;
-    }
-
-    .modal-content .btn-primary {
-        background: linear-gradient(135deg, #FFD736 0%, #FFC107 100%);
-        color: #130325;
-    }
-
-    .modal-content .btn-primary:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 4px 12px rgba(255, 215, 54, 0.3);
-    }
-
-    .modal-content .btn-danger {
-        background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
-        color: #ffffff;
-    }
-
-    .modal-content .btn-danger:hover {
-        background: linear-gradient(135deg, #c82333 0%, #bd2130 100%);
-        transform: translateY(-1px);
-    }
-
-    .modal-content .btn-secondary {
-        background: #6c757d;
-        color: #ffffff;
-        margin-left: 10px;
-    }
-
-    .modal-content .btn-secondary:hover {
-        background: #5a6268;
-    }
+    /* Modal styles removed; dynamic overlays mirror logout confirmation with inline styles */
 
     /* Pagination */
     .pagination {
@@ -819,29 +656,173 @@ function removeEmojis($text) {
 </style>
 
 <script>
-function openEditModal(id, name, parentId) {
-    document.getElementById('edit_category_id').value = id;
-    document.getElementById('edit_name').value = name;
-    document.getElementById('edit_parent_id').value = parentId || '';
-    document.getElementById('editCategoryModal').style.display = 'flex';
-    document.body.style.overflow = 'hidden';
+// Reusable confirm dialog matching logout style
+function adminCatConfirm(message, label){
+    return new Promise(function(resolve){
+        const overlay = document.createElement('div');
+        overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:10000;opacity:0;transition:opacity .2s ease';
+        const card = document.createElement('div');
+        card.style.cssText = 'background:#ffffff;border-radius:12px;overflow:hidden;min-width:320px;max-width:420px;box-shadow:0 10px 40px rgba(0,0,0,0.2)';
+        const header = document.createElement('div');
+        header.style.cssText = 'background:#130325;color:#ffffff;padding:16px 20px;display:flex;align-items:center;gap:10px;';
+        header.innerHTML = '<h3 style="margin:0;font-size:14px;font-weight:700;color:#ffffff;">Confirm Action</h3>';
+        const body = document.createElement('div');
+        body.style.cssText = 'padding:20px;color:#130325;font-size:13px;';
+        body.textContent = message;
+        const footer = document.createElement('div');
+        footer.style.cssText = 'padding:12px 16px;display:flex;gap:10px;justify-content:flex-end;border-top:1px solid #e5e7eb;';
+        const cancelBtn = document.createElement('button');
+        cancelBtn.textContent = 'Cancel';
+        cancelBtn.style.cssText = 'padding:8px 16px;background:#f3f4f6;color:#130325;border:1px solid #e5e7eb;border-radius:6px;font-weight:600;cursor:pointer;';
+        const okBtn = document.createElement('button');
+        okBtn.textContent = label || 'Confirm';
+        okBtn.style.cssText = 'padding:8px 16px;background:#130325;color:#ffffff;border:none;border-radius:6px;font-weight:600;cursor:pointer;';
+        footer.appendChild(cancelBtn); footer.appendChild(okBtn);
+        card.appendChild(header); card.appendChild(body); card.appendChild(footer);
+        overlay.appendChild(card);
+        document.body.appendChild(overlay);
+        requestAnimationFrame(()=> overlay.style.opacity='1');
+        function close(res){ overlay.style.opacity='0'; setTimeout(()=>overlay.remove(),150); resolve(res); }
+        overlay.addEventListener('click',(e)=>{ if(e.target===overlay) close(false); });
+        cancelBtn.addEventListener('click',()=> close(false));
+        okBtn.addEventListener('click',()=> close(true));
+    });
 }
 
-function closeEditModal() {
-    document.getElementById('editCategoryModal').style.display = 'none';
-    document.body.style.overflow = '';
+// Provide parent categories data to JS for building the select
+const parentCategoriesData = <?php echo json_encode($parentCategories); ?>;
+
+function openEditModal(id, name, parentId) {
+    // Build a dynamic overlay styled like logout confirmation, but with a form
+    const overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:10000;opacity:0;transition:opacity .2s ease';
+    const card = document.createElement('div');
+    card.style.cssText = 'background:#ffffff;border-radius:12px;overflow:hidden;min-width:320px;max-width:480px;width:92vw;box-shadow:0 10px 40px rgba(0,0,0,0.2)';
+
+    const header = document.createElement('div');
+    header.style.cssText = 'background:#130325;color:#ffffff;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;';
+    const title = document.createElement('h3');
+    title.textContent = 'Edit Category';
+    title.style.cssText = 'margin:0;font-size:14px;font-weight:800;color:#ffffff;letter-spacing:.3px;';
+    const closeBtn = document.createElement('button');
+    closeBtn.innerHTML = '&times;';
+    closeBtn.style.cssText = 'background:none;border:none;color:#ffffff;font-size:22px;cursor:pointer;line-height:1;';
+    header.appendChild(title);
+    header.appendChild(closeBtn);
+
+    const body = document.createElement('div');
+    body.style.cssText = 'padding:16px 18px;color:#130325;';
+
+    // Create form
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '';
+
+    const idInput = document.createElement('input');
+    idInput.type = 'hidden';
+    idInput.name = 'category_id';
+    idInput.value = id;
+
+    const nameLabel = document.createElement('label');
+    nameLabel.setAttribute('for','edit_name');
+    nameLabel.textContent = 'Category Name ';
+    nameLabel.style.cssText = 'display:block;margin-bottom:8px;font-weight:600;color:#130325;font-size:14px;';
+    const req = document.createElement('span');
+    req.textContent = '*';
+    req.style.color = '#dc3545';
+    nameLabel.appendChild(req);
+
+    const nameInput = document.createElement('input');
+    nameInput.type = 'text';
+    nameInput.id = 'edit_name';
+    nameInput.name = 'name';
+    nameInput.required = true;
+    nameInput.placeholder = 'Enter category name';
+    nameInput.value = name || '';
+    nameInput.style.cssText = 'width:100%;padding:10px 12px;border:none;border-radius:8px;font-size:14px;background:#f8f9fb;color:#130325;margin-bottom:16px;outline:none;box-shadow:0 0 0 0 rgba(0,0,0,0)';
+    nameInput.addEventListener('focus',function(){ this.style.boxShadow='0 0 0 2px rgba(19,3,37,0.2)'; this.style.background='#ffffff'; });
+    nameInput.addEventListener('blur',function(){ this.style.boxShadow='none'; this.style.background='#f8f9fb'; });
+
+    const parentLabel = document.createElement('label');
+    parentLabel.setAttribute('for','edit_parent_id');
+    parentLabel.textContent = 'Parent Category (Optional)';
+    parentLabel.style.cssText = 'display:block;margin-bottom:8px;font-weight:600;color:#130325;font-size:14px;';
+
+    const parentSelect = document.createElement('select');
+    parentSelect.id = 'edit_parent_id';
+    parentSelect.name = 'parent_id';
+    parentSelect.style.cssText = 'width:100%;padding:10px 12px;border:none;border-radius:8px;font-size:14px;background:#f8f9fb;color:#130325;margin-bottom:8px;outline:none;';
+    parentSelect.addEventListener('focus',function(){ this.style.boxShadow='0 0 0 2px rgba(19,3,37,0.2)'; this.style.background='#ffffff'; });
+    parentSelect.addEventListener('blur',function(){ this.style.boxShadow='none'; this.style.background='#f8f9fb'; });
+
+    const noneOpt = document.createElement('option');
+    noneOpt.value = '';
+    noneOpt.textContent = '-- None (Top-Level Category) --';
+    parentSelect.appendChild(noneOpt);
+    (parentCategoriesData || []).forEach(function(p){
+        const opt = document.createElement('option');
+        opt.value = p.id;
+        opt.textContent = (p.name || '').replace(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu,'').trim();
+        parentSelect.appendChild(opt);
+    });
+    parentSelect.value = parentId || '';
+
+    const help = document.createElement('small');
+    help.textContent = 'Leave as "None" to make it a main category';
+    help.style.cssText = 'display:block;font-size:12px;color:#6b7280;margin-top:8px;margin-bottom:8px;';
+
+    const footer = document.createElement('div');
+    footer.style.cssText = 'padding:12px 16px;display:flex;gap:10px;justify-content:flex-end;border-top:1px solid #e5e7eb;margin-top:12px;';
+    const cancelBtn = document.createElement('button');
+    cancelBtn.type = 'button';
+    cancelBtn.textContent = 'Cancel';
+    cancelBtn.style.cssText = 'padding:10px 20px;background:#6c757d;color:#ffffff;border:none;border-radius:8px;font-weight:700;font-size:14px;cursor:pointer;';
+    const saveBtn = document.createElement('button');
+    saveBtn.type = 'submit';
+    saveBtn.name = 'update_category';
+    saveBtn.textContent = 'Update Category';
+    saveBtn.style.cssText = 'padding:10px 20px;background:linear-gradient(135deg,#FFD736 0%,#FFC107 100%);color:#130325;border:none;border-radius:8px;font-weight:700;font-size:14px;cursor:pointer;';
+
+    footer.appendChild(cancelBtn);
+    footer.appendChild(saveBtn);
+
+    form.appendChild(idInput);
+    form.appendChild(nameLabel);
+    form.appendChild(nameInput);
+    form.appendChild(parentLabel);
+    form.appendChild(parentSelect);
+    form.appendChild(help);
+    form.appendChild(footer);
+
+    body.appendChild(form);
+
+    card.appendChild(header);
+    card.appendChild(body);
+    overlay.appendChild(card);
+    document.body.appendChild(overlay);
+    requestAnimationFrame(()=> overlay.style.opacity='1');
+
+    function close(){ overlay.style.opacity='0'; setTimeout(()=>overlay.remove(),150); }
+    overlay.addEventListener('click',function(e){ if(e.target===overlay) close(); });
+    closeBtn.addEventListener('click',close);
+    cancelBtn.addEventListener('click',close);
 }
 
 function openDeleteModal(id, name) {
-    document.getElementById('delete_category_id').value = id;
-    document.getElementById('deleteCategoryName').innerHTML = 'Are you sure you want to delete <strong>' + escapeHtml(name) + '</strong>? This action cannot be undone.';
-    document.getElementById('deleteCategoryModal').style.display = 'flex';
-    document.body.style.overflow = 'hidden';
-}
-
-function closeDeleteModal() {
-    document.getElementById('deleteCategoryModal').style.display = 'none';
-    document.body.style.overflow = '';
+    adminCatConfirm('Delete category "'+ name +'"? This cannot be undone.', 'Delete').then(function(ok){
+        if (!ok) return;
+        // Create a temporary form and submit
+        var form = document.createElement('form');
+        form.method = 'GET';
+        form.action = 'admin-categories.php';
+        var input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'delete_category';
+        input.value = id;
+        form.appendChild(input);
+        document.body.appendChild(form);
+        form.submit();
+    });
 }
 
 function escapeHtml(text) {
@@ -850,21 +831,14 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
-// Close modals on overlay click
-document.querySelectorAll('.modal').forEach(modal => {
-    modal.addEventListener('click', function(e) {
-        if (e.target === this) {
-            this.style.display = 'none';
-            document.body.style.overflow = '';
-        }
-    });
-});
-
-// Close modals on Escape key
+// Escape key closes any dynamic overlay by removing the top-most one
 document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
-        closeEditModal();
-        closeDeleteModal();
+        const overlays = Array.from(document.querySelectorAll('body > div')).filter(function(el){
+            return el && el.style && el.style.position === 'fixed' && el.style.inset === '0px';
+        });
+        const last = overlays.pop();
+        if (last) { last.remove(); }
     }
 });
 

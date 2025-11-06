@@ -796,13 +796,6 @@ h1 {
         </div>
     </div>
 
-    <?php if (empty($groupedOrders)): ?>
-        <div class="orders-table-container">
-            <div class="no-orders-message">
-                <p>No orders found.</p>
-            </div>
-        </div>
-<?php else: ?>
         <div class="orders-table-container">
             <div class="table-wrapper">
                 <table class="orders-table" id="orders-table">
@@ -818,7 +811,11 @@ h1 {
                         </tr>
                     </thead>
                     <tbody>
-                        <?php foreach ($groupedOrders as $order):
+                        <?php if (empty($groupedOrders)): ?>
+                        <tr>
+                            <td colspan="7" style="text-align:center; color:#6b7280; padding:20px;">No orders found.</td>
+                        </tr>
+                        <?php else: foreach ($groupedOrders as $order):
             $withinGracePeriod = isWithinGracePeriod($order['created_at'], $pdo);
             $remainingTime = $withinGracePeriod ? getRemainingGracePeriod($order['created_at'], $pdo) : null;
             $statusClass = 'status-' . $order['status'];
@@ -945,12 +942,11 @@ h1 {
     <?php endif; ?>
 </td>
                         </tr>
-                        <?php endforeach; ?>
+                        <?php endforeach; endif; ?>
                     </tbody>
                 </table>
             </div>
         </div>
-<?php endif; ?>
 </div>
 </main>
 

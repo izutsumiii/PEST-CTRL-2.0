@@ -1847,11 +1847,6 @@ h1 {
 
 <!-- Products Table -->
 <div class="products-table-container">
-    <?php if (empty($sellerProducts)): ?>
-        <div class="no-products-message">
-            <p>No products found. Add your first product above!</p>
-        </div>
-    <?php else: ?>
         <div class="table-wrapper">
             <table class="products-table" id="products-table">
                 <thead>
@@ -1880,7 +1875,11 @@ h1 {
                     </tr>
                 </thead>
                 <tbody>
-                    <?php foreach ($sellerProducts as $product): ?>
+                    <?php if (empty($sellerProducts)): ?>
+                    <tr>
+                        <td colspan="6" style="text-align:center; color:#6b7280; padding:20px;">No products found.</td>
+                    </tr>
+                    <?php else: foreach ($sellerProducts as $product): ?>
                         <tr data-name="<?php echo htmlspecialchars($product['name']); ?>" 
                             data-price="<?php echo $product['price']; ?>" 
                             data-stock="<?php echo (int)$product['stock_quantity']; ?>" 
@@ -1929,11 +1928,10 @@ h1 {
                                 </div>
                             </td>
                         </tr>
-                    <?php endforeach; ?>
+                    <?php endforeach; endif; ?>
                 </tbody>
             </table>
         </div>
-    <?php endif; ?>
 </div>
 
 <!-- Preview Modal -->

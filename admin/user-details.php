@@ -105,7 +105,10 @@ try {
         ORDER BY o.created_at DESC 
         LIMIT ? OFFSET ?
     ");
-    $stmt->execute([$userId, $orderLimit, $orderOffset]);
+    $stmt->bindValue(1, (int)$userId, PDO::PARAM_INT);
+    $stmt->bindValue(2, (int)$orderLimit, PDO::PARAM_INT);
+    $stmt->bindValue(3, (int)$orderOffset, PDO::PARAM_INT);
+    $stmt->execute();
     $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
 } catch (PDOException $e) {

@@ -112,7 +112,7 @@ require_once 'includes/seller_header.php';
 <main style="background:#f8f9fa; min-height:100vh; padding: 0 0 60px 0;">
   <div style="max-width: 1400px; margin-left: -150px; margin-right: auto; margin-top: -15px; padding-left: 0; padding-right: 60px;">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
-      <h1 style="color:#130325; margin:0; font-size: 28px; font-weight: 700;">Notifications <span style="background: #FFD736; color: #130325; padding: 4px 12px; border-radius: 20px; font-size: 18px; font-weight: 600; margin-left: 8px;"><?php echo count($notifications); ?> total</span></h1>
+      <h1 style="color:#130325; margin:0; font-size: 28px; font-weight: 700;">Notifications <span style="background: #FFD736; color: #130325; padding: 4px 12px; border-radius: 20px; font-size: 18px; font-weight: 600; margin-left: 8px;"><?php echo count($notifications); ?> total</span> <span style="color:#6b7280; font-size:16px; font-weight:700; margin-left:8px;">(<?php echo (int)$unreadCount; ?> unread)</span></h1>
       <?php if (!empty($notifications)): ?>
         <button onclick="markAllAsRead()" style="background:#dc3545; color:#ffffff; border:none; padding:8px 16px; border-radius:6px; cursor:pointer; font-weight:600;">
           Mark All as Read
@@ -125,8 +125,8 @@ require_once 'includes/seller_header.php';
     <?php else: ?>
       <div class="notif-list" style="display:flex; flex-direction:column; gap:12px;">
         <?php foreach ($notifications as $notification): ?>
-          <div class="notif-item" style="position: relative;">
-            <div style="display:flex; gap:12px; align-items:center; background:#ffffff; border:1px solid rgba(0,0,0,0.1); padding:14px; border-radius:10px;">
+              <div class="notif-item" style="position: relative; cursor:pointer;" onclick="markAndGo(<?php echo (int)$notification['id']; ?>, '<?php echo htmlspecialchars($notification['action_url'] ?: '', ENT_QUOTES); ?>', '<?php echo htmlspecialchars($notification['title'], ENT_QUOTES); ?>', '<?php echo htmlspecialchars($notification['message'], ENT_QUOTES); ?>')">
+            <div style="display:flex; gap:12px; align-items:center; background:#ffffff; border:1px solid rgba(0,0,0,0.1); padding:14px; border-radius:10px; width:100%;">
               <span class="notification-status-badge <?php echo getNotificationBadgeClass($notification['title'], $notification['type']); ?>">
                 <?php echo getNotificationBadgeText($notification['title'], $notification['type']); ?>
               </span>
@@ -135,12 +135,12 @@ require_once 'includes/seller_header.php';
                 <div style="color:#130325; opacity:0.9; font-size:0.9rem;">
                   <?php echo htmlspecialchars($notification['message']); ?>
                   <?php if ($notification['action_url']): ?>
-                    <a href="<?php echo htmlspecialchars($notification['action_url']); ?>" style="color:#130325; text-decoration:underline; margin-left:8px;">View Details</a>
+                    <a href="<?php echo htmlspecialchars($notification['action_url']); ?>" onclick="event.preventDefault(); markAndGo(<?php echo (int)$notification['id']; ?>, '<?php echo htmlspecialchars($notification['action_url'] ?: '', ENT_QUOTES); ?>', '<?php echo htmlspecialchars($notification['title'], ENT_QUOTES); ?>', '<?php echo htmlspecialchars($notification['message'], ENT_QUOTES); ?>')" style="color:#130325; text-decoration:underline; margin-left:8px;">View Details</a>
                   <?php endif; ?>
                 </div>
               </div>
-              <div style="color:#130325; opacity:0.8; font-size:0.85rem; white-space:nowrap; margin-right: 5px;">
-                <?php echo htmlspecialchars(date('M d, Y h:i A', strtotime($notification['created_at']))); ?>
+              <div style="color:#6b7280; font-size:0.8rem; white-space:nowrap; margin-right: 5px;">
+                <?php echo htmlspecialchars(date('M d, h:i A', strtotime($notification['created_at']))); ?>
               </div>
             </div>
           </div>
@@ -151,6 +151,25 @@ require_once 'includes/seller_header.php';
 </main>
 
 <script>
+function markAndGo(notificationId, actionUrl, title, message){
+  // Mark as read
+  try {
+    navigator.sendBeacon('ajax/mark-seller-notification-read.php', new Blob([JSON.stringify({ notification_id: notificationId })], { type:'application/json' }));
+  } catch(_){
+    fetch('ajax/mark-seller-notification-read.php', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ notification_id: notificationId }), credentials:'same-origin', keepalive:true }).catch(()=>{});
+  }
+  // Infer fallback URL if missing
+  let href = actionUrl;
+  if (!href) {
+    const text = (title||'') + ' ' + (message||'');
+    const m = text.match(/Order\s*#?(\d{1,10})/i);
+    if (m && m[1]) href = 'seller-order-details.php?order_id=' + m[1];
+    else if (/low stock/i.test(text)) href = 'manage-products.php';
+    else href = 'view-orders.php';
+  }
+  // Navigate
+  setTimeout(()=>{ window.location.href = href; }, 120);
+}
 // Custom styled confirmation dialog function
 function openConfirm(message, onConfirm) {
     const dialog = document.createElement('div');

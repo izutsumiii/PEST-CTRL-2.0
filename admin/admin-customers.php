@@ -737,19 +737,59 @@ function getCustomerOrderCount($pdo, $customerId) {
         }
     }
 
-    /* Status Modal */
-    .status-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: none; align-items: center; justify-content: center; z-index: 11000; }
-    .status-modal-overlay.show { display: flex; }
-    .status-modal { background: linear-gradient(135deg, #1a0a2e 0%, #130325 100%); border: 2px solid var(--accent-yellow); border-radius: 12px; padding: 22px; width: 92%; max-width: 420px; box-shadow: 0 20px 40px rgba(0,0,0,0.5); }
-    .status-modal h3 { margin: 0 0 12px 0; color: #F9F9F9; font-size: 18px; font-weight: 800; }
-    .status-modal .modal-row { display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px; }
-    .status-modal label { color: rgba(249,249,249,0.85); font-size: 14px; font-weight: 700; }
-    .status-modal select { background: #0f0a1f; color: #F9F9F9; border: 2px solid var(--accent-yellow); border-radius: 8px; padding: 10px 12px; font-size: 14px; }
-    .status-modal .confirm-row { display: flex; align-items: center; gap: 10px; color: rgba(249,249,249,0.9); font-size: 13px; }
-    .status-modal .modal-actions { display: flex; justify-content: flex-end; gap: 10px; }
-    .status-modal .btn-cancel { background: rgba(108,117,125,0.2); color: #adb5bd; border: 2px solid #6c757d; }
-    .status-modal .btn-apply { background: linear-gradient(135deg, var(--accent-yellow), var(--accent-yellow)); color: #1a0a2e; border: 2px solid var(--accent-yellow); }
+    /* (Removed legacy status modal styles; using logout-style confirm instead) */
 </style>
+
+<script>
+// Reusable confirm modal matching logout style
+function adminShowConfirm(message, confirmText) {
+  return new Promise(function(resolve){
+    const overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:10000;opacity:0;transition:opacity .2s ease';
+    const dialog = document.createElement('div');
+    dialog.style.cssText = 'background:#ffffff;border-radius:12px;overflow:hidden;min-width:320px;max-width:420px;box-shadow:0 10px 40px rgba(0,0,0,0.2)';
+    const header = document.createElement('div');
+    header.style.cssText = 'background:#130325;color:#ffffff;padding:16px 20px;display:flex;align-items:center;gap:10px;';
+    header.innerHTML = '<h3 style="margin:0;font-size:14px;font-weight:700;color:#ffffff;">Confirm Action</h3>';
+    const body = document.createElement('div');
+    body.style.cssText = 'padding:20px;color:#130325;font-size:13px;';
+    body.textContent = message;
+    const footer = document.createElement('div');
+    footer.style.cssText = 'padding:12px 16px;display:flex;gap:10px;justify-content:flex-end;border-top:1px solid #e5e7eb;';
+    const cancelBtn = document.createElement('button');
+    cancelBtn.textContent = 'Cancel';
+    cancelBtn.style.cssText = 'padding:8px 16px;background:#f3f4f6;color:#130325;border:1px solid #e5e7eb;border-radius:6px;font-weight:600;cursor:pointer;';
+    const okBtn = document.createElement('button');
+    okBtn.textContent = confirmText || 'Confirm';
+    okBtn.style.cssText = 'padding:8px 16px;background:#130325;color:#ffffff;border:none;border-radius:6px;font-weight:600;cursor:pointer;';
+    footer.appendChild(cancelBtn); footer.appendChild(okBtn);
+    dialog.appendChild(header); dialog.appendChild(body); dialog.appendChild(footer);
+    overlay.appendChild(dialog);
+    document.body.appendChild(overlay);
+    requestAnimationFrame(()=> overlay.style.opacity = '1');
+    function close(res){ overlay.style.opacity='0'; setTimeout(()=>overlay.remove(),150); resolve(res); }
+    overlay.addEventListener('click', (e)=>{ if (e.target===overlay) close(false); });
+    cancelBtn.addEventListener('click', ()=> close(false));
+    okBtn.addEventListener('click', ()=> close(true));
+  });
+}
+
+// Hook admin customer action links
+document.addEventListener('DOMContentLoaded', function(){
+  document.querySelectorAll('a[href*="admin-customers.php?action="]').forEach(function(link){
+    link.addEventListener('click', function(e){
+      e.preventDefault();
+      const url = new URL(link.href, window.location.origin);
+      const action = url.searchParams.get('action') || '';
+      let msg = 'Are you sure?'; let label = 'Confirm';
+      if (action==='activate') { msg = 'Activate this customer?'; label = 'Activate'; }
+      else if (action==='deactivate') { msg = 'Deactivate this customer?'; label = 'Deactivate'; }
+      else if (action==='delete') { msg = 'Delete this customer? This cannot be undone.'; label = 'Delete'; }
+      adminShowConfirm(msg, label).then((ok)=>{ if (ok) window.location.href = link.href; });
+    });
+  });
+});
+</script>
 
     <h1 class="page-heading">
         <span class="page-heading-title">Manage Customers</span>
@@ -994,7 +1034,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 1200);
     }
 
-    // Deactivate
+    // Deactivate (anchor links)
     document.querySelectorAll('a[href*="action=deactivate"]').forEach(link => {
         link.addEventListener('click', function(e) {
             e.preventDefault();
@@ -1007,7 +1047,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Activate
+    // Activate (anchor links)
     document.querySelectorAll('a[href*="action=activate"]').forEach(link => {
         link.addEventListener('click', function(e) {
             e.preventDefault();
@@ -1020,7 +1060,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Delete
+    // Delete (anchor links)
     document.querySelectorAll('a[href*="action=delete"]').forEach(link => {
         link.addEventListener('click', function(e) {
             e.preventDefault();
@@ -1033,57 +1073,19 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Change Status modal wiring
-    const statusOverlay = document.createElement('div');
-    statusOverlay.className = 'status-modal-overlay';
-    statusOverlay.innerHTML = `
-        <div class="status-modal">
-            <h3>Change Customer Status</h3>
-            <div class="modal-row">
-                <label for="status-action">Select action</label>
-                <select id="status-action">
-                    <option value="activate">Activate</option>
-                    <option value="deactivate">Deactivate</option>
-                    <option value="delete">Delete</option>
-                </select>
-            </div>
-            <div class="confirm-row">
-                <input type="checkbox" id="status-confirm" />
-                <label for="status-confirm">I confirm this change</label>
-            </div>
-            <div class="modal-actions">
-                <button type="button" class="btn btn-cancel" id="status-cancel">Cancel</button>
-                <button type="button" class="btn btn-apply" id="status-apply">Apply</button>
-            </div>
-        </div>`;
-    document.body.appendChild(statusOverlay);
-
-    let statusTargetUserId = null;
+    // Change Status toggle button -> direct logout-style confirm
     document.querySelectorAll('.btn-change-status').forEach(btn => {
         btn.addEventListener('click', () => {
-            statusTargetUserId = btn.getAttribute('data-user-id');
+            const userId = btn.getAttribute('data-user-id');
             const current = btn.getAttribute('data-current-status');
-            const select = statusOverlay.querySelector('#status-action');
-            // default suggestion opposite of current
-            select.value = current === 'active' ? 'deactivate' : 'activate';
-            statusOverlay.classList.add('show');
+            const action = current === 'active' ? 'deactivate' : 'activate';
+            const label = action === 'activate' ? 'Activate' : 'Deactivate';
+            const msg = action === 'activate'
+                ? 'Activate this customer?'
+                : 'Deactivate this customer? They will not be able to log in.';
+            const url = `admin-customers.php?action=${action}&id=${encodeURIComponent(userId)}&page=${encodeURIComponent(<?php echo json_encode($page); ?>)}`;
+            adminShowConfirm(msg, label).then(ok => { if (ok) window.location.href = url; });
         });
-    });
-
-    statusOverlay.addEventListener('click', (e) => {
-        if (e.target === statusOverlay) statusOverlay.classList.remove('show');
-    });
-    statusOverlay.querySelector('#status-cancel').addEventListener('click', () => statusOverlay.classList.remove('show'));
-    statusOverlay.querySelector('#status-apply').addEventListener('click', () => {
-        const action = statusOverlay.querySelector('#status-action').value;
-        const confirmed = statusOverlay.querySelector('#status-confirm').checked;
-        if (!confirmed) {
-            showCustomConfirm('Confirmation required', 'Please check the confirmation box to proceed.', 'warning');
-            return;
-        }
-        if (!statusTargetUserId) return;
-        const url = `admin-customers.php?action=${action}&id=${encodeURIComponent(statusTargetUserId)}&page=${encodeURIComponent(<?php echo json_encode($page); ?>)}`;
-        window.location.href = url;
     });
 
     // Sortable table headers

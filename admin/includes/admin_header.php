@@ -454,20 +454,17 @@ require_once $rootPath . '/includes/functions.php';
             font-weight: 600;
         }
         
-        .mark-all-read {
+        .clear-all {
             background: none;
             border: none;
-            color: #FFD736;
+            color: #dc3545;
             font-size: 12px;
             cursor: pointer;
             padding: 4px 8px;
             border-radius: 4px;
             transition: all 0.3s ease;
         }
-        
-        .mark-all-read:hover {
-            background: rgba(255, 215, 54, 0.1);
-        }
+        .clear-all:hover { background: rgba(220,53,69,0.1); }
         
         .notification-list {
             max-height: 300px;
@@ -1210,6 +1207,9 @@ require_once $rootPath . '/includes/functions.php';
                 <div class="notification-dropdown" id="adminNotificationDropdown">
                     <div class="notification-header">
                         <h6>Notifications</h6>
+                        <div>
+                            <button class="clear-all" type="button" onclick="clearAllAdminNotifications()">Clear All</button>
+                        </div>
                     </div>
                     <div class="notification-list" id="adminNotificationList">
                         <div class="notification-item">
@@ -1451,6 +1451,17 @@ require_once $rootPath . '/includes/functions.php';
                         list.innerHTML = '<div class="notification-item"><span>Error loading notifications</span></div>';
                     }
                 });
+            }
+
+            function clearAllAdminNotifications() {
+                fetch('../ajax/delete-all-admin-notifications.php', { method: 'POST' })
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data && data.success) {
+                            loadAdminNotifications();
+                        }
+                    })
+                    .catch(err => console.error('Error clearing admin notifications:', err));
             }
 
             function displayAdminNotifications(notifications) {

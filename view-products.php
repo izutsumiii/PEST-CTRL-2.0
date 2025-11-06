@@ -784,13 +784,6 @@ h1 {
         </div>
     </div>
 
-    <?php if (empty($allProducts)): ?>
-        <div class="products-table-container">
-            <div class="no-products-message">
-                <p>No products found. Add your first product!</p>
-            </div>
-        </div>
-    <?php else: ?>
         <div class="products-table-container">
             <div class="table-wrapper">
                 <table class="products-table" id="products-table">
@@ -822,7 +815,11 @@ h1 {
                         </tr>
                     </thead>
                     <tbody>
-                        <?php foreach ($allProducts as $product): ?>
+                        <?php if (empty($allProducts)): ?>
+                        <tr>
+                            <td colspan="8" style="text-align:center; color:#6b7280; padding:20px;">No products found.</td>
+                        </tr>
+                        <?php else: foreach ($allProducts as $product): ?>
                             <tr data-id="<?php echo (int)$product['id']; ?>"
                                 data-name="<?php echo htmlspecialchars($product['name']); ?>"
                                 data-price="<?php echo (float)$product['price']; ?>"
@@ -877,12 +874,11 @@ h1 {
                                     </div>
                                 </td>
                             </tr>
-                        <?php endforeach; ?>
+                        <?php endforeach; endif; ?>
                     </tbody>
                 </table>
             </div>
         </div>
-    <?php endif; ?>
 </div>
 </main>
 

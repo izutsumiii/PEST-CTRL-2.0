@@ -1487,30 +1487,30 @@ $periodLabels = [
     <!-- Export Modal -->
     <div class="modal fade" id="exportModal" tabindex="-1" aria-hidden="true" style="display: none;">
         <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Export Data</h5>
-                    <button type="button" class="btn-close" onclick="closeExportModal()" aria-label="Close">
-                        <i class="fas fa-times" style="font-size: 20px;"></i>
+            <div class="modal-content" style="border-radius:12px; overflow:hidden; border:none; box-shadow:0 10px 40px rgba(0,0,0,0.2);">
+                <div class="modal-header" style="background:#130325; color:#ffffff; display:flex; align-items:center; justify-content:space-between;">
+                    <h5 class="modal-title" style="margin:0; font-weight:700; color:#ffffff;">Export Data</h5>
+                    <button type="button" onclick="closeExportModal()" aria-label="Close" style="background:transparent; border:none; color:#ffffff; font-size:20px; cursor:pointer; line-height:1;">
+                        <i class="fas fa-times"></i>
                     </button>
                 </div>
-                <div class="modal-body">
+                <div class="modal-body" style="padding:16px;">
                     <div class="mb-3">
-                        <label for="exportFormat" class="form-label">Format</label>
-                        <select class="form-select" id="exportFormat" required>
+                        <label for="exportFormat" class="form-label" style="color:#130325; font-weight:700;">Format</label>
+                        <select class="form-select" id="exportFormat" required style="border:none; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.08);">
                             <option value="">Select format...</option>
                             <option value="csv">CSV</option>
                             <option value="pdf">PDF</option>
                         </select>
-                        <div id="exportError" class="error-message" style="display: none;">
+                        <div id="exportError" class="error-message" style="display: none; color:#dc3545; margin-top:8px;">
                             <i class="fas fa-exclamation-circle"></i>
                             <span>Please select an export format.</span>
                         </div>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn-cancel" onclick="closeExportModal()">Cancel</button>
-                    <button type="button" class="btn-export" onclick="confirmExport()">Export</button>
+                <div class="modal-footer" style="padding: 12px 16px; border-top:none; display:flex; gap:10px; justify-content:flex-end;">
+                    <button type="button" onclick="closeExportModal()" style="padding:8px 16px; background:#f3f4f6; color:#130325; border:none; border-radius:6px; font-weight:600;">Cancel</button>
+                    <button type="button" onclick="confirmExport()" style="padding:8px 16px; background:#130325; color:#ffffff; border:none; border-radius:6px; font-weight:600;">Export</button>
                 </div>
             </div>
         </div>
