@@ -27,27 +27,6 @@ if (isset($_POST['add_to_cart'])) {
     }
 }
 
-// Handle URL error parameters (e.g., from buy now redirects)
-if (isset($_GET['error'])) {
-    $errorParam = $_GET['error'];
-    switch ($errorParam) {
-        case 'buy_now_session_expired':
-            $errorMessage = "Buy Now session expired. Please try again.";
-            break;
-        case 'buy_now_failed':
-            $errorMessage = "Buy Now failed. The product may no longer be available. Please add it to cart instead.";
-            break;
-        case 'invalid_buy_now':
-            $errorMessage = "Invalid Buy Now request. Please try again.";
-            break;
-        case 'seller_not_found':
-            $errorMessage = "Product seller not found. Please try again or contact support.";
-            break;
-        default:
-            $errorMessage = "An error occurred. Please try again.";
-    }
-}
-
 // Handle update quantity
 if (isset($_POST['update_cart'])) {
     $hasErrors = false;
@@ -68,9 +47,185 @@ if (isset($_POST['update_cart'])) {
     }
 }
 
-$groupedCart = getCartItemsGroupedBySeller();
-$cartTotal = getMultiSellerCartTotal();
+// Get cart items directly from database - SIMPLE APPROACH
+$userId = $_SESSION['user_id'];
+
+// Clear buy_now session flags since items are now in database cart
+// This prevents checkout from trying to use session data instead of cart
+if (isset($_SESSION['buy_now_active'])) {
+    unset($_SESSION['buy_now_active']);
+    unset($_SESSION['buy_now_data']);
+    unset($_SESSION['buy_now_item']);
+}
+
+// First, get all cart items with product info - USE LEFT JOIN to keep cart rows even if product missing
+$cartItemsStmt = $pdo->prepare("
+    SELECT 
+        c.id as cart_id,
+        c.product_id,
+        c.quantity,
+        p.id AS product_exists,
+        p.name,
+        p.price,
+        p.image_url,
+        p.stock_quantity,
+        p.status,
+        p.seller_id,
+        COALESCE(u.display_name, CONCAT(u.first_name, ' ', u.last_name), u.username, 'Unknown Seller') as seller_display_name
+    FROM cart c
+    LEFT JOIN products p ON c.product_id = p.id
+    LEFT JOIN users u ON p.seller_id = u.id
+    WHERE c.user_id = ?
+    ORDER BY p.seller_id IS NULL, p.seller_id, p.name
+");
+$cartItemsStmt->execute([$userId]);
+$allCartItems = $cartItemsStmt->fetchAll(PDO::FETCH_ASSOC);
+
+error_log('Cart.php - LEFT JOIN query returned ' . count($allCartItems) . ' rows for user ' . $userId);
+
+// Check raw cart count as authoritative source
+$rawCartCountStmt = $pdo->prepare("SELECT COUNT(*) as count FROM cart WHERE user_id = ?");
+$rawCartCountStmt->execute([$userId]);
+$rawCartCount = (int)($rawCartCountStmt->fetchColumn() ?? 0);
+error_log('Cart.php - Raw cart count (authoritative): ' . $rawCartCount);
+
+// Group by seller manually
+$groupedCart = [];
+$cartTotal = 0;
+
+foreach ($allCartItems as $row) {
+    // Normalize product data when missing (same as checkout page)
+    $productId = (int)($row['product_id'] ?? 0);
+    $exists = !empty($row['product_exists']);
+    $name = $row['name'] ?? ($exists ? 'Unnamed product' : 'Product no longer available');
+    $price = isset($row['price']) && $row['price'] !== null ? (float)$row['price'] : 0.0;
+    $image = $row['image_url'] ?? 'images/placeholder.jpg';
+    $stock = isset($row['stock_quantity']) ? (int)$row['stock_quantity'] : 0;
+    $status = $row['status'] ?? ($exists ? 'active' : 'missing');
+    $sellerId = isset($row['seller_id']) ? (int)$row['seller_id'] : 0;
+    $sellerName = $row['seller_display_name'] ?? 'Unknown Seller';
+    $qty = max(0, (int)$row['quantity']);
+    
+    if (!isset($groupedCart[$sellerId])) {
+        $groupedCart[$sellerId] = [
+            'seller_id' => $sellerId,
+            'seller_display_name' => $sellerName,
+            'items' => [],
+            'subtotal' => 0,
+            'item_count' => 0
+        ];
+    }
+    
+    $itemTotal = $price * $qty;
+    $cartTotal += $itemTotal;
+    
+    $groupedCart[$sellerId]['items'][] = [
+        'product_id' => $productId,
+        'name' => $name,
+        'price' => $price,
+        'quantity' => $qty,
+        'image_url' => $image,
+        'stock_quantity' => $stock,
+        'status' => $status,
+        'product_exists' => $exists
+    ];
+    
+    $groupedCart[$sellerId]['subtotal'] += $itemTotal;
+    $groupedCart[$sellerId]['item_count'] += $qty;
+}
+
+// Emergency recovery if needed
+if (empty($groupedCart) && $rawCartCount > 0) {
+    error_log('Cart.php - Emergency recovery: rawCartCount > 0 but groupedCart empty');
+    $emergencyStmt = $pdo->prepare("
+        SELECT c.product_id, c.quantity, p.name, p.price, p.image_url, p.stock_quantity, p.status, p.seller_id,
+               COALESCE(u.display_name, CONCAT(u.first_name, ' ', u.last_name), u.username, 'Unknown Seller') as seller_display_name
+        FROM cart c
+        INNER JOIN products p ON c.product_id = p.id
+        LEFT JOIN users u ON p.seller_id = u.id
+        WHERE c.user_id = ?
+    ");
+    $emergencyStmt->execute([$userId]);
+    $emergencyItems = $emergencyStmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    foreach ($emergencyItems as $item) {
+        $sId = (int)($item['seller_id'] ?? 0);
+        if (!isset($groupedCart[$sId])) {
+            $groupedCart[$sId] = [
+                'seller_id' => $sId,
+                'seller_display_name' => $item['seller_display_name'] ?? 'Unknown Seller',
+                'items' => [],
+                'subtotal' => 0,
+                'item_count' => 0
+            ];
+        }
+        $qty = max(0, (int)$item['quantity']);
+        $price = isset($item['price']) ? (float)$item['price'] : 0.0;
+        $itTotal = $price * $qty;
+        $groupedCart[$sId]['items'][] = [
+            'product_id' => (int)$item['product_id'],
+            'name' => $item['name'] ?? 'Unknown Product',
+            'price' => $price,
+            'quantity' => $qty,
+            'image_url' => $item['image_url'] ?? 'images/placeholder.jpg',
+            'stock_quantity' => (int)$item['stock_quantity'],
+            'status' => $item['status'] ?? 'active',
+            'product_exists' => 1
+        ];
+        $groupedCart[$sId]['subtotal'] += $itTotal;
+        $groupedCart[$sId]['item_count'] += $qty;
+        $cartTotal += $itTotal;
+    }
+    error_log('Cart.php - Emergency recovery: ' . count($groupedCart) . ' seller groups');
+}
+
+// Format cart total
+$cartTotal = number_format($cartTotal, 2);
+
+// Debug logging
+error_log('Cart.php - Found ' . count($allCartItems) . ' cart items for user ' . $userId);
+error_log('Cart.php - Grouped into ' . count($groupedCart) . ' seller groups');
+error_log('Cart.php - Cart total: ' . $cartTotal);
+
+// Handle URL error parameters (e.g., from buy now redirects)
+// BUT: If we have items in cart, don't show the error (items were successfully added)
+$shouldRedirect = false;
+if (isset($_GET['error'])) {
+    if (empty($groupedCart)) {
+        // No items in cart, show the error
+        $errorParam = $_GET['error'];
+        switch ($errorParam) {
+            case 'buy_now_session_expired':
+                $errorMessage = "Buy Now session expired. Please try again.";
+                break;
+            case 'buy_now_failed':
+                $errorMessage = "Buy Now failed. The product may no longer be available. Please add it to cart instead.";
+                break;
+            case 'invalid_buy_now':
+                $errorMessage = "Invalid Buy Now request. Please try again.";
+                break;
+            case 'seller_not_found':
+                $errorMessage = "Product seller not found. Please try again or contact support.";
+                break;
+            case 'cart_empty':
+                $errorMessage = "Your cart is empty. Please add items to your cart before checkout.";
+                break;
+            default:
+                $errorMessage = "An error occurred. Please try again.";
+        }
+    } else {
+        // Items are in cart, so buy now succeeded - mark for JavaScript redirect
+        $shouldRedirect = true;
+    }
+}
 ?>
+
+<?php if ($shouldRedirect): ?>
+<script>
+    // Redirect to clean URL without error parameter
+    window.location.replace('cart.php');
+</script>
+<?php endif; ?>
 
 <h1>YOUR CART</h1>
 
@@ -886,19 +1041,51 @@ document.addEventListener('DOMContentLoaded', function() {
     const checkoutBtn = document.getElementById('proceed-checkout-btn');
     if (checkoutBtn) {
         checkoutBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
             const form = document.getElementById('cart-form');
+            if (!form) {
+                console.error('Cart form not found');
+                alert('Error: Cart form not found. Please refresh the page.');
+                return;
+            }
+            
             // Gather selected items and append to checkout URL
             const selected = Array.from(document.querySelectorAll('.select-item:checked')).map(cb => cb.value);
             const params = new URLSearchParams();
-            if (selected.length) params.set('selected', selected.join(','));
+            if (selected.length) {
+                params.set('selected', selected.join(','));
+            }
+            
+            // Disable button to prevent double-click
+            checkoutBtn.disabled = true;
+            checkoutBtn.textContent = 'Processing...';
+            
             // Submit quantity updates first to persist changes
             const formData = new FormData(form);
             formData.append('update_cart', '1');
-            fetch('cart.php', { method: 'POST', body: formData })
-            .finally(() => {
+            
+            fetch('cart.php', { 
+                method: 'POST', 
+                body: formData 
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to update cart');
+                }
+                return response.text();
+            })
+            .then(() => {
+                // Redirect to checkout
                 const qs = params.toString();
                 window.location.href = 'paymongo/multi-seller-checkout.php' + (qs ? ('?' + qs) : '');
-
+            })
+            .catch(error => {
+                console.error('Checkout error:', error);
+                alert('Error updating cart. Please try again.');
+                checkoutBtn.disabled = false;
+                checkoutBtn.textContent = 'Proceed to Checkout';
             });
         });
     }

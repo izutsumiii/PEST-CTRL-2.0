@@ -97,6 +97,54 @@ try {
         exit();
     }
     
+    // IMPORTANT: Add product to cart database first
+    error_log('Buy Now - Attempting to add product ' . $productId . ' with quantity ' . $quantity . ' to cart for user ' . $userId);
+    
+    $addToCartResult = addToCart($productId, $quantity);
+    
+    error_log('Buy Now - addToCart result: ' . json_encode($addToCartResult));
+    
+    if (!$addToCartResult['success']) {
+        error_log('Buy Now - Failed to add to cart: ' . ($addToCartResult['message'] ?? 'Unknown error'));
+        echo json_encode([
+            'success' => false, 
+            'message' => $addToCartResult['message'] ?? 'Failed to add product to cart',
+            'debug' => [
+                'product_id' => $productId,
+                'quantity' => $quantity,
+                'user_id' => $userId,
+                'addToCartResult' => $addToCartResult
+            ]
+        ]);
+        exit();
+    }
+    
+    // Verify the item was actually added to cart
+    $verifyStmt = $pdo->prepare("SELECT quantity FROM cart WHERE user_id = ? AND product_id = ?");
+    $verifyStmt->execute([$userId, $productId]);
+    $cartItem = $verifyStmt->fetch(PDO::FETCH_ASSOC);
+    
+    if (!$cartItem) {
+        error_log('Buy Now - WARNING: Product was not found in cart after addToCart returned success');
+        echo json_encode([
+            'success' => false,
+            'message' => 'Product was not added to cart. Please try again.',
+            'debug' => [
+                'addToCartResult' => $addToCartResult,
+                'cart_verification' => 'failed'
+            ]
+        ]);
+        exit();
+    }
+    
+    error_log('Buy Now - Successfully verified product in cart with quantity: ' . $cartItem['quantity']);
+    
+    // Get total cart count for response
+    $cartCountStmt = $pdo->prepare("SELECT SUM(quantity) as count FROM cart WHERE user_id = ?");
+    $cartCountStmt->execute([$userId]);
+    $cartCountResult = $cartCountStmt->fetch(PDO::FETCH_ASSOC);
+    $totalCartItems = $cartCountResult['count'] ? (int)$cartCountResult['count'] : 0;
+    
     $total = (float)$product['price'] * $quantity;
     
     // Get seller display name
@@ -104,7 +152,7 @@ try {
         ?? trim(($product['seller_first_name'] ?? '') . ' ' . ($product['seller_last_name'] ?? ''))
         ?: ($product['seller_username'] ?? 'Unknown Seller');
     
-    // Store EVERYTHING in session - don't touch database at all
+    // Store EVERYTHING in session for checkout
     $_SESSION['buy_now_active'] = true;
     $_SESSION['buy_now_data'] = [
         'product' => [
@@ -131,13 +179,26 @@ try {
     
     error_log('Buy Now - Session data stored: ' . json_encode($_SESSION['buy_now_data']));
     
+    // Prepare response - default to cart.php so user can see items, then proceed to checkout
+    $redirectTo = isset($data['redirect_to']) && $data['redirect_to'] === 'checkout'
+        ? 'paymongo/multi-seller-checkout.php?buy_now=1'
+        : 'cart.php';
+    
     // Prepare response
     $response = [
         'success' => true,
-        'message' => 'Ready for checkout',
-        'redirect_url' => 'paymongo/multi-seller-checkout.php?buy_now=1',
+        'message' => 'Product added to cart successfully. Ready for checkout.',
+        'redirect_url' => $redirectTo,
         'item_name' => $product['name'],
-        'total' => number_format($total, 2)
+        'total' => number_format($total, 2),
+        'cart_count' => $totalCartItems,
+        'debug' => [
+            'cart_items_count' => $totalCartItems,
+            'product_in_cart' => true,
+            'cart_quantity' => $cartItem['quantity'],
+            'product_id' => $productId,
+            'user_id' => $userId
+        ]
     ];
     
     // Write session before sending response
@@ -158,8 +219,12 @@ try {
     http_response_code(500);
     echo json_encode([
         'success' => false, 
-        'message' => 'Server error. Please try again.',
-        'error' => $e->getMessage()
+        'message' => 'Error: ' . $e->getMessage(),
+        'error' => $e->getMessage(),
+        'debug' => [
+            'file' => $e->getFile(),
+            'line' => $e->getLine()
+        ]
     ]);
     exit();
 } catch (Error $e) {
@@ -172,8 +237,12 @@ try {
     http_response_code(500);
     echo json_encode([
         'success' => false, 
-        'message' => 'Server error. Please try again.',
-        'error' => $e->getMessage()
+        'message' => 'Fatal Error: ' . $e->getMessage(),
+        'error' => $e->getMessage(),
+        'debug' => [
+            'file' => $e->getFile(),
+            'line' => $e->getLine()
+        ]
     ]);
     exit();
 }

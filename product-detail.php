@@ -1637,12 +1637,27 @@ function buyNow() {
             if (data.debug && data.debug.cart_items_count === 0) {
                 alert('Warning: Item may not have been added to cart. Please check your cart before proceeding.');
             }
+            // Verify product is in cart before redirecting
+            if (data.debug && data.debug.product_in_cart) {
+                console.log('Buy Now - Product confirmed in cart, redirecting to:', data.redirect_url);
+            }
             // Session is already written by buy-now.php, redirect immediately
-            window.location.href = data.redirect_url || 'paymongo/multi-seller-checkout.php?buy_now=1';
+            // Default to cart.php to show items, user can proceed to checkout from there
+            window.location.href = data.redirect_url || 'cart.php';
         } else {
             // Show styled error message instead of plain alert
             console.error('Buy Now Failed:', data);
-            showBuyNowError(data.message || 'Failed to process buy now request');
+            let errorMessage = data.message || 'Failed to process buy now request';
+            
+            // Include debug info if available
+            if (data.debug) {
+                console.error('Buy Now Debug Info:', data.debug);
+                if (data.debug.addToCartResult) {
+                    errorMessage += '\n\nDebug: ' + JSON.stringify(data.debug.addToCartResult, null, 2);
+                }
+            }
+            
+            showBuyNowError(errorMessage);
             button.innerHTML = originalText;
             button.disabled = false;
         }
