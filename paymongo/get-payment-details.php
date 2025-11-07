@@ -26,9 +26,6 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 // Include configuration
 require_once 'config.php';
 
-// Get PayMongo Configuration
-$PAYMONGO_CONFIG = getPayMongoConfig();
-
 try {
     // Get JSON input
     $input = json_decode(file_get_contents('php://input'), true);
@@ -43,12 +40,12 @@ try {
     $ch = curl_init();
     
     curl_setopt_array($ch, [
-        CURLOPT_URL => $PAYMONGO_CONFIG['base_url'] . '/checkout_sessions/' . $checkoutSessionId,
+        CURLOPT_URL => PAYMONGO_BASE_URL . '/checkout_sessions/' . $checkoutSessionId,
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_HTTPHEADER => [
             'Content-Type: application/json',
             'Accept: application/json',
-            'Authorization: Basic ' . base64_encode($PAYMONGO_CONFIG['secret_key'] . ':')
+            'Authorization: Basic ' . base64_encode(PAYMONGO_SECRET_KEY . ':')
         ],
         CURLOPT_SSL_VERIFYPEER => true,
         CURLOPT_TIMEOUT => 30

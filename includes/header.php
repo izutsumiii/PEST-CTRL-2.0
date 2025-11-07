@@ -262,7 +262,7 @@ $pathPrefix = ($currentDir === 'paymongo') ? '../' : '';
     top: 100%;
     right: 0;
     width: 320px;
-    max-height: 460px;
+    max-height: 360px;
     background: #ffffff;
     border: 1px solid #e5e7eb;
     border-radius: 10px;
@@ -270,7 +270,8 @@ $pathPrefix = ($currentDir === 'paymongo') ? '../' : '';
     display: none;
     z-index: 1200;
     padding: 8px;
-    overflow-y: visible;
+    overflow: hidden;
+    flex-direction: column;
 }
 
 /* Custom scrollbar styles for notif-popper */
@@ -298,12 +299,12 @@ $pathPrefix = ($currentDir === 'paymongo') ? '../' : '';
     scrollbar-color: #FFD736 #f1f1f1;
 }
         
-        .notif-popper.show { display: block; }
+        .notif-popper.show { display: flex; }
         /* Seller-style dropdown structure */
-        .notification-header { display:flex; align-items:center; justify-content:space-between; color:#130325; padding: 6px 4px; border-bottom: 1px solid #e5e7eb; margin-bottom: 6px; }
+        .notification-header { display:flex; align-items:center; justify-content:space-between; color:#130325; padding: 6px 4px; border-bottom: 1px solid #e5e7eb; margin-bottom: 6px; flex-shrink: 0; }
         .notification-header .clear-all-btn { background: transparent; color: #dc3545; border: none; font-size: 12px; font-weight: 700; cursor: pointer; padding: 4px 8px; border-radius: 6px; }
         .notification-header .clear-all-btn:hover { background: rgba(220,53,69,0.08); }
-        .notification-list { max-height: 320px; overflow-y: auto; padding-right: 2px; }
+        .notification-list { max-height: 240px; overflow-y: auto; padding-right: 2px; flex: 1; min-height: 0; }
         .notification-item { display:flex; gap:10px; padding:10px; border-radius:8px; border:1px solid #f3f4f6; background:#ffffff; margin: 4px 0; color:#130325; text-decoration:none; transition: background 0.2s ease; cursor: pointer; }
         .notification-item:hover { background:#f9fafb; }
         .notification-title { font-weight: 700; color:#130325; font-size: 13px; }
@@ -330,10 +331,11 @@ $pathPrefix = ($currentDir === 'paymongo') ? '../' : '';
         
         .notif-popper .notif-footer {
             border-top: 1px solid #e5e7eb;
-            padding: 8px 0 0 0;
-            margin-top: 8px;
+            padding: 6px 0 0 0;
+            margin-top: 4px;
             text-align: center !important;
             width: 100% !important;
+            flex-shrink: 0;
         }
         
         .notif-popper .see-all-btn {
@@ -606,7 +608,7 @@ $pathPrefix = ($currentDir === 'paymongo') ? '../' : '';
             }
         }
         #notifList {
-    max-height: 380px;
+    max-height: 240px;
     overflow-y: auto;
 }
 

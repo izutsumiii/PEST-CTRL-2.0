@@ -330,6 +330,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['checkout'])) {
                 $_SESSION['pending_checkout_items'] = $groupedItems;
                 $_SESSION['pending_checkout_grand_total'] = $grandTotal;
                 $_SESSION['pending_checkout_transaction_id'] = $result['payment_transaction_id'];
+                $_SESSION['pending_customer_name'] = $customerName;
+                $_SESSION['pending_customer_email'] = $customerEmail;
+                $_SESSION['pending_customer_phone'] = $customerPhone;
+                $_SESSION['pending_shipping_address'] = $shippingAddress;
                 
                 $redirectUrl = createPayMongoCheckoutSession($result['payment_transaction_id'], $customerName, $customerEmail, $customerPhone, $shippingAddress, $groupedItems, $grandTotal, $paymentMethod);
                 if ($redirectUrl) {
@@ -366,7 +370,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['checkout'])) {
             } else {
                 // COD
                 try {
-                    $stmt = $pdo->prepare("UPDATE payment_transactions SET status = 'completed' WHERE id = ?");
+                    $stmt = $pdo->prepare("UPDATE payment_transactions SET payment_status = 'completed' WHERE id = ?");
                     $stmt->execute([$result['payment_transaction_id']]);
                     $stmt = $pdo->prepare("UPDATE orders SET payment_status = 'completed' WHERE payment_transaction_id = ?");
                     $stmt->execute([$result['payment_transaction_id']]);

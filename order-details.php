@@ -88,7 +88,7 @@ body {
 main {
     background: #f8f9fa;
     min-height: 100vh;
-    padding: 30px 0 40px 0;
+    padding: 20px 0 40px 0;
 }
 
 .page-header {
@@ -135,7 +135,7 @@ h1 {
 .page-header h1 { font-weight: 700 !important; }
 
 .order-details {
-    max-width: 1200px;
+    max-width: 1400px;
     margin: 0 auto;
     background: #ffffff;
     border: 1px solid #e5e7eb;
@@ -187,32 +187,98 @@ h1 {
     letter-spacing: 1px;
 }
 
-.order-info-grid, .customer-info-grid {
+.order-info-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 15px;
+    grid-template-columns: 1fr auto;
+    gap: 20px;
+    align-items: start;
 }
 
-.info-item {
-    background: #f8f9fa;
-    border: 1px solid rgba(0,0,0,0.1);
-    padding: 12px 15px;
+.order-info-left {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.order-info-right {
+    text-align: right;
+}
+
+.order-number-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.order-number-item strong {
+    color: #130325;
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+.order-number-value {
+    color: #130325;
+    font-weight: 700;
+    font-size: 1.2rem;
+    background: rgba(255, 215, 54, 0.15);
+    padding: 4px 12px;
     border-radius: 6px;
 }
 
-.info-item strong {
+.order-date-item {
+    color: #6b7280;
+    font-size: 0.9rem;
+}
+
+.payment-info-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 4px;
+}
+
+.payment-info-item strong {
     color: #130325;
-    font-weight: 700;
-    display: block;
-    margin-bottom: 6px;
-    font-size: 1rem;
-    text-transform: uppercase;
-    letter-spacing: 0.3px;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.payment-info-item span {
+    color: #130325;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.customer-info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    align-items: start;
 }
 
 .info-item {
+    background: transparent;
+    border: none;
+    padding: 0;
+    border-radius: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.info-item strong {
+    color: #6b7280;
+    font-weight: 600;
+    display: block;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+}
+
+.info-item span, .info-item {
     color: #130325;
-    font-size: 1rem;
+    font-size: 0.95rem;
     font-weight: 500;
     word-break: break-word;
     overflow-wrap: anywhere;
@@ -542,9 +608,22 @@ h1 {
         padding: 20px;
     }
     
-    .order-info-grid, .customer-info-grid {
+    .order-info-grid {
         grid-template-columns: 1fr;
         gap: 15px;
+    }
+    
+    .order-info-right {
+        text-align: left;
+    }
+    
+    .customer-info-grid {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+    
+    .info-item[style*="grid-column"] {
+        grid-column: 1 !important;
     }
     
     .order-actions {
@@ -617,20 +696,24 @@ h1 {
     <div class="order-card">
         <h3>Order Information</h3>
         <div class="order-info-grid">
-            <div class="info-item">
-                <strong>Order Number:</strong> #<?php echo $order['id']; ?>
+            <div class="order-info-left">
+                <div class="order-number-item">
+                    <strong>Order Number:</strong>
+                    <span class="order-number-value">#<?php echo str_pad($order['id'], 6, '0', STR_PAD_LEFT); ?></span>
+                </div>
+                <div class="payment-info-item">
+                    <strong>Payment Method:</strong>
+                    <span><?php echo ucfirst(str_replace('_', ' ', $order['payment_method'])); ?></span>
+                </div>
+                <div class="payment-info-item">
+                    <strong>Payment Status:</strong>
+                    <span><?php echo ucfirst($order['payment_status']); ?></span>
+                </div>
             </div>
-            <div class="info-item">
-                <strong>Order Date:</strong> <?php echo date('F j, Y, g:i a', strtotime($order['created_at'])); ?>
-            </div>
-            <div class="info-item">
-                <strong>Payment Method:</strong> <?php echo ucfirst(str_replace('_', ' ', $order['payment_method'])); ?>
-            </div>
-            <div class="info-item">
-                <strong>Payment Status:</strong> <?php echo ucfirst($order['payment_status']); ?>
-            </div>
-            <div class="info-item">
-                <strong>Total Amount:</strong> ₱<?php echo number_format($order['total_amount'], 2); ?>
+            <div class="order-info-right">
+                <div class="order-date-item">
+                    <?php echo date('F j, Y, g:i a', strtotime($order['created_at'])); ?>
+                </div>
             </div>
         </div>
     </div>
@@ -640,16 +723,20 @@ h1 {
         <h3>Delivery Information</h3>
         <div class="customer-info-grid">
             <div class="info-item">
-                <strong>Name:</strong> <?php echo $order['first_name'] . ' ' . $order['last_name']; ?>
+                <strong>Name</strong>
+                <span><?php echo $order['first_name'] . ' ' . $order['last_name']; ?></span>
             </div>
             <div class="info-item">
-                <strong>Email:</strong> <?php echo $order['email']; ?>
+                <strong>Email</strong>
+                <span><?php echo $order['email']; ?></span>
             </div>
             <div class="info-item">
-                <strong>Phone:</strong> <?php echo $order['phone'] ? $order['phone'] : 'N/A'; ?>
+                <strong>Phone</strong>
+                <span><?php echo $order['phone'] ? $order['phone'] : 'N/A'; ?></span>
             </div>
-            <div class="info-item">
-                <strong>Shipping Address:</strong> <?php echo $order['shipping_address']; ?>
+            <div class="info-item" style="grid-column: 1 / -1;">
+                <strong>Shipping Address</strong>
+                <span><?php echo $order['shipping_address']; ?></span>
             </div>
         </div>
     </div>

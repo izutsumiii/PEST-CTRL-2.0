@@ -1,4 +1,9 @@
 <?php
+// Ensure session is started
+if (session_status() == PHP_SESSION_NONE) {
+    session_start();
+}
+
 require_once '../config/database.php';
 require_once '../includes/functions.php';
 
@@ -116,7 +121,7 @@ unset($_SESSION['pending_checkout_transaction_id']);
 // If we have a transaction ID, update the payment status to failed
 if ($transactionId > 0) {
     try {
-        $stmt = $pdo->prepare("UPDATE payment_transactions SET status = 'failed' WHERE id = ?");
+        $stmt = $pdo->prepare("UPDATE payment_transactions SET payment_status = 'failed' WHERE id = ?");
         $stmt->execute([$transactionId]);
         
         // Only update existing orders (shouldn't exist for PayMongo, but just in case)
@@ -470,7 +475,7 @@ body {
 
         <!-- Action Buttons -->
         <div class="action-buttons">
-            <a href="../paymongo/multi-seller-checkout.php" class="btn btn-primary">Try Again</a>
+            <a href="multi-seller-checkout.php" class="btn btn-primary">Try Again</a>
             <a href="../products.php" class="btn btn-secondary">Continue Shopping</a>
             <a href="../user-dashboard.php" class="btn btn-info">View Orders</a>
         </div>

@@ -80,10 +80,19 @@ if ($checkoutSessionId && $transactionId <= 0) {
 // CRITICAL: Don't redirect away if we have checkout_session_id but no transaction_id
 // We need to try to create orders anyway - the checkout_session_id is proof of payment
 if ($orderId <= 0 && $transactionId <= 0 && !$checkoutSessionId) {
-    error_log('Order Success - No valid order_id, transaction_id, or checkout_session_id found. Redirecting to products.');
+    error_log('Order Success - CRITICAL: No valid order_id, transaction_id, or checkout_session_id found.');
+    error_log('Order Success - GET params: ' . json_encode($_GET));
+    error_log('Order Success - Redirecting to products.');
     header("Location: ../products.php");
     exit();
 }
+
+// DEBUG: Log that we reached this point
+error_log('Order Success - ========== PAGE LOADED ==========');
+error_log('Order Success - orderId: ' . $orderId);
+error_log('Order Success - transactionId: ' . $transactionId);
+error_log('Order Success - checkoutSessionId: ' . ($checkoutSessionId ?? 'NULL'));
+error_log('Order Success - GET params: ' . json_encode($_GET));
 
 try {
     // Get order details - either by order_id or transaction_id
@@ -122,13 +131,30 @@ try {
         
         if (!$transaction) {
             error_log('Order Success - CRITICAL: Transaction not found. transactionId: ' . $transactionId . ', checkoutSessionId: ' . ($checkoutSessionId ?? 'NULL'));
-            // Don't redirect - try to create orders anyway if we have checkout_session_id
-            if (!$checkoutSessionId) {
-                header("Location: ../products.php");
-                exit();
+            
+            // If we have checkout_session_id but no transaction, try to create a transaction record
+            if ($checkoutSessionId) {
+                error_log('Order Success - Have checkout_session_id but no transaction - trying to create transaction from PayMongo data');
+                // We'll continue and try to create orders with minimal data
+                // Create a minimal transaction object for order creation
+                $transaction = [
+                    'id' => 0,
+                    'user_id' => $_SESSION['user_id'] ?? 0,
+                    'total_amount' => $_SESSION['pending_checkout_grand_total'] ?? 0,
+                    'payment_method' => 'card', // Default for PayMongo
+                    'shipping_address' => $_SESSION['pending_shipping_address'] ?? '',
+                    'status' => 'pending'
+                ];
+                error_log('Order Success - Created minimal transaction object for order creation');
+            } else {
+                // Don't redirect - try to create orders anyway if we have checkout_session_id
+                if (!$checkoutSessionId) {
+                    header("Location: ../products.php");
+                    exit();
+                }
+                // If we have checkout_session_id, continue - we'll try to create orders
+                error_log('Order Success - Continuing with checkout_session_id only - will try to create orders');
             }
-            // If we have checkout_session_id, continue - we'll try to create orders
-            error_log('Order Success - Continuing with checkout_session_id only - will try to create orders');
         }
         
         // CRITICAL: Verify payment status with PayMongo before creating orders
@@ -139,7 +165,7 @@ try {
         
         error_log('Order Success - Starting payment verification for transaction ' . $transactionId);
         error_log('Order Success - checkout_session_id: ' . ($checkoutSessionId ?? 'NULL'));
-        error_log('Order Success - transaction status: ' . ($transaction['status'] ?? 'NULL'));
+        error_log('Order Success - transaction status: ' . ($transaction['payment_status'] ?? 'NULL'));
         
         // If we have checkout_session_id, verify payment status with PayMongo
         if ($checkoutSessionId) {
@@ -243,7 +269,7 @@ try {
                     // Orders already exist - payment was successful
                     $paymentVerified = true;
                     error_log('Order Success - Orders already exist, payment verified');
-                } elseif ($transaction['status'] === 'failed') {
+                } elseif ($transaction['payment_status'] === 'failed') {
                     // Transaction status is explicitly failed - don't trust it
                     error_log('Order Success - Transaction status is failed, redirecting to failure');
                     header("Location: order-failure.php?transaction_id=" . $transactionId . "&error=Payment verification failed");
@@ -253,7 +279,7 @@ try {
                     // PayMongo ONLY redirects to success_url after payment succeeds
                     // So if we're here, payment was successful - trust it!
                     $paymentVerified = true;
-                    error_log('Order Success - No checkout_session_id but on success page - trusting PayMongo redirect (status: ' . ($transaction['status'] ?? 'NULL') . ')');
+                    error_log('Order Success - No checkout_session_id but on success page - trusting PayMongo redirect (status: ' . ($transaction['payment_status'] ?? 'NULL') . ')');
                 }
             }
         }
@@ -266,7 +292,7 @@ try {
         // FINAL SAFETY: If we're on success page and payment is not explicitly failed, trust it
         // PayMongo ONLY redirects to success_url after successful payment
         // CRITICAL: We MUST trust the redirect - PayMongo never redirects to success_url unless payment succeeded
-        if (!$paymentVerified && $transaction['status'] !== 'failed') {
+        if (!$paymentVerified && $transaction['payment_status'] !== 'failed') {
             error_log('Order Success - SAFETY OVERRIDE: Setting paymentVerified to true because we are on success page');
             $paymentVerified = true;
         }
@@ -279,7 +305,7 @@ try {
         error_log('Order Success - ========== BEFORE ORDER CREATION CHECK ==========');
         error_log('Order Success - order exists: ' . ($order ? 'YES (ID: ' . $order['id'] . ')' : 'NO'));
         error_log('Order Success - paymentVerified: ' . ($paymentVerified ? 'YES' : 'NO'));
-        error_log('Order Success - transaction status: ' . ($transaction['status'] ?? 'NULL'));
+        error_log('Order Success - transaction status: ' . ($transaction['payment_status'] ?? 'NULL'));
         error_log('Order Success - transaction_id: ' . $transactionId);
         error_log('Order Success - transaction exists: ' . ($transaction ? 'YES' : 'NO'));
         error_log('Order Success - checkout_session_id: ' . ($checkoutSessionId ?? 'NULL'));
@@ -305,18 +331,117 @@ try {
             }
         }
         
-        // CRITICAL: If we're on success page with a transaction, we MUST create orders
+        // CRITICAL: If we're on success page, we MUST create orders
         // This is the ONLY place orders get created for PayMongo payments
-        if (!$order && $paymentVerified && $transaction) {
+        // Allow order creation if we have transaction OR checkout_session_id (proof of payment)
+        $shouldCreateOrders = !$order && $paymentVerified && ($transaction || $checkoutSessionId);
+        error_log('Order Success - shouldCreateOrders check:');
+        error_log('Order Success -   !order: ' . (!$order ? 'YES' : 'NO'));
+        error_log('Order Success -   paymentVerified: ' . ($paymentVerified ? 'YES' : 'NO'));
+        error_log('Order Success -   transaction exists: ' . ($transaction ? 'YES' : 'NO'));
+        error_log('Order Success -   checkoutSessionId: ' . ($checkoutSessionId ? 'YES' : 'NO'));
+        error_log('Order Success -   shouldCreateOrders: ' . ($shouldCreateOrders ? 'YES' : 'NO'));
+        
+        if ($shouldCreateOrders) {
             error_log('Order Success - ========== STARTING ORDER CREATION ==========');
+            
+            // If transaction_id is 0 but we have checkout_session_id, try to find/create transaction
+            if ($transactionId <= 0 && $checkoutSessionId) {
+                error_log('Order Success - Transaction ID is 0, trying to find/create transaction from checkout_session_id');
+                // Try to find transaction by checkout_session_id one more time
+                try {
+                    $stmt = $pdo->prepare("SELECT * FROM payment_transactions WHERE paymongo_session_id = ? ORDER BY created_at DESC LIMIT 1");
+                    $stmt->execute([$checkoutSessionId]);
+                    $foundTransaction = $stmt->fetch(PDO::FETCH_ASSOC);
+                    if ($foundTransaction) {
+                        $transaction = $foundTransaction;
+                        $transactionId = (int)$transaction['id'];
+                        error_log('Order Success - Found transaction from database: ' . $transactionId);
+                    } else {
+                        error_log('Order Success - No transaction found in database, creating new transaction record');
+                        // CRITICAL: Create a transaction record so we can link orders to it
+                        try {
+                            $pdo->beginTransaction();
+                            $userId = $_SESSION['user_id'] ?? 0;
+                            $totalAmount = $_SESSION['pending_checkout_grand_total'] ?? 0;
+                            $shippingAddress = $_SESSION['pending_shipping_address'] ?? '';
+                            
+                            $stmt = $pdo->prepare("
+                                INSERT INTO payment_transactions (
+                                    user_id, total_amount, payment_method, shipping_address,
+                                    customer_name, customer_email, customer_phone, paymongo_session_id
+                                ) VALUES (?, ?, 'card', ?, ?, ?, ?, ?)
+                            ");
+                            $stmt->execute([
+                                $userId, $totalAmount, $shippingAddress,
+                                $_SESSION['pending_customer_name'] ?? '',
+                                $_SESSION['pending_customer_email'] ?? '',
+                                $_SESSION['pending_customer_phone'] ?? '',
+                                $checkoutSessionId
+                            ]);
+                            $transactionId = $pdo->lastInsertId();
+                            $pdo->commit();
+                            
+                            error_log('Order Success - ✅ Created new transaction record: ' . $transactionId);
+                            
+                            // Fetch the created transaction
+                            $stmt = $pdo->prepare("SELECT * FROM payment_transactions WHERE id = ?");
+                            $stmt->execute([$transactionId]);
+                            $transaction = $stmt->fetch(PDO::FETCH_ASSOC);
+                        } catch (Exception $e) {
+                            if ($pdo->inTransaction()) {
+                                $pdo->rollBack();
+                            }
+                            error_log('Order Success - Error creating transaction: ' . $e->getMessage());
+                            // Create minimal transaction object as fallback
+                            $transaction = [
+                                'id' => 0,
+                                'user_id' => $_SESSION['user_id'] ?? 0,
+                                'total_amount' => $_SESSION['pending_checkout_grand_total'] ?? 0,
+                                'payment_method' => 'card',
+                                'shipping_address' => $_SESSION['pending_shipping_address'] ?? '',
+                                'status' => 'pending'
+                            ];
+                        }
+                    }
+                } catch (Exception $e) {
+                    error_log('Order Success - Error finding transaction: ' . $e->getMessage());
+                }
+            }
+            
+            // Final check: if transactionId is still 0, we can't create orders (need valid transaction_id)
+            if ($transactionId <= 0) {
+                error_log('Order Success - ❌ CRITICAL: Cannot create orders - transaction_id is still 0');
+                error_log('Order Success - This should not happen if checkout_session_id was stored properly');
+                // Try one last time to get from session
+                $transactionId = $_SESSION['pending_checkout_transaction_id'] ?? 0;
+                if ($transactionId > 0) {
+                    error_log('Order Success - Found transaction_id from session: ' . $transactionId);
+                    $stmt = $pdo->prepare("SELECT * FROM payment_transactions WHERE id = ?");
+                    $stmt->execute([$transactionId]);
+                    $transaction = $stmt->fetch(PDO::FETCH_ASSOC);
+                }
+            }
+            
             error_log('Order Success - Transaction ID: ' . $transactionId);
             error_log('Order Success - User ID: ' . ($transaction['user_id'] ?? 'NULL'));
             error_log('Order Success - Total Amount: ' . ($transaction['total_amount'] ?? 'NULL'));
             error_log('Order Success - Payment Method: ' . ($transaction['payment_method'] ?? 'NULL'));
             
+            // CRITICAL: If transaction_id is still 0, we cannot create orders
+            // Orders require a valid payment_transaction_id
+            if ($transactionId <= 0) {
+                error_log('Order Success - ❌❌❌ CRITICAL ERROR: transaction_id is 0, cannot create orders');
+                error_log('Order Success - This means the transaction was never created or lost');
+                error_log('Order Success - checkout_session_id: ' . ($checkoutSessionId ?? 'NULL'));
+                error_log('Order Success - Session pending_checkout_transaction_id: ' . ($_SESSION['pending_checkout_transaction_id'] ?? 'NULL'));
+                // Don't proceed with order creation - it will fail
+                $shouldCreateOrders = false;
+            }
+            
             // Get cart items from session if available
             $groupedItems = $_SESSION['pending_checkout_items'] ?? null;
-            $grandTotal = $_SESSION['pending_checkout_grand_total'] ?? $transaction['total_amount'];
+            $grandTotal = $_SESSION['pending_checkout_grand_total'] ?? ($transaction['total_amount'] ?? 0);
             
             error_log('Order Success - Session has pending_checkout_items: ' . ($groupedItems ? 'YES' : 'NO'));
             if ($groupedItems) {
@@ -470,18 +595,36 @@ try {
                 }
             }
             
-            if ($groupedItems && is_array($groupedItems) && !empty($groupedItems)) {
+            // CRITICAL: Only create orders if we have valid transaction_id
+            if ($transactionId <= 0) {
+                error_log('Order Success - ❌ Cannot create orders - transaction_id is 0');
+                error_log('Order Success - Skipping order creation');
+            } elseif ($groupedItems && is_array($groupedItems) && !empty($groupedItems)) {
+                error_log('Order Success - ✅ All conditions met - creating orders now');
                 error_log('Order Success - groupedItems found, count: ' . count($groupedItems));
+                error_log('Order Success - transaction_id: ' . $transactionId . ' (valid)');
                 // Create orders now that payment is confirmed
                 try {
                     $pdo->beginTransaction();
-                    $userId = $transaction['user_id'];
-                    $shippingAddress = $transaction['shipping_address'];
-                    $paymentMethod = $transaction['payment_method'];
+                    $userId = $transaction['user_id'] ?? 0;
+                    $shippingAddress = $transaction['shipping_address'] ?? '';
+                    $paymentMethod = $transaction['payment_method'] ?? 'card';
+                    
+                    if ($userId <= 0) {
+                        throw new Exception('Invalid user_id: ' . $userId);
+                    }
                     
                     error_log('Order Success - Starting order creation for ' . count($groupedItems) . ' seller groups');
+                    error_log('Order Success - User ID: ' . $userId);
+                    error_log('Order Success - Transaction ID: ' . $transactionId);
                     
+                    $createdOrderIds = [];
                     foreach ($groupedItems as $sellerId => $sellerGroup) {
+                        if ($sellerId <= 0) {
+                            error_log('Order Success - WARNING: Invalid seller_id: ' . $sellerId . ', skipping');
+                            continue;
+                        }
+                        
                         error_log('Order Success - Creating order for seller ' . $sellerId . ' with ' . count($sellerGroup['items']) . ' items');
                         // Create order for this seller
                         $stmt = $pdo->prepare("
@@ -495,6 +638,8 @@ try {
                             $shippingAddress, $paymentMethod
                         ]);
                         $orderId = $pdo->lastInsertId();
+                        $createdOrderIds[] = $orderId;
+                        error_log('Order Success - ✅ Created order #' . $orderId . ' for seller ' . $sellerId);
                         
                         // CREATE SELLER NOTIFICATION FOR NEW ORDER
                         require_once __DIR__ . '/../includes/seller_notification_functions.php';
@@ -533,7 +678,7 @@ try {
                     unset($_SESSION['pending_checkout_transaction_id']);
                     
                     // Update payment transaction status
-                    $stmt = $pdo->prepare("UPDATE payment_transactions SET status = 'completed' WHERE id = ?");
+                    $stmt = $pdo->prepare("UPDATE payment_transactions SET payment_status = 'completed' WHERE id = ?");
                     $stmt->execute([$transactionId]);
                     
                     $pdo->commit();
@@ -683,7 +828,7 @@ try {
                         error_log('Order Success - ✅ CREATED BASIC ORDER #' . $orderId . ' for transaction ' . $transactionId);
                         
                         // Update transaction status
-                        $stmt = $pdo->prepare("UPDATE payment_transactions SET status = 'completed' WHERE id = ?");
+                        $stmt = $pdo->prepare("UPDATE payment_transactions SET payment_status = 'completed' WHERE id = ?");
                         $stmt->execute([$transactionId]);
                         error_log('Order Success - ✅ Updated transaction status to completed');
                         
@@ -722,7 +867,7 @@ try {
                             $orderId = $pdo->lastInsertId();
                             error_log('Order Success - ✅ CREATED FALLBACK ORDER #' . $orderId);
                             
-                            $stmt = $pdo->prepare("UPDATE payment_transactions SET status = 'completed' WHERE id = ?");
+                            $stmt = $pdo->prepare("UPDATE payment_transactions SET payment_status = 'completed' WHERE id = ?");
                             $stmt->execute([$transactionId]);
                             
                             $message = "Order #" . str_pad($orderId, 6, '0', STR_PAD_LEFT) . " has been placed successfully.";
@@ -736,7 +881,7 @@ try {
                         } else {
                             error_log('Order Success - ❌ NO SELLERS IN SYSTEM - This is a critical error!');
                             error_log('Order Success - Marking transaction as completed but cannot create order');
-                            $stmt = $pdo->prepare("UPDATE payment_transactions SET status = 'completed' WHERE id = ?");
+                            $stmt = $pdo->prepare("UPDATE payment_transactions SET payment_status = 'completed' WHERE id = ?");
                             $stmt->execute([$transactionId]);
                             $pdo->commit();
                         }
@@ -748,7 +893,7 @@ try {
                     error_log('Order Success - Error creating basic order: ' . $e->getMessage());
                     // Still try to mark transaction as completed
                     try {
-                        $stmt = $pdo->prepare("UPDATE payment_transactions SET status = 'completed' WHERE id = ?");
+                        $stmt = $pdo->prepare("UPDATE payment_transactions SET payment_status = 'completed' WHERE id = ?");
                         $stmt->execute([$transactionId]);
                     } catch (Exception $e2) {
                         error_log('Order Success - Error updating transaction: ' . $e2->getMessage());
@@ -813,7 +958,7 @@ try {
                     unset($_SESSION['pending_checkout_grand_total']);
                     unset($_SESSION['pending_checkout_transaction_id']);
                     
-                    $stmt = $pdo->prepare("UPDATE payment_transactions SET status = 'completed' WHERE id = ?");
+                    $stmt = $pdo->prepare("UPDATE payment_transactions SET payment_status = 'completed' WHERE id = ?");
                     $stmt->execute([$transactionId]);
                     
                     $pdo->commit();
@@ -842,7 +987,7 @@ try {
             // Payment not verified or transaction failed
             error_log('Order Success - Payment NOT verified or transaction failed');
             error_log('Order Success - paymentVerified: ' . ($paymentVerified ? 'YES' : 'NO'));
-            error_log('Order Success - transaction status: ' . ($transaction['status'] ?? 'NULL'));
+            error_log('Order Success - transaction status: ' . ($transaction['payment_status'] ?? 'NULL'));
         }
     }
     
@@ -852,7 +997,7 @@ try {
         error_log('Order Success - No order found after all attempts.');
         
         // Check if transaction exists and is completed
-        if ($transaction && ($transaction['status'] === 'completed' || $transaction['status'] === 'pending')) {
+        if ($transaction && ($transaction['payment_status'] === 'completed' || $transaction['payment_status'] === 'pending')) {
             error_log('Order Success - Transaction exists and is completed/pending, showing success page without order details');
             // We'll show the success page with transaction info only
             $order = null; // Keep as null, we'll handle this in the display
@@ -868,7 +1013,7 @@ try {
         'transaction_id' => $transactionId,
         'order_exists' => $order ? 'YES' : 'NO',
         'order_id' => $order['id'] ?? 'N/A',
-        'transaction_status' => $transaction['status'] ?? 'N/A',
+        'transaction_status' => $transaction['payment_status'] ?? 'N/A',
         'payment_method' => $transaction['payment_method'] ?? 'N/A',
         'total_amount' => $transaction['total_amount'] ?? 0,
         'payment_verified' => isset($paymentVerified) ? ($paymentVerified ? 'YES' : 'NO') : 'NOT SET'
