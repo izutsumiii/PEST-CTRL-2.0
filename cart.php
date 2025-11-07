@@ -27,6 +27,27 @@ if (isset($_POST['add_to_cart'])) {
     }
 }
 
+// Handle URL error parameters (e.g., from buy now redirects)
+if (isset($_GET['error'])) {
+    $errorParam = $_GET['error'];
+    switch ($errorParam) {
+        case 'buy_now_session_expired':
+            $errorMessage = "Buy Now session expired. Please try again.";
+            break;
+        case 'buy_now_failed':
+            $errorMessage = "Buy Now failed. The product may no longer be available. Please add it to cart instead.";
+            break;
+        case 'invalid_buy_now':
+            $errorMessage = "Invalid Buy Now request. Please try again.";
+            break;
+        case 'seller_not_found':
+            $errorMessage = "Product seller not found. Please try again or contact support.";
+            break;
+        default:
+            $errorMessage = "An error occurred. Please try again.";
+    }
+}
+
 // Handle update quantity
 if (isset($_POST['update_cart'])) {
     $hasErrors = false;
@@ -58,7 +79,18 @@ $cartTotal = getMultiSellerCartTotal();
 <?php endif; ?>
 
 <?php if (isset($errorMessage)): ?>
-    <div class="alert alert-error"><?php echo htmlspecialchars($errorMessage); ?></div>
+    <div class="alert alert-error buy-now-error">
+        <div class="error-icon">
+            <i class="fas fa-exclamation-triangle"></i>
+        </div>
+        <div class="error-content">
+            <strong>Buy Now Failed</strong>
+            <p><?php echo htmlspecialchars($errorMessage); ?></p>
+        </div>
+        <button type="button" class="error-close" onclick="this.parentElement.style.display='none'">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
 <?php endif; ?>
 
 <?php if (empty($groupedCart)): ?>
@@ -191,6 +223,111 @@ h1 {
     background: #5a2d2d;
     color: #ffb3b3;
     border: 1px solid #7c4a4a;
+}
+
+/* Enhanced Buy Now Error Styling - Bottom notification */
+.buy-now-error {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 18px;
+    background: #ffffff;
+    border: 2px solid #130325;
+    border-radius: 8px;
+    box-shadow: 0 4px 16px rgba(19, 3, 37, 0.2);
+    margin: 0;
+    max-width: 500px;
+    width: 90%;
+    z-index: 10000;
+    animation: slideInUp 0.3s ease-out;
+}
+
+.buy-now-error .error-icon {
+    flex-shrink: 0;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #130325;
+    border-radius: 50%;
+    color: #FFD736;
+    font-size: 18px;
+}
+
+.buy-now-error .error-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.buy-now-error .error-content strong {
+    display: block;
+    font-size: 15px;
+    color: #130325;
+    margin-bottom: 3px;
+    font-weight: 700;
+}
+
+.buy-now-error .error-content p {
+    margin: 0;
+    color: #130325;
+    font-size: 14px;
+    line-height: 1.4;
+    font-weight: 500;
+}
+
+.buy-now-error .error-close {
+    flex-shrink: 0;
+    background: transparent;
+    border: none;
+    color: #130325;
+    font-size: 20px;
+    cursor: pointer;
+    padding: 4px;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+    opacity: 0.7;
+}
+
+.buy-now-error .error-close:hover {
+    background: rgba(19, 3, 37, 0.1);
+    opacity: 1;
+}
+
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translate(-50%, 20px);
+    }
+    to {
+        opacity: 1;
+        transform: translate(-50%, 0);
+    }
+}
+
+/* Auto-hide animation */
+@keyframes slideOutDown {
+    from {
+        opacity: 1;
+        transform: translate(-50%, 0);
+    }
+    to {
+        opacity: 0;
+        transform: translate(-50%, 20px);
+    }
+}
+
+.buy-now-error.hiding {
+    animation: slideOutDown 0.3s ease-out forwards;
 }
 
 /* Empty cart */
@@ -764,6 +901,21 @@ document.addEventListener('DOMContentLoaded', function() {
 
             });
         });
+    }
+});
+
+// Auto-dismiss Buy Now error notification after 5 seconds
+document.addEventListener('DOMContentLoaded', function() {
+    const buyNowError = document.querySelector('.buy-now-error');
+    
+    if (buyNowError) {
+        // Auto-hide after 5 seconds
+        setTimeout(function() {
+            buyNowError.classList.add('hiding');
+            setTimeout(function() {
+                buyNowError.style.display = 'none';
+            }, 300); // Match animation duration
+        }, 5000);
     }
 });
 </script>

@@ -1609,26 +1609,48 @@ function buyNow() {
         headers: {
             'Content-Type': 'application/json',
         },
+        credentials: 'same-origin', // Include session cookie
         body: JSON.stringify({
             product_id: productId,
             quantity: parseInt(quantity)
         })
     })
-    .then(response => response.json())
+    .then(response => {
+        console.log('Buy Now Response Status:', response.status);
+        console.log('Buy Now Response Headers:', response.headers);
+        
+        // Check if response is actually JSON
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+            return response.text().then(text => {
+                console.error('Buy Now - Non-JSON Response:', text);
+                throw new Error('Server returned invalid response. Please try again.');
+            });
+        }
+        
+        return response.json();
+    })
     .then(data => {
+        console.log('Buy Now Response Data:', data);
         if (data.success) {
-            // Redirect to checkout
-            window.location.href = data.redirect_url;
+            // Check if cart was actually added
+            if (data.debug && data.debug.cart_items_count === 0) {
+                alert('Warning: Item may not have been added to cart. Please check your cart before proceeding.');
+            }
+            // Session is already written by buy-now.php, redirect immediately
+            window.location.href = data.redirect_url || 'paymongo/multi-seller-checkout.php?buy_now=1';
         } else {
-            // Show error message
-            alert(data.message || 'Failed to process buy now request');
+            // Show styled error message instead of plain alert
+            console.error('Buy Now Failed:', data);
+            showBuyNowError(data.message || 'Failed to process buy now request');
             button.innerHTML = originalText;
             button.disabled = false;
         }
     })
     .catch(error => {
-        console.error('Error:', error);
-        alert('An error occurred. Please try again.');
+        console.error('Buy Now Fetch Error:', error);
+        console.error('Error Details:', error.message, error.stack);
+        showBuyNowError('Network error. Please check your connection and try again.');
         button.innerHTML = originalText;
         button.disabled = false;
     });
@@ -1709,7 +1731,149 @@ if (window.location.hash === '#reviews-tab') {
         }
     }, 100);
 }
+
+// Show styled Buy Now error message
+function showBuyNowError(message) {
+    // Remove any existing error notification
+    const existing = document.getElementById('buy-now-error-notification');
+    if (existing) {
+        existing.remove();
+    }
+    
+    // Create error notification
+    const errorDiv = document.createElement('div');
+    errorDiv.id = 'buy-now-error-notification';
+    errorDiv.className = 'buy-now-error-notification';
+    errorDiv.innerHTML = `
+        <div class="error-icon">
+            <i class="fas fa-exclamation-triangle"></i>
+        </div>
+        <div class="error-content">
+            <strong>Buy Now Failed</strong>
+            <p>${message}</p>
+        </div>
+        <button type="button" class="error-close" onclick="this.parentElement.remove()">
+            <i class="fas fa-times"></i>
+        </button>
+    `;
+    
+    // Find the action-buttons container to place notification below it
+    const actionButtons = document.querySelector('.action-buttons');
+    
+    if (actionButtons && actionButtons.parentElement) {
+        // Insert right after the action-buttons container (below the buttons)
+        actionButtons.insertAdjacentElement('afterend', errorDiv);
+    } else {
+        // Fallback: Find Buy Now button and insert after its parent
+        const buyNowButton = document.querySelector('.btn-buy-now');
+        if (buyNowButton && buyNowButton.parentElement) {
+            buyNowButton.parentElement.insertAdjacentElement('afterend', errorDiv);
+        } else {
+            // Last fallback: Insert at the top of main content
+            const mainContent = document.querySelector('main') || document.body;
+            mainContent.insertBefore(errorDiv, mainContent.firstChild);
+        }
+    }
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+        if (errorDiv.parentElement) {
+            errorDiv.style.opacity = '0';
+            errorDiv.style.transform = 'translateY(-10px)';
+            setTimeout(() => errorDiv.remove(), 300);
+        }
+    }, 5000);
+}
 </script>
+
+<style>
+.buy-now-error-notification {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 18px;
+    background: #fff5f5;
+    border-left: 4px solid #ff6b6b;
+    border-radius: 6px;
+    box-shadow: 0 2px 8px rgba(255, 107, 107, 0.1);
+    margin: 15px auto;
+    max-width: 600px;
+    position: relative;
+    animation: slideInDown 0.3s ease-out;
+    z-index: 1000;
+    transition: all 0.3s ease;
+    width: 100%;
+    box-sizing: border-box;
+    text-align: left;
+}
+
+.buy-now-error-notification .error-icon {
+    flex-shrink: 0;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #ff6b6b;
+    border-radius: 50%;
+    color: white;
+    font-size: 18px;
+}
+
+.buy-now-error-notification .error-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.buy-now-error-notification .error-content strong {
+    display: block;
+    font-size: 15px;
+    color: #c92a2a;
+    margin-bottom: 3px;
+    font-weight: 600;
+}
+
+.buy-now-error-notification .error-content p {
+    margin: 0;
+    color: #862e2e;
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+.buy-now-error-notification .error-close {
+    flex-shrink: 0;
+    background: transparent;
+    border: none;
+    color: #c92a2a;
+    font-size: 16px;
+    cursor: pointer;
+    padding: 4px;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+    opacity: 0.7;
+}
+
+.buy-now-error-notification .error-close:hover {
+    background: rgba(201, 42, 42, 0.1);
+    opacity: 1;
+}
+
+@keyframes slideInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+</style>
 
             </div>
 

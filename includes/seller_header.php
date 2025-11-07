@@ -1,5 +1,13 @@
 <?php
+// Start output buffering to prevent encoding issues
+if (!ob_get_level()) {
+    ob_start();
+}
+// Set proper charset header
+header('Content-Type: text/html; charset=UTF-8');
+
 require_once 'functions.php';
+require_once __DIR__ . '/maintenance_check.php';
 ?>
 <!DOCTYPE html>
 <html lang="en">

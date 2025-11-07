@@ -1,4 +1,9 @@
 <?php
+// Ensure session is started before anything else
+if (session_status() == PHP_SESSION_NONE) {
+    session_start();
+}
+
 require_once '../config/database.php';
 require_once '../includes/functions.php';
 require_once 'config.php';
@@ -11,15 +16,24 @@ if (!isLoggedIn()) {
 
 $userId = $_SESSION['user_id'];
 
-// Check if this is a buy now request
-$isBuyNow = isset($_GET['buy_now']) && $_GET['buy_now'] == '1';
-$buyNowItem = null;
+// DEBUG: Check cart immediately - also check ALL cart items for this user
+$debugCartCheck = $pdo->prepare("SELECT COUNT(*) as count, SUM(quantity) as total_qty FROM cart WHERE user_id = ?");
+$debugCartCheck->execute([$userId]);
+$debugCartResult = $debugCartCheck->fetch(PDO::FETCH_ASSOC);
 
-if ($isBuyNow && isset($_SESSION['buy_now_item'])) {
-    $buyNowItem = $_SESSION['buy_now_item'];
-    // Clear the buy now session after retrieving it
-    unset($_SESSION['buy_now_item']);
-}
+// Get ALL cart items for detailed debugging
+$debugAllCart = $pdo->prepare("SELECT * FROM cart WHERE user_id = ?");
+$debugAllCart->execute([$userId]);
+$debugAllCartItems = $debugAllCart->fetchAll(PDO::FETCH_ASSOC);
+
+error_log('CHECKOUT DEBUG - User ID: ' . $userId);
+error_log('CHECKOUT DEBUG - Session User ID: ' . ($_SESSION['user_id'] ?? 'NOT SET'));
+error_log('CHECKOUT DEBUG - Cart items count: ' . ($debugCartResult['count'] ?? 0));
+error_log('CHECKOUT DEBUG - Cart total quantity: ' . ($debugCartResult['total_qty'] ?? 0));
+error_log('CHECKOUT DEBUG - ALL cart items for user: ' . json_encode($debugAllCartItems));
+error_log('CHECKOUT DEBUG - GET buy_now param: ' . (isset($_GET['buy_now']) ? $_GET['buy_now'] : 'NOT SET'));
+error_log('CHECKOUT DEBUG - Session is_buy_now_checkout: ' . (isset($_SESSION['is_buy_now_checkout']) ? 'YES' : 'NO'));
+error_log('CHECKOUT DEBUG - Session buy_now_product_id: ' . (isset($_SESSION['buy_now_product_id']) ? $_SESSION['buy_now_product_id'] : 'NOT SET'));
 
 // Load user profile for auto-fill
 $userProfile = null;
@@ -31,50 +45,55 @@ try {
     $userProfile = null;
 }
 
-// Get cart items grouped by seller
-// Get cart items grouped by seller or create buy now item
-if ($isBuyNow && $buyNowItem) {
-    // Buy Now: Create a single-item group, bypass cart entirely
-    $stmt = $pdo->prepare("SELECT seller_id FROM products WHERE id = ?");
-    $stmt->execute([$buyNowItem['id']]);
-    $sellerId = $stmt->fetchColumn();
+// Check if this is a buy now request
+$isBuyNow = isset($_GET['buy_now']) && $_GET['buy_now'] == '1' && isset($_SESSION['buy_now_active']);
+error_log('CHECKOUT - Buy Now Active: ' . ($isBuyNow ? 'YES' : 'NO'));
+error_log('CHECKOUT - Session buy_now_active: ' . (isset($_SESSION['buy_now_active']) ? 'YES' : 'NO'));
+
+$groupedItems = [];
+$grandTotal = 0;
+
+if ($isBuyNow && isset($_SESSION['buy_now_data'])) {
+    // Buy Now mode - use session data ONLY
+    error_log('CHECKOUT - Using Buy Now session data');
     
-    if ($sellerId) {
-        // Get seller info
-        $stmt = $pdo->prepare("SELECT username, display_name, email FROM users WHERE id = ?");
-        $stmt->execute([$sellerId]);
-        $seller = $stmt->fetch(PDO::FETCH_ASSOC);
-        
-        // Create single-item group
-        $groupedItems = [
-            $sellerId => [
-                'seller_id' => $sellerId,
-                'seller_name' => $seller['display_name'] ?? $seller['username'] ?? 'Unknown Seller',
-                'seller_display_name' => $seller['display_name'] ?? $seller['username'] ?? 'Unknown Seller',
-                'seller_email' => $seller['email'] ?? '',
-                'items' => [
-                    [
-                        'product_id' => $buyNowItem['id'],
-                        'name' => $buyNowItem['name'],
-                        'price' => $buyNowItem['price'],
-                        'quantity' => $buyNowItem['quantity'],
-                        'image_url' => $buyNowItem['image_url'],
-                        'seller_id' => $sellerId
-                    ]
-                ],
-                'subtotal' => $buyNowItem['total'],
-                'item_count' => $buyNowItem['quantity']
-            ]
-        ];
-    } else {
-        $groupedItems = [];
-    }
+    $buyNowData = $_SESSION['buy_now_data'];
+    $sellerId = $buyNowData['seller']['seller_id'];
     
-    // Set grand total directly from buy now item
-    $grandTotal = $buyNowItem['total'];
+    $groupedItems = [
+        $sellerId => [
+            'seller_id' => $sellerId,
+            'seller_name' => $buyNowData['seller']['seller_name'],
+            'seller_display_name' => $buyNowData['seller']['seller_display_name'],
+            'items' => [
+                $buyNowData['product']
+            ],
+            'subtotal' => $buyNowData['total'],
+            'item_count' => $buyNowData['quantity']
+        ]
+    ];
+    
+    $grandTotal = $buyNowData['total'];
+    
+    error_log('CHECKOUT - Buy Now items loaded: ' . json_encode($groupedItems));
+    
 } else {
-    // Regular cart checkout
+    // Regular checkout - use cart from database
+    error_log('CHECKOUT - Using regular cart from database');
+    
     $groupedItems = getCartItemsGroupedBySeller();
+    
+    foreach ($groupedItems as $sg) {
+        $grandTotal += $sg['subtotal'];
+    }
+}
+
+error_log('CHECKOUT - Grouped items count: ' . count($groupedItems));
+error_log('CHECKOUT - Grand total: ' . $grandTotal);
+
+// Regular checkout - support selected-only checkout via query param ?selected=1,2,3
+if (!$isBuyNow) {
+    error_log('Checkout - Using cart items (regular checkout)');
     
     // Support selected-only checkout via query param ?selected=1,2,3
     $selectedIds = [];
@@ -149,6 +168,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['checkout'])) {
         // Pass buy_now flag to prevent cart clearing
         $result = processMultiSellerCheckout($shippingAddress, $paymentMethod, $customerName, $customerEmail, $customerPhone, $isBuyNow);
         if ($result['success']) {
+            // Clear buy now session flags after successful checkout (already done in processMultiSellerCheckout, but clear old ones too)
+            if ($isBuyNow) {
+                unset($_SESSION['buy_now_active']);
+                unset($_SESSION['buy_now_data']);
+                // Clear old session variables if they exist
+                unset($_SESSION['buy_now_item']);
+                unset($_SESSION['is_buy_now_checkout']);
+                unset($_SESSION['buy_now_product_id']);
+            }
             // Route PayMongo payments to PayMongo checkout
             if (in_array($paymentMethod, ['card', 'gcash', 'paymaya', 'grab_pay', 'billease'])) {
                 error_log('Attempting PayMongo checkout for transaction: ' . $result['payment_transaction_id']);
@@ -222,16 +250,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['checkout'])) {
     }
 }
 
-// If cart is empty, redirect to cart page BEFORE sending any output
-if (empty($groupedItems)) {
-    header("Location: ../cart.php");
+// DEBUG: Final check before redirect decisions
+error_log('CHECKOUT DEBUG - Final check: isBuyNow=' . ($isBuyNow ? 'YES' : 'NO') . ', groupedItems empty=' . (empty($groupedItems) ? 'YES' : 'NO') . ', count=' . count($groupedItems));
+error_log('CHECKOUT DEBUG - groupedItems keys: ' . (empty($groupedItems) ? 'NONE' : implode(', ', array_keys($groupedItems))));
+error_log('CHECKOUT DEBUG - groupedItems structure: ' . json_encode($groupedItems));
+
+// If cart is empty and not a buy now request, redirect to cart page BEFORE sending any output
+if (empty($groupedItems) && !$isBuyNow) {
+    error_log('Checkout - Cart is empty (not buy now), redirecting to cart');
+    error_log('CHECKOUT DEBUG - Final cart check: ' . json_encode($debugCartResult));
+    header("Location: ../cart.php?error=cart_empty");
     exit();
 }
 
-// If cart is empty, redirect to cart page BEFORE sending any output
-if (empty($groupedItems)) {
-    header("Location: ../cart.php");
+// If buy now but no item found after all fallbacks, redirect to cart
+if ($isBuyNow && empty($groupedItems)) {
+    // Clear invalid buy now session
+    error_log('Buy Now - groupedItems is STILL empty after all fallbacks, redirecting to cart');
+    error_log('Buy Now - Session buy_now_item exists: ' . (isset($_SESSION['buy_now_item']) ? 'YES' : 'NO'));
+    if (isset($_SESSION['buy_now_item'])) {
+        error_log('Buy Now - Session buy_now_item: ' . json_encode($_SESSION['buy_now_item']));
+    }
+    error_log('CHECKOUT DEBUG - Final cart check: ' . json_encode($debugCartResult));
+    error_log('CHECKOUT DEBUG - Raw cart items were: ' . json_encode($preCartItems ?? []));
+    unset($_SESSION['buy_now_item']);
+    header("Location: ../cart.php?error=buy_now_failed&debug=1");
     exit();
+}
+
+// Final verification - if we have groupedItems, log it
+if (!empty($groupedItems)) {
+    error_log('CHECKOUT DEBUG - SUCCESS: groupedItems populated with ' . count($groupedItems) . ' seller groups');
+    foreach ($groupedItems as $sid => $sg) {
+        error_log('CHECKOUT DEBUG - Seller ' . $sid . ' has ' . count($sg['items']) . ' items, subtotal: ' . $sg['subtotal']);
+    }
 }
 
 // Include header only after all potential redirects/headers
@@ -251,12 +303,68 @@ require_once '../includes/header.php';
             </ul>
         </div>
     <?php endif; ?>
+    
+    <?php if (isset($_GET['debug']) || $isBuyNow): ?>
+        <div class="alert" style="background: #fff3cd; border: 1px solid #ffc107; padding: 15px; margin-bottom: 20px; border-radius: 8px;">
+            <strong>DEBUG INFO:</strong><br>
+            User ID: <?php echo $userId; ?><br>
+            Is Buy Now: <?php echo $isBuyNow ? 'YES' : 'NO'; ?><br>
+            Buy Now Active: <?php echo isset($_SESSION['buy_now_active']) ? 'YES' : 'NO'; ?><br>
+            Buy Now Data in Session: <?php echo isset($_SESSION['buy_now_data']) ? 'YES' : 'NO'; ?><br>
+            Cart Items Count (DB): <?php echo $debugCartResult['count'] ?? 0; ?><br>
+            Cart Total Quantity (DB): <?php echo $debugCartResult['total_qty'] ?? 0; ?><br>
+            Grouped Items Count: <?php echo count($groupedItems); ?><br>
+            Grand Total: ₱<?php echo number_format($grandTotal, 2); ?><br>
+            <small>Check error logs for more details</small>
+        </div>
+    <?php endif; ?>
 
     <div class="checkout-content">
         <div class="order-summary">
             <h2>Order Summary</h2>
 
             <div class="order-items" id="order-items-container">
+                <?php 
+                // Debug: Log groupedItems before display
+                $displayCount = is_array($groupedItems) ? count($groupedItems) : 0;
+                $isEmpty = empty($groupedItems);
+                error_log('Checkout Display - groupedItems count: ' . $displayCount);
+                error_log('Checkout Display - groupedItems empty check: ' . ($isEmpty ? 'YES' : 'NO'));
+                error_log('Checkout Display - isBuyNow: ' . ($isBuyNow ? 'YES' : 'NO'));
+                error_log('Checkout Display - groupedItems is_array: ' . (is_array($groupedItems) ? 'YES' : 'NO'));
+                error_log('Checkout Display - groupedItems structure: ' . json_encode($groupedItems));
+                
+                // Force check - if count > 0 but empty() returns true, there's a structure issue
+                if ($displayCount > 0 && $isEmpty) {
+                    error_log('Checkout Display - WARNING: count() > 0 but empty() returns true! This is a structure issue!');
+                    // Force it to not be empty by checking if it has any keys
+                    $hasKeys = !empty(array_keys($groupedItems));
+                    error_log('Checkout Display - groupedItems has keys: ' . ($hasKeys ? 'YES' : 'NO'));
+                    if ($hasKeys) {
+                        // Override empty check - the array has data
+                        $isEmpty = false;
+                        error_log('Checkout Display - Overriding empty check - array has valid keys');
+                    }
+                }
+                
+                if ($isEmpty) {
+                    error_log('Checkout Display - groupedItems is EMPTY when trying to display!');
+                    error_log('Checkout Display - This should NOT happen if session fallback worked');
+                } else {
+                    error_log('Checkout Display - groupedItems has ' . $displayCount . ' seller groups, proceeding to display');
+                }
+                ?>
+                <?php if ($isEmpty): ?>
+                    <div class="empty-cart-message">
+                        <p>Your cart is empty.</p>
+                        <?php if ($isBuyNow): ?>
+                            <p style="color: #c92a2a; margin-top: 10px;">
+                                <strong>Buy Now Error:</strong> The item could not be loaded. Please try using "Add to Cart" instead.
+                            </p>
+                        <?php endif; ?>
+                        <a href="../products.php" class="btn btn-primary">Continue Shopping</a>
+                    </div>
+                <?php else: ?>
                 <?php foreach ($groupedItems as $sellerId => $sellerGroup): ?>
                     <div class="seller-group" data-seller-id="<?php echo $sellerId; ?>">
                         <div class="seller-header">
@@ -286,6 +394,7 @@ require_once '../includes/header.php';
                         <?php endforeach; ?>
                     </div>
                 <?php endforeach; ?>
+                <?php endif; // End if (!empty($groupedItems)) ?>
             </div>
 
             <div class="order-total" id="order-total">

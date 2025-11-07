@@ -6,11 +6,30 @@ if (!isset($pdo)) {
     require_once __DIR__ . '/../config/database.php';
 }
 
-// Check if user is admin
+// Check if user is admin or seller (both should bypass maintenance)
 $isAdmin = false;
+$isSeller = false;
 
-if (isset($_SESSION['user_id']) && isset($_SESSION['role'])) {
-    $isAdmin = ($_SESSION['role'] === 'admin');
+if (isset($_SESSION['user_id'])) {
+    if (isset($_SESSION['role'])) {
+        $isAdmin = ($_SESSION['role'] === 'admin');
+    }
+    // Check user_type from session or database
+    if (isset($_SESSION['user_type'])) {
+        $isSeller = ($_SESSION['user_type'] === 'seller');
+    } else {
+        // Fallback: check database if user_type not in session
+        try {
+            if (isset($pdo)) {
+                $stmt = $pdo->prepare("SELECT user_type FROM users WHERE id = ?");
+                $stmt->execute([$_SESSION['user_id']]);
+                $userType = $stmt->fetchColumn();
+                $isSeller = ($userType === 'seller');
+            }
+        } catch (PDOException $e) {
+            // Ignore database errors for this check
+        }
+    }
 }
 
 $maintenanceMode = '0';
@@ -36,10 +55,13 @@ try {
     // Check scheduled maintenance ONLY if auto-enable is turned on
     if ($maintenanceAuto === '1' && !empty($maintenanceStart) && !empty($maintenanceEnd)) {
         try {
+            // Set timezone to match your server/database timezone
+            $timezone = new DateTimeZone('Asia/Manila'); // Change this to your timezone
+            
             // Parse the format stored in database: Y-m-d H:i:s (e.g., 2024-11-06 14:30:00)
-            $startDateTime = DateTime::createFromFormat('Y-m-d H:i:s', $maintenanceStart);
-            $endDateTime = DateTime::createFromFormat('Y-m-d H:i:s', $maintenanceEnd);
-            $currentDateTime = new DateTime();
+            $startDateTime = DateTime::createFromFormat('Y-m-d H:i:s', $maintenanceStart, $timezone);
+            $endDateTime = DateTime::createFromFormat('Y-m-d H:i:s', $maintenanceEnd, $timezone);
+            $currentDateTime = new DateTime('now', $timezone);
             
             // Validate that times were parsed correctly
             if ($startDateTime && $endDateTime) {
@@ -64,8 +86,8 @@ try {
     error_log("Maintenance check database error: " . $e->getMessage());
 }
 
-// Final check: Show maintenance page if maintenance is active and user is not admin
-if ($shouldShowMaintenance && !$isAdmin) {
+// Final check: Show maintenance page if maintenance is active and user is not admin or seller
+if ($shouldShowMaintenance && !$isAdmin && !$isSeller) {
     ?>
     <!DOCTYPE html>
     <html lang="en">
@@ -74,6 +96,7 @@ if ($shouldShowMaintenance && !$isAdmin) {
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Maintenance Mode - Site Under Maintenance</title>
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+        <link href="https://fonts.googleapis.com/css2?family=Inconsolata:wght@400;700&display=swap" rel="stylesheet">
         <style>
             * {
                 margin: 0;
@@ -81,159 +104,185 @@ if ($shouldShowMaintenance && !$isAdmin) {
                 box-sizing: border-box;
             }
 
-            body {
-                font-family: 'Inter', 'Segoe UI', sans-serif;
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                min-height: 100vh;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                padding: 20px;
+            html, body {
+                height: 100%;
+                background: #130325;
+                color: #F9F9F9;
+                font-family: 'Inconsolata', monospace;
+                font-size: 100%;
+                overflow-x: hidden;
             }
 
-            .maintenance-container {
-                background: #ffffff;
-                border-radius: 20px;
-                padding: 60px 40px;
-                max-width: 600px;
-                width: 100%;
-                text-align: center;
-                box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-                animation: fadeInUp 0.6s ease-out;
-            }
-
-            @keyframes fadeInUp {
-                from {
-                    opacity: 0;
-                    transform: translateY(30px);
-                }
-                to {
-                    opacity: 1;
-                    transform: translateY(0);
-                }
-            }
-
-            .maintenance-icon {
-                font-size: 80px;
-                color: #667eea;
-                margin-bottom: 30px;
-                animation: toolRotate 3s ease-in-out infinite;
-            }
-
-            @keyframes toolRotate {
-                0%, 100% { transform: rotate(-15deg); }
-                50% { transform: rotate(15deg); }
-            }
-
-            .maintenance-container h1 {
-                font-size: 32px;
-                color: #130325;
-                margin-bottom: 20px;
+            .maintenance {
+                text-transform: uppercase;
+                margin-bottom: 1rem;
+                font-size: 3rem;
+                color: #FFD736;
                 font-weight: 700;
             }
 
-            .maintenance-container p {
-                font-size: 16px;
-                color: #6b7280;
+            .container {
+                display: table;
+                margin: 0 auto;
+                max-width: 1024px;
+                width: 100%;
+                height: 100%;
+                align-content: center;
+                position: relative;
+                box-sizing: border-box;
+            }
+
+            .what-is-up {
+                position: absolute;
+                width: 100%;
+                top: 50%;
+                transform: translateY(-50%);
+                display: block;
+                vertical-align: middle;
+                text-align: center;
+                box-sizing: border-box;
+                padding: 20px;
+            }
+
+            .spinny-cogs {
+                display: block;
+                margin-bottom: 2rem;
+            }
+
+            .spinny-cogs .fa {
+                color: #FFD736;
+                margin: 0 10px;
+            }
+
+            .spinny-cogs .fa:nth-of-type(1) {
+                -webkit-animation: fa-spin-one 1s infinite linear;
+                animation: fa-spin-one 1s infinite linear;
+            }
+
+            .spinny-cogs .fa:nth-of-type(3) {
+                -webkit-animation: fa-spin-two 2s infinite linear;
+                animation: fa-spin-two 2s infinite linear;
+            }
+
+            .what-is-up h2 {
+                font-size: 1.2rem;
+                color: rgba(255, 255, 255, 0.9);
                 line-height: 1.6;
-                margin-bottom: 30px;
+                max-width: 600px;
+                margin: 0 auto 2rem;
             }
 
             .maintenance-message {
-                background: #f3f4f6;
-                border-left: 4px solid #667eea;
+                background: rgba(255, 215, 54, 0.1);
+                border: 2px solid #FFD736;
                 padding: 20px;
                 border-radius: 8px;
-                margin: 30px 0;
+                margin: 2rem auto;
+                max-width: 600px;
                 text-align: left;
             }
 
             .maintenance-message p {
                 margin: 0;
-                color: #130325;
-            }
-
-            .loader {
-                display: inline-block;
-                width: 50px;
-                height: 50px;
-                border: 5px solid #f3f4f6;
-                border-top: 5px solid #667eea;
-                border-radius: 50%;
-                animation: spin 1s linear infinite;
-                margin-top: 20px;
-            }
-
-            @keyframes spin {
-                0% { transform: rotate(0deg); }
-                100% { transform: rotate(360deg); }
-            }
-
-            .social-links {
-                margin-top: 40px;
-                display: flex;
-                gap: 15px;
-                justify-content: center;
-            }
-
-            .social-links a {
-                width: 40px;
-                height: 40px;
-                border-radius: 50%;
-                background: #f3f4f6;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                color: #667eea;
-                text-decoration: none;
-                transition: all 0.3s ease;
-            }
-
-            .social-links a:hover {
-                background: #667eea;
                 color: #ffffff;
-                transform: translateY(-3px);
+                word-wrap: break-word;
+                overflow-wrap: break-word;
+                font-size: 1rem;
             }
 
-            .back-soon {
-                font-size: 14px;
-                color: #9ca3af;
-                margin-top: 30px;
-                font-style: italic;
+            @-webkit-keyframes fa-spin-one {
+                0% {
+                    -webkit-transform: translateY(-2rem) rotate(0deg);
+                    transform: translateY(-2rem) rotate(0deg);
+                }
+                100% {
+                    -webkit-transform: translateY(-2rem) rotate(-359deg);
+                    transform: translateY(-2rem) rotate(-359deg);
+                }
             }
 
+            @keyframes fa-spin-one {
+                0% {
+                    -webkit-transform: translateY(-2rem) rotate(0deg);
+                    transform: translateY(-2rem) rotate(0deg);
+                }
+                100% {
+                    -webkit-transform: translateY(-2rem) rotate(-359deg);
+                    transform: translateY(-2rem) rotate(-359deg);
+                }
+            }
+
+            @-webkit-keyframes fa-spin-two {
+                0% {
+                    -webkit-transform: translateY(0.5rem) rotate(0deg);
+                    transform: translateY(0.5rem) rotate(0deg);
+                }
+                100% {
+                    -webkit-transform: translateY(0.5rem) rotate(-359deg);
+                    transform: translateY(0.5rem) rotate(-359deg);
+                }
+            }
+
+            @keyframes fa-spin-two {
+                0% {
+                    -webkit-transform: translateY(0.5rem) rotate(0deg);
+                    transform: translateY(0.5rem) rotate(0deg);
+                }
+                100% {
+                    -webkit-transform: translateY(0.5rem) rotate(-359deg);
+                    transform: translateY(0.5rem) rotate(-359deg);
+                }
+            }
+
+            /* Responsive */
             @media (max-width: 768px) {
-                .maintenance-container {
-                    padding: 40px 30px;
+                .maintenance {
+                    font-size: 2rem;
                 }
 
-                .maintenance-container h1 {
-                    font-size: 24px;
+                .what-is-up h2 {
+                    font-size: 1rem;
                 }
 
-                .maintenance-icon {
-                    font-size: 60px;
+                .spinny-cogs .fa {
+                    font-size: 2rem !important;
+                }
+            }
+
+            @media (max-width: 576px) {
+                .maintenance {
+                    font-size: 1.5rem;
+                }
+
+                .what-is-up h2 {
+                    font-size: 0.9rem;
+                }
+
+                .spinny-cogs .fa {
+                    font-size: 1.5rem !important;
+                    margin: 0 5px;
+                }
+
+                .maintenance-message {
+                    padding: 15px;
                 }
             }
         </style>
     </head>
     <body>
-        <div class="maintenance-container">
-            <div class="maintenance-icon">
-                <i class="fas fa-tools"></i>
+        <div class="container">
+            <div class="what-is-up">
+                <div class="spinny-cogs">
+                    <i class="fa fa-cog" aria-hidden="true"></i>
+                    <i class="fa fa-5x fa-cog fa-spin" aria-hidden="true"></i>
+                    <i class="fa fa-3x fa-cog" aria-hidden="true"></i>
+                </div>
+                <h1 class="maintenance">Under Maintenance</h1>
+                <h2>Our developers are hard at work updating your system. Please wait while we do this. We have also made the spinning cogs to distract you.</h2>
+                <div class="maintenance-message">
+                    <p><?php echo htmlspecialchars($maintenanceMessage); ?></p>
+                </div>
             </div>
-            
-            <h1>We'll Be Back Soon!</h1>
-            
-            <p>Our website is currently undergoing scheduled maintenance to improve your experience.</p>
-            
-            <div class="maintenance-message">
-                <p><?php echo htmlspecialchars($maintenanceMessage); ?></p>
-            </div>
-            
-            <div class="loader"></div>
-            
-            <p class="back-soon">Thank you for your patience. We'll be back online shortly.</p>
         </div>
     </body>
     </html>

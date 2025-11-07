@@ -1194,11 +1194,11 @@ function mergeSessionCartWithDatabase() {
                     $newQuantity = $product['stock_quantity'];
                 }
                 
-                $stmt = $pdo->prepare("UPDATE cart SET quantity = ?, updated_at = NOW() WHERE user_id = ? AND product_id = ?");
+                $stmt = $pdo->prepare("UPDATE cart SET quantity = ? WHERE user_id = ? AND product_id = ?");
                 $stmt->execute([$newQuantity, $userId, $productId]);
             } else {
-                // Insert new item
-                $stmt = $pdo->prepare("INSERT INTO cart (user_id, product_id, quantity, created_at, updated_at) VALUES (?, ?, ?, NOW(), NOW())");
+                // Insert new item - added_at has DEFAULT current_timestamp(), so we don't need to specify it
+                $stmt = $pdo->prepare("INSERT INTO cart (user_id, product_id, quantity) VALUES (?, ?, ?)");
                 $stmt->execute([$userId, $productId, $sessionItem['quantity']]);
             }
         }
@@ -1221,88 +1221,100 @@ function mergeSessionCartWithDatabase() {
 // Get cart items grouped by seller
 function getCartItemsGroupedBySeller() {
     if (!isLoggedIn()) {
+        error_log('getCartItemsGroupedBySeller - User not logged in');
         return [];
     }
     
     global $pdo;
     $userId = $_SESSION['user_id'];
     
-    // SIMPLIFIED QUERY - Just get cart items first
-    $stmt = $pdo->prepare("SELECT * FROM cart WHERE user_id = ?");
-    $stmt->execute([$userId]);
-    $cartItems = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    
-    // Debug: Log cart items
-    // Debug logs removed
-    
-    if (count($cartItems) === 0) {
-        // No cart items found
+    try {
+        // Get all cart items with product and seller info in one query
+        $stmt = $pdo->prepare("
+            SELECT 
+                c.product_id,
+                c.quantity,
+                c.created_at as cart_created_at,
+                p.id,
+                p.name,
+                p.price,
+                p.image_url,
+                p.stock_quantity,
+                p.status,
+                p.seller_id,
+                u.username as seller_username,
+                u.first_name as seller_first_name,
+                u.last_name as seller_last_name,
+                u.display_name as seller_display_name
+            FROM cart c
+            INNER JOIN products p ON c.product_id = p.id
+            LEFT JOIN users u ON p.seller_id = u.id
+            WHERE c.user_id = ?
+            ORDER BY p.seller_id, p.name
+        ");
+        $stmt->execute([$userId]);
+        $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        error_log('getCartItemsGroupedBySeller - Query returned ' . count($results) . ' items for user ' . $userId);
+        
+        if (empty($results)) {
+            error_log('getCartItemsGroupedBySeller - No cart items found');
+            return [];
+        }
+        
+        // Group by seller
+        $groupedItems = [];
+        
+        foreach ($results as $row) {
+            $sellerId = $row['seller_id'];
+            
+            // Handle missing seller
+            if (!$sellerId) {
+                error_log('getCartItemsGroupedBySeller - Product ' . $row['product_id'] . ' has no seller_id, skipping');
+                continue;
+            }
+            
+            // Initialize seller group if not exists
+            if (!isset($groupedItems[$sellerId])) {
+                $displayName = $row['seller_display_name'] 
+                    ?? trim(($row['seller_first_name'] ?? '') . ' ' . ($row['seller_last_name'] ?? ''))
+                    ?: ($row['seller_username'] ?? 'Unknown Seller');
+                
+                $groupedItems[$sellerId] = [
+                    'seller_id' => $sellerId,
+                    'seller_name' => $row['seller_username'] ?? 'Unknown Seller',
+                    'seller_display_name' => $displayName,
+                    'items' => [],
+                    'subtotal' => 0,
+                    'item_count' => 0
+                ];
+            }
+            
+            // Add item to seller group
+            $itemTotal = (float)$row['price'] * (int)$row['quantity'];
+            
+            $groupedItems[$sellerId]['items'][] = [
+                'product_id' => $row['product_id'],
+                'name' => $row['name'],
+                'price' => (float)$row['price'],
+                'quantity' => (int)$row['quantity'],
+                'image_url' => $row['image_url'] ?? 'images/placeholder.jpg',
+                'stock_quantity' => (int)$row['stock_quantity'],
+                'status' => $row['status']
+            ];
+            
+            $groupedItems[$sellerId]['subtotal'] += $itemTotal;
+            $groupedItems[$sellerId]['item_count'] += (int)$row['quantity'];
+        }
+        
+        error_log('getCartItemsGroupedBySeller - Grouped into ' . count($groupedItems) . ' seller groups');
+        
+        return $groupedItems;
+        
+    } catch (Exception $e) {
+        error_log('getCartItemsGroupedBySeller - Exception: ' . $e->getMessage());
         return [];
     }
-    
-    // Now get product details for each cart item
-    $groupedItems = [];
-    foreach ($cartItems as $cartItem) {
-        $productId = $cartItem['product_id'];
-        
-        // Get product details (include inactive products too)
-        $stmt = $pdo->prepare("SELECT * FROM products WHERE id = ?");
-        $stmt->execute([$productId]);
-        $product = $stmt->fetch(PDO::FETCH_ASSOC);
-        
-        if (!$product) {
-            // Product not found
-            continue;
-        }
-        
-        // Processing product
-        
-        // Check if seller exists
-        if (!$product['seller_id']) {
-            // Product has no seller
-            continue;
-        }
-        
-        // Get seller details
-        $stmt = $pdo->prepare("SELECT username, first_name, last_name, display_name FROM users WHERE id = ?");
-        $stmt->execute([$product['seller_id']]);
-        $seller = $stmt->fetch(PDO::FETCH_ASSOC);
-        
-        if (!$seller) {
-            // Seller not found
-            continue;
-        }
-        
-        // Found seller
-        
-        $sellerId = $product['seller_id'];
-        if (!isset($groupedItems[$sellerId])) {
-            $displayName = $seller['display_name'] ?? trim($seller['first_name'] . ' ' . $seller['last_name']) ?: ($seller['username'] ?: 'Unknown Seller');
-            $groupedItems[$sellerId] = [
-                'seller_id' => $sellerId,
-                'seller_name' => $seller['username'] ?: 'Unknown Seller',
-                'seller_display_name' => $displayName,
-                'items' => [],
-                'subtotal' => 0,
-                'item_count' => 0
-            ];
-        }
-        
-        // Combine cart and product data
-        $item = array_merge($cartItem, $product);
-        $item['seller_name'] = $seller['username'] ?: 'Unknown Seller';
-        $item['seller_first_name'] = $seller['first_name'] ?: '';
-        $item['seller_last_name'] = $seller['last_name'] ?: '';
-        
-        $itemTotal = $product['price'] * $cartItem['quantity'];
-        $groupedItems[$sellerId]['items'][] = $item;
-        $groupedItems[$sellerId]['subtotal'] += $itemTotal;
-        $groupedItems[$sellerId]['item_count'] += $cartItem['quantity'];
-    }
-    
-    // Final grouped items count: " . count($groupedItems)
-    
-    return $groupedItems;
 }
 
 // Get cart total across all sellers
@@ -1355,14 +1367,42 @@ function processMultiSellerCheckout($shippingAddress, $paymentMethod, $customerN
     global $pdo;
     $userId = $_SESSION['user_id'];
     
-    // Validate cart first
-    $validation = validateMultiSellerCart();
-    if (!$validation['success']) {
-        return $validation;
+    // HANDLE BUY NOW - Get items from session instead of cart
+    if ($isBuyNow && isset($_SESSION['buy_now_data'])) {
+        error_log('Checkout - Processing Buy Now from session');
+        
+        $buyNowData = $_SESSION['buy_now_data'];
+        $sellerId = $buyNowData['seller']['seller_id'];
+        
+        $groupedItems = [
+            $sellerId => [
+                'seller_id' => $sellerId,
+                'seller_name' => $buyNowData['seller']['seller_name'],
+                'seller_display_name' => $buyNowData['seller']['seller_display_name'],
+                'items' => [
+                    $buyNowData['product']
+                ],
+                'subtotal' => $buyNowData['total'],
+                'item_count' => $buyNowData['quantity']
+            ]
+        ];
+        
+        $grandTotal = $buyNowData['total'];
+        
+    } else {
+        // Regular checkout - validate cart
+        $validation = validateMultiSellerCart();
+        if (!$validation['success']) {
+            return $validation;
+        }
+        
+        $groupedItems = getCartItemsGroupedBySeller();
+        $grandTotal = getMultiSellerCartTotal();
     }
     
-    $groupedItems = getCartItemsGroupedBySeller();
-    $grandTotal = getMultiSellerCartTotal();
+    if (empty($groupedItems)) {
+        return ['success' => false, 'message' => 'No items to checkout'];
+    }
     
     try {
         // Ensure primary keys are properly auto-incremented (before transaction)
@@ -1439,11 +1479,16 @@ function processMultiSellerCheckout($shippingAddress, $paymentMethod, $customerN
             }
         }
         
-// Clear cart after successful checkout (but NOT for buy now)
-if (!$isBuyNow) {
-    $stmt = $pdo->prepare("DELETE FROM cart WHERE user_id = ?");
-    $stmt->execute([$userId]);
-}
+        // Clear cart (but NOT for buy now - buy now doesn't use cart)
+        if (!$isBuyNow) {
+            $stmt = $pdo->prepare("DELETE FROM cart WHERE user_id = ?");
+            $stmt->execute([$userId]);
+        } else {
+            // Clear buy now session data
+            unset($_SESSION['buy_now_active']);
+            unset($_SESSION['buy_now_data']);
+        }
+        
         $pdo->commit();
         
         // 6. Create notifications for each order (after transaction is committed)

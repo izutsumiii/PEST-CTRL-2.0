@@ -74,8 +74,18 @@ if (isset($_POST['update_settings'])) {
 if (isset($_POST['toggle_maintenance'])) {
     $maintenanceMode = isset($_POST['maintenance_mode']) ? '1' : '0';
     $maintenanceMessage = isset($_POST['maintenance_message']) ? sanitizeInput($_POST['maintenance_message']) : 'We are currently performing scheduled maintenance. Please check back soon!';
-    $maintenanceStart = $_POST['maintenance_start'] ?? '';
-    $maintenanceEnd = $_POST['maintenance_end'] ?? '';
+    // Format datetime inputs to match database format (Y-m-d H:i:s)
+    $maintenanceStart = '';
+    $maintenanceEnd = '';
+    
+    if (!empty($_POST['maintenance_start'])) {
+        // Convert from datetime-local format (Y-m-d\TH:i) to database format (Y-m-d H:i:s)
+        $maintenanceStart = date('Y-m-d H:i:s', strtotime($_POST['maintenance_start']));
+    }
+    
+    if (!empty($_POST['maintenance_end'])) {
+        $maintenanceEnd = date('Y-m-d H:i:s', strtotime($_POST['maintenance_end']));
+    }
     $maintenanceAuto = isset($_POST['maintenance_auto_enable']) ? '1' : '0';
     
     try {
@@ -699,14 +709,396 @@ try {
         color: #1e3a8a;
     }
 
+/* ===== RESPONSIVE STYLES ===== */
+
+    /* Tablet Devices (Portrait and smaller desktops) */
+    @media (max-width: 1024px) {
+        .settings-container {
+            padding: 0 20px 20px;
+        }
+
+        .page-header {
+            padding: 0 16px !important;
+        }
+    }
+
+    /* Tablet Devices (Portrait) */
     @media (max-width: 768px) {
+        .page-header {
+            flex-direction: column;
+            align-items: flex-start !important;
+            gap: 8px !important;
+            padding: 0 12px !important;
+            margin: 16px auto 16px auto !important;
+        }
+
+        .page-header h1,
+        .page-heading-title {
+            font-size: 18px !important;
+        }
+
+        .settings-container {
+            padding: 0 16px 16px;
+        }
+
+        .settings-card {
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .settings-card h3 {
+            font-size: 16px;
+            flex-direction: column;
+            align-items: flex-start !important;
+        }
+
+        .status-badge {
+            align-self: flex-start;
+        }
+
         .schedule-grid {
             grid-template-columns: 1fr;
+            gap: 16px;
         }
 
         .toggle-container {
             flex-direction: column;
             align-items: flex-start;
+            gap: 12px;
+        }
+
+        .input-group {
+            flex-wrap: wrap;
+        }
+
+        .form-group input {
+            width: 100%;
+            max-width: 200px;
+        }
+
+        .form-group input[type="datetime-local"] {
+            max-width: 100%;
+        }
+
+        .btn-save {
+            width: 100%;
+            justify-content: center;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .info-modal-dialog {
+            padding: 24px;
+            width: 95%;
+        }
+
+        .info-modal-title {
+            font-size: 18px;
+        }
+
+        .toast-notification {
+            min-width: 280px;
+            max-width: calc(100vw - 40px);
+            top: 70px;
+        }
+    }
+
+    /* Mobile Devices (Large) */
+    @media (max-width: 576px) {
+        .page-header {
+            margin: 12px auto 12px auto !important;
+        }
+
+        .page-header h1,
+        .page-heading-title {
+            font-size: 16px !important;
+        }
+
+        .settings-container {
+            padding: 0 12px 12px;
+        }
+
+        .settings-card {
+            padding: 16px;
+            margin-bottom: 16px;
+            border-radius: 10px;
+        }
+
+        .settings-card h3 {
+            font-size: 15px;
+            margin-bottom: 16px;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-group label {
+            font-size: 12px;
+            flex-wrap: wrap;
+        }
+
+        .info-icon {
+            font-size: 14px;
+        }
+
+        .form-group input {
+            padding: 8px 10px;
+            font-size: 13px;
+        }
+
+        .form-group textarea {
+            padding: 10px;
+            font-size: 13px;
+        }
+
+        .input-suffix {
+            font-size: 13px;
+        }
+
+        .current-value-badge {
+            font-size: 12px;
+            padding: 5px 10px;
+        }
+
+        .btn-save {
+            padding: 10px 20px;
+            font-size: 13px;
+        }
+
+        .toggle-label {
+            width: 50px;
+            height: 26px;
+        }
+
+        .toggle-slider:before {
+            height: 18px;
+            width: 18px;
+        }
+
+        input:checked + .toggle-slider:before {
+            transform: translateX(24px);
+        }
+
+        .toggle-info strong {
+            font-size: 14px;
+        }
+
+        .toggle-info p {
+            font-size: 12px;
+        }
+
+        .schedule-header h4 {
+            font-size: 15px;
+        }
+
+        .schedule-header p {
+            font-size: 12px;
+        }
+
+        .form-help-text {
+            font-size: 11px;
+        }
+
+        .info-box-maintenance,
+        .maintenance-warning,
+        .schedule-info-box {
+            padding: 12px;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .info-box-maintenance i,
+        .maintenance-warning i,
+        .schedule-info-box i {
+            font-size: 18px;
+        }
+
+        .info-box-maintenance li {
+            font-size: 12px;
+        }
+
+        .schedule-info-box p {
+            font-size: 12px;
+        }
+
+        .status-badge {
+            font-size: 10px;
+            padding: 5px 12px;
+        }
+
+        .info-modal-dialog {
+            padding: 20px;
+            max-height: 85vh;
+        }
+
+        .info-modal-title {
+            font-size: 16px;
+        }
+
+        .info-modal-body {
+            font-size: 14px;
+        }
+
+        .info-modal-body h4 {
+            font-size: 15px;
+        }
+
+        .info-modal-body li {
+            font-size: 13px;
+        }
+
+        .toast-notification {
+            min-width: 260px;
+            padding: 14px 16px;
+            font-size: 14px;
+            top: 60px;
+        }
+    }
+
+    /* Mobile Devices (Small) */
+    @media (max-width: 400px) {
+        .settings-card {
+            padding: 14px;
+        }
+
+        .settings-card h3 {
+            font-size: 14px;
+        }
+
+        .form-group label {
+            font-size: 11px;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            font-size: 12px;
+        }
+
+        .btn-save {
+            padding: 9px 18px;
+            font-size: 12px;
+        }
+
+        .toggle-label {
+            width: 46px;
+            height: 24px;
+        }
+
+        .toggle-slider:before {
+            height: 16px;
+            width: 16px;
+        }
+
+        input:checked + .toggle-slider:before {
+            transform: translateX(22px);
+        }
+
+        .toggle-info strong {
+            font-size: 13px;
+        }
+
+        .toggle-info p {
+            font-size: 11px;
+        }
+
+        .current-value-badge {
+            font-size: 11px;
+            padding: 4px 8px;
+        }
+
+        .info-box-maintenance,
+        .maintenance-warning,
+        .schedule-info-box {
+            padding: 10px;
+        }
+
+        .info-box-maintenance i,
+        .maintenance-warning i,
+        .schedule-info-box i {
+            font-size: 16px;
+        }
+
+        .info-modal-dialog {
+            padding: 16px;
+        }
+
+        .info-modal-close {
+            width: 28px;
+            height: 28px;
+            font-size: 24px;
+        }
+
+        .toast-notification {
+            min-width: 240px;
+            padding: 12px 14px;
+            font-size: 13px;
+        }
+    }
+
+    /* Landscape Mode for Mobile */
+    @media (max-height: 600px) and (orientation: landscape) {
+        .settings-card {
+            padding: 16px;
+        }
+
+        .form-group {
+            margin-bottom: 12px;
+        }
+
+        .settings-card h3 {
+            margin-bottom: 12px;
+        }
+
+        .toggle-container {
+            padding: 12px;
+        }
+
+        .info-box-maintenance,
+        .maintenance-warning,
+        .schedule-info-box {
+            padding: 10px;
+        }
+
+        .info-modal-dialog {
+            max-height: 90vh;
+            padding: 20px;
+        }
+
+        .toast-notification {
+            top: 50px;
+        }
+    }
+
+    /* Very small devices */
+    @media (max-width: 320px) {
+        .page-header h1,
+        .page-heading-title {
+            font-size: 15px !important;
+        }
+
+        .settings-card {
+            padding: 12px;
+        }
+
+        .settings-card h3 {
+            font-size: 13px;
+        }
+
+        .btn-save {
+            padding: 8px 16px;
+            font-size: 11px;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            font-size: 11px;
+            padding: 7px 9px;
+        }
+
+        .info-modal-dialog {
+            padding: 14px;
         }
     }
 
@@ -829,14 +1221,14 @@ try {
                 <div class="form-group">
                     <label for="maintenance_start"><i class="fas fa-play-circle"></i> Start Date & Time</label>
                     <input type="datetime-local" id="maintenance_start" name="maintenance_start" 
-                           value="<?php echo htmlspecialchars($maintenanceStart); ?>">
+                    value="<?php echo !empty($maintenanceStart) ? date('Y-m-d\TH:i', strtotime($maintenanceStart)) : ''; ?>">
                     <small class="form-help-text">When maintenance mode should automatically start</small>
                 </div>
                 
                 <div class="form-group">
                     <label for="maintenance_end"><i class="fas fa-stop-circle"></i> End Date & Time</label>
                     <input type="datetime-local" id="maintenance_end" name="maintenance_end" 
-                           value="<?php echo htmlspecialchars($maintenanceEnd); ?>">
+                    value="<?php echo !empty($maintenanceEnd) ? date('Y-m-d\TH:i', strtotime($maintenanceEnd)) : ''; ?>">
                     <small class="form-help-text">When maintenance mode should automatically end</small>
                 </div>
             </div>
