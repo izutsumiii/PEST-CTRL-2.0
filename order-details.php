@@ -321,6 +321,12 @@ h1 {
     border: 1px solid #28a745;
 }
 
+.status-completed {
+    background: rgba(40, 167, 69, 0.2);
+    color: #28a745;
+    border: 1px solid #28a745;
+}
+
 .status-cancelled {
     background: rgba(220, 53, 69, 0.2);
     color: #dc3545;
@@ -688,7 +694,7 @@ h1 {
                 <a href="user-dashboard.php" class="back-arrow"><i class="fas fa-arrow-left"></i></a>
                 <h3 class="status-title">Order Status</h3>
             </div>
-            <span class="status-badge status-<?php echo $order['status']; ?>"><?php echo ucfirst($order['status']); ?></span>
+            <span class="status-badge status-<?php echo strtolower($order['status']); ?>"><?php echo ucfirst($order['status']); ?></span>
         </div>
     </div>
 
@@ -738,6 +744,12 @@ h1 {
                 <strong>Shipping Address</strong>
                 <span><?php echo $order['shipping_address']; ?></span>
             </div>
+            <?php if (strtolower($order['status']) === 'completed' && !empty($order['delivery_date'])): ?>
+            <div class="info-item">
+                <strong>Delivery Date</strong>
+                <span><?php echo date('F j, Y, g:i a', strtotime($order['delivery_date'])); ?></span>
+            </div>
+            <?php endif; ?>
         </div>
     </div>
 
@@ -793,7 +805,12 @@ h1 {
             <button onclick="cancelOrder(<?php echo $order['id']; ?>)" class="action-btn btn-cancel">
                 <i class="fas fa-times"></i> Cancel Order
             </button>
-        <?php elseif ($order['status'] === 'delivered'): ?>
+        <?php elseif (strtolower($order['status']) === 'delivered'): ?>
+            <!-- DELIVERED: Order Received button -->
+            <button type="button" onclick="confirmOrderReceived(<?php echo $order['id']; ?>)" class="action-btn btn-order-received">
+                <i class="fas fa-check-circle"></i> Order Received
+            </button>
+        <?php elseif (strtolower($order['status']) === 'completed'): ?>
             <button onclick="buyAgain(<?php echo $order['id']; ?>)" class="action-btn btn-buy-again">
                 <i class="fas fa-shopping-cart"></i> Buy Again
             </button>
@@ -853,6 +870,107 @@ function cancelOrder(orderId) {
     if (confirm('Are you sure you want to cancel this order?')) {
         // Redirect to cancel order page or handle via AJAX
         window.location.href = `cancel-order.php?id=${orderId}`;
+    }
+}
+
+// Order Received Confirmation (same as user-dashboard.php)
+function confirmOrderReceived(orderId) {
+    // Create confirmation modal (matching logout modal design)
+    const modal = document.createElement('div');
+    modal.id = 'orderReceivedModal';
+    modal.style.cssText = 'display: flex; position: fixed; z-index: 10000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center;';
+    
+    const modalContent = document.createElement('div');
+    modalContent.style.cssText = 'background: #ffffff; border-radius: 12px; padding: 0; max-width: 400px; width: 90%; box-shadow: 0 10px 40px rgba(0,0,0,0.2); animation: slideDown 0.3s ease;';
+    
+    const modalHeader = document.createElement('div');
+    modalHeader.style.cssText = 'background: #130325; color: #ffffff; padding: 16px 20px; border-radius: 12px 12px 0 0; display: flex; align-items: center; gap: 10px;';
+    modalHeader.innerHTML = '<i class="fas fa-check-circle" style="font-size: 16px; color: #FFD736;"></i><h3 style="margin: 0; font-size: 14px; font-weight: 700;">Confirm Order Received</h3>';
+    
+    const modalBody = document.createElement('div');
+    modalBody.style.cssText = 'padding: 20px; color: #130325;';
+    modalBody.innerHTML = '<p style="margin: 0; font-size: 13px; line-height: 1.5; color: #130325;">Have you received your order? This will mark the order as completed.</p>';
+    
+    const modalFooter = document.createElement('div');
+    modalFooter.style.cssText = 'padding: 16px 24px; border-top: 1px solid #e5e7eb; display: flex; gap: 10px; justify-content: flex-end;';
+    
+    const cancelBtn = document.createElement('button');
+    cancelBtn.textContent = 'Cancel';
+    cancelBtn.style.cssText = 'padding: 8px 20px; background: #f3f4f6; color: #130325; border: 1px solid #e5e7eb; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px; transition: all 0.2s ease;';
+    cancelBtn.onmouseover = function() { this.style.background = '#e5e7eb'; };
+    cancelBtn.onmouseout = function() { this.style.background = '#f3f4f6'; };
+    
+    const confirmBtn = document.createElement('button');
+    confirmBtn.textContent = 'Confirm';
+    confirmBtn.style.cssText = 'padding: 8px 20px; background: #130325; color: #ffffff; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px; transition: all 0.2s ease;';
+    confirmBtn.onmouseover = function() { this.style.background = '#0a0218'; };
+    confirmBtn.onmouseout = function() { this.style.background = '#130325'; };
+    
+    cancelBtn.onclick = function() {
+        document.body.removeChild(modal);
+        document.body.style.overflow = '';
+    };
+    
+    confirmBtn.onclick = function() {
+        confirmBtn.disabled = true;
+        confirmBtn.textContent = 'Processing...';
+        
+        fetch('ajax/confirm-order-received.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ order_id: orderId })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const notification = document.createElement('div');
+                notification.style.cssText = 'position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: #ffffff; color: #130325; border: 1px solid #e5e7eb; border-radius: 12px; padding: 16px 18px; z-index: 10001; box-shadow: 0 10px 30px rgba(0,0,0,0.2); max-width: 90%; width: 520px; text-align: center;';
+                notification.innerHTML = '<div style="font-weight: 600;">' + data.message + '</div>';
+                document.body.appendChild(notification);
+                
+                document.body.removeChild(modal);
+                document.body.style.overflow = '';
+                
+                setTimeout(() => {
+                    // Reload to show updated status
+                    window.location.href = window.location.href.split('?')[0] + '?id=' + orderId;
+                }, 1500);
+            } else {
+                alert('Error: ' + (data.message || 'Failed to confirm order'));
+                confirmBtn.disabled = false;
+                confirmBtn.textContent = 'Confirm';
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error confirming order. Please try again.');
+            confirmBtn.disabled = false;
+            confirmBtn.textContent = 'Confirm';
+        });
+    };
+    
+    modalFooter.appendChild(cancelBtn);
+    modalFooter.appendChild(confirmBtn);
+    modalContent.appendChild(modalHeader);
+    modalContent.appendChild(modalBody);
+    modalContent.appendChild(modalFooter);
+    modal.appendChild(modalContent);
+    
+    document.body.appendChild(modal);
+    document.body.style.overflow = 'hidden';
+    
+    modal.onclick = function(e) {
+        if (e.target === modal) {
+            document.body.removeChild(modal);
+            document.body.style.overflow = '';
+        }
+    };
+    
+    if (!document.getElementById('orderReceivedModalStyles')) {
+        const style = document.createElement('style');
+        style.id = 'orderReceivedModalStyles';
+        style.textContent = '@keyframes slideDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }';
+        document.head.appendChild(style);
     }
 }
 

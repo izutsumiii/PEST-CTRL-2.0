@@ -451,6 +451,51 @@ function checkDatabaseStructure($pdo) {
 }
 
 
+// Automatic completion: Check for delivered orders that are 1 week old
+try {
+    $stmt = $pdo->prepare("SELECT id FROM orders 
+                           WHERE user_id = ? 
+                           AND status = 'delivered' 
+                           AND delivery_date IS NOT NULL 
+                           AND delivery_date <= DATE_SUB(NOW(), INTERVAL 7 DAY)");
+    $stmt->execute([$userId]);
+    $oldDeliveredOrders = $stmt->fetchAll(PDO::FETCH_COLUMN);
+    
+    if (!empty($oldDeliveredOrders)) {
+        $pdo->beginTransaction();
+        foreach ($oldDeliveredOrders as $orderId) {
+            // Update to completed
+            $stmt = $pdo->prepare("UPDATE orders SET status = 'completed', updated_at = NOW() WHERE id = ?");
+            $stmt->execute([$orderId]);
+            
+            // Log status change
+            try {
+                $stmt = $pdo->prepare("INSERT INTO order_status_history (order_id, status, notes, updated_by, created_at) 
+                                      VALUES (?, 'completed', 'Automatically completed after 1 week', NULL, NOW())");
+                $stmt->execute([$orderId]);
+            } catch (Exception $e) {
+                error_log("Failed to log auto-completion: " . $e->getMessage());
+            }
+            
+            // Create notification for customer
+            try {
+                $stmt = $pdo->prepare("INSERT INTO notifications (user_id, order_id, message, type, created_at) 
+                                      VALUES (?, ?, ?, 'info', NOW())");
+                $message = "Order #" . str_pad($orderId, 6, '0', STR_PAD_LEFT) . " has been automatically completed.";
+                $stmt->execute([$userId, $orderId, $message]);
+            } catch (Exception $e) {
+                error_log("Failed to create auto-completion notification: " . $e->getMessage());
+            }
+        }
+        $pdo->commit();
+    }
+} catch (Exception $e) {
+    if ($pdo->inTransaction()) {
+        $pdo->rollBack();
+    }
+    error_log("Error in automatic completion: " . $e->getMessage());
+}
+
 // Get orders by status - NOW THESE FUNCTIONS WILL WORK
 $pendingOrders = getOrdersByStatus('pending');
 $processingOrders = getOrdersByStatus('processing');
@@ -2581,7 +2626,10 @@ document.addEventListener('DOMContentLoaded', () => {
             // Add active class to clicked tab
             this.classList.add('active');
             
-            const status = this.getAttribute('data-status');
+            let status = this.getAttribute('data-status');
+            
+            // Map 'to_receive' back to 'shipped' for URL (or we can keep it as 'to_receive')
+            // For now, keep it as is
             
             // Update URL to reflect the selected filter
             const url = new URL(window.location);
@@ -2789,6 +2837,153 @@ function confirmProductSelection() {
     
     window.location.href = redirectUrl;
 }
+// Order Received Confirmation Modal and Function
+function confirmOrderReceived(orderId) {
+    // Create confirmation modal (matching logout modal design)
+    const modal = document.createElement('div');
+    modal.id = 'orderReceivedModal';
+    modal.style.cssText = 'display: flex; position: fixed; z-index: 10000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center;';
+    
+    const modalContent = document.createElement('div');
+    modalContent.style.cssText = 'background: #ffffff; border-radius: 12px; padding: 0; max-width: 400px; width: 90%; box-shadow: 0 10px 40px rgba(0,0,0,0.2); animation: slideDown 0.3s ease;';
+    
+    const modalHeader = document.createElement('div');
+    modalHeader.style.cssText = 'background: #130325; color: #ffffff; padding: 16px 20px; border-radius: 12px 12px 0 0; display: flex; align-items: center; gap: 10px;';
+    modalHeader.innerHTML = '<i class="fas fa-check-circle" style="font-size: 16px; color: #FFD736;"></i><h3 style="margin: 0; font-size: 14px; font-weight: 700;">Confirm Order Received</h3>';
+    
+    const modalBody = document.createElement('div');
+    modalBody.style.cssText = 'padding: 20px; color: #130325;';
+    modalBody.innerHTML = '<p style="margin: 0; font-size: 13px; line-height: 1.5; color: #130325;">Have you received your order? This will mark the order as completed.</p>';
+    
+    const modalFooter = document.createElement('div');
+    modalFooter.style.cssText = 'padding: 16px 24px; border-top: 1px solid #e5e7eb; display: flex; gap: 10px; justify-content: flex-end;';
+    
+    const cancelBtn = document.createElement('button');
+    cancelBtn.textContent = 'Cancel';
+    cancelBtn.style.cssText = 'padding: 8px 20px; background: #f3f4f6; color: #130325; border: 1px solid #e5e7eb; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px; transition: all 0.2s ease;';
+    cancelBtn.onmouseover = function() { this.style.background = '#e5e7eb'; };
+    cancelBtn.onmouseout = function() { this.style.background = '#f3f4f6'; };
+    
+    const confirmBtn = document.createElement('button');
+    confirmBtn.textContent = 'Confirm';
+    confirmBtn.style.cssText = 'padding: 8px 20px; background: #130325; color: #ffffff; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px; transition: all 0.2s ease;';
+    confirmBtn.onmouseover = function() { this.style.background = '#0a0218'; };
+    confirmBtn.onmouseout = function() { this.style.background = '#130325'; };
+    
+    cancelBtn.onclick = function() {
+        document.body.removeChild(modal);
+        document.body.style.overflow = '';
+    };
+    
+    confirmBtn.onclick = function() {
+        // Disable button
+        confirmBtn.disabled = true;
+        confirmBtn.textContent = 'Processing...';
+        
+        // Make AJAX call
+        fetch('ajax/confirm-order-received.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                order_id: orderId
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Show success notification
+                showOrderReceivedSuccess(data.message);
+                
+                // Remove modal
+                document.body.removeChild(modal);
+                document.body.style.overflow = '';
+                
+                // Reload page after short delay to show updated status in COMPLETED section
+                setTimeout(() => {
+                    window.location.href = 'user-dashboard.php?status=completed';
+                }, 1500);
+            } else {
+                alert('Error: ' + (data.message || 'Failed to confirm order'));
+                confirmBtn.disabled = false;
+                confirmBtn.textContent = 'Confirm';
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error confirming order. Please try again.');
+            confirmBtn.disabled = false;
+            confirmBtn.textContent = 'Confirm';
+        });
+    };
+    
+    modalFooter.appendChild(cancelBtn);
+    modalFooter.appendChild(confirmBtn);
+    
+    modalContent.appendChild(modalHeader);
+    modalContent.appendChild(modalBody);
+    modalContent.appendChild(modalFooter);
+    modal.appendChild(modalContent);
+    
+    document.body.appendChild(modal);
+    document.body.style.overflow = 'hidden';
+    
+    // Close on background click
+    modal.onclick = function(e) {
+        if (e.target === modal) {
+            document.body.removeChild(modal);
+            document.body.style.overflow = '';
+        }
+    };
+    
+    // Add CSS animation if not exists
+    if (!document.getElementById('orderReceivedModalStyles')) {
+        const style = document.createElement('style');
+        style.id = 'orderReceivedModalStyles';
+        style.textContent = '@keyframes slideDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }';
+        document.head.appendChild(style);
+    }
+}
+
+// Show success notification
+function showOrderReceivedSuccess(message) {
+    const notification = document.createElement('div');
+    notification.style.cssText = 'position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: #ffffff; color: #130325; border: 1px solid #e5e7eb; border-radius: 12px; padding: 16px 18px; z-index: 10001; box-shadow: 0 10px 30px rgba(0,0,0,0.2); max-width: 90%; width: 520px; text-align: center; animation: slideInUp 0.3s ease;';
+    notification.innerHTML = `
+        <div style="font-weight: 600;">${message}</div>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Remove after 3 seconds
+    setTimeout(() => {
+        notification.style.animation = 'slideOutDown 0.3s ease forwards';
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.parentNode.removeChild(notification);
+            }
+        }, 300);
+    }, 3000);
+    
+    // Add animations if not exists
+    if (!document.getElementById('orderReceivedNotificationStyles')) {
+        const style = document.createElement('style');
+        style.id = 'orderReceivedNotificationStyles';
+        style.textContent = `
+            @keyframes slideInUp {
+                from { opacity: 0; transform: translate(-50%, 20px); }
+                to { opacity: 1; transform: translate(-50%, 0); }
+            }
+            @keyframes slideOutDown {
+                from { opacity: 1; transform: translate(-50%, 0); }
+                to { opacity: 0; transform: translate(-50%, 20px); }
+            }
+        `;
+        document.head.appendChild(style);
+    }
+}
+
 // Scroll to specific order when page loads with hash
 document.addEventListener('DOMContentLoaded', function() {
     // Check if there's a hash in the URL (e.g., #order-123)
@@ -2842,12 +3037,16 @@ document.addEventListener('DOMContentLoaded', function() {
         <div class="filter-container">
             <div class="filter-tabs">
                 <?php 
-                $currentFilter = isset($_GET['status']) ? strtolower(trim($_GET['status'])) : 'delivered';
+                $currentFilter = isset($_GET['status']) ? strtolower(trim($_GET['status'])) : 'completed';
+                // Map 'shipped' and 'delivered' to 'to_receive' for filter tab
+                if ($currentFilter === 'shipped' || $currentFilter === 'delivered') {
+                    $currentFilter = 'to_receive';
+                }
                 ?>
                 <a href="#" class="filter-tab <?php echo $currentFilter === 'pending' ? 'active' : ''; ?>" data-status="pending">PENDING</a>
                 <a href="#" class="filter-tab <?php echo $currentFilter === 'processing' ? 'active' : ''; ?>" data-status="processing">TO SHIP</a>
-                <a href="#" class="filter-tab <?php echo $currentFilter === 'shipped' ? 'active' : ''; ?>" data-status="shipped">TO RECEIVE</a>
-                <a href="#" class="filter-tab <?php echo $currentFilter === 'delivered' ? 'active' : ''; ?>" data-status="delivered">COMPLETED</a>
+                <a href="#" class="filter-tab <?php echo ($currentFilter === 'shipped' || $currentFilter === 'delivered') ? 'active' : ''; ?>" data-status="to_receive">TO RECEIVE</a>
+                <a href="#" class="filter-tab <?php echo $currentFilter === 'completed' ? 'active' : ''; ?>" data-status="completed">COMPLETED</a>
                 <a href="#" class="filter-tab <?php echo $currentFilter === 'cancelled' ? 'active' : ''; ?>" data-status="cancelled">CANCELLED</a>
                 <a href="#" class="filter-tab <?php echo $currentFilter === 'return_requested' ? 'active' : ''; ?>" data-status="return_requested">REFUNDED/RETURNS</a>
             </div>
@@ -2860,13 +3059,22 @@ document.addEventListener('DOMContentLoaded', function() {
                 <a href="products.php" class="btn btn-primary">Start Shopping</a>
             </div>
         <?php else: ?>
-                <?php
-                $filter = isset($_GET['status']) ? strtolower(trim($_GET['status'])) : 'delivered';
+                <?php 
+                $filter = isset($_GET['status']) ? strtolower(trim($_GET['status'])) : 'completed';
                 $hasFilteredOrders = false;
 
                 // First pass: check if there are any orders matching the filter
                 if ($filter === 'return_requested') {
                     $hasFilteredOrders = !empty($returnRequestedOrders);
+                } elseif ($filter === 'to_receive') {
+                    // TO RECEIVE shows both 'shipped' and 'delivered' status
+                    foreach ($orders as $order) {
+                        $orderStatusKey = strtolower($order['status']);
+                        if ($orderStatusKey === 'shipped' || $orderStatusKey === 'delivered') {
+                            $hasFilteredOrders = true;
+                            break;
+                        }
+                    }
                 } else {
                     foreach ($orders as $order) {
                         $orderStatusKey = strtolower($order['status']);
@@ -2891,7 +3099,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     $orderStatusKey = strtolower($order['status']);
                     
                     // For non-return_requested filters, skip if status doesn't match
-                    if ($filter !== 'return_requested' && $filter !== $orderStatusKey) {
+                    if ($filter === 'return_requested') {
+                        // Already filtered
+                    } elseif ($filter === 'to_receive') {
+                        // TO RECEIVE shows both 'shipped' and 'delivered'
+                        if ($orderStatusKey !== 'shipped' && $orderStatusKey !== 'delivered') {
+                            continue;
+                        }
+                    } elseif ($filter !== $orderStatusKey) {
                         continue;
                     }
                 ?>
@@ -2984,7 +3199,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     </div>
                     
                     <div class="order-actions">
-    <?php if (strtolower($order['status']) === 'delivered'): ?>
+    <?php if (strtolower($order['status']) === 'completed'): ?>
         <!-- COMPLETED ORDERS: View Details, Return/Refund and Rate buttons -->
         <a href="order-details.php?id=<?php echo $order['id']; ?>" class="btn btn-primary">
             <i class="fas fa-eye"></i> View Details
@@ -3159,6 +3374,14 @@ document.addEventListener('DOMContentLoaded', function() {
             <i class="fas fa-times"></i> Cancel Order
         </button>
         
+    <?php elseif (strtolower($order['status']) === 'delivered'): ?>
+        <!-- DELIVERED ORDERS: Order Received button + View Details -->
+        <button type="button" class="btn btn-secondary" onclick="confirmOrderReceived(<?php echo $order['id']; ?>)">
+            <i class="fas fa-check-circle"></i> Order Received
+        </button>
+        <a href="order-details.php?id=<?php echo $order['id']; ?>" class="btn btn-primary">
+            <i class="fas fa-eye"></i> View Details
+        </a>
     <?php else: ?>
         <!-- For processing and shipped orders -->
         <a href="order-details.php?id=<?php echo $order['id']; ?>" class="btn btn-primary">

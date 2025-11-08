@@ -13,6 +13,15 @@ requireSeller();
 
 $userId = $_SESSION['user_id'];
 
+// Automatically update database ENUM to include 'completed' if needed
+try {
+    $pdo->exec("ALTER TABLE `orders` MODIFY COLUMN `status` ENUM('pending','processing','shipped','delivered','completed','cancelled') DEFAULT 'pending'");
+    error_log("Successfully updated orders.status ENUM to include 'completed'");
+} catch (Exception $e) {
+    // ENUM might already be updated or error occurred, continue anyway
+    error_log("Note: orders.status ENUM update attempt: " . $e->getMessage());
+}
+
 // Handle status update - MUST be before any HTML output
 if (isset($_POST['update_status'])) {
     $orderId = intval($_POST['order_id']);
@@ -23,8 +32,27 @@ if (isset($_POST['update_status'])) {
     $stmt->execute([$orderId, $userId]);
     $order = $stmt->fetch(PDO::FETCH_ASSOC);
     
-    $stmt = $pdo->prepare("UPDATE orders SET status = ? WHERE id = ?");
-$result = $stmt->execute([$newStatus, $orderId]);
+    // Update order status and set delivery_date if status is 'delivered'
+    if ($newStatus === 'delivered') {
+        $stmt = $pdo->prepare("UPDATE orders SET status = ?, delivery_date = NOW(), updated_at = NOW() WHERE id = ?");
+    } elseif ($newStatus === 'completed') {
+        // For completed status, ensure delivery_date is set if not already
+        $stmt = $pdo->prepare("UPDATE orders SET status = ?, delivery_date = COALESCE(delivery_date, NOW()), updated_at = NOW() WHERE id = ?");
+    } else {
+        $stmt = $pdo->prepare("UPDATE orders SET status = ?, updated_at = NOW() WHERE id = ?");
+    }
+    $result = $stmt->execute([$newStatus, $orderId]);
+    
+    // Verify the update actually worked by checking the status
+    if ($result && $newStatus === 'completed') {
+        $verifyStmt = $pdo->prepare("SELECT status FROM orders WHERE id = ?");
+        $verifyStmt->execute([$orderId]);
+        $actualStatus = $verifyStmt->fetchColumn();
+        if ($actualStatus !== 'completed') {
+            error_log("WARNING: Order status update to 'completed' failed. Database ENUM may not include 'completed'. Actual status: " . $actualStatus);
+            $_SESSION['order_message'] = ['type' => 'error', 'text' => 'Failed to update order status. Please ensure the database ENUM includes "completed" status.'];
+        }
+    }
 
 if ($result) {
     $_SESSION['order_message'] = ['type' => 'success', 'text' => 'Order #' . str_pad($orderId, 6, '0', STR_PAD_LEFT) . ' updated to ' . ucfirst($newStatus)];
@@ -44,7 +72,8 @@ if ($result) {
                 'pending' => 'Your order has been received and is pending processing.',
                 'processing' => 'Your order is now being processed.',
                 'shipped' => 'Great news! Your order has been shipped.',
-                'delivered' => 'Your order has been delivered. Thank you for your purchase!',
+                'delivered' => 'Your order has been delivered by the courier. Please confirm when you receive it.',
+                'completed' => '✅ Order #' . str_pad($orderId, 6, '0', STR_PAD_LEFT) . ' has been completed! Thank you for your purchase.',
                 'cancelled' => 'Your order has been cancelled.',
                 'refunded' => 'Your order has been refunded.'
             ];
@@ -61,20 +90,23 @@ if ($result) {
         error_log("Failed to create customer notification: " . $e->getMessage());
     }
 
-if ($result && in_array($newStatus, ['processing', 'shipped', 'delivered'])) {
+if ($result && in_array($newStatus, ['processing', 'shipped', 'delivered', 'completed'])) {
     require_once 'includes/seller_notification_functions.php';
     
     $statusMessages = [
         'processing' => '✅ Order #' . str_pad($orderId, 6, '0', STR_PAD_LEFT) . ' moved to Processing',
         'shipped' => '🚚 Order #' . str_pad($orderId, 6, '0', STR_PAD_LEFT) . ' has been shipped',
-        'delivered' => '📦 Order #' . str_pad($orderId, 6, '0', STR_PAD_LEFT) . ' was delivered'
+        'delivered' => '📦 Order #' . str_pad($orderId, 6, '0', STR_PAD_LEFT) . ' was delivered by courier',
+        'completed' => '✅ Order #' . str_pad($orderId, 6, '0', STR_PAD_LEFT) . ' has been completed'
     ];
+    
+    $notificationType = ($newStatus === 'completed') ? 'COMPLETE' : 'info';
     
     createSellerNotification(
         $userId,
-        'Order Status Updated',
+        ($newStatus === 'completed') ? 'Order Completed' : 'Order Status Updated',
         $statusMessages[$newStatus] ?? 'Order status changed',
-        'info',
+        $notificationType,
         'seller-order-details.php?order_id=' . $orderId
     );
 }
@@ -195,14 +227,15 @@ $groupedOrders = [];
 foreach ($orders as $order) {
     $orderId = $order['id'];
     if (!isset($groupedOrders[$orderId])) {
-        $groupedOrders[$orderId] = [
-            'order_id' => $orderId,
-            'customer_name' => $order['customer_name'],
-            'total_amount' => $order['total_amount'],
-            'status' => $order['status'],
-            'created_at' => $order['created_at'],
-            'items' => []
-        ];
+    $groupedOrders[$orderId] = [
+        'order_id' => $orderId,
+        'customer_name' => $order['customer_name'],
+        'total_amount' => $order['total_amount'],
+        'status' => $order['status'],
+        'created_at' => $order['created_at'],
+        'delivery_date' => $order['delivery_date'] ?? null,
+        'items' => []
+    ];
     }
     
     $groupedOrders[$orderId]['items'][] = [
@@ -599,6 +632,7 @@ h1 {
 .status-processing { background: rgba(0,123,255,0.15); color: #007bff; }
 .status-shipped { background: rgba(23,162,184,0.15); color: #17a2b8; }
 .status-delivered { background: rgba(40,167,69,0.15); color: #28a745; }
+.status-completed { background: rgba(40,167,69,0.15); color: #28a745; }
 .status-cancelled { background: rgba(220,53,69,0.15); color: #dc3545; }
 
 .order-date {
@@ -691,6 +725,16 @@ h1 {
 
 .btn-delivered:hover {
     background: #218838;
+    transform: scale(1.1);
+}
+
+.btn-completed {
+    background: #130325;
+    color: #FFD736;
+}
+
+.btn-completed:hover:not(:disabled) {
+    background: #0a0218;
     transform: scale(1.1);
 }
 
@@ -818,7 +862,7 @@ h1 {
                         <?php else: foreach ($groupedOrders as $order):
             $withinGracePeriod = isWithinGracePeriod($order['created_at'], $pdo);
             $remainingTime = $withinGracePeriod ? getRemainingGracePeriod($order['created_at'], $pdo) : null;
-            $statusClass = 'status-' . $order['status'];
+            $statusClass = 'status-' . strtolower($order['status']);
             ?>
             <tr data-id="<?php echo $order['order_id']; ?>" 
                 data-customer="<?php echo htmlspecialchars(strtolower($order['customer_name'])); ?>" 
@@ -936,6 +980,54 @@ h1 {
                                                 <span>Delivered</span>
                                             </button>
                                         </form>
+                                    </div>
+                                <?php elseif ($order['status'] === 'delivered'): ?>
+                                    <div class="action-buttons">
+                                        <?php
+                                        // Check if 1 week has passed since delivery_date
+                                        $deliveryDate = $order['delivery_date'] ?? null;
+                                        $canComplete = false;
+                                        $daysSinceDelivery = 0; // Initialize variable
+                                        
+                                        if ($deliveryDate) {
+                                            $deliveryDateTime = new DateTime($deliveryDate);
+                                            $currentDateTime = new DateTime();
+                                            $daysSinceDelivery = $currentDateTime->diff($deliveryDateTime)->days;
+                                            $canComplete = $daysSinceDelivery >= 7;
+                                        }
+                                        
+                                        // Check if order is already completed (customer might have confirmed)
+                                        // Use the order status from the fetched data
+                                        if (strtolower($order['status']) === 'completed') {
+                                            echo '<span style="color: #28a745; font-weight: 600; font-size: 12px;">✓ Completed</span>';
+                                        } elseif ($canComplete) {
+                                            // Button enabled after 1 week
+                                            ?>
+                                            <form method="POST" onsubmit="return confirmStatusChange('completed');">
+                                                <input type="hidden" name="order_id" value="<?php echo $order['order_id']; ?>">
+                                                <input type="hidden" name="status" value="completed">
+                                                <input type="hidden" name="update_status" value="1">
+                                                <button type="submit" class="action-btn btn-completed">
+                                                    <i class="fas fa-check-double"></i>
+                                                    <span>Order Completed</span>
+                                                </button>
+                                            </form>
+                                            <?php
+                                        } else {
+                                            // Button disabled - show countdown
+                                            if ($deliveryDate) {
+                                                $daysRemaining = max(0, 7 - $daysSinceDelivery);
+                                            } else {
+                                                $daysRemaining = 7; // If no delivery date, show 7 days
+                                            }
+                                            ?>
+                                            <button type="button" class="action-btn btn-completed" disabled style="opacity: 0.6; cursor: not-allowed;" title="Available after <?php echo $daysRemaining; ?> day(s)">
+                                                <i class="fas fa-clock"></i>
+                                                <span>Order Completed (<?php echo $daysRemaining; ?>d)</span>
+                                            </button>
+                                            <?php
+                                        }
+                                        ?>
                                     </div>
                                 <?php else: ?>
                                     <span style="color: #999; font-style: italic; font-size: 12px;">No actions</span>
