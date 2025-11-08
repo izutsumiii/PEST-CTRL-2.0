@@ -787,26 +787,113 @@ h1 {
 
 </style>
 
-<!-- Simple remove confirmation modal -->
+<!-- Remove Item Confirmation Modal -->
 <div id="removeModal" class="remove-modal" style="display:none;">
     <div class="remove-modal-content">
-        <h3>Remove item?</h3>
-        <p>Do you want to remove this product from your cart?</p>
-        <div class="remove-modal-actions">
-            <button id="removeCancel" class="btn btn-secondary">Cancel</button>
-            <button id="removeConfirm" class="btn btn-danger">Remove</button>
+        <div class="remove-modal-header">
+            <i class="fas fa-trash" style="font-size: 16px; color: #FFD736;"></i>
+            <h3>Remove Item</h3>
+        </div>
+        <div class="remove-modal-body">
+            <p>Do you want to remove this product from your cart?</p>
+        </div>
+        <div class="remove-modal-footer">
+            <button id="removeCancel" class="remove-cancel-btn">Cancel</button>
+            <button id="removeConfirm" class="remove-confirm-btn">Remove</button>
         </div>
     </div>
-    <div class="remove-modal-backdrop"></div>
     <style>
-    .remove-modal { position: fixed; inset: 0; z-index: 10000; }
-    .remove-modal-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,0.5); }
-    .remove-modal-content { position: relative; z-index: 10001; max-width: 380px; margin: 15vh auto; background: #ffffff; color: #130325; border-radius: 10px; padding: 18px; box-shadow: 0 10px 30px rgba(0,0,0,0.25); }
-    .remove-modal-content h3 { margin: 0 0 8px 0; font-size: 16px; font-weight: 800; color: #130325; }
-    .remove-modal-content p { margin: 0 0 14px 0; color: #4b5563; font-size: 13px; font-weight: 600; }
-    .remove-modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
-    .btn.btn-secondary { background: #6c757d; color: #fff; }
-    .btn.btn-secondary:hover { background: #5a6268; }
+    .remove-modal {
+        position: fixed;
+        z-index: 10000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .remove-modal-content {
+        background: #ffffff;
+        border-radius: 12px;
+        padding: 0;
+        max-width: 400px;
+        width: 90%;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        animation: slideDown 0.3s ease;
+    }
+    .remove-modal-header {
+        background: #130325;
+        color: #ffffff;
+        padding: 16px 20px;
+        border-radius: 12px 12px 0 0;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .remove-modal-header h3 {
+        margin: 0;
+        font-size: 14px;
+        font-weight: 700;
+        color: #ffffff;
+    }
+    .remove-modal-body {
+        padding: 20px;
+        color: #130325;
+    }
+    .remove-modal-body p {
+        margin: 0;
+        font-size: 13px;
+        line-height: 1.5;
+        color: #130325;
+    }
+    .remove-modal-footer {
+        padding: 16px 24px;
+        border-top: 1px solid #e5e7eb;
+        display: flex;
+        gap: 10px;
+        justify-content: flex-end;
+    }
+    .remove-cancel-btn {
+        padding: 8px 20px;
+        background: #f3f4f6;
+        color: #130325;
+        border: 1px solid #e5e7eb;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 14px;
+        transition: all 0.2s ease;
+    }
+    .remove-cancel-btn:hover {
+        background: #e5e7eb;
+    }
+    .remove-confirm-btn {
+        padding: 8px 20px;
+        background: #130325;
+        color: #ffffff;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 14px;
+        transition: all 0.2s ease;
+    }
+    .remove-confirm-btn:hover {
+        background: #0a0218;
+    }
+    @keyframes slideDown {
+        from {
+            opacity: 0;
+            transform: translateY(-20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
     </style>
 </div>
 
@@ -827,7 +914,7 @@ document.addEventListener('DOMContentLoaded', function() {
     confirmBtn.addEventListener('click', confirmRemoveItem);
     
     modal.addEventListener('click', function(e) {
-        if (e.target.classList.contains('remove-modal-backdrop')) closeModal();
+        if (e.target === modal) closeModal();
     });
 });
 
@@ -838,7 +925,7 @@ function removeCartItem(productId) {
     
     // Show the CSS modal
     const modal = document.getElementById('removeModal');
-    modal.style.display = 'block';
+    modal.style.display = 'flex';
 }
 
 // Function to actually remove the item (called from modal)

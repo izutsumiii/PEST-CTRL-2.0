@@ -73,6 +73,7 @@ main.sidebar-collapsed { margin-left: 0 !important; }
 .status-processing { background: rgba(0,123,255,0.15); color: #007bff; }
 .status-shipped { background: rgba(23,162,184,0.15); color: #17a2b8; }
 .status-delivered { background: rgba(40,167,69,0.15); color: #28a745; }
+.status-completed { background: rgba(40,167,69,0.15); color: #28a745; }
 .status-cancelled { background: rgba(220,53,69,0.15); color: #dc3545; }
 .customer-info { display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin: 10px 0 16px 0; }
 .customer-info .card { background:#f9fafb; border:1px solid #e5e7eb; border-radius:8px; padding:12px; }
