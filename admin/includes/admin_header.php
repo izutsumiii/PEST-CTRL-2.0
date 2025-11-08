@@ -44,6 +44,31 @@ require_once $rootPath . '/includes/functions.php';
             padding: 16px 12px;
             z-index: 100;
             transition: all 0.3s ease;
+            overflow-y: auto;
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255, 215, 54, 0.15) transparent;
+        }
+        
+        /* Sidebar scrollbar styling - Chrome/Edge/Safari */
+        .sidebar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .sidebar::-webkit-scrollbar-track {
+            background: transparent;
+            border-radius: 3px;
+        }
+        .sidebar::-webkit-scrollbar-thumb {
+            background: rgba(255, 215, 54, 0.15);
+            border-radius: 3px;
+            border: 1px solid rgba(255, 215, 54, 0.05);
+            transition: background 0.2s ease;
+        }
+        .sidebar::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 215, 54, 0.3);
+            border: 1px solid rgba(255, 215, 54, 0.1);
         }
         
         .sidebar.collapsed {
@@ -54,8 +79,8 @@ require_once $rootPath . '/includes/functions.php';
             display: inline-flex; align-items: center; justify-content: center; gap: 8px;
             color: #F9F9F9; text-decoration: none; font-weight: 700; padding: 6px 8px;
         }
-        .sidebar .section-title { color: #9ca3af; font-size: 11px; text-transform: uppercase; letter-spacing: .08em; margin: 14px 8px 6px; }
-        .sidebar .nav-links { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
+        .sidebar .section-title { color: #9ca3af; font-size: 11px; text-transform: uppercase; letter-spacing: .08em; margin: 14px 8px 6px; flex-shrink: 0; }
+        .sidebar .nav-links { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; flex-shrink: 0; }
         .sidebar .nav-links a, 
         .sidebar .nav-dropdown-toggle { 
             display: flex; 
@@ -76,13 +101,64 @@ require_once $rootPath . '/includes/functions.php';
         .sidebar .nav-dropdown-toggle.active { background: rgba(255, 215, 54, 0.15); color: #FFD736; border: 1px solid rgba(255, 215, 54, 0.25); }
 
         /* Admin sidebar dropdown (match seller sidebar styles) */
-        .nav-dropdown { display: flex; flex-direction: column; width: 100%; }
-        .nav-dropdown-toggle { background: transparent; border: none; cursor: pointer; text-align: left; justify-content: space-between; }
+        .nav-dropdown { 
+            display: flex; 
+            flex-direction: column; 
+            width: 100%; 
+            position: relative;
+            flex-shrink: 0;
+        }
+        .nav-dropdown-toggle { 
+            background: transparent; 
+            border: none; 
+            cursor: pointer; 
+            text-align: left; 
+            justify-content: space-between; 
+            flex-shrink: 0;
+        }
         .nav-dropdown-toggle-content { display: flex; align-items: center; gap: 10px; }
         .nav-dropdown-arrow { transition: transform 0.3s ease; font-size: 12px; margin-left: auto; }
         .nav-dropdown-arrow.rotated { transform: rotate(90deg); }
-        .nav-dropdown-content { max-height: 0; overflow: hidden; transition: max-height 0.3s ease; display: flex; flex-direction: column; gap: 2px; padding: 0; }
-        .nav-dropdown-content.show { max-height: 300px; padding: 4px 0; }
+        .nav-dropdown-content { 
+            max-height: 0; 
+            overflow: hidden; 
+            transition: max-height 0.3s ease; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 2px; 
+            padding: 0; 
+            position: relative;
+            width: 100%;
+        }
+        .nav-dropdown-content.show { 
+            max-height: calc(100vh - 200px); 
+            padding: 4px 0; 
+            overflow-y: auto;
+            overflow-x: hidden;
+            -webkit-overflow-scrolling: touch;
+        }
+        .nav-dropdown-content.show::-webkit-scrollbar {
+            width: 6px;
+        }
+        .nav-dropdown-content.show::-webkit-scrollbar-track {
+            background: transparent;
+            border-radius: 3px;
+        }
+        .nav-dropdown-content.show::-webkit-scrollbar-thumb {
+            background: rgba(255, 215, 54, 0.2);
+            border-radius: 3px;
+            border: 1px solid rgba(255, 215, 54, 0.1);
+        }
+        .nav-dropdown-content.show::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 215, 54, 0.4);
+            border: 1px solid rgba(255, 215, 54, 0.2);
+        }
+        
+        /* Firefox scrollbar */
+        .nav-dropdown-content.show {
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255, 215, 54, 0.2) transparent;
+        }
         .nav-dropdown-content a { display: flex; align-items: center; gap: 10px; padding: 10px 12px 10px 24px; color: #F9F9F9; text-decoration: none; font-size: 13px; border-radius: 8px; transition: all 0.3s ease; background: rgba(0, 0, 0, 0.2); margin: 0; width: 100%; }
         .nav-dropdown-content a:hover { background: rgba(255, 215, 54, 0.1); color: #FFD736; }
         .nav-dropdown-content a i { font-size: 13px; width: 16px; }
@@ -209,6 +285,7 @@ require_once $rootPath . '/includes/functions.php';
         }
         /* Sidebar logo */
         .sidebar .sidebar-logo {
+            flex-shrink: 0;
             padding: 20px 15px;
             border-bottom: 1px solid rgba(255, 215, 54, 0.15);
             margin-bottom: 20px;
@@ -272,6 +349,7 @@ require_once $rootPath . '/includes/functions.php';
         
         /* Sidebar user profile section (non-clickable) - shows background when collapsed */
         .sidebar .user-profile-section {
+            flex-shrink: 0;
             margin-top: auto;
             padding: 15px 10px;
             border-top: 1px solid rgba(255, 215, 54, 0.15);
@@ -1292,7 +1370,21 @@ require_once $rootPath . '/includes/functions.php';
 
                 <div class="section-title hide-on-collapse">System</div>
                 <div class="nav-links">
-                    <a href="admin-settings.php" data-tooltip="Settings"><i class="fas fa-cogs"></i><span class="hide-on-collapse"> Settings</span></a>
+                    <div class="nav-dropdown">
+                        <button class="nav-dropdown-toggle" onclick="toggleNavDropdown(this)" data-tooltip="Settings">
+                            <div class="nav-dropdown-toggle-content">
+                                <i class="fas fa-cogs"></i>
+                                <span class="hide-on-collapse">Settings</span>
+                            </div>
+                            <i class="fas fa-chevron-right nav-dropdown-arrow hide-on-collapse"></i>
+                        </button>
+                        <div class="nav-dropdown-content">
+                            <a href="admin-settings.php?section=order"><i class="fas fa-clock"></i> Order Settings</a>
+                            <a href="admin-settings.php?section=maintenance"><i class="fas fa-tools"></i> Maintenance Mode</a>
+                            <a href="admin-settings.php?section=site"><i class="fas fa-cog"></i> Site Settings</a>
+                            <a href="admin-settings.php?section=profile"><i class="fas fa-user-edit"></i> Edit Profile</a>
+                        </div>
+                    </div>
                 </div>
 
 
@@ -1403,6 +1495,17 @@ require_once $rootPath . '/includes/functions.php';
             function toggleAdminHeaderDropdown() {
                 const dropdown = document.getElementById('adminHeaderDropdown');
                 dropdown.classList.toggle('show');
+            }
+
+            function toggleNavDropdown(button) {
+                const dropdown = button.closest('.nav-dropdown');
+                const content = dropdown.querySelector('.nav-dropdown-content');
+                const arrow = dropdown.querySelector('.nav-dropdown-arrow');
+                
+                content.classList.toggle('show');
+                if (arrow) {
+                    arrow.classList.toggle('rotated');
+                }
             }
 
             // Close dropdown when clicking outside
