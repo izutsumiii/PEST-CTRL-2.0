@@ -636,7 +636,7 @@ if ($selectedPeriod === 'weekly') {
         .stat-card .value {
             color: #130325;
             font-size: 22px;
-            font-weight: 800;
+            font-weight: 500;
             margin: 0;
         }
         
