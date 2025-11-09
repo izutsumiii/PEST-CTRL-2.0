@@ -239,6 +239,8 @@ function updateCartQuantity($productId, $quantity) {
 }
 
 // Get cart items with stock info
+// CRITICAL: This function ONLY reads from cart table
+// Buy_now items are in session ONLY and are NOT included here
 function getCartItems() {
     if (!isLoggedIn()) {
         return [];
@@ -247,6 +249,7 @@ function getCartItems() {
     global $pdo;
     $userId = $_SESSION['user_id'];
     
+    // Only read from cart table - buy_now items are separate and NOT included
     $stmt = $pdo->prepare("SELECT c.*, p.name, p.price, p.image_url, p.stock_quantity 
                           FROM cart c 
                           JOIN products p ON c.product_id = p.id 

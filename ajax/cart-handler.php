@@ -60,13 +60,16 @@ switch ($action) {
         
         if ($userId) {
             // User is logged in, get count from database
+            // CRITICAL: Cart count should ONLY include items from cart table
+            // Buy_now items are in session ONLY and should NEVER be counted here
             $stmt = $pdo->prepare("SELECT SUM(quantity) as count FROM cart WHERE user_id = ?");
             $stmt->execute([$userId]);
             $result = $stmt->fetch(PDO::FETCH_ASSOC);
-            $count = $result['count'] ? $result['count'] : 0;
-            error_log("Cart Debug - Cart count for user $userId: $count");
+            $count = $result['count'] ? (int)$result['count'] : 0;
+            error_log("Cart Handler - Cart count for user $userId: $count (buy_now items NOT included)");
         } else {
             // User not logged in, check session cart
+            // Note: session cart is separate from buy_now session
             if (function_exists('getSessionCartCount')) {
                 $count = getSessionCartCount();
             }

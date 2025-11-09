@@ -50,13 +50,10 @@ if (isset($_POST['update_cart'])) {
 // Get cart items directly from database - SIMPLE APPROACH
 $userId = $_SESSION['user_id'];
 
-// Clear buy_now session flags since items are now in database cart
-// This prevents checkout from trying to use session data instead of cart
-if (isset($_SESSION['buy_now_active'])) {
-    unset($_SESSION['buy_now_active']);
-    unset($_SESSION['buy_now_data']);
-    unset($_SESSION['buy_now_item']);
-}
+// CRITICAL: Do NOT clear buy_now session here!
+// Buy_now items are in session ONLY, not in cart table
+// Buy_now session should only be cleared AFTER checkout completes
+// cart.php should ONLY display items from cart table, buy_now items are invisible here
 
 // First, get all cart items with product info - USE LEFT JOIN to keep cart rows even if product missing
 $cartItemsStmt = $pdo->prepare("

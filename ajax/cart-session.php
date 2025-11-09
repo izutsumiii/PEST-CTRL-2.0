@@ -22,6 +22,7 @@ switch ($action) {
         }
         
         // If session cart is empty but user is logged in, pull DB cart count
+        // CRITICAL: Only count from cart table, buy_now items are in separate session and NOT counted
         if ($count === 0 && function_exists('isLoggedIn') && isLoggedIn() && isset($_SESSION['user_id'])) {
             try {
                 global $pdo;
@@ -31,6 +32,7 @@ switch ($action) {
                 if ($row && isset($row['count'])) {
                     $count = (int)$row['count'];
                 }
+                error_log('Cart Session - DB cart count: ' . $count . ' (buy_now items NOT included)');
             } catch (Exception $e) {
                 error_log('Cart count DB error: ' . $e->getMessage());
             }

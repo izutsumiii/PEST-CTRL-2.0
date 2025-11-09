@@ -145,10 +145,12 @@ try {
         : 'cart.php';
     
     // Prepare response - note: buy_now items are NOT in cart, so cart_count is from regular cart only
+    // CRITICAL: Cart count should NOT include buy_now items - only count from cart table
     $cartCountStmt = $pdo->prepare("SELECT SUM(quantity) as count FROM cart WHERE user_id = ?");
     $cartCountStmt->execute([$userId]);
     $cartCountResult = $cartCountStmt->fetch(PDO::FETCH_ASSOC);
     $totalCartItems = $cartCountResult['count'] ? (int)$cartCountResult['count'] : 0;
+    error_log('Buy Now - Cart count (excluding buy_now): ' . $totalCartItems);
     
     $response = [
         'success' => true,
