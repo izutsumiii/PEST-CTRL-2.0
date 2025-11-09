@@ -42,41 +42,62 @@ try {
     $userProfile = null;
 }
 
-// CRITICAL FIX: More lenient Buy Now detection
-// Accept if EITHER the GET parameter OR session variable exists
-$isBuyNow = (isset($_GET['buy_now']) && $_GET['buy_now'] == '1') || isset($_SESSION['buy_now_active']) || isset($_SESSION['buy_now_data']);
+// CRITICAL FIX: Strict Buy Now detection - ONLY use buy_now if session data exists
+// This ensures buy_now checkout ONLY processes the single buy_now item and IGNORES cart table
+$isBuyNow = (isset($_GET['buy_now']) && $_GET['buy_now'] == '1') && isset($_SESSION['buy_now_data']) && isset($_SESSION['buy_now_active']);
 error_log('CHECKOUT - Buy Now Active: ' . ($isBuyNow ? 'YES' : 'NO'));
+error_log('CHECKOUT - Buy Now Session Data Exists: ' . (isset($_SESSION['buy_now_data']) ? 'YES' : 'NO'));
+error_log('CHECKOUT - Buy Now Active Flag: ' . (isset($_SESSION['buy_now_active']) ? 'YES' : 'NO'));
 
 $groupedItems = [];
 $grandTotal = 0;
+$rawCount = ['count' => 0]; // Initialize for buy_now case
 
 if ($isBuyNow && isset($_SESSION['buy_now_data'])) {
-    // Buy Now mode - use session data ONLY
-    error_log('CHECKOUT - Using Buy Now session data');
+    // Buy Now mode - use session data ONLY, COMPLETELY IGNORE cart table
+    error_log('CHECKOUT - Using Buy Now session data ONLY (ignoring cart table)');
     
     $buyNowData = $_SESSION['buy_now_data'];
     $sellerId = $buyNowData['seller']['seller_id'];
     
+    // CRITICAL: Build groupedItems from buy_now_data ONLY
     $groupedItems = [
         $sellerId => [
             'seller_id' => $sellerId,
             'seller_name' => $buyNowData['seller']['seller_name'],
             'seller_display_name' => $buyNowData['seller']['seller_display_name'],
             'items' => [
-                $buyNowData['product']
+                [
+                    'product_id' => $buyNowData['product']['product_id'] ?? $buyNowData['product']['id'],
+                    'name' => $buyNowData['product']['name'],
+                    'price' => (float)$buyNowData['product']['price'],
+                    'quantity' => (int)$buyNowData['product']['quantity'],
+                    'image_url' => $buyNowData['product']['image_url'] ?? 'images/placeholder.jpg',
+                    'stock_quantity' => (int)$buyNowData['product']['stock_quantity'],
+                    'status' => $buyNowData['product']['status'] ?? 'active',
+                    'product_exists' => true
+                ]
             ],
-            'subtotal' => $buyNowData['total'],
-            'item_count' => $buyNowData['quantity']
+            'subtotal' => (float)$buyNowData['total'],
+            'item_count' => (int)$buyNowData['quantity']
         ]
     ];
     
-    $grandTotal = $buyNowData['total'];
+    $grandTotal = (float)$buyNowData['total'];
     
     error_log('CHECKOUT - Buy Now items loaded: ' . json_encode($groupedItems));
+    error_log('CHECKOUT - Buy Now grandTotal: ' . $grandTotal);
+    error_log('CHECKOUT - IMPORTANT: Cart table is being IGNORED for Buy Now checkout');
+    
+    // CRITICAL: Set rawCount to 0 for buy_now to prevent cart fallback
+    $rawCount = ['count' => 0];
+    error_log('CHECKOUT - Buy Now: rawCount set to 0 to prevent cart fallback');
     
 } else {
+    // Regular checkout - use cart from database (ONLY if NOT buy_now)
+    // CRITICAL: This block should NEVER execute if buy_now is active
     // Regular checkout - use cart from database
-    error_log('CHECKOUT - Using regular cart from database');
+    error_log('CHECKOUT - Using regular cart from database (NOT buy_now)');
     error_log('CHECKOUT - User ID: ' . $userId);
     
     // Primary: fetch cart rows with LEFT JOIN (allows missing products)
@@ -210,7 +231,7 @@ if ($isBuyNow && isset($_SESSION['buy_now_data'])) {
         }
         error_log('CHECKOUT - Emergency rebuild: ' . count($groupedItems) . ' seller groups');
     }
-}
+} // End of else block for regular checkout
 
 error_log('CHECKOUT - FINAL RESULT: ' . count($groupedItems) . ' seller groups, grandTotal: ' . $grandTotal);
 
@@ -431,10 +452,60 @@ if (isset($groupedItemsBackup) && isset($itemsCountBeforeFilter)) {
     }
 }
 
-// If truly empty, redirect
+// If truly empty, redirect (but NOT for buy_now - buy_now should always have items from session)
 if (empty($groupedItems) && !$isBuyNow && ($rawCount['count'] ?? 0) == 0) {
     header("Location: ../cart.php?error=cart_empty");
     exit();
+}
+
+// CRITICAL SAFEGUARD: If buy_now is active but groupedItems is empty, something is wrong
+if ($isBuyNow && empty($groupedItems)) {
+    error_log('CHECKOUT - CRITICAL ERROR: Buy Now is active but groupedItems is empty!');
+    error_log('CHECKOUT - Session buy_now_data: ' . (isset($_SESSION['buy_now_data']) ? 'EXISTS' : 'MISSING'));
+    error_log('CHECKOUT - Session buy_now_active: ' . (isset($_SESSION['buy_now_active']) ? 'EXISTS' : 'MISSING'));
+    header("Location: ../cart.php?error=buy_now_failed");
+    exit();
+}
+
+// CRITICAL SAFEGUARD: If buy_now is active, verify groupedItems only has 1 item (the buy_now item)
+if ($isBuyNow && !empty($groupedItems)) {
+    $totalItems = 0;
+    foreach ($groupedItems as $sg) {
+        $totalItems += count($sg['items'] ?? []);
+    }
+    if ($totalItems > 1) {
+        error_log('CHECKOUT - CRITICAL WARNING: Buy Now is active but groupedItems has ' . $totalItems . ' items! Should only have 1.');
+        error_log('CHECKOUT - groupedItems: ' . json_encode($groupedItems));
+        // Force reset to only buy_now item
+        if (isset($_SESSION['buy_now_data'])) {
+            error_log('CHECKOUT - FORCING RESET: Rebuilding groupedItems from buy_now_data only');
+            $buyNowData = $_SESSION['buy_now_data'];
+            $sellerId = $buyNowData['seller']['seller_id'];
+            $groupedItems = [
+                $sellerId => [
+                    'seller_id' => $sellerId,
+                    'seller_name' => $buyNowData['seller']['seller_name'],
+                    'seller_display_name' => $buyNowData['seller']['seller_display_name'],
+                    'items' => [
+                        [
+                            'product_id' => $buyNowData['product']['product_id'] ?? $buyNowData['product']['id'],
+                            'name' => $buyNowData['product']['name'],
+                            'price' => (float)$buyNowData['product']['price'],
+                            'quantity' => (int)$buyNowData['product']['quantity'],
+                            'image_url' => $buyNowData['product']['image_url'] ?? 'images/placeholder.jpg',
+                            'stock_quantity' => (int)$buyNowData['product']['stock_quantity'],
+                            'status' => $buyNowData['product']['status'] ?? 'active',
+                            'product_exists' => true
+                        ]
+                    ],
+                    'subtotal' => (float)$buyNowData['total'],
+                    'item_count' => (int)$buyNowData['quantity']
+                ]
+            ];
+            $grandTotal = (float)$buyNowData['total'];
+            error_log('CHECKOUT - FORCED RESET complete: groupedItems now has only buy_now item');
+        }
+    }
 }
 
 require_once '../includes/header.php';

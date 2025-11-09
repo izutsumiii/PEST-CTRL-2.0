@@ -1517,11 +1517,30 @@ function processMultiSellerCheckout($shippingAddress, $paymentMethod, $customerN
     $userId = $_SESSION['user_id'];
     
     // HANDLE BUY NOW - Get items from session instead of cart
-    if ($isBuyNow && isset($_SESSION['buy_now_data'])) {
-        error_log('Checkout - Processing Buy Now from session');
+    // CRITICAL: Check BOTH isBuyNow parameter AND session data to ensure we're really in buy_now mode
+    $isReallyBuyNow = $isBuyNow && isset($_SESSION['buy_now_data']) && isset($_SESSION['buy_now_active']);
+    
+    if ($isReallyBuyNow) {
+        error_log('Checkout - Processing Buy Now from session (STRICT MODE)');
+        error_log('Checkout - isBuyNow param: ' . ($isBuyNow ? 'YES' : 'NO'));
+        error_log('Checkout - buy_now_data exists: ' . (isset($_SESSION['buy_now_data']) ? 'YES' : 'NO'));
+        error_log('Checkout - buy_now_active exists: ' . (isset($_SESSION['buy_now_active']) ? 'YES' : 'NO'));
         
         $buyNowData = $_SESSION['buy_now_data'];
         $sellerId = $buyNowData['seller']['seller_id'];
+        
+        // CRITICAL: Build proper item structure matching what checkout expects
+        $buyNowProduct = $buyNowData['product'];
+        $buyNowItem = [
+            'product_id' => $buyNowProduct['product_id'] ?? $buyNowProduct['id'],
+            'name' => $buyNowProduct['name'],
+            'price' => (float)$buyNowProduct['price'],
+            'quantity' => (int)$buyNowProduct['quantity'],
+            'image_url' => $buyNowProduct['image_url'] ?? 'images/placeholder.jpg',
+            'stock_quantity' => (int)$buyNowProduct['stock_quantity'],
+            'status' => $buyNowProduct['status'] ?? 'active',
+            'product_exists' => true
+        ];
         
         $groupedItems = [
             $sellerId => [
@@ -1529,17 +1548,24 @@ function processMultiSellerCheckout($shippingAddress, $paymentMethod, $customerN
                 'seller_name' => $buyNowData['seller']['seller_name'],
                 'seller_display_name' => $buyNowData['seller']['seller_display_name'],
                 'items' => [
-                    $buyNowData['product']
+                    $buyNowItem
                 ],
-                'subtotal' => $buyNowData['total'],
-                'item_count' => $buyNowData['quantity']
+                'subtotal' => (float)$buyNowData['total'],
+                'item_count' => (int)$buyNowData['quantity']
             ]
         ];
         
-        $grandTotal = $buyNowData['total'];
+        $grandTotal = (float)$buyNowData['total'];
+        
+        error_log('Checkout - Buy Now groupedItems created: ' . json_encode($groupedItems));
+        error_log('Checkout - Buy Now grandTotal: ' . $grandTotal);
+        error_log('Checkout - IMPORTANT: Cart table is COMPLETELY IGNORED for Buy Now');
         
     } else {
         // Regular checkout - validate cart
+        if ($isBuyNow) {
+            error_log('Checkout - WARNING: isBuyNow=true but session data missing! Falling back to cart.');
+        }
         $validation = validateMultiSellerCart();
         if (!$validation['success']) {
             return $validation;
@@ -1779,14 +1805,22 @@ function processMultiSellerCheckout($shippingAddress, $paymentMethod, $customerN
                 }
             }
             
-            // Clear cart (but NOT for buy now - buy now doesn't use cart)
-            if (!$isBuyNow) {
-                $stmt = $pdo->prepare("DELETE FROM cart WHERE user_id = ?");
-                $stmt->execute([$userId]);
-            } else {
+            // CRITICAL: For buy_now, do NOT touch cart table at all (buy_now items are NOT in cart)
+            // For regular checkout, clear entire cart
+            if ($isBuyNow && isset($_SESSION['buy_now_data'])) {
+                // Buy Now: Do NOT remove anything from cart (buy_now items are session-only, not in cart table)
+                // Just clear the buy_now session data
+                error_log('Checkout - Buy Now: Not touching cart table (buy_now items are session-only)');
+                
                 // Clear buy now session data
                 unset($_SESSION['buy_now_active']);
                 unset($_SESSION['buy_now_data']);
+                error_log('Checkout - Buy Now: Cleared buy_now session data, cart table untouched');
+            } else {
+                // Regular checkout: Clear entire cart
+                $stmt = $pdo->prepare("DELETE FROM cart WHERE user_id = ?");
+                $stmt->execute([$userId]);
+                error_log('Checkout - Cleared entire cart for regular checkout');
             }
             
             $pdo->commit();

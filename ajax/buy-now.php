@@ -97,53 +97,13 @@ try {
         exit();
     }
     
-    // IMPORTANT: Add product to cart database first
-    error_log('Buy Now - Attempting to add product ' . $productId . ' with quantity ' . $quantity . ' to cart for user ' . $userId);
+    // CRITICAL: Buy Now does NOT add to cart table - it's a separate session-only checkout
+    // We only validate product exists and has stock, then store in session
+    error_log('Buy Now - Validating product ' . $productId . ' with quantity ' . $quantity . ' for user ' . $userId);
+    error_log('Buy Now - Product stock: ' . $product['stock_quantity'] . ', Required: ' . $quantity);
     
-    $addToCartResult = addToCart($productId, $quantity);
-    
-    error_log('Buy Now - addToCart result: ' . json_encode($addToCartResult));
-    
-    if (!$addToCartResult['success']) {
-        error_log('Buy Now - Failed to add to cart: ' . ($addToCartResult['message'] ?? 'Unknown error'));
-        echo json_encode([
-            'success' => false, 
-            'message' => $addToCartResult['message'] ?? 'Failed to add product to cart',
-            'debug' => [
-                'product_id' => $productId,
-                'quantity' => $quantity,
-                'user_id' => $userId,
-                'addToCartResult' => $addToCartResult
-            ]
-        ]);
-        exit();
-    }
-    
-    // Verify the item was actually added to cart
-    $verifyStmt = $pdo->prepare("SELECT quantity FROM cart WHERE user_id = ? AND product_id = ?");
-    $verifyStmt->execute([$userId, $productId]);
-    $cartItem = $verifyStmt->fetch(PDO::FETCH_ASSOC);
-    
-    if (!$cartItem) {
-        error_log('Buy Now - WARNING: Product was not found in cart after addToCart returned success');
-        echo json_encode([
-            'success' => false,
-            'message' => 'Product was not added to cart. Please try again.',
-            'debug' => [
-                'addToCartResult' => $addToCartResult,
-                'cart_verification' => 'failed'
-            ]
-        ]);
-        exit();
-    }
-    
-    error_log('Buy Now - Successfully verified product in cart with quantity: ' . $cartItem['quantity']);
-    
-    // Get total cart count for response
-    $cartCountStmt = $pdo->prepare("SELECT SUM(quantity) as count FROM cart WHERE user_id = ?");
-    $cartCountStmt->execute([$userId]);
-    $cartCountResult = $cartCountStmt->fetch(PDO::FETCH_ASSOC);
-    $totalCartItems = $cartCountResult['count'] ? (int)$cartCountResult['count'] : 0;
+    // Stock validation is already done above, so we can proceed
+    // NO addToCart() call - buy_now items stay in session only, not in cart table
     
     $total = (float)$product['price'] * $quantity;
     
@@ -184,20 +144,26 @@ try {
         ? 'paymongo/multi-seller-checkout.php?buy_now=1'
         : 'cart.php';
     
-    // Prepare response
+    // Prepare response - note: buy_now items are NOT in cart, so cart_count is from regular cart only
+    $cartCountStmt = $pdo->prepare("SELECT SUM(quantity) as count FROM cart WHERE user_id = ?");
+    $cartCountStmt->execute([$userId]);
+    $cartCountResult = $cartCountStmt->fetch(PDO::FETCH_ASSOC);
+    $totalCartItems = $cartCountResult['count'] ? (int)$cartCountResult['count'] : 0;
+    
     $response = [
         'success' => true,
-        'message' => 'Product added to cart successfully. Ready for checkout.',
+        'message' => 'Product ready for Buy Now checkout.',
         'redirect_url' => $redirectTo,
         'item_name' => $product['name'],
         'total' => number_format($total, 2),
-        'cart_count' => $totalCartItems,
+        'cart_count' => $totalCartItems, // Regular cart count (buy_now items not included)
         'debug' => [
             'cart_items_count' => $totalCartItems,
-            'product_in_cart' => true,
-            'cart_quantity' => $cartItem['quantity'],
+            'product_in_cart' => false, // Buy_now items are NOT in cart table
+            'buy_now_quantity' => $quantity,
             'product_id' => $productId,
-            'user_id' => $userId
+            'user_id' => $userId,
+            'note' => 'Buy Now items stored in session only, not in cart table'
         ]
     ];
     

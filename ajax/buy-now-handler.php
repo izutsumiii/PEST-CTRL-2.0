@@ -38,73 +38,77 @@ try {
         exit();
     }
     
-    // IMPORTANT: Add product to cart database first
+    // CRITICAL: Buy Now does NOT add to cart table - it's a separate session-only checkout
+    // We only validate product exists and has stock, then store in session
     $userId = $_SESSION['user_id'];
-    error_log('Buy Now Handler - Attempting to add product ' . $productId . ' with quantity ' . $quantity . ' to cart for user ' . $userId);
+    error_log('Buy Now Handler - Validating product ' . $productId . ' with quantity ' . $quantity . ' for user ' . $userId);
+    error_log('Buy Now Handler - Product stock: ' . $product['stock_quantity'] . ', Required: ' . $quantity);
     
-    $addToCartResult = addToCart($productId, $quantity);
+    // Stock validation is already done above, so we can proceed
+    // NO addToCart() call - buy_now items stay in session only, not in cart table
     
-    error_log('Buy Now Handler - addToCart result: ' . json_encode($addToCartResult));
+    // Get seller info for buy_now_data
+    $sellerStmt = $pdo->prepare("
+        SELECT u.id as seller_id, u.username as seller_username, u.first_name, u.last_name, u.display_name
+        FROM products p
+        LEFT JOIN users u ON p.seller_id = u.id
+        WHERE p.id = ?
+    ");
+    $sellerStmt->execute([$productId]);
+    $sellerInfo = $sellerStmt->fetch(PDO::FETCH_ASSOC);
     
-    if (!$addToCartResult['success']) {
-        error_log('Buy Now Handler - Failed to add to cart: ' . ($addToCartResult['message'] ?? 'Unknown error'));
-        echo json_encode([
-            'success' => false, 
-            'message' => $addToCartResult['message'] ?? 'Failed to add product to cart',
-            'debug' => [
-                'product_id' => $productId,
-                'quantity' => $quantity,
-                'user_id' => $userId,
-                'addToCartResult' => $addToCartResult
-            ]
-        ]);
+    if (!$sellerInfo || !$sellerInfo['seller_id']) {
+        echo json_encode(['success' => false, 'message' => 'Product seller not found']);
         exit();
     }
     
-    // Verify the item was actually added to cart
-    $verifyStmt = $pdo->prepare("SELECT quantity FROM cart WHERE user_id = ? AND product_id = ?");
-    $verifyStmt->execute([$userId, $productId]);
-    $cartItem = $verifyStmt->fetch(PDO::FETCH_ASSOC);
+    $total = (float)$product['price'] * $quantity;
+    $sellerDisplayName = $sellerInfo['display_name'] 
+        ?? trim(($sellerInfo['first_name'] ?? '') . ' ' . ($sellerInfo['last_name'] ?? ''))
+        ?: ($sellerInfo['seller_username'] ?? 'Unknown Seller');
     
-    if (!$cartItem) {
-        error_log('Buy Now Handler - WARNING: Product was not found in cart after addToCart returned success');
-        echo json_encode([
-            'success' => false,
-            'message' => 'Product was not added to cart. Please try again.',
-            'debug' => [
-                'addToCartResult' => $addToCartResult,
-                'cart_verification' => 'failed'
-            ]
-        ]);
-        exit();
-    }
+    // Store buy_now data in session (same structure as buy-now.php)
+    $_SESSION['buy_now_active'] = true;
+    $_SESSION['buy_now_data'] = [
+        'product' => [
+            'id' => $product['id'],
+            'product_id' => $product['id'],
+            'name' => $product['name'],
+            'price' => (float)$product['price'],
+            'quantity' => $quantity,
+            'image_url' => $product['image_url'] ?? 'images/placeholder.jpg',
+            'stock_quantity' => (int)$product['stock_quantity'],
+            'status' => 'active'
+        ],
+        'seller' => [
+            'seller_id' => (int)$sellerInfo['seller_id'],
+            'seller_name' => $sellerInfo['seller_username'] ?? 'Unknown',
+            'seller_display_name' => $sellerDisplayName,
+            'seller_first_name' => $sellerInfo['first_name'] ?? '',
+            'seller_last_name' => $sellerInfo['last_name'] ?? ''
+        ],
+        'total' => $total,
+        'quantity' => $quantity,
+        'timestamp' => time()
+    ];
     
-    error_log('Buy Now Handler - Successfully verified product in cart with quantity: ' . $cartItem['quantity']);
+    error_log('Buy Now Handler - Session data stored: ' . json_encode($_SESSION['buy_now_data']));
     
-    // Get total cart count for response
+    // Get regular cart count (buy_now items NOT included)
     $cartCountStmt = $pdo->prepare("SELECT SUM(quantity) as count FROM cart WHERE user_id = ?");
     $cartCountStmt->execute([$userId]);
     $cartCountResult = $cartCountStmt->fetch(PDO::FETCH_ASSOC);
     $totalCartItems = $cartCountResult['count'] ? (int)$cartCountResult['count'] : 0;
     
-    // Store buy now item in session for checkout
-    $_SESSION['buy_now_item'] = [
-        'id' => $product['id'],
-        'name' => $product['name'],
-        'price' => $product['price'],
-        'quantity' => $quantity,
-        'image_url' => $product['image_url'],
-        'total' => $product['price'] * $quantity
-    ];
-    
     echo json_encode([
         'success' => true,
-        'message' => 'Product added to cart successfully',
-        'cart_count' => $totalCartItems,
+        'message' => 'Product ready for Buy Now checkout.',
+        'cart_count' => $totalCartItems, // Regular cart count only
         'debug' => [
             'cart_items_count' => $totalCartItems,
-            'product_in_cart' => true,
-            'cart_quantity' => $cartItem['quantity']
+            'product_in_cart' => false, // Buy_now items are NOT in cart table
+            'buy_now_quantity' => $quantity,
+            'note' => 'Buy Now items stored in session only, not in cart table'
         ]
     ]);
     

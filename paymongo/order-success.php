@@ -1,8 +1,59 @@
 <?php
+// CRITICAL: Start session FIRST with proper cookie settings to ensure it persists after PayMongo redirect
+if (session_status() === PHP_SESSION_NONE) {
+    // Configure session cookie to persist across redirects
+    ini_set('session.cookie_httponly', '1');
+    ini_set('session.cookie_samesite', 'Lax');
+    ini_set('session.use_strict_mode', '1');
+    // Start session
+    session_start();
+    
+    // Ensure session cookie is set with proper parameters
+    if (isset($_COOKIE[session_name()])) {
+        // Session cookie exists, ensure it's properly configured
+        $sessionParams = session_get_cookie_params();
+        $expires = $sessionParams['lifetime'] ? time() + $sessionParams['lifetime'] : 0;
+        setcookie(
+            session_name(),
+            session_id(),
+            $expires,
+            $sessionParams['path'],
+            $sessionParams['domain'],
+            $sessionParams['secure'],
+            $sessionParams['httponly']
+        );
+    }
+} else {
+    // Session already started, just ensure it's active
+    session_start();
+}
+
 // CRITICAL: Do NOT include header.php yet - we need to do redirects first
 // All redirects must happen before any output
 require_once '../config/database.php';
 require_once '../includes/functions.php';
+
+// CRITICAL FIX: Restore session from remember_token cookie if session was lost during PayMongo redirect
+if (!isLoggedIn() && isset($_COOKIE['remember_token'])) {
+    error_log('Order Success - Session lost, attempting to restore from remember_token cookie');
+    try {
+        $stmt = $pdo->prepare("SELECT * FROM users WHERE remember_token = ? AND is_active = 1");
+        $stmt->execute([$_COOKIE['remember_token']]);
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if ($user) {
+            // Restore session
+            $_SESSION['user_id'] = $user['id'];
+            $_SESSION['username'] = $user['username'];
+            $_SESSION['user_type'] = $user['user_type'];
+            error_log('Order Success - Session restored from remember_token for user: ' . $user['id']);
+        } else {
+            error_log('Order Success - Invalid remember_token cookie');
+        }
+    } catch (Exception $e) {
+        error_log('Order Success - Error restoring session from remember_token: ' . $e->getMessage());
+    }
+}
 
 $orderId = isset($_GET['order_id']) ? (int)$_GET['order_id'] : 0;
 $transactionId = isset($_GET['transaction_id']) ? (int)$_GET['transaction_id'] : 0;
@@ -455,8 +506,16 @@ try {
             }
             
             // If session data is missing, try to rebuild from cart (if cart still has items)
-            if (!$groupedItems) {
-                error_log('Order Success - Session data missing, trying to rebuild from cart');
+            // CRITICAL: Check if this might be a buy_now checkout - if so, don't rebuild from cart
+            // Buy_now checkouts should have pending_checkout_items set, but if missing, we can't safely rebuild
+            $mightBeBuyNow = false;
+            if (isset($_SESSION['buy_now_active']) || isset($_SESSION['buy_now_data'])) {
+                $mightBeBuyNow = true;
+                error_log('Order Success - WARNING: Buy Now session flags detected but pending_checkout_items missing!');
+            }
+            
+            if (!$groupedItems && !$mightBeBuyNow) {
+                error_log('Order Success - Session data missing, trying to rebuild from cart (NOT buy_now)');
                 try {
                     $userId = $transaction['user_id'];
                     // Try to get cart items that match this transaction
@@ -668,9 +727,20 @@ try {
                         }
                     }
                     
-                    // Clear cart
-                    $stmt = $pdo->prepare("DELETE FROM cart WHERE user_id = ?");
-                    $stmt->execute([$userId]);
+                    // Clear cart - but check if this was buy_now
+                    // CRITICAL: Buy_now items are NOT in cart table, so don't touch cart for buy_now
+                    if (isset($_SESSION['buy_now_active']) || isset($_SESSION['buy_now_data'])) {
+                        // This was buy_now - do NOT touch cart table (buy_now items are session-only)
+                        error_log('Order Success - Buy Now: Not touching cart table (buy_now items are session-only)');
+                        // Just clear buy_now session
+                        unset($_SESSION['buy_now_active']);
+                        unset($_SESSION['buy_now_data']);
+                    } else {
+                        // Regular checkout - clear entire cart
+                        $stmt = $pdo->prepare("DELETE FROM cart WHERE user_id = ?");
+                        $stmt->execute([$userId]);
+                        error_log('Order Success - Cleared entire cart for regular checkout');
+                    }
                     
                     // Clear pending checkout session
                     unset($_SESSION['pending_checkout_items']);
@@ -951,8 +1021,19 @@ try {
                         }
                     }
                     
-                    $stmt = $pdo->prepare("DELETE FROM cart WHERE user_id = ?");
-                    $stmt->execute([$userId]);
+                    // Clear cart - check if buy_now
+                    // CRITICAL: Buy_now items are NOT in cart table, so don't touch cart for buy_now
+                    if (isset($_SESSION['buy_now_active']) || isset($_SESSION['buy_now_data'])) {
+                        // This was buy_now - do NOT touch cart table (buy_now items are session-only)
+                        error_log('Order Success (RECOVERED) - Buy Now: Not touching cart table (buy_now items are session-only)');
+                        // Just clear buy_now session
+                        unset($_SESSION['buy_now_active']);
+                        unset($_SESSION['buy_now_data']);
+                    } else {
+                        $stmt = $pdo->prepare("DELETE FROM cart WHERE user_id = ?");
+                        $stmt->execute([$userId]);
+                        error_log('Order Success (RECOVERED) - Cleared entire cart for regular checkout');
+                    }
                     
                     unset($_SESSION['pending_checkout_items']);
                     unset($_SESSION['pending_checkout_grand_total']);

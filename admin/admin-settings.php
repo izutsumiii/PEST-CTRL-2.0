@@ -2364,7 +2364,7 @@ function updateDiscountType() {
         valueInput.placeholder = '100.00';
         if (hint) hint.textContent = 'Enter fixed amount in pesos';
     }
-}
+}w
 
 // Authentication Modal Functions
 function openAuthModal(section) {
