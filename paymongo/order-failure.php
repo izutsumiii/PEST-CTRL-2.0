@@ -5,6 +5,39 @@ if (session_status() == PHP_SESSION_NONE) {
 }
 
 require_once '../config/database.php';
+
+// CRITICAL FIX: Restore session from remember_token cookie BEFORE including functions.php
+// This prevents checkSessionTimeout() from logging out the user
+if (!isset($_SESSION['user_id']) && isset($_COOKIE['remember_token'])) {
+    error_log('Order Failure - Session lost, attempting to restore from remember_token cookie');
+    try {
+        $stmt = $pdo->prepare("SELECT * FROM users WHERE remember_token = ? AND is_active = 1");
+        $stmt->execute([$_COOKIE['remember_token']]);
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if ($user) {
+            // Restore session
+            $_SESSION['user_id'] = $user['id'];
+            $_SESSION['username'] = $user['username'];
+            $_SESSION['user_type'] = $user['user_type'];
+            // CRITICAL: Update last_activity to prevent session timeout
+            $_SESSION['last_activity'] = time();
+            error_log('Order Failure - Session restored from remember_token for user: ' . $user['id']);
+        } else {
+            error_log('Order Failure - Invalid remember_token cookie');
+        }
+    } catch (Exception $e) {
+        error_log('Order Failure - Error restoring session from remember_token: ' . $e->getMessage());
+    }
+}
+
+// CRITICAL: Update last_activity BEFORE including functions.php to prevent timeout
+if (isset($_SESSION['user_id'])) {
+    $_SESSION['last_activity'] = time();
+    error_log('Order Failure - Updated last_activity for user: ' . $_SESSION['user_id']);
+}
+
+// NOW include functions.php - checkSessionTimeout() will see updated last_activity
 require_once '../includes/functions.php';
 
 $transactionId = isset($_GET['transaction_id']) ? (int)$_GET['transaction_id'] : 0;

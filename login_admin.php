@@ -31,7 +31,8 @@ if (isset($_POST['login'])) {
                 // Set session variables                 
                 $_SESSION['user_id'] = $user['id'];                 
                 $_SESSION['username'] = $user['username'];                 
-                $_SESSION['user_type'] = $user['user_type'];                                  
+                $_SESSION['user_type'] = $user['user_type'];
+                $_SESSION['last_activity'] = time();                                  
                 
                 // Set remember me token if requested                 
                 if ($rememberMe) {                     
@@ -77,7 +78,8 @@ if (isset($_COOKIE['remember_token']) && !isLoggedIn()) {
     if ($user) {         
         $_SESSION['user_id'] = $user['id'];         
         $_SESSION['username'] = $user['username'];         
-        $_SESSION['user_type'] = $user['user_type'];                  
+        $_SESSION['user_type'] = $user['user_type'];
+        $_SESSION['last_activity'] = time();                  
         
         header("Location: admin/admin-dashboard.php");         
         exit();     
@@ -552,6 +554,13 @@ if (isset($_COOKIE['remember_token']) && !isLoggedIn()) {
             <div class="success-message">         
                 <?php echo $_SESSION['success']; ?>         
                 <?php unset($_SESSION['success']); ?>     
+            </div> 
+        <?php endif; ?>  
+
+        <?php if (isset($_SESSION['session_expired'])): ?>     
+            <div class="error-message">         
+                <i class="fas fa-clock"></i> <?php echo htmlspecialchars($_SESSION['expired_message'] ?? 'Your session has expired due to inactivity. Please log in again.'); ?>         
+                <?php unset($_SESSION['session_expired'], $_SESSION['expired_message']); ?>     
             </div> 
         <?php endif; ?>  
 

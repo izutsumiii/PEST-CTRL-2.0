@@ -10,68 +10,124 @@ $messageType = '';
 $userId = $_SESSION['user_id'];
 
 // Handle seller actions
-if (isset($_GET['action']) && isset($_GET['id'])) {
+if (isset($_GET['action'])) {
     $action = sanitizeInput($_GET['action']);
-    $sellerId = intval($_GET['id']);
-    
-    $validActions = ['approve', 'reject', 'suspend', 'ban', 'verify_documents', 'unverify_documents', 'restore'];
+    $validActions = ['approve', 'reject', 'suspend', 'ban', 'verify_documents', 'unverify_documents', 'restore', 'fix_id'];
     
     if (in_array($action, $validActions)) {
-        $stmt = $pdo->prepare("SELECT * FROM users WHERE id = ? AND user_type = 'seller'");
-        $stmt->execute([$sellerId]);
-        $seller = $stmt->fetch(PDO::FETCH_ASSOC);
-        
-        if ($seller) {
-            switch ($action) {
-                case 'approve':
-                    $stmt = $pdo->prepare("UPDATE users SET seller_status = 'approved' WHERE id = ?");
-                    $stmt->execute([$sellerId]);
-                    $message = "Seller approved successfully!";
-                    break;
+        // Handle fix_id separately (uses username)
+        if ($action === 'fix_id' && isset($_GET['username'])) {
+            $username = sanitizeInput($_GET['username']);
+            try {
+                // Get the seller by username
+                $stmt = $pdo->prepare("SELECT * FROM users WHERE username = ? AND (user_type = 'seller' OR user_type IS NULL OR user_type = '')");
+                $stmt->execute([$username]);
+                $seller = $stmt->fetch(PDO::FETCH_ASSOC);
+                
+                if ($seller && $seller['id'] == 0) {
+                    // Get next auto-increment value
+                    $stmt = $pdo->query("SHOW TABLE STATUS LIKE 'users'");
+                    $tableStatus = $stmt->fetch(PDO::FETCH_ASSOC);
+                    $nextId = $tableStatus['Auto_increment'] ?? 1;
                     
-                case 'reject':
-                    $stmt = $pdo->prepare("UPDATE users SET seller_status = 'rejected' WHERE id = ?");
-                    $stmt->execute([$sellerId]);
-                    $message = "Seller rejected successfully!";
-                    break;
+                    // Temporarily disable foreign key checks
+                    $pdo->exec("SET FOREIGN_KEY_CHECKS = 0");
                     
-                case 'suspend':
-                    $stmt = $pdo->prepare("UPDATE users SET seller_status = 'suspended' WHERE id = ?");
-                    $stmt->execute([$sellerId]);
-                    $message = "Seller suspended successfully!";
-                    break;
+                    // Update the seller's ID
+                    $pdo->exec("UPDATE users SET id = $nextId WHERE username = '$username' AND id = 0");
                     
-                case 'ban':
-                    $stmt = $pdo->prepare("UPDATE users SET seller_status = 'banned' WHERE id = ?");
-                    $stmt->execute([$sellerId]);
-                    $message = "Seller banned successfully!";
-                    break;
+                    // Update related foreign keys
+                    $pdo->exec("UPDATE products SET seller_id = $nextId WHERE seller_id = 0");
+                    $pdo->exec("UPDATE orders SET seller_id = $nextId WHERE seller_id = 0");
                     
-                case 'restore':
-                    $stmt = $pdo->prepare("UPDATE users SET seller_status = 'approved' WHERE id = ?");
-                    $stmt->execute([$sellerId]);
-                    $message = "Seller restored to approved status successfully!";
-                    break;
+                    // Re-enable foreign key checks
+                    $pdo->exec("SET FOREIGN_KEY_CHECKS = 1");
                     
-                case 'verify_documents':
-                    $stmt = $pdo->prepare("UPDATE users SET document_verified = TRUE WHERE id = ?");
-                    $stmt->execute([$sellerId]);
-                    $message = "Documents verified successfully!";
-                    break;
-                    
-                case 'unverify_documents':
-                    $stmt = $pdo->prepare("UPDATE users SET document_verified = FALSE WHERE id = ?");
-                    $stmt->execute([$sellerId]);
-                    $message = "Documents verification removed!";
-                    break;
+                    $message = "Seller ID fixed successfully! New ID: #$nextId";
+                    $messageType = 'success';
+                } else {
+                    $message = 'Seller not found or ID is not 0.';
+                    $messageType = 'error';
+                }
+            } catch (Exception $e) {
+                $message = 'Error fixing seller ID: ' . $e->getMessage();
+                $messageType = 'error';
+            }
+        } elseif (isset($_GET['id']) || isset($_GET['username'])) {
+            $sellerId = isset($_GET['id']) ? intval($_GET['id']) : 0;
+            $sellerUsername = isset($_GET['username']) ? sanitizeInput($_GET['username']) : null;
+            
+            // Find seller by ID or username (for ID 0 sellers)
+            if ($sellerId > 0) {
+                $stmt = $pdo->prepare("SELECT * FROM users WHERE id = ? AND (user_type = 'seller' OR user_type IS NULL OR user_type = '')");
+                $stmt->execute([$sellerId]);
+            } elseif ($sellerUsername) {
+                $stmt = $pdo->prepare("SELECT * FROM users WHERE username = ? AND (user_type = 'seller' OR user_type IS NULL OR user_type = '')");
+                $stmt->execute([$sellerUsername]);
+            } else {
+                $seller = null;
             }
             
-            if (isset($message)) {
-                $messageType = 'success';
+            if (isset($stmt)) {
+                $seller = $stmt->fetch(PDO::FETCH_ASSOC);
             }
-        } else {
-            $message = 'Seller not found.';
-            $messageType = 'error';
+            
+            if ($seller) {
+                $updateId = $seller['id'] > 0 ? $seller['id'] : $seller['username'];
+                $whereClause = $seller['id'] > 0 ? "id = ?" : "username = ?";
+                $whereParam = $seller['id'] > 0 ? $seller['id'] : $seller['username'];
+                
+                switch ($action) {
+                    case 'approve':
+                        $stmt = $pdo->prepare("UPDATE users SET seller_status = 'approved', user_type = 'seller' WHERE $whereClause");
+                        $stmt->execute([$whereParam]);
+                        $message = "Seller approved successfully!";
+                        break;
+                        
+                    case 'reject':
+                        $stmt = $pdo->prepare("UPDATE users SET seller_status = 'rejected', user_type = 'seller' WHERE $whereClause");
+                        $stmt->execute([$whereParam]);
+                        $message = "Seller rejected successfully!";
+                        break;
+                        
+                    case 'suspend':
+                        $stmt = $pdo->prepare("UPDATE users SET seller_status = 'suspended', user_type = 'seller' WHERE $whereClause");
+                        $stmt->execute([$whereParam]);
+                        $message = "Seller suspended successfully!";
+                        break;
+                        
+                    case 'ban':
+                        $stmt = $pdo->prepare("UPDATE users SET seller_status = 'banned', user_type = 'seller' WHERE $whereClause");
+                        $stmt->execute([$whereParam]);
+                        $message = "Seller banned successfully!";
+                        break;
+                        
+                    case 'restore':
+                        $stmt = $pdo->prepare("UPDATE users SET seller_status = 'approved', user_type = 'seller' WHERE $whereClause");
+                        $stmt->execute([$whereParam]);
+                        $message = "Seller restored to approved status successfully!";
+                        break;
+                        
+                    case 'verify_documents':
+                        $stmt = $pdo->prepare("UPDATE users SET document_verified = TRUE, user_type = 'seller' WHERE $whereClause");
+                        $stmt->execute([$whereParam]);
+                        $message = "Documents verified successfully!";
+                        break;
+                        
+                    case 'unverify_documents':
+                        $stmt = $pdo->prepare("UPDATE users SET document_verified = FALSE, user_type = 'seller' WHERE $whereClause");
+                        $stmt->execute([$whereParam]);
+                        $message = "Documents verification removed!";
+                        break;
+                }
+                
+                if (isset($message)) {
+                    $messageType = 'success';
+                }
+            } else {
+                $message = 'Seller not found.';
+                $messageType = 'error';
+            }
         }
     }
 }
@@ -83,8 +139,8 @@ $page = isset($_GET['page']) ? intval($_GET['page']) : 1;
 $limit = 10;
 $offset = ($page - 1) * $limit;
 
-// Build query based on filters
-$query = "SELECT * FROM users WHERE user_type = 'seller'";
+// Build query based on filters - include manually added sellers (without user_type='seller')
+$query = "SELECT * FROM users WHERE (user_type = 'seller' OR user_type IS NULL OR user_type = '')";
 $params = [];
 $countParams = [];
 
@@ -96,7 +152,7 @@ if (!empty($searchTerm)) {
 }
 
 if ($statusFilter !== 'all') {
-    $query .= " AND seller_status = ?";
+    $query .= " AND (seller_status = ? OR (seller_status IS NULL AND ? = 'pending'))";
     $params[] = $statusFilter;
     $countParams[] = $statusFilter;
 }
@@ -118,13 +174,13 @@ foreach ($params as $key => $value) {
 $stmt->execute();
 $sellers = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// Get total count for pagination
-$countQuery = "SELECT COUNT(*) as total FROM users WHERE user_type = 'seller'";
+// Get total count for pagination - include manually added sellers
+$countQuery = "SELECT COUNT(*) as total FROM users WHERE (user_type = 'seller' OR user_type IS NULL OR user_type = '')";
 if (!empty($searchTerm)) {
     $countQuery .= " AND (username LIKE ? OR email LIKE ? OR first_name LIKE ? OR last_name LIKE ?)";
 }
 if ($statusFilter !== 'all') {
-    $countQuery .= " AND seller_status = ?";
+    $countQuery .= " AND (seller_status = ? OR (seller_status IS NULL AND ? = 'pending'))";
 }
 
 $stmt = $pdo->prepare($countQuery);
@@ -646,15 +702,24 @@ document.addEventListener('DOMContentLoaded', function(){
                     </tr>
                 </thead>
                 <tbody>
-                    <?php foreach ($sellers as $seller): ?>
+                    <?php foreach ($sellers as $seller): 
+                        $sellerId = (int)$seller['id'];
+                        $hasInvalidId = $sellerId === 0;
+                        $sellerStatus = $seller['seller_status'] ?? 'pending';
+                    ?>
                         <tr>
-                            <td><strong>#<?php echo $seller['id']; ?></strong></td>
+                            <td>
+                                <strong>#<?php echo $sellerId; ?></strong>
+                                <?php if ($hasInvalidId): ?>
+                                    <span style="color: #dc2626; margin-left: 8px;" title="Invalid ID - This seller needs to be fixed">⚠️ Invalid ID</span>
+                                <?php endif; ?>
+                            </td>
                             <td><?php echo htmlspecialchars($seller['username']); ?></td>
                             <td><?php echo htmlspecialchars($seller['email']); ?></td>
                             <td>
-                                <span class="status-badge status-<?php echo $seller['seller_status']; ?>">
+                                <span class="status-badge status-<?php echo $sellerStatus; ?>">
                                     <i class="fas fa-<?php 
-                                        switch($seller['seller_status']) {
+                                        switch($sellerStatus) {
                                             case 'pending': echo 'clock'; break;
                                             case 'approved': echo 'check-circle'; break;
                                             case 'rejected': echo 'times-circle'; break;
@@ -663,41 +728,50 @@ document.addEventListener('DOMContentLoaded', function(){
                                             default: echo 'question-circle';
                                         }
                                     ?>"></i>
-                                    <?php echo ucfirst($seller['seller_status']); ?>
+                                    <?php echo ucfirst($sellerStatus); ?>
                                 </span>
-                                <?php if ($seller['document_verified']): ?>
+                                <?php if ($seller['document_verified'] ?? false): ?>
                                     <br><small class="verified"><i class="fas fa-check-circle"></i> Documents Verified</small>
                                 <?php endif; ?>
                             </td>
                             <td><?php echo date('M j, Y', strtotime($seller['created_at'])); ?></td>
                             <td>
                                 <div class="action-buttons">
-                                    <a href="seller-details.php?id=<?php echo $seller['id']; ?>" class="action-btn btn-view" title="View">
+                                    <a href="seller-details.php?<?php echo $hasInvalidId ? 'username=' . urlencode($seller['username']) : 'id=' . $sellerId; ?>" class="action-btn btn-view" title="View">
                                         <i class="fas fa-eye"></i>
                                     </a>
-                                    <?php if ($seller['seller_status'] === 'pending'): ?>
-                                        <a href="admin-sellers.php?action=approve&id=<?php echo $seller['id']; ?>" class="action-btn btn-approve" title="Approve">
+                                    <?php if ($hasInvalidId): ?>
+                                        <a href="admin-sellers.php?action=fix_id&username=<?php echo urlencode($seller['username']); ?>" 
+                                           class="action-btn" 
+                                           style="background: #dc2626; color: #ffffff;"
+                                           title="Fix ID"
+                                           onclick="return confirm('This will assign a proper ID to this seller. Continue?');">
+                                            <i class="fas fa-wrench"></i>
+                                        </a>
+                                    <?php endif; ?>
+                                    <?php if ($sellerStatus === 'pending'): ?>
+                                        <a href="admin-sellers.php?action=approve&<?php echo $hasInvalidId ? 'username=' . urlencode($seller['username']) : 'id=' . $sellerId; ?>" class="action-btn btn-approve" title="Approve">
                                             <i class="fas fa-check"></i>
                                         </a>
-                                        <a href="admin-sellers.php?action=reject&id=<?php echo $seller['id']; ?>" class="action-btn btn-reject" title="Reject">
+                                        <a href="admin-sellers.php?action=reject&<?php echo $hasInvalidId ? 'username=' . urlencode($seller['username']) : 'id=' . $sellerId; ?>" class="action-btn btn-reject" title="Reject">
                                             <i class="fas fa-times"></i>
                                         </a>
                                     <?php endif; ?>
                                     
-                                    <?php if ($seller['seller_status'] === 'approved'): ?>
-                                        <a href="admin-sellers.php?action=suspend&id=<?php echo $seller['id']; ?>" class="action-btn btn-suspend" title="Suspend">
+                                    <?php if ($sellerStatus === 'approved'): ?>
+                                        <a href="admin-sellers.php?action=suspend&<?php echo $hasInvalidId ? 'username=' . urlencode($seller['username']) : 'id=' . $sellerId; ?>" class="action-btn btn-suspend" title="Suspend">
                                             <i class="fas fa-pause"></i>
                                         </a>
                                     <?php endif; ?>
                                     
-                                    <?php if (in_array($seller['seller_status'], ['approved', 'suspended'])): ?>
-                                        <a href="admin-sellers.php?action=ban&id=<?php echo $seller['id']; ?>" class="action-btn btn-ban" title="Ban">
+                                    <?php if (in_array($sellerStatus, ['approved', 'suspended'])): ?>
+                                        <a href="admin-sellers.php?action=ban&<?php echo $hasInvalidId ? 'username=' . urlencode($seller['username']) : 'id=' . $sellerId; ?>" class="action-btn btn-ban" title="Ban">
                                             <i class="fas fa-ban"></i>
                                         </a>
                                     <?php endif; ?>
                                     
-                                    <?php if (in_array($seller['seller_status'], ['suspended', 'banned'])): ?>
-                                        <a href="admin-sellers.php?action=restore&id=<?php echo $seller['id']; ?>" class="action-btn btn-restore" title="Restore">
+                                    <?php if (in_array($sellerStatus, ['suspended', 'banned'])): ?>
+                                        <a href="admin-sellers.php?action=restore&<?php echo $hasInvalidId ? 'username=' . urlencode($seller['username']) : 'id=' . $sellerId; ?>" class="action-btn btn-restore" title="Restore">
                                             <i class="fas fa-undo"></i>
                                         </a>
                                     <?php endif; ?>

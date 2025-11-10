@@ -302,8 +302,7 @@ $pathPrefix = ($currentDir === 'paymongo') ? '../' : '';
         .notif-popper.show { display: flex; }
         /* Seller-style dropdown structure */
         .notification-header { display:flex; align-items:center; justify-content:space-between; color:#130325; padding: 6px 4px; border-bottom: 1px solid #e5e7eb; margin-bottom: 6px; flex-shrink: 0; }
-        .notification-header .clear-all-btn { background: transparent; color: #dc3545; border: none; font-size: 12px; font-weight: 700; cursor: pointer; padding: 4px 8px; border-radius: 6px; }
-        .notification-header .clear-all-btn:hover { background: rgba(220,53,69,0.08); }
+        .notification-header .clear-all-btn { background: transparent; color: #dc2626; border: none; font-size: 12px; font-weight: 600; cursor: pointer; padding: 4px 8px; border-radius: 6px; }
         .notification-list { max-height: 240px; overflow-y: auto; padding-right: 2px; flex: 1; min-height: 0; }
         .notification-item { display:flex; gap:10px; padding:10px; border-radius:8px; border:1px solid #f3f4f6; background:#ffffff; margin: 4px 0; color:#130325; text-decoration:none; transition: background 0.2s ease; cursor: pointer; }
         .notification-item:hover { background:#f9fafb; }
@@ -314,19 +313,14 @@ $pathPrefix = ($currentDir === 'paymongo') ? '../' : '';
         .notif-empty { color:#130325; opacity:0.7; text-align:center; padding:16px 8px; }
         
         .clear-all-btn {
-            background: rgba(220, 53, 69, 0.2);
-            border: 1px solid rgba(220, 53, 69, 0.4);
-            color: #dc3545;
+            background: transparent;
+            border: none;
+            color: #dc2626;
             padding: 4px 8px;
             border-radius: 4px;
-            font-size: 11px;
+            font-size: 12px;
+            font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        
-        .clear-all-btn:hover {
-            background: rgba(220, 53, 69, 0.4);
-            border-color: #dc3545;
         }
         
         .notif-popper .notif-footer {
@@ -1185,6 +1179,119 @@ document.addEventListener('DOMContentLoaded', function() {
             document.head.appendChild(style);
         }
     });
+    </script>
+
+    <!-- Session Activity Tracking - Auto-logout after 20 minutes of inactivity -->
+    <script>
+    (function() {
+        let lastActivity = Date.now();
+        let activityCheckInterval;
+        let warningShown = false;
+        const TIMEOUT = 20 * 60 * 1000; // 20 minutes in milliseconds
+        const WARNING_TIME = 18 * 60 * 1000; // Show warning at 18 minutes
+        const CHECK_INTERVAL = 30 * 1000; // Check every 30 seconds
+        
+        // Track user activity
+        const activityEvents = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
+        activityEvents.forEach(event => {
+            document.addEventListener(event, updateActivity, true);
+        });
+        
+        function updateActivity() {
+            lastActivity = Date.now();
+            warningShown = false;
+            
+            // Ping server to update session activity (every 2 minutes to reduce server load)
+            if (Math.random() < 0.5) { // 50% chance to reduce frequency
+                fetch('ajax/update-session-activity.php', {
+                    method: 'GET',
+                    credentials: 'same-origin'
+                }).catch(() => {
+                    // Ignore errors - server-side check will handle it
+                });
+            }
+        }
+        
+        function checkInactivity() {
+            const timeSinceActivity = Date.now() - lastActivity;
+            
+            // Show warning at 18 minutes
+            if (timeSinceActivity >= WARNING_TIME && !warningShown) {
+                warningShown = true;
+                const remainingMinutes = Math.ceil((TIMEOUT - timeSinceActivity) / 60000);
+                if (remainingMinutes > 0) {
+                    showInactivityWarning(remainingMinutes);
+                }
+            }
+            
+            // Force logout check at 20 minutes (server will handle actual logout)
+            if (timeSinceActivity >= TIMEOUT) {
+                // Server-side check will redirect, but we can also reload to trigger it
+                window.location.reload();
+            }
+        }
+        
+        function showInactivityWarning(remainingMinutes) {
+            // Create modal matching logout confirmation design
+            const overlay = document.createElement('div');
+            overlay.id = 'inactivityWarningModal';
+            overlay.style.cssText = 'position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 10001; opacity: 0; transition: opacity 0.2s ease;';
+            
+            const dialog = document.createElement('div');
+            dialog.style.cssText = 'width: 360px; max-width: 90vw; background: #ffffff; border: none; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.2);';
+            
+            const header = document.createElement('div');
+            header.style.cssText = 'padding: 8px 12px; background: #130325; color: #F9F9F9; border-bottom: none; display: flex; align-items: center; justify-content: space-between; border-radius: 12px 12px 0 0;';
+            header.innerHTML = '<div style="font-size: 12px; font-weight: 800; letter-spacing: .3px; color: #F9F9F9;">Session Warning</div><button onclick="closeInactivityWarning()" style="background: transparent; border: none; color: #F9F9F9; font-size: 16px; line-height: 1; cursor: pointer;">×</button>';
+            
+            const body = document.createElement('div');
+            body.style.cssText = 'padding: 12px; color: #130325; font-size: 12px;';
+            body.innerHTML = '<p style="margin: 0; color: #130325; font-size: 12px;">Your session will expire in <strong>' + remainingMinutes + ' minute(s)</strong> due to inactivity. Please interact with the page to stay logged in.</p>';
+            
+            const actions = document.createElement('div');
+            actions.style.cssText = 'display: flex; gap: 8px; justify-content: flex-end; padding: 0 12px 12px 12px;';
+            
+            const okBtn = document.createElement('button');
+            okBtn.textContent = 'OK';
+            okBtn.style.cssText = 'background: linear-gradient(135deg, #FFD736 0%, #FFC107 100%); color: #130325; border: none; border-radius: 8px; padding: 6px 10px; font-weight: 700; font-size: 12px; cursor: pointer;';
+            okBtn.onclick = closeInactivityWarning;
+            
+            actions.appendChild(okBtn);
+            
+            dialog.appendChild(header);
+            dialog.appendChild(body);
+            dialog.appendChild(actions);
+            overlay.appendChild(dialog);
+            document.body.appendChild(overlay);
+            
+            // Animate in
+            requestAnimationFrame(() => {
+                overlay.style.opacity = '1';
+            });
+            
+            // Auto-dismiss after 10 seconds
+            setTimeout(() => {
+                closeInactivityWarning();
+            }, 10000);
+        }
+        
+        function closeInactivityWarning() {
+            const modal = document.getElementById('inactivityWarningModal');
+            if (modal) {
+                modal.style.opacity = '0';
+                setTimeout(() => modal.remove(), 200);
+            }
+        }
+        
+        // Make function globally accessible
+        window.closeInactivityWarning = closeInactivityWarning;
+        
+        // Check inactivity every 30 seconds
+        activityCheckInterval = setInterval(checkInactivity, CHECK_INTERVAL);
+        
+        // Initial activity update
+        updateActivity();
+    })();
     </script>
 
     <main>

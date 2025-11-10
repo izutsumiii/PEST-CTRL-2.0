@@ -201,7 +201,7 @@ try {
 
     .breadcrumb {
         max-width: 1400px;
-        margin: 0 auto;
+        margin: -30px auto 12px;
         padding: 0 20px;
     }
     .breadcrumb a {
@@ -216,7 +216,7 @@ try {
 
     .page-header {
         max-width: 1400px;
-        margin: 0 auto 10px;
+        margin: 0 auto 12px;
         padding: 0 20px;
         display: flex;
         align-items: center;
@@ -357,9 +357,9 @@ try {
         display: inline-flex;
         align-items: center;
         gap: 6px;
-        padding: 8px 16px;
+        padding: 6px 12px;
         border-radius: 6px;
-        font-size: 13px;
+        font-size: 12px;
         font-weight: 600;
         text-decoration: none;
         border: none;
@@ -434,17 +434,25 @@ try {
     }
     .page-link {
         padding: 8px 14px;
-        background: #ffffff;
-        color: #130325;
+        background: #ffffff !important;
+        color: #130325 !important;
         text-decoration: none;
         border-radius: 6px;
-        border: 1px solid #e5e7eb;
+        border: 1px solid #e5e7eb !important;
         font-weight: 600;
         font-size: 13px;
         transition: all 0.2s ease;
     }
-    .page-link:hover { background: #FFD736; color: #130325; }
-    .page-link.active { background: #FFD736; color: #130325; border-color: #FFD736; }
+    .page-link:hover { 
+        background: #130325 !important; 
+        color: #ffffff !important; 
+        border-color: #130325 !important;
+    }
+    .page-link.active { 
+        background: #130325 !important; 
+        color: #ffffff !important; 
+        border-color: #130325 !important;
+    }
 
     /* Confirmation Modal - Same style as admin-dashboard.php */
     .modal-overlay {
@@ -457,11 +465,12 @@ try {
         z-index: 9999;
     }
     .modal-dialog {
-        width: 360px;
+        width: 320px;
         max-width: 90vw;
         background: #ffffff;
         border: none;
         border-radius: 12px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.15);
     }
     .modal-header {
         padding: 8px 12px;
@@ -488,8 +497,15 @@ try {
     }
     .modal-body {
         padding: 12px;
-        color: #130325;
-        font-size: 13px;
+        color: #130325 !important;
+        font-size: 12px;
+        line-height: 1.5;
+    }
+    
+    .modal-body p {
+        color: #130325 !important;
+        font-size: 12px;
+        margin: 0;
     }
     .modal-actions {
         display: flex;
@@ -573,7 +589,7 @@ try {
                     <i class="fas fa-user-slash"></i> Deactivate
                 </a>
             <?php else: ?>
-                <a href="user-details.php?id=<?php echo $userId; ?>&action=activate" 
+                <a href="#" onclick="openConfirmModal('activate'); return false;" 
                    class="action-btn btn-activate">
                     <i class="fas fa-user-check"></i> Activate
                 </a>
@@ -730,11 +746,28 @@ try {
             <button class="modal-close" aria-label="Close" onclick="closeConfirmModal('deactivate')">×</button>
         </div>
         <div class="modal-body">
-            Are you sure you want to deactivate this user? They will not be able to log in.
+            <p>Are you sure you want to deactivate this user? They will not be able to log in.</p>
         </div>
         <div class="modal-actions">
             <button class="btn-outline" onclick="closeConfirmModal('deactivate')">Cancel</button>
             <a href="user-details.php?id=<?php echo $userId; ?>&action=deactivate" class="btn-primary-y">Confirm</a>
+        </div>
+    </div>
+</div>
+
+<!-- Activate Modal -->
+<div id="activateModal" class="modal-overlay" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-header">
+            <div class="modal-title">Confirm Activation</div>
+            <button class="modal-close" aria-label="Close" onclick="closeConfirmModal('activate')">×</button>
+        </div>
+        <div class="modal-body">
+            <p>Are you sure you want to activate this user? They will be able to log in and use the system.</p>
+        </div>
+        <div class="modal-actions">
+            <button class="btn-outline" onclick="closeConfirmModal('activate')">Cancel</button>
+            <a href="user-details.php?id=<?php echo $userId; ?>&action=activate" class="btn-primary-y">Confirm</a>
         </div>
     </div>
 </div>
@@ -747,7 +780,7 @@ try {
             <button class="modal-close" aria-label="Close" onclick="closeConfirmModal('delete')">×</button>
         </div>
         <div class="modal-body">
-            Are you sure you want to delete this user? This action cannot be undone. Users with orders cannot be deleted.
+            <p>Are you sure you want to delete this user? This action cannot be undone. Users with orders cannot be deleted.</p>
         </div>
         <div class="modal-actions">
             <button class="btn-outline" onclick="closeConfirmModal('delete')">Cancel</button>
@@ -762,6 +795,12 @@ function openConfirmModal(action) {
     if (modal) {
         modal.style.display = 'flex';
         modal.setAttribute('aria-hidden', 'false');
+        
+        // Auto-dismiss after 5 seconds
+        clearTimeout(modal.autoDismissTimer);
+        modal.autoDismissTimer = setTimeout(() => {
+            closeConfirmModal(action);
+        }, 5000);
     }
 }
 
@@ -770,6 +809,9 @@ function closeConfirmModal(action) {
     if (modal) {
         modal.style.display = 'none';
         modal.setAttribute('aria-hidden', 'true');
+        if (modal.autoDismissTimer) {
+            clearTimeout(modal.autoDismissTimer);
+        }
     }
 }
 

@@ -56,6 +56,10 @@ require_once 'includes/admin_header.php';
   .notification-status-lowstock { background: #f97316; color: #ffffff; }
   .notification-status-processing { background: #10b981; color: #ffffff; }
   .notification-status-new-seller { background: #8b5cf6; color: #ffffff; }
+  .notification-status-info { background: #17a2b8; color: #ffffff; }
+  .notification-status-warning { background: #ffc107; color: #130325; }
+  .notification-status-success { background: #28a745; color: #ffffff; }
+  .notification-status-error { background: #dc3545; color: #ffffff; }
 
   /* Custom confirmation dialog styles */
   .confirm-dialog { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); display: flex; align-items: center; justify-content: center; z-index: 10000; backdrop-filter: blur(5px); }
@@ -76,7 +80,7 @@ require_once 'includes/admin_header.php';
 <div class="container mx-auto px-4 py-8">
     <div class="max-w-4xl mx-auto">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
-          <h1 style="color:#130325; margin:0; font-size: 28px; font-weight: 700;">Notifications <span style="background: #FFD736; color: #130325; padding: 4px 12px; border-radius: 20px; font-size: 18px; font-weight: 600; margin-left: 8px;"><?php echo count($notifications); ?> total</span></h1>
+          <h1 style="color:#130325; margin:0; font-size: 28px; font-weight: 700;">Notifications <span style="background: #FFD736; color: #130325; padding: 4px 12px; border-radius: 20px; font-size: 18px; font-weight: 600; margin-left: 8px;">(<?php echo (int)$unreadCount; ?> unread)</span></h1>
           <?php if (!empty($notifications)): ?>
             <button onclick="markAllAsRead()" style="background:#dc3545; color:#ffffff; border:none; padding:8px 16px; border-radius:6px; cursor:pointer; font-weight:600;">
               Mark All as Read
@@ -89,7 +93,7 @@ require_once 'includes/admin_header.php';
         <?php else: ?>
           <div class="notif-list" style="display:flex; flex-direction:column; gap:12px;">
             <?php foreach ($notifications as $notification): ?>
-              <div class="notif-item" style="position: relative;" onclick="markAsRead(<?php echo $notification['id']; ?>)">
+              <div class="notif-item" style="position: relative;">
                 <div style="display:flex; gap:12px; align-items:center; background:#ffffff; border:1px solid rgba(0,0,0,0.1); padding:14px; border-radius:10px;">
                   <span class="notification-status-badge <?php echo getNotificationBadgeClass($notification['title'], $notification['type']); ?>">
                     <?php echo getNotificationBadgeText($notification['title'], $notification['type']); ?>
@@ -98,14 +102,23 @@ require_once 'includes/admin_header.php';
                     <div style="color:#130325; font-weight:700;">&nbsp;<?php echo htmlspecialchars($notification['title']); ?></div>
                     <div style="color:#130325; opacity:0.9; font-size:0.9rem;">
                       <?php echo htmlspecialchars($notification['message']); ?>
-                      <?php if ($notification['action_url']): ?>
-                        <a href="<?php echo htmlspecialchars($notification['action_url']); ?>" style="color:#130325; text-decoration:underline; margin-left:8px;">View Details</a>
-                      <?php endif; ?>
+                    </div>
+                    <div style="color:#130325; opacity:0.8; font-size:0.85rem; margin-top:4px;">
+                      <?php echo htmlspecialchars(date('M d, Y h:i A', strtotime($notification['created_at']))); ?>
                     </div>
                   </div>
-                  <div style="color:#130325; opacity:0.8; font-size:0.85rem; white-space:nowrap; margin-right: 5px;">
-                    <?php echo htmlspecialchars(date('M d, Y h:i A', strtotime($notification['created_at']))); ?>
-                  </div>
+                  <?php if ($notification['action_url']): 
+                    // Fix duplicate admin/admin- paths
+                    $actionUrl = $notification['action_url'];
+                    if (strpos($actionUrl, 'admin/admin-') !== false) {
+                        $actionUrl = str_replace('admin/admin-', 'admin-', $actionUrl);
+                    }
+                  ?>
+                    <button onclick="event.stopPropagation(); markAsReadAndRedirect(<?php echo $notification['id']; ?>, '<?php echo htmlspecialchars($actionUrl, ENT_QUOTES); ?>')" 
+                            style="background:#130325; color:#ffffff; border:none; padding:6px 10px; border-radius:6px; cursor:pointer; font-size:12px; display:flex; align-items:center; gap:4px; transition:all 0.2s; flex-shrink:0;">
+                      <i class="fas fa-eye"></i>
+                    </button>
+                  <?php endif; ?>
                 </div>
               </div>
             <?php endforeach; ?>
@@ -149,6 +162,34 @@ function markAsRead(notificationId) {
     .then(data => { if (data.success) location.reload(); });
 }
 
+function markAsReadAndRedirect(notificationId, actionUrl) {
+    // Fix duplicate admin/admin- paths
+    if (actionUrl && actionUrl.indexOf('admin/admin-') !== -1) {
+        actionUrl = actionUrl.replace('admin/admin-', 'admin-');
+    }
+    
+    // Mark as read
+    fetch('../ajax/mark-admin-notification-read.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ notification_id: notificationId })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success && actionUrl) {
+            window.location.href = actionUrl;
+        } else if (data.success) {
+            location.reload();
+        }
+    })
+    .catch(error => {
+        console.error('Error marking notification as read:', error);
+        if (actionUrl) {
+            window.location.href = actionUrl;
+        }
+    });
+}
+
 function markAllAsRead() {
     openConfirm('Are you sure you want to mark all notifications as read?', function() {
         fetch('../ajax/mark-all-admin-notifications-read.php', { method: 'POST' })
@@ -172,17 +213,21 @@ function formatTime(timestamp) {
 // Helper functions to mirror seller badge mapping
 function getNotificationBadgeClass($title, $type) {
     $titleLower = strtolower($title);
+    if (strpos($titleLower, 'product data issues') !== false) { return 'notification-status-error'; }
+    if (strpos($titleLower, 'suspicious activity') !== false) { return 'notification-status-warning'; }
     if (strpos($titleLower, 'new order') !== false || strpos($titleLower, 'order received') !== false) { return 'notification-status-order'; }
     if (strpos($titleLower, 'return request') !== false || strpos($titleLower, 'return/refund') !== false || strpos($titleLower, 'refund') !== false) { return 'notification-status-return'; }
     if (strpos($titleLower, 'low stock') !== false) { return 'notification-status-lowstock'; }
     if (strpos($titleLower, 'processing') !== false || strpos($titleLower, 'order status') !== false) { return 'notification-status-processing'; }
     if (strpos($titleLower, 'new seller') !== false || $type === 'new_seller') { return 'notification-status-new-seller'; }
     if (strpos($titleLower, 'product') !== false || strpos($titleLower, 'pending approval') !== false) { return 'notification-status-processing'; }
-    return 'notification-status-order';
+    return 'notification-status-info';
 }
 
 function getNotificationBadgeText($title, $type) {
     $titleLower = strtolower($title);
+    if (strpos($titleLower, 'product data issues') !== false) { return 'Product'; }
+    if (strpos($titleLower, 'suspicious activity') !== false) { return 'Warning'; }
     if (strpos($titleLower, 'new order') !== false || strpos($titleLower, 'order received') !== false) { return 'Order'; }
     if (strpos($titleLower, 'return request') !== false || strpos($titleLower, 'return/refund') !== false || strpos($titleLower, 'refund') !== false) { return 'Return/Refund'; }
     if (strpos($titleLower, 'low stock') !== false) { return 'Low Stocks'; }

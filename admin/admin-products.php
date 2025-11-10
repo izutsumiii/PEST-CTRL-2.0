@@ -387,7 +387,8 @@ $totalProductsAll = array_sum($stats);
         font-size: 18px !important;
         font-weight: 800 !important;
         color: #130325 !important;
-        margin: 20px auto 20px auto !important;
+        margin: -60px auto 12px auto !important;
+        margin-top: -60px !important;
         padding: 0 20px !important;
         display: flex !important;
         align-items: center !important;
@@ -403,7 +404,7 @@ $totalProductsAll = array_sum($stats);
         font-size: 20px !important;
         font-weight: 800 !important;
         color: #130325 !important;
-        margin-top: 0 !important;
+        margin-top: -60px !important;
         margin-bottom: 0 !important;
         margin-left: 0 !important;
         margin-right: 0 !important;
@@ -415,7 +416,7 @@ $totalProductsAll = array_sum($stats);
     /* Main Container */
     .container {
         max-width: 1400px;
-        margin: 0 auto 30px auto;
+        margin: -20px auto 30px auto;
         padding: 0 20px;
     }
 
@@ -1414,14 +1415,14 @@ $totalProductsAll = array_sum($stats);
                                         </a>
                                         
                                         <?php if ($product['status'] === 'pending'): ?>
-                                            <a href="admin-products.php?action=approve&id=<?php echo $product['id']; ?>&<?php echo http_build_query(['status' => $statusFilter, 'page' => $page, 'search' => $searchTerm]); ?>" 
+                                            <a href="#" 
                                                class="action-btn btn-approve" title="Approve Product"
-                                               onclick="return confirm('Are you sure you want to approve this product?')">
+                                               onclick="openConfirmModal('approve', <?php echo $product['id']; ?>, '<?php echo htmlspecialchars($product['name'], ENT_QUOTES); ?>'); return false;">
                                                 <i class="fas fa-check"></i>
                                             </a>
-                                            <a href="admin-products.php?action=reject&id=<?php echo $product['id']; ?>&<?php echo http_build_query(['status' => $statusFilter, 'page' => $page, 'search' => $searchTerm]); ?>" 
+                                            <a href="#" 
                                                class="action-btn btn-reject" title="Reject Product"
-                                               onclick="return confirm('Are you sure you want to reject this product?')">
+                                               onclick="openConfirmModal('reject', <?php echo $product['id']; ?>, '<?php echo htmlspecialchars($product['name'], ENT_QUOTES); ?>'); return false;">
                                                 <i class="fas fa-times"></i>
                                             </a>
                                         <?php endif; ?>
@@ -1895,7 +1896,7 @@ document.addEventListener('DOMContentLoaded', function() {
         </div>
         <div class="modal-actions">
             <button class="btn-outline" onclick="closeConfirmModal('reject')">Cancel</button>
-            <a href="#" class="btn-danger modal-confirm-link">Confirm</a>
+            <a href="#" class="btn-primary-y modal-confirm-link">Confirm</a>
         </div>
     </div>
 </div>

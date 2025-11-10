@@ -73,23 +73,47 @@ if (isset($_POST['update_settings'])) {
 
 // Handle maintenance mode toggle
 if (isset($_POST['toggle_maintenance'])) {
-    $maintenanceMode = isset($_POST['maintenance_mode']) ? '1' : '0';
-    $maintenanceMessage = isset($_POST['maintenance_message']) ? sanitizeInput($_POST['maintenance_message']) : 'We are currently performing scheduled maintenance. Please check back soon!';
-    // Format datetime inputs to match database format (Y-m-d H:i:s)
-    $maintenanceStart = '';
-    $maintenanceEnd = '';
-    
-    if (!empty($_POST['maintenance_start'])) {
-        // Convert from datetime-local format (Y-m-d\TH:i) to database format (Y-m-d H:i:s)
-        $maintenanceStart = date('Y-m-d H:i:s', strtotime($_POST['maintenance_start']));
+    // Verify password/PIN - same as admin login
+    $pinVerified = false;
+    if (isset($_POST['maintenance_pin']) && !empty($_POST['maintenance_pin'])) {
+        $enteredPin = sanitizeInput($_POST['maintenance_pin']);
+        
+        // Verify against admin password (same as login_admin.php)
+        try {
+            $stmt = $pdo->prepare("SELECT password FROM users WHERE id = ?");
+            $stmt->execute([$_SESSION['user_id']]);
+            $adminPasswordHash = $stmt->fetchColumn();
+            
+            if ($adminPasswordHash && password_verify($enteredPin, $adminPasswordHash)) {
+                $pinVerified = true;
+            } else {
+                $error = "Invalid password. Maintenance settings not saved.";
+            }
+        } catch (PDOException $e) {
+            $error = "Error verifying password: " . $e->getMessage();
+        }
+    } else {
+        $error = "Password is required to change maintenance settings.";
     }
     
-    if (!empty($_POST['maintenance_end'])) {
-        $maintenanceEnd = date('Y-m-d H:i:s', strtotime($_POST['maintenance_end']));
-    }
-    $maintenanceAuto = isset($_POST['maintenance_auto_enable']) ? '1' : '0';
-    
-    try {
+    if ($pinVerified || empty($error)) {
+        $maintenanceMode = isset($_POST['maintenance_mode']) ? '1' : '0';
+        $maintenanceMessage = isset($_POST['maintenance_message']) ? sanitizeInput($_POST['maintenance_message']) : 'We are currently performing scheduled maintenance. Please check back soon!';
+        // Format datetime inputs to match database format (Y-m-d H:i:s)
+        $maintenanceStart = '';
+        $maintenanceEnd = '';
+        
+        if (!empty($_POST['maintenance_start'])) {
+            // Convert from datetime-local format (Y-m-d\TH:i) to database format (Y-m-d H:i:s)
+            $maintenanceStart = date('Y-m-d H:i:s', strtotime($_POST['maintenance_start']));
+        }
+        
+        if (!empty($_POST['maintenance_end'])) {
+            $maintenanceEnd = date('Y-m-d H:i:s', strtotime($_POST['maintenance_end']));
+        }
+        $maintenanceAuto = isset($_POST['maintenance_auto_enable']) ? '1' : '0';
+        
+        try {
         // Ensure site_settings table exists (create without foreign key first to avoid constraint errors)
         $pdo->exec("CREATE TABLE IF NOT EXISTS site_settings (
             id INT AUTO_INCREMENT PRIMARY KEY,
@@ -145,8 +169,9 @@ if (isset($_POST['toggle_maintenance'])) {
         } else {
             $success = "Maintenance mode has been DISABLED! The site is now accessible to all users.";
         }
-    } catch (PDOException $e) {
-        $error = "Error updating maintenance mode: " . $e->getMessage();
+        } catch (PDOException $e) {
+            $error = "Error updating maintenance mode: " . $e->getMessage();
+        }
     }
 }
 
@@ -465,7 +490,7 @@ try {
         font-size: 18px !important;
         font-weight: 800 !important;
         color: #130325 !important;
-        margin: 20px auto 20px auto !important;
+        margin: -30px auto 10px auto !important;
         padding: 0 20px !important;
         display: flex !important;
         align-items: center !important;
@@ -493,54 +518,144 @@ try {
 
     .settings-container {
         max-width: 1400px;
-        margin: 0 auto;
+        margin: 10px auto 0 auto;
         padding: 0 24px 24px;
+    }
+    
+    .settings-container h2 {
+        margin-bottom: 16px;
+        color: #130325;
+        font-size: 16px;
+        font-weight: 700;
     }
 
     .settings-card {
         background: #ffffff;
         border: 1px solid rgba(0,0,0,0.1);
         border-radius: 12px;
-        padding: 24px;
-        margin-bottom: 24px;
+        padding: 16px;
+        margin-bottom: 16px;
         box-shadow: 0 1px 3px rgba(0,0,0,0.1);
     }
-
-    .settings-card h3 {
-        font-size: 18px;
-        font-weight: 600;
+    
+    .form-group select {
+        padding: 6px 10px;
+        border: 1px solid rgba(0,0,0,0.1);
+        border-radius: 6px;
+        font-size: 12px;
+        background: #ffffff;
         color: #130325;
-        margin: 0 0 20px 0;
+        width: 100%;
+        max-width: 200px;
+        transition: border-color 0.2s;
+    }
+    
+    .form-group select:focus {
+        outline: none;
+        border-color: #130325;
+    }
+
+    .section-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 16px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid rgba(0,0,0,0.08);
+    }
+    
+    .settings-card h3 {
+        font-size: 14px;
+        font-weight: 700;
+        color: #130325;
+        margin: 0;
         display: flex;
         align-items: center;
         gap: 8px;
         text-shadow: none !important;
     }
+    
+    .section-header .info-icon {
+        margin-left: auto;
+        margin-right: 0;
+    }
 
     .form-group {
-        margin-bottom: 20px;
+        margin-bottom: 12px;
+    }
+    
+    .form-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 12px;
+        margin-bottom: 12px;
     }
 
     .form-group label {
-        font-size: 13px;
+        font-size: 12px;
         font-weight: 600;
         color: #130325;
-        margin-bottom: 8px;
+        margin-bottom: 6px;
+        display: block;
+    }
+    
+    .view-content {
         display: flex;
+        flex-direction: column;
+        gap: 10px;
+        margin-bottom: 16px;
+    }
+    
+    .view-item {
+        font-size: 12px;
+        color: #130325;
+        line-height: 1.6;
+    }
+    
+    .view-item strong {
+        font-weight: 600;
+        margin-right: 8px;
+        color: #130325;
+    }
+    
+    .view-item span {
+        color: #6b7280;
+    }
+    
+    .btn-edit {
+        background: linear-gradient(135deg, #FFD736 0%, #FFC107 100%);
+        color: #130325;
+        border: none;
+        padding: 6px 12px;
+        border-radius: 6px;
+        font-weight: 600;
+        font-size: 12px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: inline-flex;
         align-items: center;
-        gap: 8px;
+        gap: 6px;
+    }
+    
+    .btn-edit:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(255, 215, 54, 0.3);
     }
 
     .info-icon {
-        color: #3b82f6;
+        color: #130325;
         cursor: pointer;
-        font-size: 16px;
-        transition: all 0.2s ease;
+        font-size: 14px;
+        transition: none;
+        background: none;
+        border: none;
+        padding: 0;
+        margin-left: 6px;
     }
 
     .info-icon:hover {
-        color: #2563eb;
-        transform: scale(1.1);
+        color: #130325;
+        transform: none;
     }
 
     .input-group {
@@ -550,13 +665,13 @@ try {
     }
 
     .form-group input {
-        padding: 10px 12px;
+        padding: 6px 10px;
         border: 1px solid rgba(0,0,0,0.1);
-        border-radius: 8px;
-        font-size: 14px;
+        border-radius: 6px;
+        font-size: 12px;
         background: #ffffff;
         color: #130325;
-        width: 150px;
+        width: 120px;
         transition: border-color 0.2s;
     }
 
@@ -586,10 +701,10 @@ try {
         background: linear-gradient(135deg, #FFD736 0%, #FFC107 100%);
         color: #130325;
         border: none;
-        padding: 12px 24px;
-        border-radius: 8px;
-        font-weight: 700;
-        font-size: 14px;
+        padding: 6px 12px;
+        border-radius: 6px;
+        font-weight: 600;
+        font-size: 12px;
         cursor: pointer;
         transition: all 0.2s ease;
     }
@@ -744,6 +859,108 @@ try {
         color: #130325;
         font-weight: 600;
     }
+    
+    /* Maintenance Confirmation Modal - EXACT MATCH TO LOGOUT MODAL */
+    /* Use same class as logout modal - no ID selector needed */
+    #maintenanceConfirmModal.modal-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.35);
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+    }
+
+    #maintenanceConfirmModal .modal-dialog {
+        width: 360px;
+        max-width: 90vw;
+        background: #ffffff;
+        border: none;
+        border-radius: 12px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    }
+
+    #maintenanceConfirmModal .modal-header {
+        padding: 8px 12px;
+        background: #130325;
+        color: #F9F9F9;
+        border-bottom: none;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-radius: 12px 12px 0 0;
+    }
+
+    #maintenanceConfirmModal .modal-title {
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: .3px;
+        margin: 0;
+    }
+
+    #maintenanceConfirmModal .modal-close {
+        background: transparent;
+        border: none;
+        color: #F9F9F9;
+        font-size: 20px;
+        line-height: 1;
+        cursor: pointer;
+        padding: 0;
+        width: 24px;
+        height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    #maintenanceConfirmModal .modal-close:hover {
+        opacity: 0.8;
+    }
+
+    #maintenanceConfirmModal .modal-body {
+        padding: 12px;
+        color: #130325;
+        font-size: 12px;
+    }
+
+    #maintenanceConfirmModal .modal-actions {
+        display: flex;
+        gap: 8px;
+        justify-content: flex-end;
+        padding: 0 12px 12px 12px;
+    }
+
+    #maintenanceConfirmModal .btn-outline {
+        background: #ffffff;
+        color: #130325;
+        border: 1px solid rgba(0,0,0,0.1);
+        border-radius: 8px;
+        padding: 6px 10px;
+        font-weight: 700;
+        font-size: 12px;
+        cursor: pointer;
+    }
+
+    #maintenanceConfirmModal .btn-outline:hover {
+        background: #f3f4f6;
+    }
+
+    #maintenanceConfirmModal .btn-primary-y {
+        background: linear-gradient(135deg, #FFD736 0%, #FFC107 100%);
+        color: #130325;
+        border: none;
+        border-radius: 8px;
+        padding: 6px 10px;
+        font-weight: 700;
+        font-size: 12px;
+        cursor: pointer;
+    }
+
+    #maintenanceConfirmModal .btn-primary-y:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 2px 8px rgba(255, 215, 54, 0.3);
+    }
 
 
 
@@ -772,18 +989,23 @@ try {
     }
 
     .status-active {
-        background: #fee2e2;
-        color: #dc2626;
+        background: rgba(16, 185, 129, 0.15);
+        color: #059669;
+        border: 1px solid #10b981;
     }
 
     .status-active i {
-        color: #dc2626;
-        animation: pulse 2s infinite;
+        color: #10b981;
     }
 
     .status-inactive {
-        background: #d1fae5;
-        color: #059669;
+        background: rgba(220, 38, 38, 0.15);
+        color: #dc2626;
+        border: 1px solid #dc2626;
+    }
+    
+    .status-inactive i {
+        color: #dc2626;
     }
 
     @keyframes pulse {
@@ -804,8 +1026,8 @@ try {
     .toggle-label {
         position: relative;
         display: inline-block;
-        width: 56px;
-        height: 28px;
+        width: 44px;
+        height: 22px;
         cursor: pointer;
         margin: 0;
         flex-shrink: 0;
@@ -825,16 +1047,16 @@ try {
         bottom: 0;
         background-color: #cbd5e1;
         transition: 0.3s;
-        border-radius: 28px;
+        border-radius: 22px;
     }
 
     .toggle-slider:before {
         position: absolute;
         content: "";
-        height: 20px;
-        width: 20px;
-        left: 4px;
-        bottom: 4px;
+        height: 16px;
+        width: 16px;
+        left: 3px;
+        bottom: 3px;
         background-color: white;
         transition: 0.3s;
         border-radius: 50%;
@@ -842,11 +1064,11 @@ try {
     }
 
     input:checked + .toggle-slider {
-        background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
     }
 
     input:checked + .toggle-slider:before {
-        transform: translateX(28px);
+        transform: translateX(22px);
     }
 
     .toggle-slider-schedule {
@@ -863,23 +1085,25 @@ try {
 
     .toggle-info strong {
         display: block;
-        font-size: 15px;
+        font-size: 12px;
         color: #130325;
         margin-bottom: 4px;
+        font-weight: 600;
     }
 
     .toggle-info p {
-        font-size: 13px;
+        font-size: 11px;
         color: #6b7280;
         margin: 0;
+        line-height: 1.4;
     }
 
     .form-group textarea {
         width: 100%;
-        padding: 12px;
+        padding: 6px 10px;
         border: 1px solid rgba(0,0,0,0.1);
-        border-radius: 8px;
-        font-size: 14px;
+        border-radius: 6px;
+        font-size: 12px;
         background: #ffffff;
         color: #130325;
         resize: vertical;
@@ -903,10 +1127,10 @@ try {
     }
 
     .schedule-header h4 {
-        font-size: 16px;
+        font-size: 13px;
         font-weight: 600;
         color: #130325;
-        margin: 0 0 8px 0;
+        margin: 0 0 6px 0;
         display: flex;
         align-items: center;
         gap: 8px;
@@ -914,7 +1138,7 @@ try {
     }
 
     .schedule-header p {
-        font-size: 13px;
+        font-size: 11px;
         color: #6b7280;
         margin: 0;
     }
@@ -1579,44 +1803,56 @@ try {
     <?php if ($currentSection === 'order'): ?>
     <form method="POST" action="">
         <div class="settings-card">
-            <h3>
-                Order Settings
+            <div class="section-header">
+                <h3>
+                    <i class="fas fa-shopping-cart"></i> Customer Cancellation Grace Period
+                </h3>
                 <i class="fas fa-info-circle info-icon" onclick="openInfoModal('gracePeriod')" title="Click for instructions"></i>
-            </h3>
-            
-            <div class="form-group">
-                <label for="grace_period">
-                    Customer Cancellation Grace Period
-                    <i class="fas fa-info-circle info-icon" onclick="openInfoModal('gracePeriod')" title="Click for instructions"></i>
-                </label>
-                
-                <div class="input-group">
-                    <input type="number" 
-                           id="grace_period" 
-                           name="grace_period" 
-                           value="<?php echo $currentGracePeriod; ?>" 
-                           min="1" 
-                           max="60" 
-                           required>
-                    <span class="input-suffix">minutes</span>
-                </div>
-                
-                <div class="current-value-badge">
-                    Current Setting: <?php echo $currentGracePeriod; ?> minutes
-                </div>
             </div>
             
-            <button type="submit" name="update_settings" class="btn-save">
-                <i class="fas fa-save"></i> Save Settings
-            </button>
+            <div id="gracePeriodView">
+                <div class="current-value-badge" style="margin-top: 0;">
+                    Current Setting: <?php echo $currentGracePeriod; ?> minutes
+                </div>
+                <button type="button" class="btn-save" onclick="editGracePeriod()" style="margin-top: 12px;">
+                    <i class="fas fa-edit"></i> Edit
+                </button>
+            </div>
+            
+            <div id="gracePeriodFields" style="display: none;">
+                <div class="form-group">
+                    <label for="grace_period">Grace Period (minutes)</label>
+                    <div class="input-group">
+                        <input type="number" 
+                               id="grace_period" 
+                               name="grace_period" 
+                               value="<?php echo $currentGracePeriod; ?>" 
+                               min="1" 
+                               max="60" 
+                               required>
+                        <span class="input-suffix">minutes</span>
+                    </div>
+                </div>
+                
+                <div style="display: flex; gap: 8px; margin-top: 12px;">
+                    <button type="button" class="btn-save" onclick="confirmGracePeriodSave()">
+                        <i class="fas fa-save"></i> Save
+                    </button>
+                    <button type="button" class="btn-cancel" onclick="cancelGracePeriodEdit()" style="background: #6c757d; color: #ffffff; border: none; padding: 6px 12px; border-radius: 6px; font-weight: 600; font-size: 12px; cursor: pointer;">
+                        Cancel
+                    </button>
+                </div>
+            </div>
         </div>
     </form>
 
     <!-- Discount/Promo Codes Section -->
     <div class="settings-card">
-        <h3>
-            <i class="fas fa-tag"></i> Discount & Promo Codes
-        </h3>
+        <div class="section-header">
+            <h3>
+                <i class="fas fa-tag"></i> Discount & Promo Codes
+            </h3>
+        </div>
         
         <div class="discount-codes-list">
             <table class="discount-table">
@@ -1683,8 +1919,8 @@ try {
             </table>
         </div>
         
-        <button type="button" class="btn-add-discount" onclick="toggleDiscountForm()">
-            <i class="fas fa-plus"></i> Create New Discount Code
+        <button type="button" class="btn-save" onclick="toggleDiscountForm()" style="margin-top: 16px;">
+            <i class="fas fa-plus"></i> Create Code
         </button>
         
         <div id="discountForm" class="discount-form" style="display: none;">
@@ -1740,11 +1976,11 @@ try {
                     </div>
                 </div>
                 
-                <div class="form-actions">
+                <div class="form-actions" style="display: flex; gap: 8px; margin-top: 16px;">
                     <button type="submit" name="create_discount_code" class="btn-save">
-                        <i class="fas fa-save"></i> Create Discount Code
+                        <i class="fas fa-plus"></i> Create Code
                     </button>
-                    <button type="button" class="btn-cancel" onclick="toggleDiscountForm()">
+                    <button type="button" class="btn-cancel" onclick="toggleDiscountForm()" style="background: #6c757d; color: #ffffff; border: none; padding: 6px 12px; border-radius: 6px; font-weight: 600; font-size: 12px; cursor: pointer;">
                         Cancel
                     </button>
                 </div>
@@ -1755,13 +1991,16 @@ try {
     <!-- Maintenance Mode Settings Card -->
     <form method="POST" action="" id="maintenanceForm">
         <div class="settings-card">
-            <h3>
-                <i class="fas fa-tools"></i> Maintenance Mode Control
-                <div class="status-badge <?php echo $maintenanceMode === '1' ? 'status-active' : 'status-inactive'; ?>">
-                    <i class="fas fa-circle"></i>
-                    <?php echo $maintenanceMode === '1' ? 'ACTIVE' : 'INACTIVE'; ?>
-                </div>
-            </h3>
+            <div class="section-header">
+                <h3>
+                    <i class="fas fa-tools"></i> Maintenance Mode Control
+                    <div class="status-badge <?php echo $maintenanceMode === '1' ? 'status-active' : 'status-inactive'; ?>">
+                        <i class="fas fa-circle"></i>
+                        <?php echo $maintenanceMode === '1' ? 'ACTIVE' : 'INACTIVE'; ?>
+                    </div>
+                </h3>
+                <i class="fas fa-info-circle info-icon" onclick="openMaintenanceInfoModal()" title="Click for instructions"></i>
+            </div>
             
             <!-- Manual Maintenance Mode -->
             <div class="form-group">
@@ -1823,21 +2062,8 @@ try {
                 </div>
             </div>
 
-            <div class="info-box-maintenance">
-                <i class="fas fa-info-circle"></i>
-                <div>
-                    <strong>How it works:</strong>
-                    <ul>
-                        <li><strong>Manual Mode:</strong> Toggle "Enable Maintenance Mode" to activate immediately</li>
-                        <li><strong>Scheduled Mode:</strong> Set start/end times and enable "Automatic Scheduled Maintenance"</li>
-                        <li>Site will automatically enter maintenance during the scheduled window</li>
-                        <li>Admins can always access the site regardless of maintenance mode</li>
-                    </ul>
-                </div>
-            </div>
-            
-            <button type="button" onclick="console.log('DEBUG: Save button clicked!'); confirmMaintenanceSave(event);" class="btn-save">
-                <i class="fas fa-save"></i> Save
+            <button type="button" onclick="showMaintenanceConfirm(); return false;" class="btn-save" style="margin-top: 16px;">
+                <i class="fas fa-save"></i> Save Settings
             </button>
             
             <?php if ($maintenanceMode === '1'): ?>
@@ -1865,126 +2091,176 @@ try {
     <!-- Site Settings Section -->
     <form method="POST" action="" id="siteSettingsForm">
         <div class="settings-card">
-            <h3>
-                <i class="fas fa-cog"></i> Site Settings
-                <span style="font-size: 12px; color: #ef4444; font-weight: 600;">
-                    <i class="fas fa-lock"></i> Authentication Required
-                </span>
-            </h3>
+            <div class="section-header">
+                <h3>
+                    <i class="fas fa-cog"></i> Site Settings
+                </h3>
+            </div>
             
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="site_name">Site Name</label>
-                    <input type="text" id="site_name" name="site_name" value="<?php echo htmlspecialchars($currentSiteName); ?>" placeholder="PEST-CTRL">
+            <div id="siteSettingsFields" style="display: none;">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="site_email">Contact Email</label>
+                        <input type="email" id="site_email" name="site_email" value="<?php echo htmlspecialchars($currentSiteEmail); ?>" placeholder="contact@pestctrl.com">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="site_phone">Contact Phone</label>
+                        <input type="text" id="site_phone" name="site_phone" value="<?php echo htmlspecialchars($currentSitePhone); ?>" placeholder="+63 XXX XXX XXXX">
+                    </div>
                 </div>
                 
                 <div class="form-group">
-                    <label for="site_email">Contact Email</label>
-                    <input type="email" id="site_email" name="site_email" value="<?php echo htmlspecialchars($currentSiteEmail); ?>" placeholder="contact@pestctrl.com">
+                    <label for="site_address">Business Address</label>
+                    <textarea id="site_address" name="site_address" rows="3" placeholder="Enter business address..."><?php echo htmlspecialchars($currentSiteAddress); ?></textarea>
                 </div>
                 
-                <div class="form-group">
-                    <label for="site_phone">Contact Phone</label>
-                    <input type="text" id="site_phone" name="site_phone" value="<?php echo htmlspecialchars($currentSitePhone); ?>" placeholder="+63 XXX XXX XXXX">
+                <div style="display: flex; gap: 8px;">
+                    <button type="button" class="btn-save" onclick="confirmSiteSettingsSave()">
+                        <i class="fas fa-save"></i> Save
+                    </button>
+                    <button type="button" class="btn-cancel" onclick="cancelSiteSettingsEdit()" style="background: #6c757d; color: #ffffff; border: none; padding: 6px 12px; border-radius: 6px; font-weight: 600; font-size: 12px; cursor: pointer;">
+                        Cancel
+                    </button>
                 </div>
             </div>
             
-            <div class="form-group">
-                <label for="site_address">Business Address</label>
-                <textarea id="site_address" name="site_address" rows="3" placeholder="Enter business address..."><?php echo htmlspecialchars($currentSiteAddress); ?></textarea>
+            <div id="siteSettingsView">
+                <div class="view-content">
+                    <div class="view-item"><strong>Contact Email:</strong> <span><?php echo htmlspecialchars($currentSiteEmail) ?: 'Not set'; ?></span></div>
+                    <div class="view-item"><strong>Contact Phone:</strong> <span><?php echo htmlspecialchars($currentSitePhone) ?: 'Not set'; ?></span></div>
+                    <div class="view-item"><strong>Business Address:</strong> <span><?php echo htmlspecialchars($currentSiteAddress) ?: 'Not set'; ?></span></div>
+                </div>
+                <button type="button" class="btn-edit" onclick="editSiteSettings()">
+                    <i class="fas fa-edit"></i> Edit
+                </button>
             </div>
-            
-            <button type="button" class="btn-save" onclick="openAuthModal('site')">
-                <i class="fas fa-save"></i> Save Site Settings
-            </button>
         </div>
     </form>
     
     <!-- Password/PIN Change Section -->
     <form method="POST" action="">
         <div class="settings-card">
-            <h3>
-                <i class="fas fa-key"></i> Change Password / PIN
-            </h3>
-            
-            <div class="form-group">
-                <label for="change_type">Change Type</label>
-                <select id="change_type" name="change_type" onchange="updateChangeType()">
-                    <option value="password">Password</option>
-                    <option value="pin">PIN (4-6 digits)</option>
-                </select>
+            <div class="section-header">
+                <h3>
+                    <i class="fas fa-key"></i> Change Password / PIN
+                </h3>
             </div>
             
-            <div class="form-group">
-                <label for="current_password">Current Password/PIN</label>
-                <input type="password" id="current_password" name="current_password" required>
+            <div id="passwordFields" style="display: none;">
+                <div class="form-group">
+                    <label for="change_type">Change Type</label>
+                    <select id="change_type" name="change_type" onchange="updateChangeType()" style="padding: 6px 10px; border: 1px solid rgba(0,0,0,0.1); border-radius: 6px; font-size: 12px; width: 200px;">
+                        <option value="password">Password</option>
+                        <option value="pin">PIN (4-6 digits)</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="current_password">Current Password/PIN</label>
+                    <input type="password" id="current_password" name="current_password" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="new_password">New Password/PIN</label>
+                    <input type="password" id="new_password" name="new_password" required>
+                    <small id="password_hint" class="form-help-text">Password must be at least 6 characters</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="confirm_password">Confirm New Password/PIN</label>
+                    <input type="password" id="confirm_password" name="confirm_password" required>
+                </div>
+                
+                <div style="display: flex; gap: 8px;">
+                    <button type="button" class="btn-save" onclick="confirmPasswordChange()">
+                        <i class="fas fa-save"></i> Save
+                    </button>
+                    <button type="button" class="btn-cancel" onclick="cancelPasswordEdit()" style="background: #6c757d; color: #ffffff; border: none; padding: 6px 12px; border-radius: 6px; font-weight: 600; font-size: 12px; cursor: pointer;">
+                        Cancel
+                    </button>
+                </div>
             </div>
             
-            <div class="form-group">
-                <label for="new_password">New Password/PIN</label>
-                <input type="password" id="new_password" name="new_password" required>
-                <small id="password_hint" class="form-help-text">Password must be at least 6 characters</small>
+            <div id="passwordView">
+                <button type="button" class="btn-edit" onclick="editPassword()">
+                    <i class="fas fa-edit"></i> Edit
+                </button>
             </div>
-            
-            <div class="form-group">
-                <label for="confirm_password">Confirm New Password/PIN</label>
-                <input type="password" id="confirm_password" name="confirm_password" required>
-            </div>
-            
-            <button type="submit" name="change_password" class="btn-save">
-                <i class="fas fa-save"></i> Change Password/PIN
-            </button>
         </div>
     </form>
     
     <?php elseif ($currentSection === 'profile'): ?>
     <!-- Edit Profile Section -->
-    <form method="POST" action="">
+    <form method="POST" action="" id="profileForm">
         <div class="settings-card">
-            <h3>
-                <i class="fas fa-user-edit"></i> Edit Profile
-            </h3>
+            <div class="section-header">
+                <h3>
+                    <i class="fas fa-user-edit"></i> Edit Profile
+                </h3>
+            </div>
             
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="first_name">First Name</label>
-                    <input type="text" id="first_name" name="first_name" value="<?php echo htmlspecialchars($userProfile['first_name'] ?? ''); ?>" required>
+            <div id="profileFields" style="display: none;">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="first_name">First Name</label>
+                        <input type="text" id="first_name" name="first_name" value="<?php echo htmlspecialchars($userProfile['first_name'] ?? ''); ?>" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="last_name">Last Name</label>
+                        <input type="text" id="last_name" name="last_name" value="<?php echo htmlspecialchars($userProfile['last_name'] ?? ''); ?>" required>
+                    </div>
                 </div>
                 
-                <div class="form-group">
-                    <label for="last_name">Last Name</label>
-                    <input type="text" id="last_name" name="last_name" value="<?php echo htmlspecialchars($userProfile['last_name'] ?? ''); ?>" required>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="display_name">Display Name</label>
+                        <input type="text" id="display_name" name="display_name" value="<?php echo htmlspecialchars($userProfile['display_name'] ?? ''); ?>" placeholder="Optional">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="username">Username</label>
+                        <input type="text" id="username" value="<?php echo htmlspecialchars($userProfile['username'] ?? ''); ?>" disabled style="background: #f3f4f6; cursor: not-allowed;">
+                        <small class="form-help-text">Username cannot be changed</small>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="email">Email</label>
+                        <input type="email" id="email" name="email" value="<?php echo htmlspecialchars($userProfile['email'] ?? ''); ?>" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="phone">Phone</label>
+                        <input type="text" id="phone" name="phone" value="<?php echo htmlspecialchars($userProfile['phone'] ?? ''); ?>" placeholder="+63 XXX XXX XXXX">
+                    </div>
+                </div>
+                
+                <div style="display: flex; gap: 8px; margin-top: 12px;">
+                    <button type="button" class="btn-save" onclick="confirmProfileUpdate()">
+                        <i class="fas fa-save"></i> Save
+                    </button>
+                    <button type="button" class="btn-cancel" onclick="cancelProfileEdit()">
+                        Cancel
+                    </button>
                 </div>
             </div>
             
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="display_name">Display Name</label>
-                    <input type="text" id="display_name" name="display_name" value="<?php echo htmlspecialchars($userProfile['display_name'] ?? ''); ?>" placeholder="Optional">
+            <div id="profileView">
+                <div class="view-content">
+                    <div class="view-item"><strong>First Name:</strong> <span><?php echo htmlspecialchars($userProfile['first_name'] ?? ''); ?></span></div>
+                    <div class="view-item"><strong>Last Name:</strong> <span><?php echo htmlspecialchars($userProfile['last_name'] ?? ''); ?></span></div>
+                    <div class="view-item"><strong>Display Name:</strong> <span><?php echo htmlspecialchars($userProfile['display_name'] ?? 'Not set'); ?></span></div>
+                    <div class="view-item"><strong>Username:</strong> <span><?php echo htmlspecialchars($userProfile['username'] ?? ''); ?></span></div>
+                    <div class="view-item"><strong>Email:</strong> <span><?php echo htmlspecialchars($userProfile['email'] ?? ''); ?></span></div>
+                    <div class="view-item"><strong>Phone:</strong> <span><?php echo htmlspecialchars($userProfile['phone'] ?? 'Not set'); ?></span></div>
                 </div>
-                
-                <div class="form-group">
-                    <label for="username">Username</label>
-                    <input type="text" id="username" value="<?php echo htmlspecialchars($userProfile['username'] ?? ''); ?>" disabled style="background: #f3f4f6; cursor: not-allowed;">
-                    <small class="form-help-text">Username cannot be changed</small>
-                </div>
+                <button type="button" class="btn-edit" onclick="editProfile()">
+                    <i class="fas fa-edit"></i> Edit
+                </button>
             </div>
-            
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="email">Email</label>
-                    <input type="email" id="email" name="email" value="<?php echo htmlspecialchars($userProfile['email'] ?? ''); ?>" required>
-                </div>
-                
-                <div class="form-group">
-                    <label for="phone">Phone</label>
-                    <input type="text" id="phone" name="phone" value="<?php echo htmlspecialchars($userProfile['phone'] ?? ''); ?>" placeholder="+63 XXX XXX XXXX">
-                </div>
-            </div>
-            
-            <button type="submit" name="update_profile" class="btn-save">
-                <i class="fas fa-save"></i> Update Profile
-            </button>
         </div>
     </form>
     <?php endif; ?>
@@ -2023,31 +2299,32 @@ try {
             </form>
         </div>
     </div>
+</div>
 
-<!-- Maintenance Save Confirmation Modal -->
-<div id="maintenanceConfirmModal" class="info-modal-overlay" onclick="if(event.target === this) closeMaintenanceModal();" style="display: none !important;">
-    <div class="info-modal-dialog" onclick="event.stopPropagation()">
-        <div class="info-modal-header">
-            <h3 class="info-modal-title">
-                <i class="fas fa-exclamation-triangle" style="color: #FFD736; margin-right: 8px;"></i>
-                Confirm Save Maintenance Settings
-            </h3>
-            <button class="info-modal-close" onclick="closeMaintenanceModal()" aria-label="Close">&times;</button>
+<!-- Maintenance Save Confirmation Modal - MATCHES LOGOUT MODAL -->
+<!-- MOVED OUTSIDE authModal TO FIX DISPLAY ISSUE -->
+<div id="maintenanceConfirmModal" class="modal-overlay" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-header">
+            <div class="modal-title">Confirm Maintenance Settings</div>
+            <button class="modal-close" aria-label="Close" onclick="closeMaintenanceConfirm()">×</button>
         </div>
-        <div class="info-modal-body">
-            <p style="margin: 0; color: #130325; line-height: 1.6;">
-                Are you sure you want to save these maintenance mode settings? 
-            </p>
-            <p style="margin: 12px 0 0 0; color: #6b7280; font-size: 13px;">
-                <strong style="color: #dc2626;">Changes will take effect immediately and may affect site accessibility for regular users.</strong>
-            </p>
+        <div class="modal-body">
+            <p id="maintenanceConfirmMessage" style="margin: 0 0 12px 0; color: #130325; font-size: 12px; line-height: 1.5; font-weight: 500;"></p>
+            <div class="form-group" style="margin-bottom: 0;">
+                <label for="maintenance_confirm_pin" style="font-size: 11px; color: #6b7280; margin-bottom: 6px; display: block; font-weight: 600;">Enter your admin password to confirm:</label>
+                <input type="password" 
+                       id="maintenance_confirm_pin" 
+                       style="padding: 8px 10px; border: 1px solid rgba(0,0,0,0.15); border-radius: 6px; font-size: 13px; width: 100%;"
+                       placeholder="Enter your admin password">
+            </div>
         </div>
-        <div class="info-modal-footer" style="padding: 16px 24px; border-top: 1px solid #e5e7eb; display: flex; gap: 10px; justify-content: flex-end;">
-            <button type="button" class="btn-cancel" onclick="closeMaintenanceModal()" style="padding: 8px 20px; background: #f3f4f6; color: #130325; border: 1px solid #e5e7eb; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px; transition: all 0.2s ease;">
-                Cancel
+        <div class="modal-actions">
+            <button type="button" class="btn-outline" onclick="closeMaintenanceConfirm()">
+                <i class="fas fa-times"></i> Cancel
             </button>
-            <button type="button" class="btn-save" onclick="confirmMaintenanceSubmit();" style="padding: 8px 20px; background: #130325; color: #ffffff; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px; transition: all 0.2s ease;">
-                <i class="fas fa-save"></i> Save Settings
+            <button type="button" class="btn-primary-y" onclick="submitMaintenanceForm()">
+                <i class="fas fa-check"></i> Confirm
             </button>
         </div>
     </div>
@@ -2095,18 +2372,70 @@ try {
 
 <script>
 function openInfoModal(type) {
+    console.log('DEBUG: openInfoModal called with type:', type);
     const modal = document.getElementById('infoModal');
-    if (modal) {
-        modal.classList.add('show');
-        document.body.style.overflow = 'hidden';
+    
+    if (!modal) {
+        console.error('DEBUG: infoModal not found');
+        alert('Error: Info modal not found. Please refresh the page.');
+        return;
     }
+    
+    const titleEl = modal.querySelector('.info-modal-title');
+    const bodyEl = document.getElementById('infoModalContent');
+    
+    console.log('DEBUG: Modal found:', modal);
+    console.log('DEBUG: Title element:', titleEl);
+    console.log('DEBUG: Body element:', bodyEl);
+    
+    if (type === 'gracePeriod') {
+        if (titleEl) titleEl.textContent = 'Order Grace Period Guide';
+        if (bodyEl) {
+            bodyEl.innerHTML = `
+                <h4 style="font-size: 13px; font-weight: 600; margin: 0 0 8px 0; color: #130325;">What is the Grace Period?</h4>
+                <p style="margin: 0 0 12px 0; font-size: 12px; color: #130325; line-height: 1.5;">The grace period is the time window after an order is placed during which customers can cancel their order without penalty. After this period expires, the order moves to "processing" status and sellers can begin fulfillment.</p>
+                <h4 style="font-size: 13px; font-weight: 600; margin: 12px 0 8px 0; color: #130325;">How it works:</h4>
+                <ul style="margin: 0; padding-left: 20px; font-size: 12px; color: #130325;">
+                    <li style="margin: 4px 0;">Order placed at 10:00 AM with 15-minute grace period</li>
+                    <li style="margin: 4px 0;">Grace period active until 10:15 AM</li>
+                    <li style="margin: 4px 0;">Customer can cancel anytime before 10:15 AM</li>
+                    <li style="margin: 4px 0;">Seller can process order starting at 10:15 AM</li>
+                </ul>
+            `;
+        }
+    } else if (type === 'maintenance') {
+        if (titleEl) titleEl.textContent = 'Maintenance Mode Guide';
+        if (bodyEl) {
+            bodyEl.innerHTML = `
+                <h4 style="font-size: 13px; font-weight: 600; margin: 0 0 8px 0; color: #130325;">How it works:</h4>
+                <ul style="margin: 0; padding-left: 20px; font-size: 12px; color: #130325;">
+                    <li style="margin: 4px 0;"><strong>Manual Mode:</strong> Toggle "Enable Maintenance Mode" to activate immediately</li>
+                    <li style="margin: 4px 0;"><strong>Scheduled Mode:</strong> Set start/end times and enable "Automatic Scheduled Maintenance"</li>
+                    <li style="margin: 4px 0;">Site will automatically enter maintenance during the scheduled window</li>
+                    <li style="margin: 4px 0;">Admins can always access the site regardless of maintenance mode</li>
+                </ul>
+            `;
+        }
+    }
+    
+    // Force show the modal
+    modal.style.setProperty('display', 'flex', 'important');
+    modal.style.setProperty('visibility', 'visible', 'important');
+    modal.style.setProperty('opacity', '1', 'important');
+    modal.classList.add('show');
+    document.body.style.setProperty('overflow', 'hidden', 'important');
+    
+    console.log('DEBUG: Info modal should be visible now');
 }
 
 function closeInfoModal() {
     const modal = document.getElementById('infoModal');
     if (modal) {
         modal.classList.remove('show');
-        document.body.style.overflow = '';
+        modal.style.setProperty('display', 'none', 'important');
+        modal.style.removeProperty('visibility');
+        modal.style.removeProperty('opacity');
+        document.body.style.removeProperty('overflow');
     }
 }
 
@@ -2121,72 +2450,299 @@ document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
         closeInfoModal();
         
-        // Also close maintenance modal if open
+        // Close maintenance modal if open
         const maintenanceModal = document.getElementById('maintenanceConfirmModal');
-        if (maintenanceModal && maintenanceModal.style.display === 'flex') {
-            closeMaintenanceModal();
+        if (maintenanceModal && maintenanceModal.classList.contains('show')) {
+            closeMaintenanceConfirm();
+        }
+        
+    }
+});
+
+// Maintenance Modal Functions - SIMPLIFIED AND WORKING
+function showMaintenanceConfirm() {
+    console.log('=== DEBUG: showMaintenanceConfirm CALLED ===');
+    
+    let modal = document.getElementById('maintenanceConfirmModal');
+    if (!modal) {
+        alert('Error: Modal element not found. Please refresh the page.');
+        console.error('DEBUG: Modal element NOT FOUND in DOM!');
+        return;
+    }
+    
+    // CRITICAL FIX: If modal is inside a hidden parent (like authModal), move it to body
+    const modalParent = modal.parentElement;
+    if (modalParent && (modalParent.id === 'authModal' || window.getComputedStyle(modalParent).display === 'none')) {
+        console.log('DEBUG: Modal is inside hidden parent, moving to body');
+        document.body.appendChild(modal);
+        console.log('DEBUG: Modal moved to body, new parent:', modal.parentElement);
+    }
+    
+    console.log('DEBUG: Modal element found:', modal);
+    console.log('DEBUG: Modal ID:', modal.id);
+    console.log('DEBUG: Modal classes:', modal.className);
+    console.log('DEBUG: Modal tagName:', modal.tagName);
+    console.log('DEBUG: Modal parentElement:', modal.parentElement);
+    console.log('DEBUG: Modal offsetParent:', modal.offsetParent);
+    console.log('DEBUG: Modal isConnected:', modal.isConnected);
+    
+    // Check modal location in DOM
+    const rect = modal.getBoundingClientRect();
+    console.log('DEBUG: Modal getBoundingClientRect:', {
+        top: rect.top,
+        left: rect.left,
+        width: rect.width,
+        height: rect.height,
+        visible: rect.width > 0 && rect.height > 0
+    });
+    
+    // Check computed styles BEFORE setting display
+    const computedBefore = window.getComputedStyle(modal);
+    console.log('DEBUG: Computed styles BEFORE:', {
+        display: computedBefore.display,
+        visibility: computedBefore.visibility,
+        opacity: computedBefore.opacity,
+        zIndex: computedBefore.zIndex,
+        position: computedBefore.position,
+        top: computedBefore.top,
+        left: computedBefore.left,
+        width: computedBefore.width,
+        height: computedBefore.height
+    });
+    
+    // Check inline styles BEFORE
+    console.log('DEBUG: Inline styles BEFORE:', {
+        display: modal.style.display,
+        visibility: modal.style.visibility,
+        opacity: modal.style.opacity
+    });
+    
+    // Check parent elements
+    let parent = modal.parentElement;
+    let level = 0;
+    while (parent && level < 5) {
+        const parentStyle = window.getComputedStyle(parent);
+        console.log(`DEBUG: Parent level ${level}:`, {
+            tag: parent.tagName,
+            id: parent.id,
+            class: parent.className,
+            display: parentStyle.display,
+            visibility: parentStyle.visibility,
+            opacity: parentStyle.opacity,
+            overflow: parentStyle.overflow,
+            zIndex: parentStyle.zIndex
+        });
+        parent = parent.parentElement;
+        level++;
+    }
+    
+    // Get maintenance mode checkbox
+    const maintenanceCheckbox = document.getElementById('maintenance_mode');
+    const isEnabled = maintenanceCheckbox ? maintenanceCheckbox.checked : false;
+    const currentState = <?php echo $maintenanceMode === '1' ? 'true' : 'false'; ?>;
+    
+    // Set message based on action
+    const messageEl = document.getElementById('maintenanceConfirmMessage');
+    if (messageEl) {
+        if (isEnabled !== currentState) {
+            messageEl.innerHTML = isEnabled 
+                ? '<strong style="color: #dc2626;">⚠️ You are about to START maintenance mode.</strong><br>Regular users will be blocked from accessing the site.'
+                : '<strong style="color: #059669;">✓ You are about to END maintenance mode.</strong><br>The site will be accessible to all users.';
+        } else {
+            messageEl.textContent = 'Are you sure you want to save these maintenance settings?';
+        }
+    }
+    
+    // Clear PIN input
+    const pinInput = document.getElementById('maintenance_confirm_pin');
+    if (pinInput) {
+        pinInput.value = '';
+    }
+    
+    // CRITICAL: Show modal - EXACT SAME AS LOGOUT MODAL
+    console.log('DEBUG: Setting modal.style.display = "flex"');
+    modal.style.display = 'flex';
+    modal.setAttribute('aria-hidden', 'false');
+    
+    // Check inline styles AFTER
+    console.log('DEBUG: Inline styles AFTER:', {
+        display: modal.style.display,
+        visibility: modal.style.visibility,
+        opacity: modal.style.opacity
+    });
+    
+    // Check computed styles AFTER
+    setTimeout(() => {
+        const computedAfter = window.getComputedStyle(modal);
+        console.log('DEBUG: Computed styles AFTER (100ms delay):', {
+            display: computedAfter.display,
+            visibility: computedAfter.visibility,
+            opacity: computedAfter.opacity,
+            zIndex: computedAfter.zIndex,
+            position: computedAfter.position
+        });
+        
+        const rectAfter = modal.getBoundingClientRect();
+        console.log('DEBUG: getBoundingClientRect AFTER:', {
+            top: rectAfter.top,
+            left: rectAfter.left,
+            width: rectAfter.width,
+            height: rectAfter.height,
+            visible: rectAfter.width > 0 && rectAfter.height > 0
+        });
+        
+        // Check if modal is visible in viewport
+        const isVisible = rectAfter.width > 0 && rectAfter.height > 0 && 
+                         rectAfter.top >= 0 && rectAfter.left >= 0 &&
+                         rectAfter.top < window.innerHeight && rectAfter.left < window.innerWidth;
+        console.log('DEBUG: Modal visible in viewport:', isVisible);
+        
+        // Check elements at center of screen
+        const centerX = window.innerWidth / 2;
+        const centerY = window.innerHeight / 2;
+        const elementsAtCenter = document.elementsFromPoint(centerX, centerY);
+        console.log('DEBUG: Elements at center of screen:', elementsAtCenter.map(el => ({
+            tag: el.tagName,
+            id: el.id,
+            class: el.className,
+            zIndex: window.getComputedStyle(el).zIndex
+        })));
+    }, 100);
+    
+    // Focus PIN input after modal is shown
+    setTimeout(() => {
+        if (pinInput) {
+            pinInput.focus();
+        }
+    }, 100);
+    
+    console.log('=== DEBUG: showMaintenanceConfirm END ===');
+}
+
+function closeMaintenanceConfirm() {
+    const modal = document.getElementById('maintenanceConfirmModal');
+    if (modal) {
+        modal.style.display = 'none';
+        modal.setAttribute('aria-hidden', 'true');
+    }
+}
+
+function submitMaintenanceForm() {
+    console.log('submitMaintenanceForm called');
+    
+    const pinInput = document.getElementById('maintenance_confirm_pin');
+    const pin = pinInput ? pinInput.value.trim() : '';
+    
+    // Validate password
+    if (!pin) {
+        alert('Please enter your admin password.');
+        if (pinInput) pinInput.focus();
+        return;
+    }
+    
+    if (pin.length < 6) {
+        alert('Password must be at least 6 characters.');
+        if (pinInput) pinInput.focus();
+        return;
+    }
+    
+    const form = document.getElementById('maintenanceForm');
+    if (!form) {
+        alert('Error: Form not found!');
+        console.error('maintenanceForm not found');
+        return;
+    }
+    
+    // Add PIN as hidden input
+    let pinHidden = form.querySelector('input[name="maintenance_pin"]');
+    if (!pinHidden) {
+        pinHidden = document.createElement('input');
+        pinHidden.type = 'hidden';
+        pinHidden.name = 'maintenance_pin';
+        form.appendChild(pinHidden);
+    }
+    pinHidden.value = pin;
+    
+    // Add submit trigger
+    let submitHidden = form.querySelector('input[name="toggle_maintenance"]');
+    if (!submitHidden) {
+        submitHidden = document.createElement('input');
+        submitHidden.type = 'hidden';
+        submitHidden.name = 'toggle_maintenance';
+        submitHidden.value = '1';
+        form.appendChild(submitHidden);
+    }
+    
+    // Close modal
+    closeMaintenanceConfirm();
+    
+    // Submit form
+    console.log('Submitting form...');
+    form.submit();
+}
+
+// Close modal on Escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        const modal = document.getElementById('maintenanceConfirmModal');
+        if (modal && modal.style.display === 'flex') {
+            closeMaintenanceConfirm();
         }
     }
 });
 
-// FIXED: Maintenance Save Confirmation Modal
+// Close modal on Enter key in PIN field
+document.addEventListener('DOMContentLoaded', function() {
+    const pinInput = document.getElementById('maintenance_confirm_pin');
+    if (pinInput) {
+        pinInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                submitMaintenanceForm();
+            }
+        });
+    }
+});
+
+
+function openMaintenanceInfoModal() {
+    openInfoModal('maintenance');
+}
+
+// OLD Maintenance Modal Functions (keeping for reference but not used)
 function confirmMaintenanceSave(e) {
-    console.log('=== DEBUG: confirmMaintenanceSave called ===');
-    console.log('Event:', e);
-    
     if (e) {
         e.preventDefault();
         e.stopPropagation();
-        console.log('DEBUG: Prevented default and stopped propagation');
     }
     
-    const modal = document.getElementById('maintenanceConfirmModal');
-    console.log('DEBUG: Modal element:', modal);
+    const maintenanceMode = document.getElementById('maintenance_mode').checked;
+    const isCurrentlyActive = <?php echo $maintenanceMode === '1' ? 'true' : 'false'; ?>;
+    const isChanging = (maintenanceMode && !isCurrentlyActive) || (!maintenanceMode && isCurrentlyActive);
     
+    const modal = document.getElementById('maintenanceConfirmModal');
     if (!modal) {
-        console.error('DEBUG: Modal not found!');
         alert('Error: Confirmation modal not found. Please refresh the page.');
         return false;
     }
     
-    // CRITICAL FIX: Clear any existing overflow styles first
-    document.body.style.removeProperty('overflow');
-    document.body.style.removeProperty('overflow-x');
-    document.body.style.removeProperty('overflow-y');
-    console.log('DEBUG: Cleared overflow styles');
+    // Set message based on action
+    const messageEl = document.getElementById('maintenanceConfirmMessage');
+    if (messageEl) {
+        if (isChanging) {
+            messageEl.textContent = 'Are you sure you want to ' + (maintenanceMode ? 'start' : 'end') + ' maintenance mode? Enter your PIN to confirm.';
+        } else {
+            messageEl.textContent = 'Are you sure you want to save these maintenance mode settings? Enter your PIN to confirm.';
+        }
+    }
     
-    // Show modal immediately - ensure all styles are set with !important
-    modal.setAttribute('style', 'display: flex !important; position: fixed !important; top: 0 !important; left: 0 !important; width: 100% !important; height: 100% !important; background: rgba(0, 0, 0, 0.5) !important; z-index: 99999 !important; align-items: center !important; justify-content: center !important; visibility: visible !important; opacity: 1 !important;');
+    // Clear PIN field
+    const pinInput = document.getElementById('maintenance_confirm_pin');
+    if (pinInput) pinInput.value = '';
     
-    // Also set via style object as backup
     modal.style.display = 'flex';
-    modal.style.position = 'fixed';
-    modal.style.top = '0';
-    modal.style.left = '0';
-    modal.style.width = '100%';
-    modal.style.height = '100%';
-    modal.style.background = 'rgba(0, 0, 0, 0.5)';
-    modal.style.zIndex = '99999';
-    modal.style.alignItems = 'center';
-    modal.style.justifyContent = 'center';
-    modal.style.visibility = 'visible';
-    modal.style.opacity = '1';
-    
-    console.log('DEBUG: Modal display set to flex, z-index:', modal.style.zIndex);
-    console.log('DEBUG: Modal computed style:', window.getComputedStyle(modal).display);
-    console.log('DEBUG: Modal position:', window.getComputedStyle(modal).position);
-    console.log('DEBUG: Modal visibility:', window.getComputedStyle(modal).visibility);
-    console.log('DEBUG: Modal opacity:', window.getComputedStyle(modal).opacity);
-    console.log('DEBUG: Modal z-index:', window.getComputedStyle(modal).zIndex);
-    console.log('DEBUG: Modal offsetTop:', modal.offsetTop);
-    console.log('DEBUG: Modal offsetLeft:', modal.offsetLeft);
-    console.log('DEBUG: Modal offsetWidth:', modal.offsetWidth);
-    console.log('DEBUG: Modal offsetHeight:', modal.offsetHeight);
-    
-    // Force a reflow to ensure styles are applied
-    void modal.offsetHeight;
-    
-    // Don't set body overflow to hidden - this causes the freeze
+    document.body.style.overflow = 'hidden';
+    if (pinInput) pinInput.focus();
     
     return false;
 }
@@ -2203,33 +2759,38 @@ function closeMaintenanceModal() {
 }
 
 function confirmMaintenanceSubmit() {
-    console.log('=== DEBUG: confirmMaintenanceSubmit called ===');
+    const pinInput = document.getElementById('maintenance_confirm_pin');
+    const pin = pinInput ? pinInput.value.trim() : '';
+    
+    if (!pin || pin.length < 4 || pin.length > 6 || !/^\d+$/.test(pin)) {
+        alert('Please enter a valid PIN (4-6 digits).');
+        if (pinInput) pinInput.focus();
+        return false;
+    }
     
     const form = document.getElementById('maintenanceForm');
-    console.log('DEBUG: Form element:', form);
-    
     if (!form) {
-        console.error('DEBUG: Form not found!');
         alert('Error: Maintenance form not found!');
         return false;
     }
     
-    // CRITICAL FIX: Close modal and clear ALL overflow styles immediately
-    const modal = document.getElementById('maintenanceConfirmModal');
-    console.log('DEBUG: Modal element:', modal);
+    // Store PIN in hidden field
+    let pinHidden = document.getElementById('maintenance_pin');
+    if (!pinHidden) {
+        pinHidden = document.createElement('input');
+        pinHidden.type = 'hidden';
+        pinHidden.id = 'maintenance_pin';
+        pinHidden.name = 'maintenance_pin';
+        form.appendChild(pinHidden);
+    }
+    pinHidden.value = pin;
     
+    // Close modal
+    const modal = document.getElementById('maintenanceConfirmModal');
     if (modal) {
         modal.style.display = 'none';
-        console.log('DEBUG: Modal hidden');
     }
-    
-    // Force remove all overflow styles
     document.body.style.removeProperty('overflow');
-    document.body.style.removeProperty('overflow-x');
-    document.body.style.removeProperty('overflow-y');
-    document.body.style.overflow = 'visible';
-    document.documentElement.style.overflow = 'visible';
-    console.log('DEBUG: Overflow styles cleared');
     
     // Create hidden input
     const hiddenInput = document.createElement('input');
@@ -2364,17 +2925,152 @@ function updateDiscountType() {
         valueInput.placeholder = '100.00';
         if (hint) hint.textContent = 'Enter fixed amount in pesos';
     }
-}w
+}
+
+// Edit Functions
+function editSiteSettings() {
+    document.getElementById('siteSettingsView').style.display = 'none';
+    document.getElementById('siteSettingsFields').style.display = 'block';
+}
+
+function cancelSiteSettingsEdit() {
+    document.getElementById('siteSettingsFields').style.display = 'none';
+    document.getElementById('siteSettingsView').style.display = 'block';
+}
+
+function confirmSiteSettingsSave() {
+    // Show confirmation modal matching logout style
+    if (!confirm('Are you sure you want to save these site settings?')) {
+        return;
+    }
+    const form = document.getElementById('siteSettingsForm');
+    if (form) {
+        const hiddenInput = document.createElement('input');
+        hiddenInput.type = 'hidden';
+        hiddenInput.name = 'update_site_settings';
+        hiddenInput.value = '1';
+        form.appendChild(hiddenInput);
+        form.submit();
+    }
+}
+
+function editPassword() {
+    document.getElementById('passwordView').style.display = 'none';
+    document.getElementById('passwordFields').style.display = 'block';
+}
+
+function cancelPasswordEdit() {
+    document.getElementById('passwordFields').style.display = 'none';
+    document.getElementById('passwordView').style.display = 'block';
+    // Clear password fields
+    document.getElementById('current_password').value = '';
+    document.getElementById('new_password').value = '';
+    document.getElementById('confirm_password').value = '';
+}
+
+function confirmPasswordChange() {
+    const current = document.getElementById('current_password').value;
+    const newPass = document.getElementById('new_password').value;
+    const confirmPass = document.getElementById('confirm_password').value;
+    
+    if (!current || !newPass || !confirmPass) {
+        alert('Please fill in all password fields.');
+        return;
+    }
+    
+    if (newPass !== confirmPass) {
+        alert('New password and confirmation do not match.');
+        return;
+    }
+    
+    // Show confirmation modal
+    if (!confirm('Are you sure you want to change your password/PIN?')) {
+        return;
+    }
+    
+    const form = document.querySelector('form[action=""]');
+    if (form) {
+        const hiddenInput = document.createElement('input');
+        hiddenInput.type = 'hidden';
+        hiddenInput.name = 'change_password';
+        hiddenInput.value = '1';
+        form.appendChild(hiddenInput);
+        form.submit();
+    }
+}
+
+// Profile Edit Functions
+function editProfile() {
+    document.getElementById('profileView').style.display = 'none';
+    document.getElementById('profileFields').style.display = 'block';
+}
+
+function cancelProfileEdit() {
+    document.getElementById('profileFields').style.display = 'none';
+    document.getElementById('profileView').style.display = 'block';
+    // Reset form values
+    location.reload();
+}
+
+function confirmProfileUpdate() {
+    // Show confirmation modal
+    if (!confirm('Are you sure you want to update your profile?')) {
+        return;
+    }
+    
+    const form = document.getElementById('profileForm');
+    if (form) {
+        const hiddenInput = document.createElement('input');
+        hiddenInput.type = 'hidden';
+        hiddenInput.name = 'update_profile';
+        hiddenInput.value = '1';
+        form.appendChild(hiddenInput);
+        form.submit();
+    }
+}
+
+function editGracePeriod() {
+    document.getElementById('gracePeriodView').style.display = 'none';
+    document.getElementById('gracePeriodFields').style.display = 'block';
+}
+
+function cancelGracePeriodEdit() {
+    document.getElementById('gracePeriodFields').style.display = 'none';
+    document.getElementById('gracePeriodView').style.display = 'block';
+    // Reset to original value
+    const currentValue = <?php echo $currentGracePeriod; ?>;
+    document.getElementById('grace_period').value = currentValue;
+}
+
+function confirmGracePeriodSave() {
+    const gracePeriod = document.getElementById('grace_period').value;
+    if (!gracePeriod || gracePeriod < 1 || gracePeriod > 60) {
+        alert('Grace period must be between 1 and 60 minutes.');
+        return;
+    }
+    
+    if (!confirm('Are you sure you want to save the grace period setting?')) {
+        return;
+    }
+    
+    const form = document.querySelector('form[action=""]');
+    if (form) {
+        const hiddenInput = document.createElement('input');
+        hiddenInput.type = 'hidden';
+        hiddenInput.name = 'update_settings';
+        hiddenInput.value = '1';
+        form.appendChild(hiddenInput);
+        form.submit();
+    }
+}
 
 // Authentication Modal Functions
 function openAuthModal(section) {
     if (section === 'site') {
-        const siteName = document.getElementById('site_name').value;
         const siteEmail = document.getElementById('site_email').value;
         const sitePhone = document.getElementById('site_phone').value;
         const siteAddress = document.getElementById('site_address').value;
         
-        document.getElementById('auth_site_name').value = siteName;
         document.getElementById('auth_site_email').value = siteEmail;
         document.getElementById('auth_site_phone').value = sitePhone;
         document.getElementById('auth_site_address').value = siteAddress;

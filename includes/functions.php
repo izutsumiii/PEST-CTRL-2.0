@@ -3,6 +3,55 @@ if (session_status() == PHP_SESSION_NONE) {
     session_start();
 }
 
+// Auto-logout after 20 minutes of inactivity
+function checkSessionTimeout() {
+    $timeout = 20 * 60; // 20 minutes in seconds
+    
+    // Set last activity time if not set
+    if (!isset($_SESSION['last_activity'])) {
+        $_SESSION['last_activity'] = time();
+        return true;
+    }
+    
+    // Check if timeout has been reached
+    if (time() - $_SESSION['last_activity'] > $timeout) {
+        // Session expired - destroy session and redirect
+        session_unset();
+        session_destroy();
+        
+        // Determine redirect URL based on current page
+        $currentUrl = $_SERVER['REQUEST_URI'] ?? '';
+        $redirectUrl = 'login.php';
+        
+        if (strpos($currentUrl, '/admin/') !== false) {
+            $redirectUrl = '../login_admin.php';
+        } elseif (strpos($currentUrl, '/seller') !== false || strpos($currentUrl, 'seller-') !== false) {
+            $redirectUrl = '../login_seller.php';
+        } elseif (strpos($currentUrl, '/customer') !== false || strpos($currentUrl, 'customer-') !== false) {
+            $redirectUrl = '../login_customer.php';
+        }
+        
+        // Set message for expired session
+        if (session_status() == PHP_SESSION_NONE) {
+            session_start();
+        }
+        $_SESSION['session_expired'] = true;
+        $_SESSION['expired_message'] = 'Your session has expired due to inactivity. Please log in again.';
+        
+        header("Location: " . $redirectUrl);
+        exit();
+    }
+    
+    // Update last activity time
+    $_SESSION['last_activity'] = time();
+    return true;
+}
+
+// Call session timeout check on every request
+if (isset($_SESSION['user_id'])) {
+    checkSessionTimeout();
+}
+
 function isLoggedIn() {
     return isset($_SESSION['user_id']);
 }

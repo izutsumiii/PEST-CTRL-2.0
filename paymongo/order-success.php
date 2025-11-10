@@ -31,10 +31,10 @@ if (session_status() === PHP_SESSION_NONE) {
 // CRITICAL: Do NOT include header.php yet - we need to do redirects first
 // All redirects must happen before any output
 require_once '../config/database.php';
-require_once '../includes/functions.php';
 
-// CRITICAL FIX: Restore session from remember_token cookie if session was lost during PayMongo redirect
-if (!isLoggedIn() && isset($_COOKIE['remember_token'])) {
+// CRITICAL FIX: Restore session from remember_token cookie BEFORE including functions.php
+// This prevents checkSessionTimeout() from logging out the user
+if (!isset($_SESSION['user_id']) && isset($_COOKIE['remember_token'])) {
     error_log('Order Success - Session lost, attempting to restore from remember_token cookie');
     try {
         $stmt = $pdo->prepare("SELECT * FROM users WHERE remember_token = ? AND is_active = 1");
@@ -46,6 +46,8 @@ if (!isLoggedIn() && isset($_COOKIE['remember_token'])) {
             $_SESSION['user_id'] = $user['id'];
             $_SESSION['username'] = $user['username'];
             $_SESSION['user_type'] = $user['user_type'];
+            // CRITICAL: Update last_activity to prevent session timeout
+            $_SESSION['last_activity'] = time();
             error_log('Order Success - Session restored from remember_token for user: ' . $user['id']);
         } else {
             error_log('Order Success - Invalid remember_token cookie');
@@ -54,6 +56,15 @@ if (!isLoggedIn() && isset($_COOKIE['remember_token'])) {
         error_log('Order Success - Error restoring session from remember_token: ' . $e->getMessage());
     }
 }
+
+// CRITICAL: Update last_activity BEFORE including functions.php to prevent timeout
+if (isset($_SESSION['user_id'])) {
+    $_SESSION['last_activity'] = time();
+    error_log('Order Success - Updated last_activity for user: ' . $_SESSION['user_id']);
+}
+
+// NOW include functions.php - checkSessionTimeout() will see updated last_activity
+require_once '../includes/functions.php';
 
 $orderId = isset($_GET['order_id']) ? (int)$_GET['order_id'] : 0;
 $transactionId = isset($_GET['transaction_id']) ? (int)$_GET['transaction_id'] : 0;

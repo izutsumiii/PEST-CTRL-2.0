@@ -467,16 +467,51 @@ body {
 }
 
 .table thead th {
-    background: #ffffff !important;
-    color: #130325 !important;
+    background: #130325 !important;
+    color: #ffffff !important;
     font-weight: 700 !important;
     text-transform: uppercase;
     font-size: 0.8rem;
     padding: 12px 10px;
-    border-bottom: 2px solid #e5e7eb !important;
+    border-bottom: 2px solid #FFD736 !important;
     letter-spacing: 0.5px;
-    white-space: normal; /* allow header to wrap */
+    white-space: normal;
     overflow-wrap: anywhere;
+    position: relative;
+    cursor: pointer;
+    user-select: none;
+}
+
+.table thead th.sortable {
+    padding-right: 25px;
+}
+
+.table thead th .sort-indicator {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 10px;
+    opacity: 0.6;
+    transition: opacity 0.2s;
+}
+
+.table thead th:hover .sort-indicator {
+    opacity: 1;
+}
+
+.table thead th.sort-asc .sort-indicator::before {
+    content: '↑';
+    opacity: 1;
+}
+
+.table thead th.sort-desc .sort-indicator::before {
+    content: '↓';
+    opacity: 1;
+}
+
+.table thead th .sort-indicator::before {
+    content: '↕';
 }
 
 .table tbody td {
@@ -485,8 +520,35 @@ body {
     border-top: 1px solid #f3f4f6 !important;
     color: #130325 !important;
     background: #ffffff !important;
-    white-space: normal; /* allow content to wrap */
+    white-space: normal;
     overflow-wrap: anywhere;
+}
+
+/* Product name cell - ellipsis for long names */
+.table tbody td:nth-child(3) {
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.table tbody td:nth-child(3) .product-info {
+    max-width: 100%;
+    overflow: hidden;
+}
+
+.table tbody td:nth-child(3) .product-details {
+    min-width: 0;
+    flex: 1;
+    overflow: hidden;
+}
+
+.table tbody td:nth-child(3) .product-details strong {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
 }
 
 .table tbody tr {
@@ -1223,6 +1285,11 @@ body {
     }
     
     .page-title { font-size: 20px; }
+    
+    /* Adjust product name max-width on tablets */
+    .table tbody td:nth-child(3) {
+        max-width: 150px;
+    }
 }
 
 @media (max-width: 768px) {
@@ -1296,6 +1363,11 @@ body {
     
     .table tbody td {
         padding: 10px 6px;
+    }
+    
+    /* Further reduce product name width on mobile */
+    .table tbody td:nth-child(3) {
+        max-width: 120px;
     }
 
     /* Hide less critical columns on small screens: Order Date (4), Amount (5) */
@@ -1447,12 +1519,12 @@ body {
                         <table class="table">
                             <thead>
                                 <tr>
-                                    <th>Request ID</th>
-                                    <th>Customer</th>
-                                    <th>Product</th>
-                                    <th>Order Date</th>
-                                    <th>Amount</th>
-                                    <th>Status</th>
+                                    <th class="sortable" data-sort="id">Request ID <span class="sort-indicator"></span></th>
+                                    <th class="sortable" data-sort="customer">Customer <span class="sort-indicator"></span></th>
+                                    <th class="sortable" data-sort="product">Product <span class="sort-indicator"></span></th>
+                                    <th class="sortable" data-sort="date">Order Date <span class="sort-indicator"></span></th>
+                                    <th class="sortable" data-sort="amount">Amount <span class="sort-indicator"></span></th>
+                                    <th class="sortable" data-sort="status">Status <span class="sort-indicator"></span></th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
@@ -1485,9 +1557,6 @@ body {
                                         </td>
                                         <td>
                                             <?php echo date('M d, Y', strtotime($request['order_date'])); ?>
-                                        </td>
-                                        <td>
-                                            
                                         </td>
                                         <td>
                                             <strong>₱<?php echo number_format($request['item_price'] * $request['quantity'], 2); ?></strong>
@@ -2052,5 +2121,75 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }, 5000);
+    
+    // Table sorting functionality
+    const sortableHeaders = document.querySelectorAll('.table thead th.sortable');
+    let currentSort = { column: null, direction: 'asc' };
+    
+    sortableHeaders.forEach(header => {
+        header.addEventListener('click', function() {
+            const sortColumn = this.getAttribute('data-sort');
+            const tbody = this.closest('table').querySelector('tbody');
+            const rows = Array.from(tbody.querySelectorAll('tr'));
+            
+            // Remove sort classes from all headers
+            sortableHeaders.forEach(h => {
+                h.classList.remove('sort-asc', 'sort-desc');
+            });
+            
+            // Determine sort direction
+            if (currentSort.column === sortColumn && currentSort.direction === 'asc') {
+                currentSort.direction = 'desc';
+                this.classList.add('sort-desc');
+            } else {
+                currentSort.direction = 'asc';
+                this.classList.add('sort-asc');
+            }
+            currentSort.column = sortColumn;
+            
+            // Sort rows
+            rows.sort((a, b) => {
+                let aValue, bValue;
+                
+                switch(sortColumn) {
+                    case 'id':
+                        aValue = parseInt(a.querySelector('td:first-child strong')?.textContent.replace('#', '') || 0);
+                        bValue = parseInt(b.querySelector('td:first-child strong')?.textContent.replace('#', '') || 0);
+                        break;
+                    case 'customer':
+                        aValue = (a.querySelector('td:nth-child(2) strong')?.textContent || '').toLowerCase();
+                        bValue = (b.querySelector('td:nth-child(2) strong')?.textContent || '').toLowerCase();
+                        break;
+                    case 'product':
+                        aValue = (a.querySelector('td:nth-child(3) .product-details strong')?.textContent || '').toLowerCase();
+                        bValue = (b.querySelector('td:nth-child(3) .product-details strong')?.textContent || '').toLowerCase();
+                        break;
+                    case 'date':
+                        aValue = new Date(a.querySelector('td:nth-child(4)')?.textContent || 0);
+                        bValue = new Date(b.querySelector('td:nth-child(4)')?.textContent || 0);
+                        break;
+                    case 'amount':
+                        aValue = parseFloat(a.querySelector('td:nth-child(5) strong')?.textContent.replace('₱', '').replace(/,/g, '') || 0);
+                        bValue = parseFloat(b.querySelector('td:nth-child(5) strong')?.textContent.replace('₱', '').replace(/,/g, '') || 0);
+                        break;
+                    case 'status':
+                        aValue = (a.querySelector('td:nth-child(6) .status-badge')?.textContent || '').toLowerCase();
+                        bValue = (b.querySelector('td:nth-child(6) .status-badge')?.textContent || '').toLowerCase();
+                        break;
+                    default:
+                        return 0;
+                }
+                
+                if (currentSort.direction === 'asc') {
+                    return aValue > bValue ? 1 : aValue < bValue ? -1 : 0;
+                } else {
+                    return aValue < bValue ? 1 : aValue > bValue ? -1 : 0;
+                }
+            });
+            
+            // Re-append sorted rows
+            rows.forEach(row => tbody.appendChild(row));
+        });
+    });
 });
 </script>

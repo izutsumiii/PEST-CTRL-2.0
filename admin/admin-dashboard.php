@@ -46,12 +46,17 @@ if (isset($_GET['export']) && $_GET['export'] === 'csv') {
 }
 
 require_once 'includes/admin_header.php';
+require_once '../includes/admin_notification_functions.php';
 
 // Simple admin check - ensure user is logged in and is admin
 if (!isset($_SESSION['user_id']) || $_SESSION['user_type'] !== 'admin') {
     header('Location: ../login.php');
     exit();
 }
+
+// Run admin notification checks
+$adminId = $_SESSION['user_id'];
+runAllAdminNotificationChecks($adminId);
 
 // Ensure PDO connection is available
 if (!isset($pdo)) {

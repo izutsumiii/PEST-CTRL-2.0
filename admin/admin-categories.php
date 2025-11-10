@@ -170,7 +170,7 @@ function removeEmojis($text) {
                         <option value="">-- None (Top-Level Category) --</option>
                         <?php foreach ($parentCategories as $parent): ?>
                             <option value="<?php echo $parent['id']; ?>">
-                                <?php echo htmlspecialchars(trim(removeEmojis($parent['name']))); ?>
+                                <?php echo htmlspecialchars(trim(removeEmojis($parent['name'])), ENT_QUOTES, 'UTF-8'); ?>
                             </option>
                         <?php endforeach; ?>
                     </select>
@@ -178,7 +178,7 @@ function removeEmojis($text) {
                 
                 <div class="form-group form-group-button">
                     <label>&nbsp;</label>
-                    <button type="submit" name="add_category" class="btn-add-category">Add Category</button>
+                    <button type="submit" name="add_category" class="btn-add-category">Add</button>
                 </div>
             </div>
             <small class="form-help">Leave parent as "None" to create a main category, or select a parent to create a subcategory</small>
@@ -293,7 +293,8 @@ function removeEmojis($text) {
         font-size: 18px !important;
         font-weight: 800 !important;
         color: #130325 !important;
-        margin: 20px auto 20px auto !important;
+        margin: -60px auto 12px auto !important;
+        margin-top: -60px !important;
         padding: 0 20px !important;
         display: flex !important;
         align-items: center !important;
@@ -310,7 +311,7 @@ function removeEmojis($text) {
         font-size: 20px !important;
         font-weight: 800 !important;
         color: #130325 !important;
-        margin-top: 0 !important;
+        margin-top: -60px !important;
         margin-bottom: 0 !important;
         margin-left: 0 !important;
         margin-right: 0 !important;
@@ -321,7 +322,7 @@ function removeEmojis($text) {
 
     .container-section {
         max-width: 1400px;
-        margin: 0 auto;
+        margin: -20px auto 0 auto;
         padding: 0 24px 24px;
     }
 
@@ -359,18 +360,18 @@ function removeEmojis($text) {
     }
 
     .form-group label {
-        font-size: 13px;
+        font-size: 12px;
         font-weight: 600;
         color: #130325;
-        margin-bottom: 6px;
+        margin-bottom: 4px;
     }
 
     .form-group input,
     .form-group select {
-        padding: 10px 12px;
+        padding: 6px 10px;
         border: 1px solid rgba(0,0,0,0.1);
-        border-radius: 8px;
-        font-size: 14px;
+        border-radius: 6px;
+        font-size: 12px;
         background: #ffffff;
         color: #130325;
         transition: border-color 0.2s;
@@ -392,13 +393,13 @@ function removeEmojis($text) {
         background: linear-gradient(135deg, #FFD736 0%, #FFC107 100%);
         color: #130325;
         border: none;
-        padding: 10px 20px;
-        border-radius: 8px;
-        font-weight: 700;
-        font-size: 14px;
+        padding: 6px 12px;
+        border-radius: 6px;
+        font-weight: 600;
+        font-size: 12px;
         cursor: pointer;
         transition: all 0.2s ease;
-        height: 40px;
+        height: auto;
     }
 
     .btn-add-category:hover {
@@ -407,9 +408,9 @@ function removeEmojis($text) {
     }
 
     .form-help {
-        font-size: 12px;
+        font-size: 11px;
         color: #6b7280;
-        margin-top: 8px;
+        margin-top: 6px;
         display: block;
     }
 
@@ -667,16 +668,18 @@ function adminCatConfirm(message, label){
         header.style.cssText = 'background:#130325;color:#ffffff;padding:16px 20px;display:flex;align-items:center;gap:10px;';
         header.innerHTML = '<h3 style="margin:0;font-size:14px;font-weight:700;color:#ffffff;">Confirm Action</h3>';
         const body = document.createElement('div');
-        body.style.cssText = 'padding:20px;color:#130325;font-size:13px;';
+        body.style.cssText = 'padding:16px 20px;color:#130325;font-size:12px;';
         body.textContent = message;
         const footer = document.createElement('div');
         footer.style.cssText = 'padding:12px 16px;display:flex;gap:10px;justify-content:flex-end;border-top:1px solid #e5e7eb;';
         const cancelBtn = document.createElement('button');
         cancelBtn.textContent = 'Cancel';
-        cancelBtn.style.cssText = 'padding:8px 16px;background:#f3f4f6;color:#130325;border:1px solid #e5e7eb;border-radius:6px;font-weight:600;cursor:pointer;';
+        cancelBtn.style.cssText = 'padding:6px 12px;background:#f3f4f6;color:#130325;border:1px solid #e5e7eb;border-radius:6px;font-weight:600;font-size:12px;cursor:pointer;';
         const okBtn = document.createElement('button');
         okBtn.textContent = label || 'Confirm';
-        okBtn.style.cssText = 'padding:8px 16px;background:#130325;color:#ffffff;border:none;border-radius:6px;font-weight:600;cursor:pointer;';
+        // Use red background for delete confirmations
+        const isDelete = label && label.toLowerCase().includes('delete');
+        okBtn.style.cssText = 'padding:6px 12px;background:' + (isDelete ? '#dc2626' : '#130325') + ';color:#ffffff;border:none;border-radius:6px;font-weight:600;font-size:12px;cursor:pointer;';
         footer.appendChild(cancelBtn); footer.appendChild(okBtn);
         card.appendChild(header); card.appendChild(body); card.appendChild(footer);
         overlay.appendChild(card);
@@ -711,7 +714,7 @@ function openEditModal(id, name, parentId) {
     header.appendChild(closeBtn);
 
     const body = document.createElement('div');
-    body.style.cssText = 'padding:16px 18px;color:#130325;';
+    body.style.cssText = 'padding:12px 16px;color:#130325;';
 
     // Create form
     const form = document.createElement('form');
@@ -726,7 +729,7 @@ function openEditModal(id, name, parentId) {
     const nameLabel = document.createElement('label');
     nameLabel.setAttribute('for','edit_name');
     nameLabel.textContent = 'Category Name ';
-    nameLabel.style.cssText = 'display:block;margin-bottom:8px;font-weight:600;color:#130325;font-size:14px;';
+    nameLabel.style.cssText = 'display:block;margin-bottom:4px;font-weight:600;color:#130325;font-size:12px;';
     const req = document.createElement('span');
     req.textContent = '*';
     req.style.color = '#dc3545';
@@ -739,19 +742,19 @@ function openEditModal(id, name, parentId) {
     nameInput.required = true;
     nameInput.placeholder = 'Enter category name';
     nameInput.value = name || '';
-    nameInput.style.cssText = 'width:100%;padding:10px 12px;border:none;border-radius:8px;font-size:14px;background:#f8f9fb;color:#130325;margin-bottom:16px;outline:none;box-shadow:0 0 0 0 rgba(0,0,0,0)';
+    nameInput.style.cssText = 'width:100%;padding:6px 10px;border:none;border-radius:6px;font-size:12px;background:#f8f9fb;color:#130325;margin-bottom:12px;outline:none;box-shadow:0 0 0 0 rgba(0,0,0,0)';
     nameInput.addEventListener('focus',function(){ this.style.boxShadow='0 0 0 2px rgba(19,3,37,0.2)'; this.style.background='#ffffff'; });
     nameInput.addEventListener('blur',function(){ this.style.boxShadow='none'; this.style.background='#f8f9fb'; });
 
     const parentLabel = document.createElement('label');
     parentLabel.setAttribute('for','edit_parent_id');
     parentLabel.textContent = 'Parent Category (Optional)';
-    parentLabel.style.cssText = 'display:block;margin-bottom:8px;font-weight:600;color:#130325;font-size:14px;';
+    parentLabel.style.cssText = 'display:block;margin-bottom:4px;font-weight:600;color:#130325;font-size:12px;';
 
     const parentSelect = document.createElement('select');
     parentSelect.id = 'edit_parent_id';
     parentSelect.name = 'parent_id';
-    parentSelect.style.cssText = 'width:100%;padding:10px 12px;border:none;border-radius:8px;font-size:14px;background:#f8f9fb;color:#130325;margin-bottom:8px;outline:none;';
+    parentSelect.style.cssText = 'width:100%;padding:6px 10px;border:none;border-radius:6px;font-size:12px;background:#f8f9fb;color:#130325;margin-bottom:8px;outline:none;';
     parentSelect.addEventListener('focus',function(){ this.style.boxShadow='0 0 0 2px rgba(19,3,37,0.2)'; this.style.background='#ffffff'; });
     parentSelect.addEventListener('blur',function(){ this.style.boxShadow='none'; this.style.background='#f8f9fb'; });
 
@@ -762,26 +765,28 @@ function openEditModal(id, name, parentId) {
     (parentCategoriesData || []).forEach(function(p){
         const opt = document.createElement('option');
         opt.value = p.id;
-        opt.textContent = (p.name || '').replace(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu,'').trim();
+        // Fix &amp issue by properly decoding HTML entities
+        const name = (p.name || '').replace(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu,'').trim();
+        opt.textContent = name.replace(/&amp;/g, '&');
         parentSelect.appendChild(opt);
     });
     parentSelect.value = parentId || '';
 
     const help = document.createElement('small');
     help.textContent = 'Leave as "None" to make it a main category';
-    help.style.cssText = 'display:block;font-size:12px;color:#6b7280;margin-top:8px;margin-bottom:8px;';
+    help.style.cssText = 'display:block;font-size:11px;color:#6b7280;margin-top:6px;margin-bottom:6px;';
 
     const footer = document.createElement('div');
     footer.style.cssText = 'padding:12px 16px;display:flex;gap:10px;justify-content:flex-end;border-top:1px solid #e5e7eb;margin-top:12px;';
     const cancelBtn = document.createElement('button');
     cancelBtn.type = 'button';
     cancelBtn.textContent = 'Cancel';
-    cancelBtn.style.cssText = 'padding:10px 20px;background:#6c757d;color:#ffffff;border:none;border-radius:8px;font-weight:700;font-size:14px;cursor:pointer;';
+    cancelBtn.style.cssText = 'padding:6px 12px;background:#6c757d;color:#ffffff;border:none;border-radius:6px;font-weight:600;font-size:12px;cursor:pointer;';
     const saveBtn = document.createElement('button');
     saveBtn.type = 'submit';
     saveBtn.name = 'update_category';
-    saveBtn.textContent = 'Update Category';
-    saveBtn.style.cssText = 'padding:10px 20px;background:linear-gradient(135deg,#FFD736 0%,#FFC107 100%);color:#130325;border:none;border-radius:8px;font-weight:700;font-size:14px;cursor:pointer;';
+    saveBtn.textContent = 'Update';
+    saveBtn.style.cssText = 'padding:6px 12px;background:linear-gradient(135deg,#FFD736 0%,#FFC107 100%);color:#130325;border:none;border-radius:6px;font-weight:600;font-size:12px;cursor:pointer;';
 
     footer.appendChild(cancelBtn);
     footer.appendChild(saveBtn);

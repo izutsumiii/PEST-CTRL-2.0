@@ -200,10 +200,6 @@ $userImage = isset($_SESSION['profile_image']) ? $_SESSION['profile_image'] : 'a
                     <i class="fas fa-box me-3"></i>
                     <span class="hide-on-collapse">Products</span>
                 </a>
-                <a href="admin-orders.php" class="sidebar-link <?php echo $currentPage == 'admin-orders.php' ? 'active' : ''; ?> text-decoration-none p-3">
-                    <i class="fas fa-shopping-cart me-3"></i>
-                    <span class="hide-on-collapse">Orders</span>
-                </a>
                 <a href="admin-customers.php" class="sidebar-link <?php echo $currentPage == 'admin-customers.php' ? 'active' : ''; ?> text-decoration-none p-3">
                     <i class="fas fa-users me-3"></i>
                     <span class="hide-on-collapse">Customers</span>
