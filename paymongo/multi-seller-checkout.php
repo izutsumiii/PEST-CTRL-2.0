@@ -32,37 +32,20 @@ if (isset($_POST['apply_discount'])) {
         $discount = $stmt->fetch(PDO::FETCH_ASSOC);
         
         if (!$discount) {
-            echo json_encode(['success' => false, 'message' => 'Invalid discount code.', 'show_details' => false]);
+            echo json_encode(['success' => false, 'message' => 'Invalid discount code.']);
             exit();
         }
-        
-        // Prepare discount details for display
-        $discountDetails = [
-            'discount_type' => $discount['discount_type'],
-            'discount_value' => $discount['discount_value'],
-            'min_order_amount' => $discount['min_order_amount']
-        ];
         
         // Check if discount has started
         $now = date('Y-m-d H:i:s');
         if ($now < $discount['start_date']) {
-            echo json_encode([
-                'success' => false, 
-                'message' => 'This discount code is not yet active.',
-                'show_details' => true,
-                'discount_details' => $discountDetails
-            ]);
+            echo json_encode(['success' => false, 'message' => 'This discount code is not yet active.']);
             exit();
         }
         
         // Check if discount has expired
         if ($discount['end_date'] && $now > $discount['end_date']) {
-            echo json_encode([
-                'success' => false, 
-                'message' => 'This discount code has expired.',
-                'show_details' => true,
-                'discount_details' => $discountDetails
-            ]);
+            echo json_encode(['success' => false, 'message' => 'This discount code has expired.']);
             exit();
         }
         
@@ -70,22 +53,14 @@ if (isset($_POST['apply_discount'])) {
         if ($cartTotal < $discount['min_order_amount']) {
             echo json_encode([
                 'success' => false, 
-                'message' => 'Minimum order amount of ₱' . number_format($discount['min_order_amount'], 2) . ' required.',
-                'show_details' => true,
-                'discount_details' => $discountDetails,
-                'current_total' => $cartTotal
+                'message' => 'Minimum order amount of ₱' . number_format($discount['min_order_amount'], 2) . ' required.'
             ]);
             exit();
         }
         
         // Check maximum uses
         if ($discount['max_uses'] && $discount['used_count'] >= $discount['max_uses']) {
-            echo json_encode([
-                'success' => false, 
-                'message' => 'This discount code has reached its usage limit.',
-                'show_details' => true,
-                'discount_details' => $discountDetails
-            ]);
+            echo json_encode(['success' => false, 'message' => 'This discount code has reached its usage limit.']);
             exit();
         }
         
@@ -733,8 +708,8 @@ require_once '../includes/header.php';
 ?>
 
 <main style="background: #ffffff; min-height: 100vh; padding: 0 20px 20px 20px;">
-<div class="checkout-container" style="margin-top: 0; padding-top: 0;">
-    <h1 style="text-shadow: none !important; margin-top: 0;">Checkout</h1>
+<div class="checkout-container">
+    <h1>Checkout</h1>
 
     <?php if (!empty($errors)): ?>
         <div class="alert alert-error">
@@ -765,20 +740,64 @@ require_once '../includes/header.php';
                         <div class="seller-group">
                             <div class="seller-header">
                                 <h3><i class="fas fa-store"></i> Seller: <?php echo htmlspecialchars($sellerGroup['seller_display_name']); ?></h3>
-                                <div class="seller-total">Subtotal: ₱<?php echo number_format($sellerGroup['subtotal'], 2); ?></div>
                             </div>
 
-                            <?php foreach ($sellerGroup['items'] as $item): ?>
+                            <?php 
+                            // Calculate seller's original and final subtotals
+                            $sellerOriginalSubtotal = 0;
+                            $sellerFinalSubtotal = 0;
+                            
+                            foreach ($sellerGroup['items'] as $item): 
+                                // Use original_price if discount was applied
+                                $itemOriginalPrice = !empty($item['original_price']) ? $item['original_price'] : $item['price'];
+                                $sellerOriginalSubtotal += $itemOriginalPrice * $item['quantity'];
+                                $sellerFinalSubtotal += $item['price'] * $item['quantity'];
+                            ?>
                                 <div class="order-item">
                                     <img src="<?php echo htmlspecialchars('../' . $item['image_url']); ?>" alt="<?php echo htmlspecialchars($item['name']); ?>" class="item-image">
                                     <div class="item-details">
                                         <h4><?php echo htmlspecialchars($item['name']); ?></h4>
-                                        <p>Price: ₱<?php echo number_format($item['price'], 2); ?></p>
+                                        <p>
+                                            Price: 
+                                            <?php if (!empty($item['original_price']) && $item['original_price'] != $item['price']): ?>
+                                                <span style="text-decoration: line-through; color: #999;">₱<?php echo number_format($item['original_price'], 2); ?></span>
+                                                <span style="color: #10b981; font-weight: 700; margin-left: 4px;">₱<?php echo number_format($item['price'], 2); ?></span>
+                                            <?php else: ?>
+                                                ₱<?php echo number_format($item['price'], 2); ?>
+                                            <?php endif; ?>
+                                        </p>
                                         <p>Quantity: <?php echo $item['quantity']; ?></p>
                                     </div>
-                                    <div class="item-total">₱<?php echo number_format($item['price'] * $item['quantity'], 2); ?></div>
+                                    <div class="item-total">
+                                        <?php if (!empty($item['original_price']) && $item['original_price'] != $item['price']): ?>
+                                            <span style="text-decoration: line-through; color: #999; font-size: 0.85rem; display: block;">₱<?php echo number_format($item['original_price'] * $item['quantity'], 2); ?></span>
+                                            <span style="color: #10b981; font-weight: 700;">₱<?php echo number_format($item['price'] * $item['quantity'], 2); ?></span>
+                                        <?php else: ?>
+                                            ₱<?php echo number_format($item['price'] * $item['quantity'], 2); ?>
+                                        <?php endif; ?>
+                                    </div>
                                 </div>
                             <?php endforeach; ?>
+                            
+                            <!-- Seller Subtotal with Discount -->
+                            <div style="text-align: right; padding-top: 12px; margin-top: 12px; border-top: 2px solid var(--primary-dark);">
+                                <?php if (isset($_SESSION['applied_discount']) && $sellerOriginalSubtotal > $sellerFinalSubtotal): ?>
+                                    <?php $sellerDiscountAmount = $sellerOriginalSubtotal - $sellerFinalSubtotal; ?>
+                                    <div style="font-size: 14px; color: #6c757d; margin-bottom: 4px;">
+                                        Subtotal: <span style="color: var(--text-dark);">₱<?php echo number_format($sellerOriginalSubtotal, 2); ?></span>
+                                    </div>
+                                    <div style="font-size: 14px; color: #10b981; font-weight: 600; margin-bottom: 6px;">
+                                        <i class="fas fa-tag"></i> Discount: <span>-₱<?php echo number_format($sellerDiscountAmount, 2); ?></span>
+                                    </div>
+                                    <strong style="color: #10b981; font-size: 16px;">
+                                        Seller Total: ₱<?php echo number_format($sellerFinalSubtotal, 2); ?>
+                                    </strong>
+                                <?php else: ?>
+                                    <strong style="color: var(--text-dark); font-size: 16px;">
+                                        Seller Subtotal: <span style="color: var(--accent-yellow);">₱<?php echo number_format($sellerFinalSubtotal, 2); ?></span>
+                                    </strong>
+                                <?php endif; ?>
+                            </div>
                         </div>
                     <?php endforeach; ?>
                 <?php endif; ?>
@@ -816,26 +835,51 @@ require_once '../includes/header.php';
                 </div>
                 <div class="review-modal-body">
                     <div class="review-order-summary">
-                        <?php foreach ($groupedItems as $sellerId => $sellerGroup): ?>
-                            <div class="review-seller-group">
-                                <h3 style="font-size: 16px; color: var(--primary-dark); margin-bottom: 10px;">
-                                    <i class="fas fa-store"></i> <?php echo htmlspecialchars($sellerGroup['seller_display_name']); ?>
-                                </h3>
-                                <?php foreach ($sellerGroup['items'] as $item): ?>
-                                    <div class="review-item">
-                                        <img src="../<?php echo htmlspecialchars($item['image_url']); ?>" alt="<?php echo htmlspecialchars($item['name']); ?>" class="review-item-image">
-                                        <div class="review-item-info">
-                                            <div class="review-item-name"><?php echo htmlspecialchars($item['name']); ?></div>
-                                            <div class="review-item-details">Qty: <?php echo $item['quantity']; ?> × ₱<?php echo number_format($item['price'], 2); ?></div>
-                                        </div>
-                                        <div class="review-item-price">₱<?php echo number_format($item['price'] * $item['quantity'], 2); ?></div>
+                    <?php foreach ($groupedItems as $sellerId => $sellerGroup): ?>
+                        <div class="review-seller-group">
+                            <h3 style="font-size: 16px; color: var(--primary-dark); margin-bottom: 10px;">
+                                <i class="fas fa-store"></i> <?php echo htmlspecialchars($sellerGroup['seller_display_name']); ?>
+                            </h3>
+                            <?php 
+                            $sellerOriginalSubtotal = 0;
+                            $sellerFinalSubtotal = 0;
+                            
+                            foreach ($sellerGroup['items'] as $item): 
+                                $itemOriginalPrice = !empty($item['original_price']) ? $item['original_price'] : $item['price'];
+                                $sellerOriginalSubtotal += $itemOriginalPrice * $item['quantity'];
+                                $sellerFinalSubtotal += $item['price'] * $item['quantity'];
+                            ?>
+                                <div class="review-item">
+                                    <img src="../<?php echo htmlspecialchars($item['image_url']); ?>" alt="<?php echo htmlspecialchars($item['name']); ?>" class="review-item-image">
+                                    <div class="review-item-info">
+                                        <div class="review-item-name"><?php echo htmlspecialchars($item['name']); ?></div>
+                                        <div class="review-item-details">Qty: <?php echo $item['quantity']; ?> × ₱<?php echo number_format($item['price'], 2); ?></div>
                                     </div>
-                                <?php endforeach; ?>
-                                <div class="review-seller-subtotal">
-                                    Subtotal: ₱<?php echo number_format($sellerGroup['subtotal'], 2); ?>
+                                    <div class="review-item-price">₱<?php echo number_format($item['price'] * $item['quantity'], 2); ?></div>
                                 </div>
+                            <?php endforeach; ?>
+                            
+                            <!-- Review Seller Subtotal -->
+                            <div class="review-seller-subtotal" style="text-align: right; margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255, 215, 54, 0.3);">
+                                <?php if (isset($_SESSION['applied_discount']) && $sellerOriginalSubtotal > $sellerFinalSubtotal): ?>
+                                    <?php $sellerDiscountAmount = $sellerOriginalSubtotal - $sellerFinalSubtotal; ?>
+                                    <div style="font-size: 13px; color: #6c757d; margin-bottom: 3px;">
+                                        Subtotal: ₱<?php echo number_format($sellerOriginalSubtotal, 2); ?>
+                                    </div>
+                                    <div style="font-size: 13px; color: #10b981; font-weight: 600; margin-bottom: 5px;">
+                                        <i class="fas fa-tag"></i> Discount: -₱<?php echo number_format($sellerDiscountAmount, 2); ?>
+                                    </div>
+                                    <strong style="color: #10b981; font-size: 15px;">
+                                        Total: ₱<?php echo number_format($sellerFinalSubtotal, 2); ?>
+                                    </strong>
+                                <?php else: ?>
+                                    <strong style="font-size: 14px;">
+                                        Subtotal: ₱<?php echo number_format($sellerFinalSubtotal, 2); ?>
+                                    </strong>
+                                <?php endif; ?>
                             </div>
-                        <?php endforeach; ?>
+                        </div>
+                    <?php endforeach; ?>
                         <div class="review-grand-total">
                             <?php if (isset($_SESSION['applied_discount']) && $_SESSION['applied_discount']): ?>
                                 <div style="margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid rgba(0,0,0,0.1);">
@@ -961,333 +1005,115 @@ require_once '../includes/header.php';
 <?php require_once '../includes/footer.php'; ?>
 
 <style>
-/* Discount Code Styles - Updated to match site color scheme */
+/* Discount Code Styles */
 .discount-code-group {
-    margin-bottom: 20px;
-    padding: 20px;
-    background: linear-gradient(135deg, rgba(255, 215, 54, 0.08) 0%, rgba(255, 215, 54, 0.03) 100%);
-    border: 2px solid rgba(255, 215, 54, 0.3);
-    border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(19, 3, 37, 0.05);
-    transition: all 0.3s ease;
-}
-
-.discount-code-group:hover {
-    border-color: rgba(255, 215, 54, 0.5);
-    box-shadow: 0 4px 12px rgba(255, 215, 54, 0.15);
+    margin-bottom: 16px;
+    padding: 16px;
+    background: rgba(255, 215, 54, 0.05);
+    border: 1px solid rgba(255, 215, 54, 0.2);
+    border-radius: 8px;
 }
 
 .discount-code-group label {
     display: flex;
     align-items: center;
-    gap: 10px;
-    color: #130325;
-    font-weight: 700;
-    margin-bottom: 12px;
-    font-size: 15px;
-}
-
-.discount-code-group label i {
-    color: #FFD736;
-    font-size: 18px;
+    gap: 8px;
+    color: var(--text-dark);
+    font-weight: 600;
+    margin-bottom: 8px;
 }
 
 .discount-input-container {
     display: flex;
-    gap: 10px;
+    gap: 8px;
     align-items: stretch;
 }
 
 .discount-input-container input {
     flex: 1;
-    padding: 12px 16px;
-    border: 2px solid rgba(19, 3, 37, 0.15);
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 600;
+    padding: 8px 12px;
+    border: 1px solid rgba(0,0,0,0.1);
+    border-radius: 6px;
+    font-size: 13px;
     text-transform: uppercase;
-    letter-spacing: 1px;
-    color: #130325;
-    background: #ffffff;
-    transition: all 0.3s ease;
-}
-
-.discount-input-container input:focus {
-    outline: none;
-    border-color: #FFD736;
-    box-shadow: 0 0 0 3px rgba(255, 215, 54, 0.2);
-    background: #fffef5;
-}
-
-.discount-input-container input::placeholder {
-    color: rgba(19, 3, 37, 0.4);
-    font-weight: 500;
-    text-transform: none;
-    letter-spacing: 0;
 }
 
 .discount-input-container input:read-only {
-    background: linear-gradient(135deg, #f9f9f9 0%, #f3f4f6 100%);
+    background: #f3f4f6;
     cursor: not-allowed;
-    border-color: rgba(19, 3, 37, 0.1);
-    color: #130325;
 }
 
 .btn-apply-discount,
 .btn-remove-discount {
-    padding: 12px 20px;
+    padding: 8px 16px;
     border: none;
-    border-radius: 8px;
-    font-weight: 700;
-    font-size: 13px;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 12px;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.2s ease;
     display: inline-flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
     white-space: nowrap;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
 }
 
 .btn-apply-discount {
-    background: linear-gradient(135deg, #FFD736 0%, #ffc107 100%);
-    color: #130325;
-    border: 2px solid transparent;
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: #ffffff;
 }
 
 .btn-apply-discount:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(255, 215, 54, 0.4);
-    background: linear-gradient(135deg, #ffc107 0%, #FFD736 100%);
-}
-
-.btn-apply-discount:active {
-    transform: translateY(0);
-    box-shadow: 0 2px 6px rgba(255, 215, 54, 0.3);
-}
-
-.btn-apply-discount:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-    transform: none;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
 }
 
 .btn-remove-discount {
-    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    background: #ef4444;
     color: #ffffff;
-    border: 2px solid transparent;
 }
 
 .btn-remove-discount:hover {
-    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
-}
-
-.btn-remove-discount:active {
-    transform: translateY(0);
-    box-shadow: 0 2px 6px rgba(239, 68, 68, 0.3);
-}
-
-/* Discount Details Modal - Matching logout confirmation style */
-.discount-details-modal {
-    display: none;
-    position: fixed;
-    z-index: 10000;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0,0,0,0.5);
-    align-items: center;
-    justify-content: center;
-}
-
-.discount-details-modal-content {
-    background: #ffffff;
-    border-radius: 12px;
-    padding: 0;
-    max-width: 360px;
-    width: 90%;
-    box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-    animation: slideDown 0.3s ease;
-    overflow: hidden;
-}
-
-@keyframes slideDown {
-    from {
-        opacity: 0;
-        transform: translateY(-20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-.discount-details-header {
-    background: #130325;
-    color: #ffffff;
-    padding: 14px 18px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-}
-
-.discount-details-header-left {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.discount-details-header i {
-    font-size: 15px;
-    color: #FFD736;
-}
-
-.discount-details-header h3 {
-    margin: 0;
-    font-size: 13px;
-    font-weight: 700;
-    color: #ffffff;
-}
-
-.discount-details-close {
-    background: transparent;
-    border: none;
-    color: #ffffff;
-    font-size: 20px;
-    cursor: pointer;
-    padding: 0;
-    width: 22px;
-    height: 22px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    line-height: 1;
-    transition: opacity 0.2s ease;
-}
-
-.discount-details-close:hover {
-    opacity: 0.7;
-}
-
-.discount-details-body {
-    padding: 18px;
-    color: #130325;
-    font-size: 12px;
-    line-height: 1.5;
-}
-
-.discount-details-info {
-    margin-top: 10px;
-    padding: 12px;
-    background: #f8f9fa;
-    border-radius: 6px;
-    border-left: 3px solid #FFD736;
-}
-
-.discount-details-info p {
-    margin: 5px 0;
-    color: #130325;
-    font-size: 12px;
-}
-
-.discount-details-info strong {
-    color: #130325;
-    font-weight: 700;
-}
-
-.discount-details-footer {
-    padding: 16px 24px;
-    border-top: 1px solid #e5e7eb;
-    display: flex;
-    gap: 10px;
-    justify-content: flex-end;
-}
-
-.discount-details-btn {
-    padding: 8px 20px;
-    border-radius: 6px;
-    font-size: 14px;
-    font-weight: 600;
-    border: none;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.discount-details-btn-close {
-    background: #130325;
-    color: #ffffff;
-}
-
-.discount-details-btn-close:hover {
-    background: #0a0218;
+    background: #dc2626;
+    transform: translateY(-1px);
 }
 
 .discount-message {
-    margin-top: 12px;
-    padding: 12px 16px;
-    border-radius: 8px;
-    font-size: 13px;
+    margin-top: 8px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.discount-message.success {
+    background: #d1fae5;
+    color: #065f46;
+    border: 1px solid #10b981;
+}
+
+.discount-message.error {
+    background: #fee2e2;
+    color: #991b1b;
+    border: 1px solid #ef4444;
+}
+
+.discount-success-badge {
+    margin-top: 8px;
+    padding: 8px 12px;
+    background: #d1fae5;
+    border: 1px solid #10b981;
+    border-radius: 6px;
+    color: #065f46;
+    font-size: 12px;
     font-weight: 600;
     display: flex;
     align-items: center;
     gap: 8px;
-    animation: slideDown 0.3s ease;
-}
-
-@keyframes slideDown {
-    from {
-        opacity: 0;
-        transform: translateY(-10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-.discount-message.success {
-    background: linear-gradient(135deg, rgba(255, 215, 54, 0.15) 0%, rgba(255, 215, 54, 0.08) 100%);
-    color: #130325;
-    border: 2px solid #FFD736;
-}
-
-.discount-message.success i {
-    color: #FFD736;
-}
-
-.discount-message.error {
-    background: linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(239, 68, 68, 0.05) 100%);
-    color: #991b1b;
-    border: 2px solid #ef4444;
-}
-
-.discount-message.error i {
-    color: #ef4444;
-}
-
-.discount-success-badge {
-    margin-top: 12px;
-    padding: 12px 16px;
-    background: linear-gradient(135deg, rgba(255, 215, 54, 0.2) 0%, rgba(255, 215, 54, 0.1) 100%);
-    border: 2px solid #FFD736;
-    border-radius: 8px;
-    color: #130325;
-    font-size: 13px;
-    font-weight: 700;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    box-shadow: 0 2px 8px rgba(255, 215, 54, 0.2);
-    animation: slideDown 0.3s ease;
 }
 
 .discount-success-badge i {
-    color: #FFD736;
-    font-size: 16px;
+    color: #10b981;
 }
 
 /* Order Total with Discount */
@@ -1320,42 +1146,14 @@ require_once '../includes/header.php';
 }
 
 @media (max-width: 576px) {
-    .discount-code-group {
-        padding: 16px;
-        margin-bottom: 16px;
-    }
-    
-    .discount-code-group label {
-        font-size: 14px;
-        margin-bottom: 10px;
-    }
-    
     .discount-input-container {
         flex-direction: column;
-        gap: 8px;
-    }
-    
-    .discount-input-container input {
-        padding: 10px 14px;
-        font-size: 13px;
     }
     
     .btn-apply-discount,
     .btn-remove-discount {
         width: 100%;
         justify-content: center;
-        padding: 10px 16px;
-        font-size: 12px;
-    }
-    
-    .discount-message {
-        font-size: 12px;
-        padding: 10px 14px;
-    }
-    
-    .discount-success-badge {
-        font-size: 12px;
-        padding: 10px 14px;
     }
 }
 
@@ -1367,8 +1165,8 @@ require_once '../includes/header.php';
 }
 
 body { background: #ffffff !important; color: var(--text-dark); }
-.checkout-container { max-width: 1200px; margin: 0 auto; padding: 0 20px 20px 20px; }
-h1 { color: var(--text-dark); text-align: center; margin: 10px 0; font-size: 1.6rem; border-bottom: 3px solid var(--primary-dark); padding-bottom: 10px; text-shadow: none !important; }
+.checkout-container { max-width: 1200px; margin: 0 auto; padding: 10px 20px 20px 20px; }
+h1 { color: var(--text-dark); text-align: center; margin: 20px 0; font-size: 1.6rem; border-bottom: 3px solid var(--primary-dark); padding-bottom: 10px; }
 
 .alert { padding: 12px 16px; border-radius: 8px; margin-bottom: 20px; }
 .alert-error { background-color: #ffebee; border: 1px solid #f44336; color: #d32f2f; }
@@ -1824,11 +1622,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         window.location.reload();
                     }, 1000);
                 } else {
-                    if (data.show_details && data.discount_details) {
-                        showDiscountDetailsModal(data.message, data.discount_details, data.current_total);
-                    } else {
-                        showDiscountMessage(data.message, 'error');
-                    }
+                    showDiscountMessage(data.message, 'error');
                     applyBtn.disabled = false;
                     applyBtn.innerHTML = '<i class="fas fa-check"></i> Apply';
                 }
@@ -1844,33 +1638,35 @@ document.addEventListener('DOMContentLoaded', function() {
     
     if (removeBtn) {
         removeBtn.addEventListener('click', function() {
-            showRemoveDiscountConfirm(function() {
-                removeBtn.disabled = true;
-                removeBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Removing...';
-                
-                fetch('', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                    },
-                    body: 'remove_discount=1'
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        window.location.reload();
-                    } else {
-                        alert('Error removing discount code.');
-                        removeBtn.disabled = false;
-                        removeBtn.innerHTML = '<i class="fas fa-times"></i> Remove';
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
+            if (!confirm('Remove discount code?')) {
+                return;
+            }
+            
+            removeBtn.disabled = true;
+            removeBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Removing...';
+            
+            fetch('', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: 'remove_discount=1'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    window.location.reload();
+                } else {
                     alert('Error removing discount code.');
                     removeBtn.disabled = false;
                     removeBtn.innerHTML = '<i class="fas fa-times"></i> Remove';
-                });
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error removing discount code.');
+                removeBtn.disabled = false;
+                removeBtn.innerHTML = '<i class="fas fa-times"></i> Remove';
             });
         });
     }
@@ -1886,152 +1682,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }, 5000);
         }
     }
-    
-    function showDiscountDetailsModal(message, discountDetails, currentTotal) {
-        // Remove existing modal if any
-        const existingModal = document.getElementById('discountDetailsModal');
-        if (existingModal) {
-            existingModal.remove();
-        }
-        
-        // Create modal
-        const modal = document.createElement('div');
-        modal.id = 'discountDetailsModal';
-        modal.className = 'discount-details-modal';
-        modal.style.display = 'flex';
-        
-        const discountType = discountDetails.discount_type === 'percentage' ? discountDetails.discount_value + '%' : '₱' + parseFloat(discountDetails.discount_value).toFixed(2);
-        const minOrder = '₱' + parseFloat(discountDetails.min_order_amount).toFixed(2);
-        const current = currentTotal ? '₱' + parseFloat(currentTotal).toFixed(2) : null;
-        
-        modal.innerHTML = `
-            <div class="discount-details-modal-content">
-                <div class="discount-details-header">
-                    <div class="discount-details-header-left">
-                        <i class="fas fa-info-circle"></i>
-                        <h3>Discount Code Details</h3>
-                    </div>
-                    <button class="discount-details-close" onclick="closeDiscountDetailsModal()" aria-label="Close">×</button>
-                </div>
-                <div class="discount-details-body">
-                    <p style="margin: 0 0 12px 0; color: #130325; font-size: 12px;">${message}</p>
-                    <div class="discount-details-info">
-                        <p style="margin: 0 0 6px 0; font-size: 12px;"><strong>Discount Value:</strong> ${discountType} off</p>
-                        <p style="margin: 0; font-size: 12px;"><strong>Minimum Order Amount:</strong> ${minOrder}</p>
-                        ${current ? `<p style="margin: 6px 0 0 0; color: #dc3545; font-size: 12px;"><strong>Your Current Total:</strong> ${current}</p>` : ''}
-                    </div>
-                </div>
-            </div>
-        `;
-        
-        document.body.appendChild(modal);
-        
-        // Close on background click
-        modal.addEventListener('click', function(e) {
-            if (e.target === modal) {
-                closeDiscountDetailsModal();
-            }
-        });
-        
-        // Close on Escape key
-        const escapeHandler = function(e) {
-            if (e.key === 'Escape' && modal.style.display === 'flex') {
-                closeDiscountDetailsModal();
-                document.removeEventListener('keydown', escapeHandler);
-            }
-        };
-        document.addEventListener('keydown', escapeHandler);
-    }
-    
-    function closeDiscountDetailsModal() {
-        const modal = document.getElementById('discountDetailsModal');
-        if (modal) {
-            modal.style.display = 'none';
-            setTimeout(() => {
-                modal.remove();
-            }, 300);
-        }
-    }
-    
-    // Make function globally accessible
-    window.closeDiscountDetailsModal = closeDiscountDetailsModal;
-    
-    // Remove Discount Confirmation Modal - Matching logout confirmation style
-    function showRemoveDiscountConfirm(onConfirm) {
-        // Remove existing modal if any
-        const existingModal = document.getElementById('removeDiscountModal');
-        if (existingModal) {
-            existingModal.remove();
-        }
-        
-        // Create modal
-        const modal = document.createElement('div');
-        modal.id = 'removeDiscountModal';
-        modal.className = 'discount-details-modal';
-        modal.style.display = 'flex';
-        
-        modal.innerHTML = `
-            <div class="discount-details-modal-content">
-                <div class="discount-details-header">
-                    <div class="discount-details-header-left">
-                        <i class="fas fa-times-circle"></i>
-                        <h3>Remove Discount Code</h3>
-                    </div>
-                    <button class="discount-details-close" onclick="closeRemoveDiscountModal()" aria-label="Close">×</button>
-                </div>
-                <div class="discount-details-body">
-                    <p style="margin: 0; color: #130325;">Are you sure you want to remove the discount code? This action cannot be undone.</p>
-                </div>
-                <div class="discount-details-footer">
-                    <button class="discount-details-btn" style="background: #f3f4f6; color: #130325; border: 1px solid #e5e7eb;" onclick="closeRemoveDiscountModal()">Cancel</button>
-                    <button class="discount-details-btn discount-details-btn-close" onclick="confirmRemoveDiscount()">Remove</button>
-                </div>
-            </div>
-        `;
-        
-        document.body.appendChild(modal);
-        
-        // Store confirm callback
-        modal._confirmCallback = onConfirm;
-        
-        // Close on background click
-        modal.addEventListener('click', function(e) {
-            if (e.target === modal) {
-                closeRemoveDiscountModal();
-            }
-        });
-        
-        // Close on Escape key
-        const escapeHandler = function(e) {
-            if (e.key === 'Escape' && modal.style.display === 'flex') {
-                closeRemoveDiscountModal();
-                document.removeEventListener('keydown', escapeHandler);
-            }
-        };
-        document.addEventListener('keydown', escapeHandler);
-    }
-    
-    function closeRemoveDiscountModal() {
-        const modal = document.getElementById('removeDiscountModal');
-        if (modal) {
-            modal.style.display = 'none';
-            setTimeout(() => {
-                modal.remove();
-            }, 300);
-        }
-    }
-    
-    function confirmRemoveDiscount() {
-        const modal = document.getElementById('removeDiscountModal');
-        if (modal && modal._confirmCallback) {
-            closeRemoveDiscountModal();
-            modal._confirmCallback();
-        }
-    }
-    
-    // Make functions globally accessible
-    window.closeRemoveDiscountModal = closeRemoveDiscountModal;
-    window.confirmRemoveDiscount = confirmRemoveDiscount;
 });
 
 </script>
