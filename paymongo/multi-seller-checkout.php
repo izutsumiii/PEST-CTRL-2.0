@@ -707,7 +707,7 @@ if ($isBuyNow && !empty($groupedItems)) {
 require_once '../includes/header.php';
 ?>
 
-<main style="background: #ffffff; min-height: 100vh; padding: 0 20px 20px 20px;">
+<main style="background: #ffffff; min-height: 100vh; padding: 5px 20px 20px 20px;">
 <div class="checkout-container">
     <h1>Checkout</h1>
 
@@ -945,36 +945,77 @@ require_once '../includes/header.php';
 <!-- Discount Code Section -->
 <div class="form-group discount-code-group">
                     <label for="discount_code">
-                        <i class="fas fa-tag"></i> Discount Code (Optional)
+                        <i class="fas fa-tag"></i> Discount Code
                     </label>
                     <div class="discount-input-container">
                         <input type="text" 
                                id="discount_code" 
-                               placeholder="Enter discount code"
+                               placeholder="Enter code"
                                value="<?php echo isset($_SESSION['applied_discount']) ? htmlspecialchars($_SESSION['applied_discount']['discount_code']) : ''; ?>"
                                <?php echo isset($_SESSION['applied_discount']) ? 'readonly' : ''; ?>>
                         <button type="button" 
                                 id="applyDiscountBtn" 
                                 class="btn-apply-discount"
                                 <?php echo isset($_SESSION['applied_discount']) ? 'style="display:none;"' : ''; ?>>
-                            <i class="fas fa-check"></i> Apply
+                            Apply
                         </button>
                         <button type="button" 
                                 id="removeDiscountBtn" 
                                 class="btn-remove-discount"
                                 <?php echo !isset($_SESSION['applied_discount']) ? 'style="display:none;"' : ''; ?>>
-                            <i class="fas fa-times"></i> Remove
+                            Remove
                         </button>
                     </div>
-                    <div id="discount-message" class="discount-message" style="display: none;"></div>
                     <?php if (isset($_SESSION['applied_discount'])): ?>
                         <div class="discount-success-badge">
                             <i class="fas fa-check-circle"></i> 
-                            Discount Applied: <?php echo htmlspecialchars($_SESSION['applied_discount']['discount_code']); ?>
-                            (₱<?php echo number_format($_SESSION['applied_discount']['discount_amount'], 2); ?> off)
+                            <?php echo htmlspecialchars($_SESSION['applied_discount']['discount_code']); ?> applied 
+                            (-₱<?php echo number_format($_SESSION['applied_discount']['discount_amount'], 2); ?>)
                         </div>
                     <?php endif; ?>
                 </div>
+
+<!-- Discount Error Modal -->
+<div id="discountErrorModal" class="modal-overlay" style="display: none;">
+    <div class="modal-dialog" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <div class="modal-title">Invalid Discount Code</div>
+            <button type="button" class="modal-close" onclick="closeDiscountErrorModal()">×</button>
+        </div>
+        <div class="modal-body">
+            <p id="discountErrorMessage" style="margin: 0 0 12px 0; color: #ef4444; font-size: 12px; line-height: 1.5; font-weight: 600;"></p>
+            <div id="discountErrorDetails" style="font-size: 11px; color: #6b7280; line-height: 1.6;"></div>
+        </div>
+        <div class="modal-actions">
+            <button type="button" class="btn-primary-y" onclick="closeDiscountErrorModal()">
+                <i class="fas fa-check"></i> OK
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Remove Discount Confirmation Modal -->
+<div id="removeDiscountModal" class="modal-overlay" style="display: none;">
+    <div class="modal-dialog" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <div class="modal-title">Remove Discount Code</div>
+            <button type="button" class="modal-close" onclick="closeRemoveDiscountModal()">×</button>
+        </div>
+        <div class="modal-body">
+            <p style="margin: 0; color: #130325; font-size: 12px; line-height: 1.5; font-weight: 500;">
+                Are you sure you want to remove the discount code <strong id="removeDiscountCodeName"></strong>?
+            </p>
+        </div>
+        <div class="modal-actions">
+            <button type="button" class="btn-outline" onclick="closeRemoveDiscountModal()">
+                <i class="fas fa-times"></i> Cancel
+            </button>
+            <button type="button" class="btn-primary-y" onclick="confirmRemoveDiscount()">
+                <i class="fas fa-check"></i> Remove
+            </button>
+        </div>
+    </div>
+</div>
                 <div class="form-group payment-method-group">
                     <label for="payment_method">Payment Method *</label>
                     <select id="payment_method" name="payment_method" required>
@@ -1005,36 +1046,37 @@ require_once '../includes/header.php';
 <?php require_once '../includes/footer.php'; ?>
 
 <style>
-/* Discount Code Styles */
+/* Discount Code Styles - Minimized */
 .discount-code-group {
-    margin-bottom: 16px;
-    padding: 16px;
+    margin-bottom: 12px;
+    padding: 10px 12px;
     background: rgba(255, 215, 54, 0.05);
     border: 1px solid rgba(255, 215, 54, 0.2);
-    border-radius: 8px;
+    border-radius: 6px;
 }
 
 .discount-code-group label {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
     color: var(--text-dark);
     font-weight: 600;
-    margin-bottom: 8px;
+    margin-bottom: 6px;
+    font-size: 12px;
 }
 
 .discount-input-container {
     display: flex;
-    gap: 8px;
+    gap: 6px;
     align-items: stretch;
 }
 
 .discount-input-container input {
     flex: 1;
-    padding: 8px 12px;
+    padding: 6px 10px;
     border: 1px solid rgba(0,0,0,0.1);
-    border-radius: 6px;
-    font-size: 13px;
+    border-radius: 4px;
+    font-size: 12px;
     text-transform: uppercase;
 }
 
@@ -1045,27 +1087,25 @@ require_once '../includes/header.php';
 
 .btn-apply-discount,
 .btn-remove-discount {
-    padding: 8px 16px;
+    padding: 6px 12px;
     border: none;
-    border-radius: 6px;
+    border-radius: 4px;
     font-weight: 600;
-    font-size: 12px;
+    font-size: 11px;
     cursor: pointer;
     transition: all 0.2s ease;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
     white-space: nowrap;
 }
 
 .btn-apply-discount {
-    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    background: #130325;
     color: #ffffff;
 }
 
 .btn-apply-discount:hover {
+    background: #1f0a3d;
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    box-shadow: 0 2px 8px rgba(19, 3, 37, 0.4);
 }
 
 .btn-remove-discount {
@@ -1076,26 +1116,130 @@ require_once '../includes/header.php';
 .btn-remove-discount:hover {
     background: #dc2626;
     transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
 }
 
-.discount-message {
-    margin-top: 8px;
-    padding: 8px 12px;
-    border-radius: 6px;
-    font-size: 12px;
-    font-weight: 600;
-}
-
-.discount-message.success {
+.discount-success-badge {
+    margin-top: 6px;
+    padding: 4px 8px;
     background: #d1fae5;
     color: #065f46;
-    border: 1px solid #10b981;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
 }
 
-.discount-message.error {
-    background: #fee2e2;
-    color: #991b1b;
-    border: 1px solid #ef4444;
+/* Discount Modals - Match Logout Modal */
+.modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.35);
+    z-index: 9999;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-dialog {
+    width: 340px;
+    max-width: 90vw;
+    background: #ffffff;
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+}
+
+.modal-header {
+    padding: 8px 12px;
+    background: #130325;
+    color: #F9F9F9;
+    border-bottom: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-radius: 12px 12px 0 0;
+}
+
+.modal-title {
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: .3px;
+    margin: 0;
+}
+
+.modal-close {
+    background: transparent;
+    border: none;
+    color: #F9F9F9;
+    font-size: 20px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-close:hover {
+    opacity: 0.8;
+}
+
+.modal-body {
+    padding: 12px;
+    color: #130325;
+    font-size: 12px;
+}
+
+.modal-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    padding: 0 12px 12px 12px;
+}
+
+.btn-outline {
+    background: #ffffff;
+    color: #130325;
+    border: 1px solid rgba(0,0,0,0.1);
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-weight: 700;
+    font-size: 12px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.btn-outline:hover {
+    background: #f3f4f6;
+}
+
+.btn-primary-y {
+    background: linear-gradient(135deg, #FFD736 0%, #FFC107 100%);
+    color: #130325;
+    border: none;
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-weight: 700;
+    font-size: 12px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.btn-primary-y:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(255, 215, 54, 0.3);
 }
 
 .discount-success-badge {
@@ -1165,16 +1309,16 @@ require_once '../includes/header.php';
 }
 
 body { background: #ffffff !important; color: var(--text-dark); }
-.checkout-container { max-width: 1200px; margin: 0 auto; padding: 10px 20px 20px 20px; }
-h1 { color: var(--text-dark); text-align: center; margin: 20px 0; font-size: 1.6rem; border-bottom: 3px solid var(--primary-dark); padding-bottom: 10px; }
+.checkout-container { max-width: 1200px; margin: 0 auto; padding: 5px 20px 20px 20px; }
+h1 { color: var(--text-dark); text-align: center; margin: 5px 0 15px 0; font-size: 1.6rem; border-bottom: 3px solid var(--primary-dark); padding-bottom: 10px; text-shadow: none; }
 
 .alert { padding: 12px 16px; border-radius: 8px; margin-bottom: 20px; }
 .alert-error { background-color: #ffebee; border: 1px solid #f44336; color: #d32f2f; }
 .alert ul { margin: 0; padding-left: 20px; }
 
-.checkout-content { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 20px; }
-.order-summary, .checkout-form { background-color: #f0f0f0; border: 1px solid var(--border-light); padding: 25px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
-.order-summary h2, .checkout-form h2 { color: var(--text-dark); border-bottom: 2px solid var(--primary-dark); padding-bottom: 10px; margin-bottom: 20px; font-weight: 600; font-size: 1.3rem; }
+.checkout-content { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 15px; }
+.order-summary, .checkout-form { background-color: #f0f0f0; border: 1px solid var(--border-light); padding: 25px; border-radius: 12px; box-shadow: none; }
+.order-summary h2, .checkout-form h2 { color: var(--text-dark); border-bottom: 2px solid var(--primary-dark); padding-bottom: 10px; margin-bottom: 20px; font-weight: 600; font-size: 1.3rem; text-shadow: none; }
 
 .seller-group { margin-bottom: 30px; border: 1px solid var(--border-light); border-radius: 12px; padding: 20px; background: #f0f0f0; }
 .seller-header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 15px; margin-bottom: 15px; border-bottom: 2px solid var(--primary-dark); }
@@ -1584,12 +1728,11 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 
-// Discount Code Functionality
+// Discount Code Functionality with Modals
 document.addEventListener('DOMContentLoaded', function() {
     const discountInput = document.getElementById('discount_code');
     const applyBtn = document.getElementById('applyDiscountBtn');
     const removeBtn = document.getElementById('removeDiscountBtn');
-    const discountMessage = document.getElementById('discount-message');
     
     if (applyBtn) {
         applyBtn.addEventListener('click', function() {
@@ -1597,13 +1740,13 @@ document.addEventListener('DOMContentLoaded', function() {
             const cartTotal = <?php echo $grandTotal; ?>;
             
             if (!code) {
-                showDiscountMessage('Please enter a discount code.', 'error');
+                showDiscountError('Please enter a discount code.', '');
                 return;
             }
             
             // Disable button during request
             applyBtn.disabled = true;
-            applyBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Applying...';
+            applyBtn.textContent = 'Applying...';
             
             // AJAX request to validate discount
             fetch('', {
@@ -1616,71 +1759,157 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    showDiscountMessage(data.message, 'success');
-                    // Reload page to show updated totals
-                    setTimeout(() => {
-                        window.location.reload();
-                    }, 1000);
+                    // Success - reload page
+                    window.location.reload();
                 } else {
-                    showDiscountMessage(data.message, 'error');
+                    // Show detailed error modal
+                    showDiscountError(data.message, getDiscountErrorDetails(data.message, code));
                     applyBtn.disabled = false;
-                    applyBtn.innerHTML = '<i class="fas fa-check"></i> Apply';
+                    applyBtn.textContent = 'Apply';
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                showDiscountMessage('Error applying discount code.', 'error');
+                showDiscountError('Error applying discount code.', 'Please try again later.');
                 applyBtn.disabled = false;
-                applyBtn.innerHTML = '<i class="fas fa-check"></i> Apply';
+                applyBtn.textContent = 'Apply';
             });
         });
     }
     
     if (removeBtn) {
         removeBtn.addEventListener('click', function() {
-            if (!confirm('Remove discount code?')) {
-                return;
-            }
-            
-            removeBtn.disabled = true;
-            removeBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Removing...';
-            
-            fetch('', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                },
-                body: 'remove_discount=1'
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    window.location.reload();
-                } else {
-                    alert('Error removing discount code.');
-                    removeBtn.disabled = false;
-                    removeBtn.innerHTML = '<i class="fas fa-times"></i> Remove';
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Error removing discount code.');
-                removeBtn.disabled = false;
-                removeBtn.innerHTML = '<i class="fas fa-times"></i> Remove';
-            });
+            // Show confirmation modal
+            const discountCode = discountInput.value.trim();
+            showRemoveDiscountModal(discountCode);
         });
     }
+});
+
+// Show Discount Error Modal with Details
+function showDiscountError(message, details) {
+    const modal = document.getElementById('discountErrorModal');
+    const messageEl = document.getElementById('discountErrorMessage');
+    const detailsEl = document.getElementById('discountErrorDetails');
     
-    function showDiscountMessage(message, type) {
-        if (discountMessage) {
-            discountMessage.textContent = message;
-            discountMessage.className = 'discount-message ' + type;
-            discountMessage.style.display = 'block';
-            
-            setTimeout(() => {
-                discountMessage.style.display = 'none';
-            }, 5000);
+    if (modal && messageEl && detailsEl) {
+        messageEl.textContent = message;
+        detailsEl.innerHTML = details;
+        modal.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+    }
+}
+
+function closeDiscountErrorModal() {
+    const modal = document.getElementById('discountErrorModal');
+    if (modal) {
+        modal.style.display = 'none';
+        document.body.style.overflow = '';
+    }
+}
+
+// Get detailed error message based on error type
+function getDiscountErrorDetails(message, code) {
+    if (message.includes('Invalid discount code')) {
+        return 'The discount code <strong>' + code + '</strong> does not exist or has been deactivated.<br><br>' +
+               '<strong>Please check:</strong><br>' +
+               '• Code spelling and capitalization<br>' +
+               '• Code validity period<br>' +
+               '• Code activation status';
+    } else if (message.includes('not yet active')) {
+        return 'This discount code is scheduled for a future date and cannot be used yet.<br><br>' +
+               'Please check the promotional details for the start date.';
+    } else if (message.includes('expired')) {
+        return 'This discount code has passed its expiration date and can no longer be used.<br><br>' +
+               'Please check for other available promotions.';
+    } else if (message.includes('Minimum order amount')) {
+        return message.replace('Minimum order amount of ₱', '<strong>Minimum Order Required:</strong> ₱') + '<br><br>' +
+               'Add more items to your cart to meet the minimum requirement.';
+    } else if (message.includes('usage limit')) {
+        return 'This discount code has been fully redeemed by other customers.<br><br>' +
+               'Please check for other available discount codes.';
+    } else {
+        return 'Please verify the discount code details and try again.';
+    }
+}
+
+// Show Remove Discount Confirmation Modal
+function showRemoveDiscountModal(code) {
+    const modal = document.getElementById('removeDiscountModal');
+    const codeNameEl = document.getElementById('removeDiscountCodeName');
+    
+    if (modal && codeNameEl) {
+        codeNameEl.textContent = code;
+        modal.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+    }
+}
+
+function closeRemoveDiscountModal() {
+    const modal = document.getElementById('removeDiscountModal');
+    if (modal) {
+        modal.style.display = 'none';
+        document.body.style.overflow = '';
+    }
+}
+
+function confirmRemoveDiscount() {
+    const removeBtn = document.getElementById('removeDiscountBtn');
+    
+    if (removeBtn) {
+        removeBtn.disabled = true;
+        removeBtn.textContent = 'Removing...';
+    }
+    
+    fetch('', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: 'remove_discount=1'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            window.location.reload();
+        } else {
+            closeRemoveDiscountModal();
+            showDiscountError('Error removing discount code.', 'Please try again later.');
+            if (removeBtn) {
+                removeBtn.disabled = false;
+                removeBtn.textContent = 'Remove';
+            }
         }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        closeRemoveDiscountModal();
+        showDiscountError('Error removing discount code.', 'Please try again later.');
+        if (removeBtn) {
+            removeBtn.disabled = false;
+            removeBtn.textContent = 'Remove';
+        }
+    });
+}
+
+// Close modals on Escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeDiscountErrorModal();
+        closeRemoveDiscountModal();
+    }
+});
+
+// Close modals when clicking outside
+document.addEventListener('click', function(e) {
+    const discountErrorModal = document.getElementById('discountErrorModal');
+    const removeDiscountModal = document.getElementById('removeDiscountModal');
+    
+    if (e.target === discountErrorModal) {
+        closeDiscountErrorModal();
+    }
+    if (e.target === removeDiscountModal) {
+        closeRemoveDiscountModal();
     }
 });
 

@@ -77,7 +77,7 @@ $pathPrefix = ($currentDir === 'paymongo') ? '../' : '';
         }
         
         .brand-text {
-            font-size: 14px;
+            font-size: 12px;
             color: #F9F9F9;
             font-family: 'Libre Barcode 128 Text', monospace;
         }
@@ -95,19 +95,19 @@ $pathPrefix = ($currentDir === 'paymongo') ? '../' : '';
         }
         
         .search-box select {
-            padding: 8px 10px !important;
-            height: 36px !important;
+            padding: 7px 10px !important;
+            height: 34px !important;
             border-radius: 6px 0 0 6px !important;
             border: 1px solid rgba(249, 249, 249, 0.3) !important;
             border-right: 1px solid rgba(249, 249, 249, 0.3) !important;
             background: rgba(249, 249, 249, 0.1) !important;
             color: #F9F9F9 !important;
-            font-size: 14px !important;
+            font-size: 13.5px !important;
             cursor: pointer !important;
             outline: none !important;
             margin-right: 0 !important;
             width: auto !important;
-            min-width: 100px !important;
+            min-width: 96px !important;
         }
         
         .search-box select option {
@@ -117,9 +117,9 @@ $pathPrefix = ($currentDir === 'paymongo') ? '../' : '';
         
         .search-box input {
             flex: 1 1 0% !important;
-            padding: 8px 12px !important;
-            height: 36px !important;
-            max-height: 36px !important;
+            padding: 7px 11px !important;
+            height: 34px !important;
+            max-height: 34px !important;
             border-radius: 0 !important;
             border: 1px solid rgba(249, 249, 249, 0.3) !important;
             border-left: none !important;
@@ -128,28 +128,30 @@ $pathPrefix = ($currentDir === 'paymongo') ? '../' : '';
             color: #F9F9F9 !important;
             min-width: 0;
             margin-left: 0 !important;
+            font-size: 13.5px !important;
         }
 
         .site-header .search-box { max-width: 600px; }
         .site-header .search-box form { width: 100%; }
-        .site-header .search-box input { height: 36px; padding: 8px 12px; font-size: 14px; }
-        .site-header .search-box button { height: 36px; padding: 0 10px; white-space: nowrap; flex: 0 0 auto !important; width: auto !important; }
+        .site-header .search-box input { height: 34px; padding: 7px 11px; font-size: 13.5px; }
+        .site-header .search-box button { height: 34px; padding: 0 10px; white-space: nowrap; flex: 0 0 auto !important; width: auto !important; font-size: 13.5px; }
         
         .search-box input::placeholder {
             color: rgba(249, 249, 249, 0.7);
         }
         
         .search-box button {
-            padding: 0 14px !important;
+            padding: 0 12px !important;
             border-radius: 0 6px 6px 0 !important;
             background: #FFD736;
             color: #130325;
             border: none;
             border-left: 1px solid rgba(249, 249, 249, 0.3) !important;
-            height: 36px;
+            height: 34px;
             flex: 0 0 auto !important;
             width: auto !important;
             margin-left: 0 !important;
+            font-size: 13.5px !important;
         }
         
         .header-actions {
@@ -241,9 +243,11 @@ $pathPrefix = ($currentDir === 'paymongo') ? '../' : '';
         .nav-links a {
             color: #F9F9F9;
             text-decoration: none;
-            padding: 8px 10px;
+            padding: 6px 9px;
             border-radius: 8px;
             transition: all 0.3s ease;
+            font-size: 13px;
+            font-weight: 500;
         }
         
         .nav-links a:hover {
@@ -367,14 +371,15 @@ $pathPrefix = ($currentDir === 'paymongo') ? '../' : '';
             background: #FFD736;
             color: #130325;
             border: none;
-            padding: 8px 16px;
+            padding: 7px 14px;
             border-radius: 8px;
             cursor: pointer;
             font-weight: 600;
             transition: all 0.3s ease;
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
+            font-size: 13px;
         }
         
         .action-btn:hover {
@@ -403,11 +408,11 @@ $pathPrefix = ($currentDir === 'paymongo') ? '../' : '';
         
         .dropdown-item {
             display: block;
-            padding: 14px 18px;
+            padding: 12px 16px;
             color: #130325;
             text-decoration: none;
             font-weight: 600;
-            font-size: 14px;
+            font-size: 13px;
             transition: all 0.3s ease;
             border-bottom: 1px solid #f8f9fa;
         }
@@ -526,9 +531,9 @@ $pathPrefix = ($currentDir === 'paymongo') ? '../' : '';
             background: none;
             border: none;
             color: #ffffff;
-            font-size: 14px;
+            font-size: 13.5px;
             font-weight: 500;
-            padding: 8px 12px;
+            padding: 7px 11px;
             cursor: pointer;
             border-radius: 4px;
             transition: all 0.3s ease;
@@ -578,10 +583,10 @@ $pathPrefix = ($currentDir === 'paymongo') ? '../' : '';
         
         .category-menu a {
             display: block;
-            padding: 10px 15px;
+            padding: 9px 14px;
             color: #130325;
             text-decoration: none;
-            font-size: 13px;
+            font-size: 12.5px;
             border-bottom: 1px solid #f8f9fa;
             transition: all 0.3s ease;
         }

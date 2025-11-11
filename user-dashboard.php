@@ -583,7 +583,7 @@ body {
     max-width: 1600px;
     margin: 0 auto;
     padding: 0 20px;
-    margin-top: 40px;
+    margin-top: 5px;
 }
 
 /* Main dashboard content */
@@ -600,7 +600,7 @@ body {
     margin: 0 0 30px 60px;
     font-size: 1.8rem;
     font-weight: 700;
-    text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    text-shadow: none;
 }
 
 /* Filter container */
@@ -610,7 +610,7 @@ body {
     border-radius: 8px;
     padding: 20px;
     margin: 0 60px 30px 60px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    box-shadow: none;
 }
 
 /* Filter tabs styling */
@@ -654,14 +654,14 @@ body {
     padding: 15px !important;
     margin: 0 60px 10px 60px !important;
     transition: all 0.3s ease !important;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+    box-shadow: none;
     min-height: 80px;
     max-width: 100%;
 }
 
 .order-card:hover {
     border-color: rgba(0, 0, 0, 0.2) !important;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1) !important;
+    box-shadow: none !important;
 }
 
 /* Order header - compact layout */

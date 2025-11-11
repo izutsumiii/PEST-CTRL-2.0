@@ -82,20 +82,20 @@ html, body {
 main {
     background: transparent !important;
     margin: 0 !important;
-    padding: 0 0 60px 0 !important;
+    padding: 5px 0 60px 0 !important;
     min-height: calc(100vh - 60px) !important;
 }
 
 /* Edit Profile Styles - aligned with multi-seller checkout design */
 
 .profile-header {
-    max-width: 1000px;
-    margin: 5px auto 15px auto;
+    max-width: 1400px;
+    margin: 0 60px 15px 60px;
     padding: 20px;
     background: #ffffff;
     border: 1px solid rgba(0, 0, 0, 0.1);
     border-radius: 12px;
-    box-shadow: none; /* remove shadow */
+    box-shadow: none;
     display: flex;
     align-items: center;
     gap: 16px;
@@ -204,9 +204,9 @@ main {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 40px;
-    max-width: 1000px;
-    margin: 10px auto 20px auto;
-    padding: 0 20px;
+    max-width: 1400px;
+    margin: 0 60px 20px 60px;
+    padding: 0;
 }
 
 /* Section styling */
@@ -224,7 +224,7 @@ main {
     color: #130325;
     margin-bottom: 20px;
     text-shadow: none !important;
-    font-size: 1.5rem;
+    font-size: 1.2rem;
     padding-bottom: 10px;
     border-bottom: 2px solid #F0F2F5;
 }
@@ -246,7 +246,7 @@ main {
     margin-bottom: 5px;
     color: #130325;
     font-weight: 500;
-    font-size: 1rem;
+    font-size: 0.875rem;
 }
 
 /* Input styling */
@@ -255,10 +255,10 @@ main {
 .profile-editor input[type="tel"],
 .profile-editor input[type="password"],
 .profile-editor textarea {
-    padding: 12px;
+    padding: 10px;
     border: 1px solid #ced4da;
     border-radius: 4px;
-    font-size: 1rem;
+    font-size: 0.875rem;
     transition: border-color 0.3s;
     background: #ffffff;
     color: #130325;
@@ -278,43 +278,61 @@ main {
     font-family: inherit;
 }
 
+/* Button container */
+.profile-editor form > div[style*="display:flex"] {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid #e5e7eb;
+    display: flex !important;
+    flex-direction: row !important;
+    gap: 10px !important;
+    justify-content: flex-start !important;
+}
+
 /* Button styling */
 .profile-editor button[type="submit"] {
-    background: #FFD736;
+    background: linear-gradient(135deg, #FFD736 0%, #FFC107 100%);
     color: #130325;
-    padding: 12px 24px;
+    padding: 8px 16px;
     border: none;
-    border-radius: 4px;
-    font-size: 1rem;
+    border-radius: 6px;
+    font-size: 0.8125rem;
     cursor: pointer;
-    transition: background-color 0.3s, transform 0.2s;
-    margin-top: 10px;
-    font-weight: 600;
+    transition: all 0.2s ease;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
 }
 
 .profile-editor button[type="submit"]:hover {
-    background: #e6c230;
     transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(255, 215, 54, 0.3);
 }
 
 .profile-editor button[type="submit"]:active {
-    transform: translateY(1px);
+    transform: translateY(0);
 }
 
 .btn-secondary {
-    background: #6c757d;
-    color: #fff;
-    padding: 12px 24px;
+    background: #ef4444;
+    color: #ffffff;
     border: none;
-    border-radius: 4px;
-    font-size: 1rem;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 0.8125rem;
     cursor: pointer;
-    transition: background-color 0.3s;
-    font-weight: 600;
+    transition: all 0.2s ease;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
 }
 
 .btn-secondary:hover { 
-    background: #5a6268; 
+    background: #dc2626;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
 }
 
 .account-summary { 
@@ -402,11 +420,12 @@ main {
 
 /* Page title styling */
 h1 {
-    color: #130325 !important; /* dark for readability */
+    color: #130325 !important;
     text-align: left;
-    margin: 0 0 16px 0 !important; /* top-left placement */
+    margin: 0 60px 16px 60px !important;
     font-size: 2.5rem;
     font-weight: 700;
+    text-shadow: none !important;
 }
 
 /* Responsive design */
@@ -414,8 +433,12 @@ h1 {
     .profile-editor {
         grid-template-columns: 1fr;
         gap: 20px;
-        margin: 10px;
-        padding: 0 10px;
+        margin: 10px 20px;
+        padding: 0;
+    }
+    
+    .profile-header {
+        margin: 0 20px 15px 20px;
     }
     
     .personal-info,
@@ -425,7 +448,7 @@ h1 {
     
     h1 {
         font-size: 1.8rem !important;
-        margin: 15px 0 20px 0 !important;
+        margin: 0 20px 20px 20px !important;
     }
     
     .personal-info h2,
@@ -535,9 +558,13 @@ h1 {
                 <label for="address">Address:</label>
                 <textarea id="address" name="address"><?php echo htmlspecialchars($user['address'] ?? ''); ?></textarea>
             </div>
-            <div style="display:flex; gap:10px;">
-                <button type="submit" name="update_profile">Save Changes</button>
-                <button type="button" id="cancelEditBtn" class="btn-secondary">Cancel</button>
+            <div style="display:flex; gap:10px; justify-content: flex-start;">
+                <button type="submit" name="update_profile">
+                    <i class="fas fa-check"></i> Save Changes
+                </button>
+                <button type="button" id="cancelEditBtn" class="btn-secondary">
+                    <i class="fas fa-times"></i> Cancel
+                </button>
             </div>
         </form>
     </div>
@@ -558,9 +585,13 @@ h1 {
                 <label for="confirm_password">Confirm New Password:</label>
                 <input type="password" id="confirm_password" name="confirm_password" required>
             </div>
-            <div style="display:flex; gap:10px;">
-                <button type="submit" name="change_password">Update Password</button>
-                <button type="button" id="cancelPwBtn" class="btn-secondary">Cancel</button>
+            <div style="display:flex; gap:10px; justify-content: flex-start;">
+                <button type="submit" name="change_password">
+                    <i class="fas fa-check"></i> Update Password
+                </button>
+                <button type="button" id="cancelPwBtn" class="btn-secondary">
+                    <i class="fas fa-times"></i> Cancel
+                </button>
             </div>
         </form>
     </div>
