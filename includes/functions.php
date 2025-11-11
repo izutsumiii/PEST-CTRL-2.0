@@ -2,7 +2,106 @@
 if (session_status() == PHP_SESSION_NONE) {
     session_start();
 }
+/**
+ * Validate and apply discount code
+ * Returns array with success status, message, and discount details
+ */
+function validateAndApplyDiscount($discountCode, $userId, $cartTotal, $pdo) {
+    try {
+        // Get discount code details
+        $stmt = $pdo->prepare("
+            SELECT * FROM discount_codes 
+            WHERE code = ? AND is_active = 1
+        ");
+        $stmt->execute([strtoupper(trim($discountCode))]);
+        $discount = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if (!$discount) {
+            return ['success' => false, 'message' => 'Invalid or inactive discount code.'];
+        }
+        
+        // Check if code has expired
+        $now = date('Y-m-d H:i:s');
+        if ($now < $discount['start_date']) {
+            return ['success' => false, 'message' => 'This discount code is not yet active.'];
+        }
+        if ($discount['end_date'] && $now > $discount['end_date']) {
+            return ['success' => false, 'message' => 'This discount code has expired.'];
+        }
+        
+        // Check if user has already used this code (ONE TIME PER USER)
+        $stmt = $pdo->prepare("
+            SELECT id FROM discount_code_usage 
+            WHERE user_id = ? AND discount_code_id = ?
+        ");
+        $stmt->execute([$userId, $discount['id']]);
+        if ($stmt->fetch()) {
+            return ['success' => false, 'message' => 'You have already used this discount code.'];
+        }
+        
+        // Check minimum order amount
+        if ($cartTotal < $discount['min_order_amount']) {
+            return [
+                'success' => false, 
+                'message' => 'Minimum order amount of ₱' . number_format($discount['min_order_amount'], 2) . ' required.'
+            ];
+        }
+        
+        // Check max uses (global limit)
+        if ($discount['max_uses'] && $discount['used_count'] >= $discount['max_uses']) {
+            return ['success' => false, 'message' => 'This discount code has reached its usage limit.'];
+        }
+        
+        // Calculate discount amount
+        $discountAmount = 0;
+        if ($discount['discount_type'] === 'percentage') {
+            $discountAmount = ($cartTotal * $discount['discount_value']) / 100;
+        } else {
+            $discountAmount = $discount['discount_value'];
+        }
+        
+        // Ensure discount doesn't exceed cart total
+        $discountAmount = min($discountAmount, $cartTotal);
+        
+        return [
+            'success' => true,
+            'message' => 'Discount code applied successfully!',
+            'discount_id' => $discount['id'],
+            'discount_code' => $discount['code'],
+            'discount_amount' => $discountAmount,
+            'discount_type' => $discount['discount_type'],
+            'discount_value' => $discount['discount_value'],
+            'final_total' => $cartTotal - $discountAmount
+        ];
+        
+    } catch (PDOException $e) {
+        error_log('Discount validation error: ' . $e->getMessage());
+        return ['success' => false, 'message' => 'Error validating discount code.'];
+    }
+}
 
+/**
+ * Record discount code usage after successful payment
+ */
+function recordDiscountUsage($userId, $discountCodeId, $paymentTransactionId, $orderId, $pdo) {
+    try {
+        // Record usage
+        $stmt = $pdo->prepare("
+            INSERT INTO discount_code_usage (user_id, discount_code_id, payment_transaction_id, order_id) 
+            VALUES (?, ?, ?, ?)
+        ");
+        $stmt->execute([$userId, $discountCodeId, $paymentTransactionId, $orderId]);
+        
+        // Increment used_count in discount_codes table
+        $stmt = $pdo->prepare("UPDATE discount_codes SET used_count = used_count + 1 WHERE id = ?");
+        $stmt->execute([$discountCodeId]);
+        
+        return true;
+    } catch (PDOException $e) {
+        error_log('Error recording discount usage: ' . $e->getMessage());
+        return false;
+    }
+}
 // Auto-logout after 20 minutes of inactivity
 function checkSessionTimeout() {
     $timeout = 20 * 60; // 20 minutes in seconds
@@ -1560,6 +1659,8 @@ function validateMultiSellerCart() {
 
 // Process multi-seller checkout
 // $createOrdersImmediately: true for COD (create orders now), false for PayMongo (create orders after payment)
+// Process multi-seller checkout
+// $createOrdersImmediately: true for COD (create orders now), false for PayMongo (create orders after payment)
 function processMultiSellerCheckout($shippingAddress, $paymentMethod, $customerName = '', $customerEmail = '', $customerPhone = '', $isBuyNow = false, $createOrdersImmediately = true) {
     if (!isLoggedIn()) {
         return ['success' => false, 'message' => 'Not logged in'];
@@ -1567,6 +1668,33 @@ function processMultiSellerCheckout($shippingAddress, $paymentMethod, $customerN
     
     global $pdo;
     $userId = $_SESSION['user_id'];
+    
+    // CRITICAL: Check if we have pre-calculated grouped items from checkout page (includes discount)
+    if (isset($_SESSION['checkout_grouped_items'])) {
+        $groupedItems = $_SESSION['checkout_grouped_items'];
+        $grandTotal = isset($_SESSION['checkout_grand_total']) ? $_SESSION['checkout_grand_total'] : 0;
+        
+        // Recalculate grand total from grouped items as safety check
+        $calculatedTotal = 0;
+        foreach ($groupedItems as $sg) {
+            $calculatedTotal += $sg['subtotal'];
+        }
+        
+        // Use the calculated total if session total seems wrong
+        if ($grandTotal == 0 || abs($calculatedTotal - $grandTotal) > 0.01) {
+            $grandTotal = $calculatedTotal;
+        }
+        
+        error_log('CHECKOUT - Using pre-calculated items from session (with discount applied)');
+        error_log('CHECKOUT - Grand total: ₱' . number_format($grandTotal, 2));
+        
+        // Clear the session data after using it
+        unset($_SESSION['checkout_grouped_items']);
+        unset($_SESSION['checkout_grand_total']);
+        
+        // Skip to checkout processing
+        goto process_checkout;
+    }
     
     // HANDLE BUY NOW - Get items from session instead of cart
     // CRITICAL: Check BOTH isBuyNow parameter AND session data to ensure we're really in buy_now mode
@@ -1777,6 +1905,9 @@ function processMultiSellerCheckout($shippingAddress, $paymentMethod, $customerN
         return ['success' => false, 'message' => 'No items to checkout'];
     }
     
+    // Label for goto statement
+    process_checkout:
+    
     try {
         // Ensure primary keys are properly auto-incremented (before transaction)
         if (method_exists($pdo, 'query')) {
@@ -1824,14 +1955,17 @@ function processMultiSellerCheckout($shippingAddress, $paymentMethod, $customerN
                 $orderId = $pdo->lastInsertId();
                 
                 // CREATE SELLER NOTIFICATION FOR NEW ORDER
-                require_once __DIR__ . '/seller_notification_functions.php';
-                createSellerNotification(
-                    $sellerId,
-                    '🎉 New Order Received!',
-                    'You have a new order #' . str_pad($orderId, 6, '0', STR_PAD_LEFT) . ' totaling ₱' . number_format($sellerGroup['subtotal'], 2) . '. Please review and process it.',
-                    'success',
-                    'seller-order-details.php?order_id=' . $orderId
-                );
+                if (file_exists(__DIR__ . '/seller_notification_functions.php')) {
+                    require_once __DIR__ . '/seller_notification_functions.php';
+                    createSellerNotification(
+                        $sellerId,
+                        '🎉 New Order Received!',
+                        'You have a new order #' . str_pad($orderId, 6, '0', STR_PAD_LEFT) . ' totaling ₱' . number_format($sellerGroup['subtotal'], 2) . '. Please review and process it.',
+                        'success',
+                        'seller-order-details.php?order_id=' . $orderId
+                    );
+                }
+                
                 $createdOrders[] = [
                     'order_id' => $orderId,
                     'seller_id' => $sellerId,
@@ -1842,11 +1976,17 @@ function processMultiSellerCheckout($shippingAddress, $paymentMethod, $customerN
                 
                 // 3. Create order items for this seller's products
                 foreach ($sellerGroup['items'] as $item) {
+                    // CRITICAL: Store both original and discounted price
+                    $itemPrice = $item['price']; // This is the final price (after discount if applied)
+                    $originalPrice = isset($item['original_price']) ? $item['original_price'] : $item['price'];
+                    
+                    error_log('PROCESS CHECKOUT - Saving item: ' . $item['name'] . ' | Original: ₱' . number_format($originalPrice, 2) . ' | Final: ₱' . number_format($itemPrice, 2));
+                    
                     $stmt = $pdo->prepare("
-                        INSERT INTO order_items (order_id, product_id, quantity, price) 
-                        VALUES (?, ?, ?, ?)
+                        INSERT INTO order_items (order_id, product_id, quantity, price, original_price) 
+                        VALUES (?, ?, ?, ?, ?)
                     ");
-                    $stmt->execute([$orderId, $item['product_id'], $item['quantity'], $item['price']]);
+                    $stmt->execute([$orderId, $item['product_id'], $item['quantity'], $itemPrice, $originalPrice]);
                     
                     // 4. Update product stock
                     $stmt = $pdo->prepare("
@@ -1901,7 +2041,6 @@ function processMultiSellerCheckout($shippingAddress, $paymentMethod, $customerN
         ];
         
     } catch (Exception $e) {
-
         if ($pdo->inTransaction()) {
             $pdo->rollBack();
         }
