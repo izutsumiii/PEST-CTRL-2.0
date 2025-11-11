@@ -1959,7 +1959,7 @@ function processMultiSellerCheckout($shippingAddress, $paymentMethod, $customerN
                     require_once __DIR__ . '/seller_notification_functions.php';
                     createSellerNotification(
                         $sellerId,
-                        '🎉 New Order Received!',
+                        'New Order Received',
                         'You have a new order #' . str_pad($orderId, 6, '0', STR_PAD_LEFT) . ' totaling ₱' . number_format($sellerGroup['subtotal'], 2) . '. Please review and process it.',
                         'success',
                         'seller-order-details.php?order_id=' . $orderId

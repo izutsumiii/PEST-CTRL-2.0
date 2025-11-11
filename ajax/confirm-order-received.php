@@ -84,7 +84,7 @@ try {
     try {
         $stmt = $pdo->prepare("INSERT INTO notifications (user_id, order_id, message, type, created_at) 
                               VALUES (?, ?, ?, 'info', NOW())");
-        $message = "✅ Order #" . str_pad($orderId, 6, '0', STR_PAD_LEFT) . " has been completed! Thank you for your purchase.";
+        $message = "Order #" . str_pad($orderId, 6, '0', STR_PAD_LEFT) . " has been completed! Thank you for your purchase.";
         $stmt->execute([$userId, $orderId, $message]);
     } catch (Exception $e) {
         error_log("Failed to create customer notification: " . $e->getMessage());
@@ -107,7 +107,7 @@ try {
                 createSellerNotification(
                     $sellerId,
                     'Order Completed',
-                    '✅ Order #' . str_pad($orderId, 6, '0', STR_PAD_LEFT) . ' has been completed by customer',
+                    'Order #' . str_pad($orderId, 6, '0', STR_PAD_LEFT) . ' has been completed by customer',
                     'COMPLETE',
                     'seller-order-details.php?order_id=' . $orderId
                 );

@@ -12,7 +12,7 @@ if (!isLoggedIn()) {
 require_once 'includes/header.php';
 
 // spacer below fixed header
-echo '<div style="height:20px"></div>';
+echo '<div style="height:5px"></div>';
 
 // Handle add to cart from product detail page
 if (isset($_POST['add_to_cart'])) {
@@ -353,8 +353,9 @@ body {
 h1 {
     color: #130325 !important;
     text-align: left;
-    margin: 10px 0 20px 60px;
+    margin: 5px 0 15px 60px;
     font-size: 1.8rem;
+    text-shadow: none !important;
 }
 
 /* Alert messages */

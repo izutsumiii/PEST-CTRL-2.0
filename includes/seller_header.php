@@ -1054,13 +1054,30 @@ function clearAllSellerNotifications() {
     }
 
     // Redirect after a tiny delay to allow beacon to flush
-    let href = actionUrl && actionUrl !== '' && actionUrl !== 'null' ? actionUrl : inferSellerNotificationUrl(title||'', message||'');
+    let href = actionUrl && actionUrl !== '' && actionUrl !== 'null' && actionUrl !== 'undefined' ? actionUrl : null;
+    
+    // Infer fallback URL if missing
+    if (!href) {
+        const text = (title||'') + ' ' + (message||'');
+        const m = text.match(/Order\s*#?0*(\d{1,10})/i);
+        if (m && m[1]) {
+            href = 'seller-order-details.php?order_id=' + m[1];
+        } else if (/low stock/i.test(text)) {
+            href = 'manage-products.php';
+        } else {
+            href = 'view-orders.php';
+        }
+    }
+    
     // Override legacy action urls to exact order details when possible
     if (href && /view-orders\.php/i.test(href)) {
         const m = (String(title||'') + ' ' + String(message||'')).match(/Order\s*#?0*(\d{1,10})/i);
         if (m && m[1]) href = 'seller-order-details.php?order_id=' + m[1];
     }
-    if (href) setTimeout(() => { window.location.href = href; }, 120);
+    
+    if (href) {
+        setTimeout(() => { window.location.href = href; }, 120);
+    }
 }
 
 function markSellerNotificationAsRead(notificationId) {

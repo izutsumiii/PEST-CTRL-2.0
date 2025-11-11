@@ -5,8 +5,12 @@
             "name": "Launch PEST-CTRL in Chrome",
             "type": "chrome",
             "request": "launch",
-            "url": "http://localhost:8000/index.php",
-            "webRoot": "${workspaceFolder}"
+            "url": "http://localhost/GITHUB_PEST-CTRL/index.php",
+            "webRoot": "${workspaceFolder}",
+            "runtimeExecutable": "C://Program Files//Google//Chrome//Application//chrome.exe",
+            "runtimeArgs": [
+                "--remote-debugging-port=9222"
+            ]
         }
     ]
 }

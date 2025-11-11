@@ -37,7 +37,7 @@ if (isset($_GET['action']) && isset($_GET['id'])) {
                         try {
                             createSellerNotification(
                                 $product['seller_id'],
-                                "✅ Product Approved",
+                                "Product Approved",
                                 "Your product '{$product['name']}' (ID: #{$productId}) has been approved by admin and is now active and visible to customers.",
                                 'success',
                                 'manage-products.php'
@@ -56,7 +56,7 @@ if (isset($_GET['action']) && isset($_GET['id'])) {
                         try {
                             createSellerNotification(
                                 $product['seller_id'],
-                                "❌ Product Rejected",
+                                "Product Rejected",
                                 "Your product '{$product['name']}' (ID: #{$productId}) has been rejected by admin. Please review and resubmit if needed.",
                                 'warning',
                                 'manage-products.php'
@@ -75,7 +75,7 @@ if (isset($_GET['action']) && isset($_GET['id'])) {
                         try {
                             createSellerNotification(
                                 $product['seller_id'],
-                                "⏸️ Product Suspended",
+                                "Product Suspended",
                                 "Your product '{$product['name']}' (ID: #{$productId}) has been suspended by admin. It is temporarily hidden from customers.",
                                 'warning',
                                 'manage-products.php'
@@ -94,7 +94,7 @@ if (isset($_GET['action']) && isset($_GET['id'])) {
                         try {
                             createSellerNotification(
                                 $product['seller_id'],
-                                "✅ Product Reactivated",
+                                "Product Reactivated",
                                 "Your product '{$product['name']}' (ID: #{$productId}) has been reactivated by admin and is now active and visible to customers again.",
                                 'success',
                                 'manage-products.php'

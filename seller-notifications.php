@@ -112,7 +112,7 @@ require_once 'includes/seller_header.php';
 <main style="background:#f8f9fa; min-height:100vh; padding: 0 0 60px 0;">
   <div style="max-width: 1400px; margin-left: -150px; margin-right: auto; margin-top: -15px; padding-left: 0; padding-right: 60px;">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
-      <h1 style="color:#130325; margin:0; font-size: 28px; font-weight: 700;">Notifications <span style="background: #FFD736; color: #130325; padding: 4px 12px; border-radius: 20px; font-size: 18px; font-weight: 600; margin-left: 8px;"><?php echo count($notifications); ?> total</span> <span style="color:#6b7280; font-size:16px; font-weight:700; margin-left:8px;">(<?php echo (int)$unreadCount; ?> unread)</span></h1>
+      <h1 style="color:#130325; margin:0; font-size: 28px; font-weight: 700;">Notifications <span style="background: #FFD736; color: #130325; padding: 4px 12px; border-radius: 20px; font-size: 18px; font-weight: 600; margin-left: 8px;"><?php echo count($notifications); ?> total</span><?php if ($unreadCount > 0): ?><span style="background: #dc3545; color: #ffffff; padding: 4px 12px; border-radius: 20px; font-size: 18px; font-weight: 600; margin-left: 8px;"><?php echo (int)$unreadCount; ?> unread</span><?php endif; ?></h1>
       <?php if (!empty($notifications)): ?>
         <button onclick="markAllAsRead()" style="background:#dc3545; color:#ffffff; border:none; padding:8px 16px; border-radius:6px; cursor:pointer; font-weight:600;">
           Mark All as Read
@@ -125,7 +125,12 @@ require_once 'includes/seller_header.php';
     <?php else: ?>
       <div class="notif-list" style="display:flex; flex-direction:column; gap:12px;">
         <?php foreach ($notifications as $notification): ?>
-              <div class="notif-item" style="position: relative; cursor:pointer;" onclick="markAndGo(<?php echo (int)$notification['id']; ?>, '<?php echo htmlspecialchars($notification['action_url'] ?: '', ENT_QUOTES); ?>', '<?php echo htmlspecialchars($notification['title'], ENT_QUOTES); ?>', '<?php echo htmlspecialchars($notification['message'], ENT_QUOTES); ?>')">
+              <?php 
+              $actionUrlClick = $notification['action_url'] ? addslashes($notification['action_url']) : '';
+              $titleClick = addslashes($notification['title']);
+              $messageClick = addslashes($notification['message']);
+              ?>
+              <div class="notif-item" style="position: relative; cursor:pointer;" onclick="markAndGo(<?php echo (int)$notification['id']; ?>, <?php echo $actionUrlClick ? "'{$actionUrlClick}'" : 'null'; ?>, '<?php echo $titleClick; ?>', '<?php echo $messageClick; ?>')">
             <div style="display:flex; gap:12px; align-items:center; background:#ffffff; border:1px solid rgba(0,0,0,0.1); padding:14px; border-radius:10px; width:100%;">
               <span class="notification-status-badge <?php echo getNotificationBadgeClass($notification['title'], $notification['type']); ?>">
                 <?php echo getNotificationBadgeText($notification['title'], $notification['type']); ?>
@@ -134,13 +139,25 @@ require_once 'includes/seller_header.php';
                 <div style="color:#130325; font-weight:700;"><?php echo htmlspecialchars($notification['title']); ?></div>
                 <div style="color:#130325; opacity:0.9; font-size:0.9rem;">
                   <?php echo htmlspecialchars($notification['message']); ?>
-                  <?php if ($notification['action_url']): ?>
-                    <a href="<?php echo htmlspecialchars($notification['action_url']); ?>" onclick="event.preventDefault(); markAndGo(<?php echo (int)$notification['id']; ?>, '<?php echo htmlspecialchars($notification['action_url'] ?: '', ENT_QUOTES); ?>', '<?php echo htmlspecialchars($notification['title'], ENT_QUOTES); ?>', '<?php echo htmlspecialchars($notification['message'], ENT_QUOTES); ?>')" style="color:#130325; text-decoration:underline; margin-left:8px;">View Details</a>
-                  <?php endif; ?>
                 </div>
               </div>
-              <div style="color:#6b7280; font-size:0.8rem; white-space:nowrap; margin-right: 5px;">
-                <?php echo htmlspecialchars(date('M d, h:i A', strtotime($notification['created_at']))); ?>
+              <div style="display:flex; align-items:center; gap:12px;">
+                <div style="color:#6b7280; font-size:0.8rem; white-space:nowrap;">
+                  <?php echo htmlspecialchars(date('M d, h:i A', strtotime($notification['created_at']))); ?>
+                </div>
+                <?php 
+                $actionUrl = $notification['action_url'] ? addslashes($notification['action_url']) : '';
+                $title = addslashes($notification['title']);
+                $message = addslashes($notification['message']);
+                ?>
+                <button 
+                  onclick="event.stopPropagation(); event.preventDefault(); markAndGo(<?php echo (int)$notification['id']; ?>, <?php echo $actionUrl ? "'{$actionUrl}'" : 'null'; ?>, '<?php echo $title; ?>', '<?php echo $message; ?>')" 
+                  style="background: transparent; color: #130325; border: 1px solid rgba(19, 3, 37, 0.2); border-radius: 8px; padding: 8px 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.3s ease; width: 36px; height: 36px;"
+                  onmouseover="this.style.backgroundColor='rgba(19, 3, 37, 0.05)'; this.style.borderColor='rgba(19, 3, 37, 0.3)'; this.style.transform='translateY(-2px)';"
+                  onmouseout="this.style.backgroundColor='transparent'; this.style.borderColor='rgba(19, 3, 37, 0.2)'; this.style.transform='translateY(0)';"
+                  title="View Details">
+                  <i class="fas fa-eye" style="color: #130325; font-size: 14px;"></i>
+                </button>
               </div>
             </div>
           </div>
@@ -152,23 +169,119 @@ require_once 'includes/seller_header.php';
 
 <script>
 function markAndGo(notificationId, actionUrl, title, message){
+  console.log('=== SELLER NOTIFICATION REDIRECT DEBUG ===');
+  console.log('Notification ID:', notificationId);
+  console.log('Action URL (raw):', actionUrl);
+  console.log('Action URL type:', typeof actionUrl);
+  console.log('Title:', title);
+  console.log('Message:', message);
+  
   // Mark as read
   try {
     navigator.sendBeacon('ajax/mark-seller-notification-read.php', new Blob([JSON.stringify({ notification_id: notificationId })], { type:'application/json' }));
-  } catch(_){
-    fetch('ajax/mark-seller-notification-read.php', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ notification_id: notificationId }), credentials:'same-origin', keepalive:true }).catch(()=>{});
+    console.log('Marked as read via sendBeacon');
+  } catch(e){
+    console.log('sendBeacon failed, using fetch:', e);
+    fetch('ajax/mark-seller-notification-read.php', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ notification_id: notificationId }), credentials:'same-origin', keepalive:true }).catch((err)=>{console.error('Fetch failed:', err);});
   }
-  // Infer fallback URL if missing
-  let href = actionUrl;
-  if (!href) {
-    const text = (title||'') + ' ' + (message||'');
-    const m = text.match(/Order\s*#?(\d{1,10})/i);
-    if (m && m[1]) href = 'seller-order-details.php?order_id=' + m[1];
-    else if (/low stock/i.test(text)) href = 'manage-products.php';
-    else href = 'view-orders.php';
+  
+  // Always extract order ID from title/message first for order-related notifications
+  const text = (title||'') + ' ' + (message||'');
+  let orderId = null;
+  let returnId = null;
+  
+  // Extract order ID (supports formats like "Order #000123", "Order 123", "order_id=123", etc.)
+  const orderMatch = text.match(/(?:Order\s*#?0*|order_id[=:])\s*(\d{1,10})/i);
+  if (orderMatch && orderMatch[1]) {
+    orderId = orderMatch[1];
+    console.log('Extracted Order ID:', orderId);
   }
+  
+  // Extract return ID (for return request notifications)
+  const returnMatch = text.match(/(?:return_id[=:]|return\s*request\s*#?)\s*(\d{1,10})/i);
+  if (returnMatch && returnMatch[1]) {
+    returnId = returnMatch[1];
+    console.log('Extracted Return ID:', returnId);
+  }
+  
+  // Check action URL for order_id or return_id parameters
+  if (actionUrl) {
+    const urlOrderMatch = actionUrl.match(/[?&]order_id=(\d+)/i);
+    if (urlOrderMatch && urlOrderMatch[1]) {
+      orderId = urlOrderMatch[1];
+      console.log('Extracted Order ID from action URL:', orderId);
+    }
+    const urlReturnMatch = actionUrl.match(/[?&]return_id=(\d+)/i);
+    if (urlReturnMatch && urlReturnMatch[1]) {
+      returnId = urlReturnMatch[1];
+      console.log('Extracted Return ID from action URL:', returnId);
+    }
+  }
+  
+  // Determine final href
+  let href = null;
+  
+  // Priority 1: Return requests go to seller-returns.php
+  if (returnId || (text.toLowerCase().includes('return request') && orderId)) {
+    if (returnId) {
+      href = 'seller-returns.php?return_id=' + returnId;
+      console.log('Redirecting to return request:', href);
+    } else if (orderId) {
+      // Try to find return_id from action_url or use order_id
+      const actionReturnMatch = actionUrl ? actionUrl.match(/[?&]return_id=(\d+)/i) : null;
+      if (actionReturnMatch && actionReturnMatch[1]) {
+        href = 'seller-returns.php?return_id=' + actionReturnMatch[1];
+      } else {
+        href = 'seller-returns.php?order_id=' + orderId;
+      }
+      console.log('Redirecting to return request (inferred):', href);
+    }
+  }
+  // Priority 2: Orders go to seller-order-details.php
+  else if (orderId) {
+    href = 'seller-order-details.php?order_id=' + orderId;
+    console.log('Redirecting to order details:', href);
+  }
+  // Priority 3: Use action URL if provided and valid
+  else if (actionUrl && actionUrl !== '' && actionUrl !== 'null' && actionUrl !== 'undefined') {
+    href = actionUrl;
+    console.log('Using action URL:', href);
+    
+    // Override view-orders.php to order details if we can extract order ID
+    if (/view-orders\.php/i.test(href) && orderId) {
+      href = 'seller-order-details.php?order_id=' + orderId;
+      console.log('Overridden view-orders.php to order details:', href);
+    }
+  }
+  // Priority 4: Infer from text content
+  else {
+    console.log('No href found, inferring from title/message...');
+    if (/low stock/i.test(text)) {
+      href = 'manage-products.php';
+      console.log('Inferred from low stock:', href);
+    } else if (orderId) {
+      href = 'seller-order-details.php?order_id=' + orderId;
+      console.log('Inferred order details from text:', href);
+    } else {
+      href = 'view-orders.php';
+      console.log('Using default fallback:', href);
+    }
+  }
+  
+  console.log('Final href:', href);
+  
   // Navigate
-  setTimeout(()=>{ window.location.href = href; }, 120);
+  if (href) {
+    console.log('Redirecting to:', href);
+    setTimeout(()=>{ 
+      console.log('Executing redirect now...');
+      window.location.href = href; 
+    }, 120);
+  } else {
+    console.error('ERROR: No href to redirect to!');
+    alert('Error: Could not determine redirect URL. Check console for details.');
+  }
+  console.log('=== END DEBUG ===');
 }
 // Custom styled confirmation dialog function
 function openConfirm(message, onConfirm) {

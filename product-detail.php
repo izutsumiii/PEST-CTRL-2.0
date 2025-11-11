@@ -169,8 +169,14 @@ body {
 
 main {
     background: transparent !important;
-    padding: 8px 0 80px 0 !important; /* reduce top spacing */
+    padding: 0 0 80px 0 !important; /* reduce top spacing */
     margin: 0 !important;
+}
+
+main h1,
+main h2,
+main h3 {
+    text-shadow: none !important;
 }
 
 /* Container */
@@ -1140,7 +1146,7 @@ main {
     color: rgba(255, 215, 54, 0.3);
     cursor: pointer;
     transition: all 0.2s;
-    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+    text-shadow: none;
 }
 
 .star-rating label:hover,

@@ -369,7 +369,15 @@ function statusBadge($status) {
 <main style="background:#f8f9fa; min-height:100vh; padding: 20px 0 60px 0;">
   <div style="max-width: 1400px; margin: 0 auto; padding: 0 60px;">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
-      <h1 style="color:#130325; margin:0; font-size: 28px; font-weight: 700;">Notifications <span style="background: #FFD736; color: #130325; padding: 4px 12px; border-radius: 20px; font-size: 18px; font-weight: 600; margin-left: 8px;"><?php echo count($events); ?> total</span></h1>
+      <?php 
+      $unreadCount = 0;
+      foreach ($events as $e) {
+          if (empty($e['is_read'])) {
+              $unreadCount++;
+          }
+      }
+      ?>
+      <h1 style="color:#130325; margin:0; font-size: 28px; font-weight: 700; text-shadow: none;">Notifications <span style="background: #FFD736; color: #130325; padding: 4px 12px; border-radius: 20px; font-size: 18px; font-weight: 600; margin-left: 8px;"><?php echo count($events); ?> total</span><?php if ($unreadCount > 0): ?><span style="background: #dc3545; color: #ffffff; padding: 4px 12px; border-radius: 20px; font-size: 18px; font-weight: 600; margin-left: 8px;"><?php echo $unreadCount; ?> unread</span><?php endif; ?></h1>
       <?php if (!empty($events)): ?>
         <form method="POST" style="margin:0;" id="deleteAllForm">
             <input type="hidden" name="delete_notifications" value="1">
@@ -468,7 +476,14 @@ if (!empty($e['return_status'])) {
                 </div>
                 <div style="display:flex; align-items:center; gap:10px; white-space:nowrap;">
                   <span style="color:#130325; opacity:0.8; font-size:0.85rem;"><?php echo htmlspecialchars(date('M d, Y h:i A', strtotime($e['updated_at'] ?: $e['created_at']))); ?></span>
-                  <i class="fas fa-eye" style="color:#130325; font-size:14px;"></i>
+                  <button 
+                    onclick="event.stopPropagation(); window.location.href='order-details.php?id=<?php echo (int)$e['order_id']; ?>';"
+                    style="background: transparent !important; color: #130325 !important; border: 1px solid rgba(19, 3, 37, 0.2) !important; border-radius: 8px; padding: 8px 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.3s ease; width: 36px; height: 36px; box-sizing: border-box;"
+                    onmouseover="this.style.backgroundColor='rgba(19, 3, 37, 0.05)'; this.style.borderColor='rgba(19, 3, 37, 0.3)'; this.style.transform='translateY(-2px)';"
+                    onmouseout="this.style.backgroundColor='transparent'; this.style.borderColor='rgba(19, 3, 37, 0.2)'; this.style.transform='translateY(0)';"
+                    title="View Details">
+                    <i class="fas fa-eye" style="color: #130325; font-size: 14px;"></i>
+                  </button>
                 </div>
               </div>
             </a>
@@ -608,8 +623,9 @@ function updateNotificationsDisplay(items, unreadCount) {
     const header = document.querySelector('h1');
     if (header) {
         const totalText = items.length === 1 ? '1 total' : `${items.length} total`;
-        const unreadText = unreadCount > 0 ? `, ${unreadCount} unread` : '';
-        header.innerHTML = `Notifications <span style="background: #FFD736; color: #130325; padding: 4px 12px; border-radius: 20px; font-size: 18px; font-weight: 600; margin-left: 8px;">${totalText}${unreadText}</span>`;
+        const unreadBadge = unreadCount > 0 ? `<span style="background: #dc3545; color: #ffffff; padding: 4px 12px; border-radius: 20px; font-size: 18px; font-weight: 600; margin-left: 8px;">${unreadCount} unread</span>` : '';
+        header.innerHTML = `Notifications <span style="background: #FFD736; color: #130325; padding: 4px 12px; border-radius: 20px; font-size: 18px; font-weight: 600; margin-left: 8px;">${totalText}</span>${unreadBadge}`;
+        header.style.textShadow = 'none';
     }
 
     // Show/hide clear all button based on notifications
@@ -701,7 +717,14 @@ notifDiv.addEventListener('click', function(e) {
                 </div>
                 <div style="display:flex; align-items:center; gap:10px; white-space:nowrap;">
                     <span style="color:#130325; opacity:0.8; font-size:0.85rem;">${item.updated_at_human}</span>
-                    <i class=\"fas fa-eye\" style=\"color:#130325; font-size:14px;\"></i>
+                    <button 
+                        onclick=\"event.stopPropagation(); window.location.href='order-details.php?id=${item.order_id}';\" 
+                        style=\"background: transparent !important; color: #130325 !important; border: 1px solid rgba(19, 3, 37, 0.2) !important; border-radius: 8px; padding: 8px 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.3s ease; width: 36px; height: 36px; box-sizing: border-box;\"
+                        onmouseover=\"this.style.backgroundColor='rgba(19, 3, 37, 0.05)'; this.style.borderColor='rgba(19, 3, 37, 0.3)'; this.style.transform='translateY(-2px)';\"
+                        onmouseout=\"this.style.backgroundColor='transparent'; this.style.borderColor='rgba(19, 3, 37, 0.2)'; this.style.transform='translateY(0)';\"
+                        title=\"View Details\">
+                        <i class=\"fas fa-eye\" style=\"color: #130325; font-size: 14px;\"></i>
+                    </button>
                 </div>
             </div>
         `;
@@ -721,7 +744,14 @@ notifDiv.addEventListener('click', function(e) {
                 </div>
                 <div style="display:flex; align-items:center; gap:10px; white-space:nowrap;">
                     <span style="color:#130325; opacity:0.8; font-size:0.85rem;">${item.updated_at_human}</span>
-                    <i class=\"fas fa-eye\" style=\"color:#130325; font-size:14px;\"></i>
+                    <button 
+                        onclick=\"event.stopPropagation(); window.location.href='order-details.php?id=${item.order_id}';\" 
+                        style=\"background: transparent !important; color: #130325 !important; border: 1px solid rgba(19, 3, 37, 0.2) !important; border-radius: 8px; padding: 8px 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.3s ease; width: 36px; height: 36px; box-sizing: border-box;\"
+                        onmouseover=\"this.style.backgroundColor='rgba(19, 3, 37, 0.05)'; this.style.borderColor='rgba(19, 3, 37, 0.3)'; this.style.transform='translateY(-2px)';\"
+                        onmouseout=\"this.style.backgroundColor='transparent'; this.style.borderColor='rgba(19, 3, 37, 0.2)'; this.style.transform='translateY(0)';\"
+                        title=\"View Details\">
+                        <i class=\"fas fa-eye\" style=\"color: #130325; font-size: 14px;\"></i>
+                    </button>
                 </div>
             </div>
         `;

@@ -83,7 +83,7 @@ if (isset($_GET['action']) || (isset($_POST['action']) && $_POST['action'] === '
                         // Create seller notification with reason
                         createSellerNotification(
                             $actionSellerId > 0 ? $actionSellerId : $actionSeller['id'],
-                            "⏸️ Account Suspended",
+                            "Account Suspended",
                             "Your seller account has been suspended by admin. Reason: " . htmlspecialchars($suspendReason),
                             'warning',
                             'seller-dashboard.php'

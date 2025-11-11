@@ -90,7 +90,7 @@ main {
 
 .profile-header {
     max-width: 1000px;
-    margin: 10px auto 20px auto;
+    margin: 5px auto 15px auto;
     padding: 20px;
     background: #ffffff;
     border: 1px solid rgba(0, 0, 0, 0.1);
@@ -194,8 +194,9 @@ main {
 .profile-editor h3 {
     color: var(--primary-light);
     text-align: center;
-    margin: 20px 0;
+    margin: 10px 0;
     font-size: 2rem;
+    text-shadow: none !important;
 }
 
 /* Main profile editor container */
@@ -204,7 +205,7 @@ main {
     grid-template-columns: 1fr 1fr;
     gap: 40px;
     max-width: 1000px;
-    margin: 0 auto 20px auto;
+    margin: 10px auto 20px auto;
     padding: 0 20px;
 }
 
@@ -222,6 +223,7 @@ main {
 .password-change h2 {
     color: #130325;
     margin-bottom: 20px;
+    text-shadow: none !important;
     font-size: 1.5rem;
     padding-bottom: 10px;
     border-bottom: 2px solid #F0F2F5;

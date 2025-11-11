@@ -115,8 +115,11 @@ require_once 'includes/admin_header.php';
                     }
                   ?>
                     <button onclick="event.stopPropagation(); markAsReadAndRedirect(<?php echo $notification['id']; ?>, '<?php echo htmlspecialchars($actionUrl, ENT_QUOTES); ?>')" 
-                            style="background:#130325; color:#ffffff; border:none; padding:6px 10px; border-radius:6px; cursor:pointer; font-size:12px; display:flex; align-items:center; gap:4px; transition:all 0.2s; flex-shrink:0;">
-                      <i class="fas fa-eye"></i>
+                            style="background: transparent; color: #130325; border: 1px solid rgba(19, 3, 37, 0.2); border-radius: 8px; padding: 8px 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.3s ease; width: 36px; height: 36px;"
+                            onmouseover="this.style.backgroundColor='rgba(19, 3, 37, 0.05)'; this.style.borderColor='rgba(19, 3, 37, 0.3)'; this.style.transform='translateY(-2px)';"
+                            onmouseout="this.style.backgroundColor='transparent'; this.style.borderColor='rgba(19, 3, 37, 0.2)'; this.style.transform='translateY(0)';"
+                            title="View Details">
+                      <i class="fas fa-eye" style="color: #130325; font-size: 14px;"></i>
                     </button>
                   <?php endif; ?>
                 </div>

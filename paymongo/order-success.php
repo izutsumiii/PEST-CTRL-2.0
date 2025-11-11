@@ -104,7 +104,6 @@ try {
         $stmt = $pdo->prepare("SELECT * FROM orders WHERE id = ?");
         $stmt->execute([$orderId]);
         $order = $stmt->fetch(PDO::FETCH_ASSOC);
-<<<<<<< HEAD
         
         // Get transaction details if available
         $transaction = null;
@@ -293,10 +292,11 @@ try {
         }
         
         // CRITICAL: Check if orders already exist for this transaction
-    } elseif ($transaction) {
-        $stmt = $pdo->prepare("SELECT * FROM orders WHERE payment_transaction_id = ? LIMIT 1");
-        $stmt->execute([$transactionId]);
-        $order = $stmt->fetch(PDO::FETCH_ASSOC);
+        if ($transaction) {
+            $stmt = $pdo->prepare("SELECT * FROM orders WHERE payment_transaction_id = ? LIMIT 1");
+            $stmt->execute([$transactionId]);
+            $order = $stmt->fetch(PDO::FETCH_ASSOC);
+        }
     }
     
     // If no order found, check if transaction exists and is completed
