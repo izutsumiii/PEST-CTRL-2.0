@@ -7,10 +7,90 @@ if (!isLoggedIn() || !isAdmin()) {
     exit();
 }
 
+// Handle discount code operations that redirect - MUST be before header output
+if (isset($_POST['create_discount_code'])) {
+    $code = strtoupper(trim(sanitizeInput($_POST['discount_code'])));
+    $discountType = sanitizeInput($_POST['discount_type']); // 'percentage' or 'fixed'
+    $discountValue = floatval($_POST['discount_value']);
+    $minOrderAmount = floatval($_POST['min_order_amount']);
+    $maxUses = intval($_POST['max_uses']);
+    $startDate = !empty($_POST['start_date']) ? date('Y-m-d H:i:s', strtotime($_POST['start_date'])) : date('Y-m-d H:i:s');
+    $endDate = !empty($_POST['end_date']) ? date('Y-m-d H:i:s', strtotime($_POST['end_date'])) : null;
+    $isActive = isset($_POST['is_active']) ? 1 : 0;
+    
+    if (empty($code)) {
+        $_SESSION['admin_error'] = "Discount code cannot be empty.";
+        header("Location: admin-settings.php?section=order");
+        exit();
+    } elseif ($discountValue <= 0) {
+        $_SESSION['admin_error'] = "Discount value must be greater than 0.";
+        header("Location: admin-settings.php?section=order");
+        exit();
+    } elseif ($discountType === 'percentage' && $discountValue > 100) {
+        $_SESSION['admin_error'] = "Percentage discount cannot exceed 100%.";
+        header("Location: admin-settings.php?section=order");
+        exit();
+    } else {
+        try {
+            $pdo->exec("CREATE TABLE IF NOT EXISTS discount_codes (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                code VARCHAR(50) NOT NULL UNIQUE,
+                discount_type ENUM('percentage', 'fixed') NOT NULL DEFAULT 'percentage',
+                discount_value DECIMAL(10,2) NOT NULL,
+                min_order_amount DECIMAL(10,2) DEFAULT 0,
+                max_uses INT DEFAULT NULL,
+                used_count INT DEFAULT 0,
+                start_date DATETIME NOT NULL,
+                end_date DATETIME NULL,
+                is_active TINYINT(1) DEFAULT 1,
+                created_by INT NULL,
+                created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+            
+            $stmt = $pdo->prepare("INSERT INTO discount_codes (code, discount_type, discount_value, min_order_amount, max_uses, start_date, end_date, is_active, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            $stmt->execute([$code, $discountType, $discountValue, $minOrderAmount, $maxUses > 0 ? $maxUses : null, $startDate, $endDate, $isActive, $_SESSION['user_id']]);
+            $_SESSION['admin_success'] = "Discount code '{$code}' created successfully!";
+            // Redirect to maintain section parameter
+            header("Location: admin-settings.php?section=order");
+            exit();
+        } catch (PDOException $e) {
+            if (strpos($e->getMessage(), 'Duplicate entry') !== false) {
+                $_SESSION['admin_error'] = "Discount code '{$code}' already exists.";
+            } else {
+                $_SESSION['admin_error'] = "Error creating discount code: " . $e->getMessage();
+            }
+            header("Location: admin-settings.php?section=order");
+            exit();
+        }
+    }
+}
+
+if (isset($_GET['delete_discount']) && is_numeric($_GET['delete_discount'])) {
+    $id = intval($_GET['delete_discount']);
+    try {
+        $stmt = $pdo->prepare("DELETE FROM discount_codes WHERE id = ?");
+        $stmt->execute([$id]);
+        $_SESSION['admin_success'] = "Discount code deleted successfully!";
+        // Redirect to maintain section parameter
+        header("Location: admin-settings.php?section=order");
+        exit();
+    } catch (PDOException $e) {
+        $_SESSION['admin_error'] = "Error deleting discount code: " . $e->getMessage();
+        header("Location: admin-settings.php?section=order");
+        exit();
+    }
+}
+
 require_once 'includes/admin_header.php';
 
-$success = '';
-$error = '';
+// Get success/error messages from session (set by form processing before header)
+$success = isset($_SESSION['admin_success']) ? $_SESSION['admin_success'] : '';
+$error = isset($_SESSION['admin_error']) ? $_SESSION['admin_error'] : '';
+// Clear session messages after reading
+unset($_SESSION['admin_success'], $_SESSION['admin_error']);
+
 $currentSection = isset($_GET['section']) ? sanitizeInput($_GET['section']) : 'order';
 
 // Get current grace period setting
@@ -196,58 +276,7 @@ try {
     $maintenanceAuto = '0';
 }
 
-// Handle discount code operations
-if (isset($_POST['create_discount_code'])) {
-    $code = strtoupper(trim(sanitizeInput($_POST['discount_code'])));
-    $discountType = sanitizeInput($_POST['discount_type']); // 'percentage' or 'fixed'
-    $discountValue = floatval($_POST['discount_value']);
-    $minOrderAmount = floatval($_POST['min_order_amount']);
-    $maxUses = intval($_POST['max_uses']);
-    $startDate = !empty($_POST['start_date']) ? date('Y-m-d H:i:s', strtotime($_POST['start_date'])) : date('Y-m-d H:i:s');
-    $endDate = !empty($_POST['end_date']) ? date('Y-m-d H:i:s', strtotime($_POST['end_date'])) : null;
-    $isActive = isset($_POST['is_active']) ? 1 : 0;
-    
-    if (empty($code)) {
-        $error = "Discount code cannot be empty.";
-    } elseif ($discountValue <= 0) {
-        $error = "Discount value must be greater than 0.";
-    } elseif ($discountType === 'percentage' && $discountValue > 100) {
-        $error = "Percentage discount cannot exceed 100%.";
-    } else {
-        try {
-            $pdo->exec("CREATE TABLE IF NOT EXISTS discount_codes (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                code VARCHAR(50) NOT NULL UNIQUE,
-                discount_type ENUM('percentage', 'fixed') NOT NULL DEFAULT 'percentage',
-                discount_value DECIMAL(10,2) NOT NULL,
-                min_order_amount DECIMAL(10,2) DEFAULT 0,
-                max_uses INT DEFAULT NULL,
-                used_count INT DEFAULT 0,
-                start_date DATETIME NOT NULL,
-                end_date DATETIME NULL,
-                is_active TINYINT(1) DEFAULT 1,
-                created_by INT NULL,
-                created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-                FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
-            
-            $stmt = $pdo->prepare("INSERT INTO discount_codes (code, discount_type, discount_value, min_order_amount, max_uses, start_date, end_date, is_active, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
-            $stmt->execute([$code, $discountType, $discountValue, $minOrderAmount, $maxUses > 0 ? $maxUses : null, $startDate, $endDate, $isActive, $_SESSION['user_id']]);
-            $success = "Discount code '{$code}' created successfully!";
-            // Redirect to maintain section parameter
-            header("Location: admin-settings.php?section=order");
-            exit();
-        } catch (PDOException $e) {
-            if (strpos($e->getMessage(), 'Duplicate entry') !== false) {
-                $error = "Discount code '{$code}' already exists.";
-            } else {
-                $error = "Error creating discount code: " . $e->getMessage();
-            }
-        }
-    }
-}
-
+// Handle discount code update (no redirect needed, so can stay after header)
 if (isset($_POST['update_discount_code'])) {
     $id = intval($_POST['discount_id']);
     $code = strtoupper(trim(sanitizeInput($_POST['discount_code'])));
@@ -265,20 +294,6 @@ if (isset($_POST['update_discount_code'])) {
         $success = "Discount code updated successfully!";
     } catch (PDOException $e) {
         $error = "Error updating discount code: " . $e->getMessage();
-    }
-}
-
-if (isset($_GET['delete_discount']) && is_numeric($_GET['delete_discount'])) {
-    $id = intval($_GET['delete_discount']);
-    try {
-        $stmt = $pdo->prepare("DELETE FROM discount_codes WHERE id = ?");
-        $stmt->execute([$id]);
-        $success = "Discount code deleted successfully!";
-        // Redirect to maintain section parameter
-        header("Location: admin-settings.php?section=order");
-        exit();
-    } catch (PDOException $e) {
-        $error = "Error deleting discount code: " . $e->getMessage();
     }
 }
 

@@ -13,8 +13,100 @@ if (!isLoggedIn()) {
     header("Location: ../login.php");
     exit();
 }
-
+// Handle discount code application (AJAX)
+if (isset($_POST['apply_discount'])) {
+    header('Content-Type: application/json');
+    
+    $discountCode = strtoupper(trim($_POST['discount_code'] ?? ''));
+    $cartTotal = floatval($_POST['cart_total'] ?? 0);
+    
+    if (empty($discountCode)) {
+        echo json_encode(['success' => false, 'message' => 'Please enter a discount code.']);
+        exit();
+    }
+    
+    try {
+        // Validate discount code
+        $stmt = $pdo->prepare("SELECT * FROM discount_codes WHERE code = ? AND is_active = 1");
+        $stmt->execute([$discountCode]);
+        $discount = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if (!$discount) {
+            echo json_encode(['success' => false, 'message' => 'Invalid discount code.']);
+            exit();
+        }
+        
+        // Check if discount has started
+        $now = date('Y-m-d H:i:s');
+        if ($now < $discount['start_date']) {
+            echo json_encode(['success' => false, 'message' => 'This discount code is not yet active.']);
+            exit();
+        }
+        
+        // Check if discount has expired
+        if ($discount['end_date'] && $now > $discount['end_date']) {
+            echo json_encode(['success' => false, 'message' => 'This discount code has expired.']);
+            exit();
+        }
+        
+        // Check minimum order amount
+        if ($cartTotal < $discount['min_order_amount']) {
+            echo json_encode([
+                'success' => false, 
+                'message' => 'Minimum order amount of ₱' . number_format($discount['min_order_amount'], 2) . ' required.'
+            ]);
+            exit();
+        }
+        
+        // Check maximum uses
+        if ($discount['max_uses'] && $discount['used_count'] >= $discount['max_uses']) {
+            echo json_encode(['success' => false, 'message' => 'This discount code has reached its usage limit.']);
+            exit();
+        }
+        
+        // Calculate discount amount
+        if ($discount['discount_type'] === 'percentage') {
+            $discountAmount = ($cartTotal * $discount['discount_value']) / 100;
+        } else {
+            $discountAmount = $discount['discount_value'];
+        }
+        
+        // Ensure discount doesn't exceed cart total
+        $discountAmount = min($discountAmount, $cartTotal);
+        $finalTotal = $cartTotal - $discountAmount;
+        
+        // Store in session
+        $_SESSION['applied_discount'] = [
+            'discount_id' => $discount['id'],
+            'discount_code' => $discount['code'],
+            'discount_type' => $discount['discount_type'],
+            'discount_value' => $discount['discount_value'],
+            'discount_amount' => $discountAmount,
+            'original_total' => $cartTotal,
+            'final_total' => $finalTotal
+        ];
+        
+        echo json_encode([
+            'success' => true, 
+            'message' => 'Discount code applied successfully!',
+            'discount_amount' => $discountAmount,
+            'final_total' => $finalTotal
+        ]);
+        exit();
+        
+    } catch (PDOException $e) {
+        error_log('Discount validation error: ' . $e->getMessage());
+        echo json_encode(['success' => false, 'message' => 'Error validating discount code.']);
+        exit();
+    }
+}
 $userId = $_SESSION['user_id'];
+
+// Initialize discount session
+if (!isset($_SESSION['applied_discount'])) {
+    $_SESSION['applied_discount'] = null;
+}
+
 
 // DEBUG: Check cart immediately
 $debugCartCheck = $pdo->prepare("SELECT COUNT(*) as count, SUM(quantity) as total_qty FROM cart WHERE user_id = ?");
@@ -305,8 +397,65 @@ foreach ($groupedItems as $sg) {
     $grandTotal += $sg['subtotal'];
 }
 
-error_log('CHECKOUT - Final groupedItems count: ' . count($groupedItems) . ', Final grandTotal: ' . $grandTotal);
+// Apply discount if exists in session
+$discountAmount = 0;
+$finalTotal = $grandTotal;
 
+if (isset($_SESSION['applied_discount']) && $_SESSION['applied_discount']) {
+    $discount = $_SESSION['applied_discount'];
+    
+    // Recalculate discount based on current cart total (in case cart changed)
+    if ($discount['discount_type'] === 'percentage') {
+        $discountAmount = ($grandTotal * $discount['discount_value']) / 100;
+    } else {
+        $discountAmount = $discount['discount_value'];
+    }
+    
+    // Ensure discount doesn't exceed cart total
+    $discountAmount = min($discountAmount, $grandTotal);
+    $finalTotal = $grandTotal - $discountAmount;
+    
+    // Apply proportional discount to each item
+    if ($discountAmount > 0 && $grandTotal > 0) {
+        $discountRatio = $finalTotal / $grandTotal;
+        
+        foreach ($groupedItems as $sellerId => &$sellerGroup) {
+            $newSubtotal = 0;
+            
+            // Apply discount ratio to each item
+            foreach ($sellerGroup['items'] as &$item) {
+                // Store original price before discount
+                $item['original_price'] = $item['price'];
+                
+                // Apply discount to item price
+                $item['price'] = $item['price'] * $discountRatio;
+                
+                // Recalculate item subtotal
+                $newSubtotal += $item['price'] * $item['quantity'];
+            }
+            
+            // Update seller subtotal
+            $sellerGroup['subtotal'] = $newSubtotal;
+        }
+        unset($sellerGroup); // Break reference
+        unset($item); // Break reference
+    }
+    
+    // Update session with recalculated values
+    $_SESSION['applied_discount']['discount_amount'] = $discountAmount;
+    $_SESSION['applied_discount']['original_total'] = $grandTotal;
+    $_SESSION['applied_discount']['final_total'] = $finalTotal;
+}
+
+// AJAX: Remove discount code
+if (isset($_POST['remove_discount'])) {
+    header('Content-Type: application/json');
+    unset($_SESSION['applied_discount']);
+    echo json_encode(['success' => true, 'message' => 'Discount code removed.']);
+    exit();
+}
+// Handle form submission
+$errors = [];
 // Handle form submission
 $errors = [];
 
@@ -330,6 +479,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['checkout'])) {
             ensureAutoIncrementPrimary('orders');
         }
         
+        // CRITICAL: Store the grouped items with discount applied for checkout
+        $_SESSION['checkout_grouped_items'] = $groupedItems;
+        $_SESSION['checkout_grand_total'] = $finalTotal; // Use finalTotal (after discount)
+        
         // For PayMongo payments, only create payment transaction (NOT orders yet)
         // Orders will be created AFTER payment is confirmed
         $createOrdersImmediately = !in_array($paymentMethod, ['card', 'gcash', 'paymaya', 'grab_pay', 'billease']);
@@ -337,6 +490,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['checkout'])) {
         $result = processMultiSellerCheckout($shippingAddress, $paymentMethod, $customerName, $customerEmail, $customerPhone, $isBuyNow, $createOrdersImmediately);
         
         if ($result['success']) {
+            // Save discount information if applied
+            if (isset($_SESSION['applied_discount']) && $_SESSION['applied_discount']) {
+                $discount = $_SESSION['applied_discount'];
+                try {
+                    // Update payment_transactions with discount info
+                    $stmt = $pdo->prepare("
+                        UPDATE payment_transactions 
+                        SET discount_code_id = ?, 
+                            discount_amount = ?, 
+                            final_amount = ? 
+                        WHERE id = ?
+                    ");
+                    $stmt->execute([
+                        $discount['discount_id'],
+                        $discount['discount_amount'],
+                        $discount['final_total'],
+                        $result['payment_transaction_id']
+                    ]);
+                    
+                    // Record discount usage (will be finalized after payment success)
+                    $_SESSION['pending_discount_id'] = $discount['discount_id'];
+                    
+                    error_log('CHECKOUT - Discount saved to payment_transactions: ' . $discount['discount_code']);
+                } catch (Exception $e) {
+                    error_log('CHECKOUT - Error saving discount: ' . $e->getMessage());
+                }
+            }
+            
             if ($isBuyNow) {
                 unset($_SESSION['buy_now_active']);
                 unset($_SESSION['buy_now_data']);
@@ -349,24 +530,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['checkout'])) {
                 error_log('CHECKOUT - Creating PayMongo checkout session for transaction: ' . $result['payment_transaction_id']);
                 // Store cart items in session for order creation after payment success
                 $_SESSION['pending_checkout_items'] = $groupedItems;
-                $_SESSION['pending_checkout_grand_total'] = $grandTotal;
+                $_SESSION['pending_checkout_grand_total'] = $finalTotal; // Use finalTotal (after discount)
                 $_SESSION['pending_checkout_transaction_id'] = $result['payment_transaction_id'];
                 $_SESSION['pending_customer_name'] = $customerName;
                 $_SESSION['pending_customer_email'] = $customerEmail;
                 $_SESSION['pending_customer_phone'] = $customerPhone;
                 $_SESSION['pending_shipping_address'] = $shippingAddress;
                 
-                $redirectUrl = createPayMongoCheckoutSession($result['payment_transaction_id'], $customerName, $customerEmail, $customerPhone, $shippingAddress, $groupedItems, $grandTotal, $paymentMethod);
+                $redirectUrl = createPayMongoCheckoutSession($result['payment_transaction_id'], $customerName, $customerEmail, $customerPhone, $shippingAddress, $groupedItems, $finalTotal, $paymentMethod);
                 if ($redirectUrl) {
                     error_log('CHECKOUT - PayMongo redirect URL: ' . $redirectUrl);
                     
                     // Extract checkout_session_id from redirect URL and store it
-                    // PayMongo redirect URL format: https://checkout.paymongo.com/cs_XXXXX...
                     if (preg_match('/\/cs_([a-zA-Z0-9]+)/', $redirectUrl, $matches)) {
                         $checkoutSessionId = $matches[1];
                         error_log('CHECKOUT - Extracted checkout_session_id: ' . $checkoutSessionId);
                         
-                        // Store checkout_session_id in payment_transactions
                         try {
                             $stmt = $pdo->prepare("UPDATE payment_transactions SET paymongo_session_id = ? WHERE id = ?");
                             $stmt->execute([$checkoutSessionId, $result['payment_transaction_id']]);
@@ -406,6 +585,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['checkout'])) {
                             createOrderNotification($userId, $orderId, $message, 'order_placed');
                         }
                     }
+                    
+                    // Clear applied discount after successful COD checkout
+                    if (isset($_SESSION['applied_discount']) && $_SESSION['applied_discount']) {
+                        $discount = $_SESSION['applied_discount'];
+                        // Record discount usage for COD (immediate)
+                        if (isset($discount['discount_id'])) {
+                            try {
+                                recordDiscountUsage($userId, $discount['discount_id'], $result['payment_transaction_id'], null, $pdo);
+                                error_log('CHECKOUT - Discount usage recorded for COD payment');
+                            } catch (Exception $e) {
+                                error_log('CHECKOUT - Error recording discount usage: ' . $e->getMessage());
+                            }
+                        }
+                        unset($_SESSION['applied_discount']);
+                    }
                 } catch (Exception $e) {
                     error_log('Error updating COD payment: ' . $e->getMessage());
                 }
@@ -418,6 +612,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['checkout'])) {
         }
     }
 }
+
+
 
 // Final check before displaying
 $debugTotalItems = 0;
@@ -564,7 +760,24 @@ require_once '../includes/header.php';
             </div>
 
             <div class="order-total">
-                <strong>Grand Total: ₱<?php echo number_format($grandTotal, 2); ?></strong>
+                <?php if (isset($_SESSION['applied_discount']) && $_SESSION['applied_discount']): ?>
+                    <div class="subtotal-row">
+                        <span>Subtotal:</span>
+                        <span>₱<?php echo number_format($grandTotal, 2); ?></span>
+                    </div>
+                    <div class="discount-row">
+                        <span>
+                            <i class="fas fa-tag"></i> Discount (<?php echo htmlspecialchars($_SESSION['applied_discount']['discount_code']); ?>):
+                        </span>
+                        <span class="discount-amount">-₱<?php echo number_format($_SESSION['applied_discount']['discount_amount'], 2); ?></span>
+                    </div>
+                    <div class="final-total-row">
+                        <strong>Final Total:</strong>
+                        <strong>₱<?php echo number_format($finalTotal, 2); ?></strong>
+                    </div>
+                <?php else: ?>
+                    <strong>Grand Total: ₱<?php echo number_format($grandTotal, 2); ?></strong>
+                <?php endif; ?>
             </div>
         </div>
 
@@ -599,7 +812,26 @@ require_once '../includes/header.php';
                             </div>
                         <?php endforeach; ?>
                         <div class="review-grand-total">
-                            <strong style="font-size: 20px;">Grand Total: ₱<?php echo number_format($grandTotal, 2); ?></strong>
+                            <?php if (isset($_SESSION['applied_discount']) && $_SESSION['applied_discount']): ?>
+                                <div style="margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid rgba(0,0,0,0.1);">
+                                    <div style="display: flex; justify-content: space-between; font-size: 16px; color: #6b7280; margin-bottom: 8px;">
+                                        <span>Subtotal:</span>
+                                        <span>₱<?php echo number_format($grandTotal, 2); ?></span>
+                                    </div>
+                                    <div style="display: flex; justify-content: space-between; font-size: 16px; color: #10b981; font-weight: 600; margin-bottom: 8px;">
+                                        <span>
+                                            <i class="fas fa-tag"></i> Discount (<?php echo htmlspecialchars($_SESSION['applied_discount']['discount_code']); ?>):
+                                        </span>
+                                        <span>-₱<?php echo number_format($_SESSION['applied_discount']['discount_amount'], 2); ?></span>
+                                    </div>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                    <strong style="font-size: 20px; color: #130325;">Final Total:</strong>
+                                    <strong style="font-size: 20px; color: #10b981;">₱<?php echo number_format($finalTotal, 2); ?></strong>
+                                </div>
+                            <?php else: ?>
+                                <strong style="font-size: 20px;">Grand Total: ₱<?php echo number_format($grandTotal, 2); ?></strong>
+                            <?php endif; ?>
                         </div>
                     </div>
                     <div class="review-shipping-info">
@@ -641,7 +873,39 @@ require_once '../includes/header.php';
                     <label for="shipping_address">Shipping Address *</label>
                     <textarea id="shipping_address" name="shipping_address" rows="3" required><?php echo htmlspecialchars($_POST['shipping_address'] ?? ($userProfile['address'] ?? '')); ?></textarea>
                 </div>
-
+<!-- Discount Code Section -->
+<div class="form-group discount-code-group">
+                    <label for="discount_code">
+                        <i class="fas fa-tag"></i> Discount Code (Optional)
+                    </label>
+                    <div class="discount-input-container">
+                        <input type="text" 
+                               id="discount_code" 
+                               placeholder="Enter discount code"
+                               value="<?php echo isset($_SESSION['applied_discount']) ? htmlspecialchars($_SESSION['applied_discount']['discount_code']) : ''; ?>"
+                               <?php echo isset($_SESSION['applied_discount']) ? 'readonly' : ''; ?>>
+                        <button type="button" 
+                                id="applyDiscountBtn" 
+                                class="btn-apply-discount"
+                                <?php echo isset($_SESSION['applied_discount']) ? 'style="display:none;"' : ''; ?>>
+                            <i class="fas fa-check"></i> Apply
+                        </button>
+                        <button type="button" 
+                                id="removeDiscountBtn" 
+                                class="btn-remove-discount"
+                                <?php echo !isset($_SESSION['applied_discount']) ? 'style="display:none;"' : ''; ?>>
+                            <i class="fas fa-times"></i> Remove
+                        </button>
+                    </div>
+                    <div id="discount-message" class="discount-message" style="display: none;"></div>
+                    <?php if (isset($_SESSION['applied_discount'])): ?>
+                        <div class="discount-success-badge">
+                            <i class="fas fa-check-circle"></i> 
+                            Discount Applied: <?php echo htmlspecialchars($_SESSION['applied_discount']['discount_code']); ?>
+                            (₱<?php echo number_format($_SESSION['applied_discount']['discount_amount'], 2); ?> off)
+                        </div>
+                    <?php endif; ?>
+                </div>
                 <div class="form-group payment-method-group">
                     <label for="payment_method">Payment Method *</label>
                     <select id="payment_method" name="payment_method" required>
@@ -672,6 +936,158 @@ require_once '../includes/header.php';
 <?php require_once '../includes/footer.php'; ?>
 
 <style>
+/* Discount Code Styles */
+.discount-code-group {
+    margin-bottom: 16px;
+    padding: 16px;
+    background: rgba(255, 215, 54, 0.05);
+    border: 1px solid rgba(255, 215, 54, 0.2);
+    border-radius: 8px;
+}
+
+.discount-code-group label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-dark);
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.discount-input-container {
+    display: flex;
+    gap: 8px;
+    align-items: stretch;
+}
+
+.discount-input-container input {
+    flex: 1;
+    padding: 8px 12px;
+    border: 1px solid rgba(0,0,0,0.1);
+    border-radius: 6px;
+    font-size: 13px;
+    text-transform: uppercase;
+}
+
+.discount-input-container input:read-only {
+    background: #f3f4f6;
+    cursor: not-allowed;
+}
+
+.btn-apply-discount,
+.btn-remove-discount {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+}
+
+.btn-apply-discount {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: #ffffff;
+}
+
+.btn-apply-discount:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.btn-remove-discount {
+    background: #ef4444;
+    color: #ffffff;
+}
+
+.btn-remove-discount:hover {
+    background: #dc2626;
+    transform: translateY(-1px);
+}
+
+.discount-message {
+    margin-top: 8px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.discount-message.success {
+    background: #d1fae5;
+    color: #065f46;
+    border: 1px solid #10b981;
+}
+
+.discount-message.error {
+    background: #fee2e2;
+    color: #991b1b;
+    border: 1px solid #ef4444;
+}
+
+.discount-success-badge {
+    margin-top: 8px;
+    padding: 8px 12px;
+    background: #d1fae5;
+    border: 1px solid #10b981;
+    border-radius: 6px;
+    color: #065f46;
+    font-size: 12px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.discount-success-badge i {
+    color: #10b981;
+}
+
+/* Order Total with Discount */
+.order-total .subtotal-row,
+.order-total .discount-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    font-size: 14px;
+    color: #6b7280;
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+}
+
+.order-total .discount-row {
+    color: #10b981;
+    font-weight: 600;
+}
+
+.order-total .discount-amount {
+    color: #10b981;
+}
+
+.order-total .final-total-row {
+    display: flex;
+    justify-content: space-between;
+    padding-top: 12px;
+    margin-top: 8px;
+    border-top: 2px solid var(--primary-dark);
+    font-size: 18px;
+}
+
+@media (max-width: 576px) {
+    .discount-input-container {
+        flex-direction: column;
+    }
+    
+    .btn-apply-discount,
+    .btn-remove-discount {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
 :root {
     --primary-dark: #130325;
     --accent-yellow: #FFD736;
@@ -975,14 +1391,42 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Open review modal
     function openReviewModal() {
-        if (reviewModal && shippingAddressField && paymentMethodSelect) {
-            reviewShippingAddress.textContent = shippingAddressField.value || 'Not provided';
-            const selectedMethod = paymentMethodSelect.value;
-            reviewPaymentMethod.textContent = paymentMethodLabels[selectedMethod] || selectedMethod || 'Not selected';
-            reviewModal.style.display = 'flex';
-            document.body.style.overflow = 'hidden';
+    if (reviewModal && shippingAddressField && paymentMethodSelect) {
+        reviewShippingAddress.textContent = shippingAddressField.value || 'Not provided';
+        const selectedMethod = paymentMethodSelect.value;
+        reviewPaymentMethod.textContent = paymentMethodLabels[selectedMethod] || selectedMethod || 'Not selected';
+        
+        // Update grand total with discount if applied
+        const grandTotalEl = document.querySelector('.review-grand-total');
+        if (grandTotalEl) {
+            <?php if (isset($_SESSION['applied_discount']) && $_SESSION['applied_discount']): ?>
+                grandTotalEl.innerHTML = `
+                    <div style="margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid rgba(0,0,0,0.1);">
+                        <div style="display: flex; justify-content: space-between; font-size: 16px; color: #6b7280; margin-bottom: 8px;">
+                            <span>Subtotal:</span>
+                            <span>₱<?php echo number_format($grandTotal, 2); ?></span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; font-size: 16px; color: #10b981; font-weight: 600; margin-bottom: 8px;">
+                            <span>
+                                <i class="fas fa-tag"></i> Discount (<?php echo htmlspecialchars($_SESSION['applied_discount']['discount_code']); ?>):
+                            </span>
+                            <span>-₱<?php echo number_format($_SESSION['applied_discount']['discount_amount'], 2); ?></span>
+                        </div>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <strong style="font-size: 20px; color: #130325;">Final Total:</strong>
+                        <strong style="font-size: 20px; color: #10b981;">₱<?php echo number_format($finalTotal, 2); ?></strong>
+                    </div>
+                `;
+            <?php else: ?>
+                grandTotalEl.innerHTML = `<strong style="font-size: 20px;">Grand Total: ₱<?php echo number_format($grandTotal, 2); ?></strong>`;
+            <?php endif; ?>
         }
+        
+        reviewModal.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
     }
+}
     
     // Close review modal
     function closeModal() {
@@ -1069,6 +1513,108 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
+
+
+// Discount Code Functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const discountInput = document.getElementById('discount_code');
+    const applyBtn = document.getElementById('applyDiscountBtn');
+    const removeBtn = document.getElementById('removeDiscountBtn');
+    const discountMessage = document.getElementById('discount-message');
+    
+    if (applyBtn) {
+        applyBtn.addEventListener('click', function() {
+            const code = discountInput.value.trim().toUpperCase();
+            const cartTotal = <?php echo $grandTotal; ?>;
+            
+            if (!code) {
+                showDiscountMessage('Please enter a discount code.', 'error');
+                return;
+            }
+            
+            // Disable button during request
+            applyBtn.disabled = true;
+            applyBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Applying...';
+            
+            // AJAX request to validate discount
+            fetch('', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: 'apply_discount=1&discount_code=' + encodeURIComponent(code) + '&cart_total=' + cartTotal
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showDiscountMessage(data.message, 'success');
+                    // Reload page to show updated totals
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
+                } else {
+                    showDiscountMessage(data.message, 'error');
+                    applyBtn.disabled = false;
+                    applyBtn.innerHTML = '<i class="fas fa-check"></i> Apply';
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showDiscountMessage('Error applying discount code.', 'error');
+                applyBtn.disabled = false;
+                applyBtn.innerHTML = '<i class="fas fa-check"></i> Apply';
+            });
+        });
+    }
+    
+    if (removeBtn) {
+        removeBtn.addEventListener('click', function() {
+            if (!confirm('Remove discount code?')) {
+                return;
+            }
+            
+            removeBtn.disabled = true;
+            removeBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Removing...';
+            
+            fetch('', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: 'remove_discount=1'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    window.location.reload();
+                } else {
+                    alert('Error removing discount code.');
+                    removeBtn.disabled = false;
+                    removeBtn.innerHTML = '<i class="fas fa-times"></i> Remove';
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error removing discount code.');
+                removeBtn.disabled = false;
+                removeBtn.innerHTML = '<i class="fas fa-times"></i> Remove';
+            });
+        });
+    }
+    
+    function showDiscountMessage(message, type) {
+        if (discountMessage) {
+            discountMessage.textContent = message;
+            discountMessage.className = 'discount-message ' + type;
+            discountMessage.style.display = 'block';
+            
+            setTimeout(() => {
+                discountMessage.style.display = 'none';
+            }, 5000);
+        }
+    }
+});
+
 </script>
 
 <?php
@@ -1077,16 +1623,19 @@ function createPayMongoCheckoutSession($transactionId, $customerName, $customerE
     
     try {
         $lineItems = [];
-        foreach ($groupedItems as $sellerGroup) {
-            foreach ($sellerGroup['items'] as $item) {
-                $lineItems[] = [
-                    'currency' => 'PHP',
-                    'amount' => (int)($item['price'] * 100),
-                    'name' => $item['name'],
-                    'quantity' => $item['quantity']
-                ];
-            }
+        // Calculate line items - use final total if discount applied
+        $totalToCharge = $grandTotal; // This will be the original grand total
+        if (isset($_SESSION['applied_discount']) && $_SESSION['applied_discount']) {
+            $totalToCharge = $_SESSION['applied_discount']['final_total'];
         }
+        
+        // Create single line item with final total
+        $lineItems = [[
+            'currency' => 'PHP',
+            'amount' => (int)($totalToCharge * 100), // Convert to cents
+            'name' => 'Order Total' . (isset($_SESSION['applied_discount']) ? ' (Discount Applied)' : ''),
+            'quantity' => 1
+        ]];
         
         $billing = [
             'name' => $customerName,
