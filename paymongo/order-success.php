@@ -87,36 +87,55 @@ try {
     $totalAmount = 0;
     
     // Get transaction
+    // Get transaction
     if ($transactionId > 0) {
-        $stmt = $pdo->prepare("SELECT * FROM payment_transactions WHERE id = ?");
+        $stmt = $pdo->prepare("SELECT pt.*, o.user_id as order_user_id 
+                              FROM payment_transactions pt
+                              LEFT JOIN orders o ON pt.id = o.payment_transaction_id
+                              WHERE pt.id = ?
+                              LIMIT 1");
         $stmt->execute([$transactionId]);
         $transaction = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        // CRITICAL: Verify user owns this transaction
+        if ($transaction && isset($_SESSION['user_id'])) {
+            if (isset($transaction['order_user_id']) && $transaction['order_user_id'] != $_SESSION['user_id']) {
+                error_log('Order Success - Access denied: User ' . $_SESSION['user_id'] . ' tried to access transaction ' . $transactionId . ' owned by user ' . $transaction['order_user_id']);
+                header("Location: ../products.php?error=access_denied");
+                exit();
+            }
+        }
     }
     
     // Get order
-    if ($orderId > 0) {
-        $stmt = $pdo->prepare("SELECT * FROM orders WHERE id = ?");
-        $stmt->execute([$orderId]);
-        $order = $stmt->fetch(PDO::FETCH_ASSOC);
-        
-        // Get transaction details if available
-        if ($order && $order['payment_transaction_id']) {
-            $stmt = $pdo->prepare("SELECT * FROM payment_transactions WHERE id = ?");
-            $stmt->execute([$order['payment_transaction_id']]);
-            $transaction = $stmt->fetch(PDO::FETCH_ASSOC);
+  // Get order
+  if ($orderId > 0) {
+    $stmt = $pdo->prepare("SELECT * FROM orders WHERE id = ?");
+    $stmt->execute([$orderId]);
+    $order = $stmt->fetch(PDO::FETCH_ASSOC);
+    
+    // CRITICAL: Verify user owns this order
+    if ($order && isset($_SESSION['user_id'])) {
+        if ($order['user_id'] != $_SESSION['user_id']) {
+            error_log('Order Success - Access denied: User ' . $_SESSION['user_id'] . ' tried to access order ' . $orderId . ' owned by user ' . $order['user_id']);
+            header("Location: ../products.php?error=access_denied");
+            exit();
         }
-    } elseif ($transaction) {
-        $stmt = $pdo->prepare("SELECT * FROM orders WHERE payment_transaction_id = ? LIMIT 1");
-        $stmt->execute([$transactionId]);
-        $order = $stmt->fetch(PDO::FETCH_ASSOC);
     }
+} elseif ($transaction) {
+    // Get ALL orders for this transaction (multi-seller support)
+    $stmt = $pdo->prepare("SELECT * FROM orders WHERE payment_transaction_id = ?");
+    $stmt->execute([$transactionId]);
+    $allOrders = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    // Use first order for basic info, but we'll process all orders for items
+    if (!empty($allOrders)) {
+        $order = $allOrders[0];
+    }
+}
     
     // If no order or transaction found, redirect
     if (!$order && !$transaction) {
-        // CRITICAL: Update session activity before redirecting to prevent logout
-        if (isset($_SESSION['user_id'])) {
-            $_SESSION['last_activity'] = time();
-        }
         header("Location: ../products.php");
         exit();
     }
@@ -166,17 +185,69 @@ try {
     require_once '../includes/header.php';
     
 // Get order items
-$orderItems = [];
-if ($order && isset($order['id'])) {
-    $stmt = $pdo->prepare("SELECT oi.*, 
-                          oi.original_price,
-                          p.name, 
-                          p.image_url 
-                          FROM order_items oi 
-                          JOIN products p ON oi.product_id = p.id 
-                          WHERE oi.order_id = ?");
+// Get order items - GROUP BY SELLER for multi-seller support
+$orderItemsBySeller = [];
+if ($transactionId > 0) {
+    // Get ALL orders and their items for this transaction
+    $stmt = $pdo->prepare("
+        SELECT 
+            o.id as order_id,
+            o.seller_id,
+            COALESCE(u.display_name, CONCAT(u.first_name, ' ', u.last_name), u.username, 'Unknown Seller') as seller_name,
+            oi.*, 
+            oi.original_price,
+            p.name, 
+            p.image_url 
+        FROM orders o
+        JOIN order_items oi ON o.id = oi.order_id
+        JOIN products p ON oi.product_id = p.id
+        LEFT JOIN users u ON o.seller_id = u.id
+        WHERE o.payment_transaction_id = ?
+        ORDER BY o.seller_id, p.name
+    ");
+    $stmt->execute([$transactionId]);
+    $allItems = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    // Group items by seller
+    foreach ($allItems as $item) {
+        $sellerId = $item['seller_id'];
+        if (!isset($orderItemsBySeller[$sellerId])) {
+            $orderItemsBySeller[$sellerId] = [
+                'seller_name' => $item['seller_name'],
+                'order_id' => $item['order_id'],
+                'items' => []
+            ];
+        }
+        $orderItemsBySeller[$sellerId]['items'][] = $item;
+    }
+} elseif ($order && isset($order['id'])) {
+    // Single order fallback
+    $stmt = $pdo->prepare("
+        SELECT 
+            o.id as order_id,
+            o.seller_id,
+            COALESCE(u.display_name, CONCAT(u.first_name, ' ', u.last_name), u.username, 'Unknown Seller') as seller_name,
+            oi.*, 
+            oi.original_price,
+            p.name, 
+            p.image_url 
+        FROM orders o
+        JOIN order_items oi ON o.id = oi.order_id
+        JOIN products p ON oi.product_id = p.id
+        LEFT JOIN users u ON o.seller_id = u.id
+        WHERE o.id = ?
+    ");
     $stmt->execute([$order['id']]);
-    $orderItems = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $allItems = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    if (!empty($allItems)) {
+        $sellerId = $allItems[0]['seller_id'];
+        $orderItemsBySeller[$sellerId] = [
+            'seller_name' => $allItems[0]['seller_name'],
+            'order_id' => $allItems[0]['order_id'],
+            'items' => $allItems
+        ];
+    }
 }
     
 } catch (PDOException $e) {
@@ -511,61 +582,110 @@ body {
                 </div>
             </div>
         </div>
-
-        <!-- Compact Items List -->
-        <div class="items-section">
-            <h3>Items Ordered</h3>
-            <div class="items-list">
-                <?php if (!empty($orderItems)): ?>
-                    <?php foreach ($orderItems as $item): ?>
+<!-- Compact Items List -->
+<div class="items-section">
+    <h3>Items Ordered</h3>
+    <?php if (!empty($orderItemsBySeller)): ?>
+        <?php foreach ($orderItemsBySeller as $sellerId => $sellerData): ?>
+            <div style="margin-bottom: 20px; border: 1px solid rgba(255, 215, 54, 0.3); border-radius: 6px; padding: 12px; background: rgba(255, 215, 54, 0.05);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 2px solid var(--accent-yellow);">
+                    <h4 style="margin: 0; color: var(--primary-dark); font-size: 14px;">
+                        <i class="fas fa-store"></i> <?php echo htmlspecialchars($sellerData['seller_name']); ?>
+                    </h4>
+                    <span style="font-size: 12px; color: var(--text-light);">
+                        Order #<?php echo str_pad($sellerData['order_id'], 6, '0', STR_PAD_LEFT); ?>
+                    </span>
+                </div>
+                
+                <div class="items-list" style="max-height: none;">
+                    <?php 
+                    // Calculate seller's original subtotal (before discount)
+                    $sellerOriginalSubtotal = 0;
+                    $sellerFinalSubtotal = 0;
+                    
+                    foreach ($sellerData['items'] as $item): 
+                        // Use original_price if discount was applied to items
+                        $itemOriginalPrice = !empty($item['original_price']) && $item['original_price'] != $item['price'] 
+                            ? $item['original_price'] 
+                            : $item['price'];
+                        
+                        $sellerOriginalSubtotal += $itemOriginalPrice * $item['quantity'];
+                        $sellerFinalSubtotal += $item['price'] * $item['quantity'];
+                    ?>
                         <div class="item-row">
-    <img src="../<?php echo htmlspecialchars($item['image_url']); ?>" alt="<?php echo htmlspecialchars($item['name']); ?>">
-    <div class="item-info">
-        <div class="item-name"><?php echo htmlspecialchars($item['name']); ?></div>
-        <div class="item-details">
-            Qty: <?php echo $item['quantity']; ?> × 
-            <?php if (!empty($item['original_price']) && $item['original_price'] != $item['price']): ?>
-                <span style="text-decoration: line-through; color: #999; font-size: 0.9rem;">₱<?php echo number_format($item['original_price'], 2); ?></span>
-                <span style="color: #10b981; font-weight: 700; margin-left: 4px;">₱<?php echo number_format($item['price'], 2); ?></span>
-            <?php else: ?>
-                ₱<?php echo number_format($item['price'], 2); ?>
-            <?php endif; ?>
+                            <img src="../<?php echo htmlspecialchars($item['image_url']); ?>" alt="<?php echo htmlspecialchars($item['name']); ?>">
+                            <div class="item-info">
+                                <div class="item-name"><?php echo htmlspecialchars($item['name']); ?></div>
+                                <div class="item-details">
+                                    Qty: <?php echo $item['quantity']; ?> × 
+                                    <?php if (!empty($item['original_price']) && $item['original_price'] != $item['price']): ?>
+                                        <span style="text-decoration: line-through; color: #999; font-size: 0.9rem;">₱<?php echo number_format($item['original_price'], 2); ?></span>
+                                        <span style="color: #10b981; font-weight: 700; margin-left: 4px;">₱<?php echo number_format($item['price'], 2); ?></span>
+                                    <?php else: ?>
+                                        ₱<?php echo number_format($item['price'], 2); ?>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                            <div class="item-price">
+                                <?php if (!empty($item['original_price']) && $item['original_price'] != $item['price']): ?>
+                                    <span style="text-decoration: line-through; color: #999; font-size: 0.85rem; display: block;">₱<?php echo number_format($item['original_price'] * $item['quantity'], 2); ?></span>
+                                    <span style="color: #10b981; font-weight: 700;">₱<?php echo number_format($item['price'] * $item['quantity'], 2); ?></span>
+                                <?php else: ?>
+                                    ₱<?php echo number_format($item['price'] * $item['quantity'], 2); ?>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+                
+                <!-- Seller Subtotal with Discount Breakdown -->
+                <div style="text-align: right; padding-top: 10px; margin-top: 10px; border-top: 1px solid rgba(255, 215, 54, 0.3);">
+                    <?php if ($hasDiscount && $sellerOriginalSubtotal > $sellerFinalSubtotal): ?>
+                        <?php 
+                        $sellerDiscountAmount = $sellerOriginalSubtotal - $sellerFinalSubtotal;
+                        ?>
+                        <div style="font-size: 13px; color: var(--text-light); margin-bottom: 4px;">
+                            Subtotal: <span style="color: var(--primary-dark);">₱<?php echo number_format($sellerOriginalSubtotal, 2); ?></span>
+                        </div>
+                        <div style="font-size: 13px; color: #10b981; font-weight: 600; margin-bottom: 6px;">
+                            <i class="fas fa-tag"></i> Discount: <span>-₱<?php echo number_format($sellerDiscountAmount, 2); ?></span>
+                        </div>
+                        <strong style="color: #10b981; font-size: 15px;">
+                            Seller Total: ₱<?php echo number_format($sellerFinalSubtotal, 2); ?>
+                        </strong>
+                    <?php else: ?>
+                        <strong style="color: var(--primary-dark); font-size: 14px;">
+                            Seller Subtotal: <span style="color: var(--accent-yellow);">₱<?php echo number_format($sellerFinalSubtotal, 2); ?></span>
+                        </strong>
+                    <?php endif; ?>
+                </div>
+            </div>
+        <?php endforeach; ?>
+    <?php else: ?>
+        <div class="item-row" style="padding: 15px; text-align: center; color: var(--text-light);">
+            <p>Order details are being processed. Your payment has been received successfully.</p>
         </div>
-    </div>
-    <div class="item-price">
-        <?php if (!empty($item['original_price']) && $item['original_price'] != $item['price']): ?>
-            <span style="text-decoration: line-through; color: #999; font-size: 0.85rem; display: block;">₱<?php echo number_format($item['original_price'] * $item['quantity'], 2); ?></span>
-            <span style="color: #10b981; font-weight: 700;">₱<?php echo number_format($item['price'] * $item['quantity'], 2); ?></span>
+    <?php endif; ?>
+    
+    <!-- Grand Total with Discount -->
+    <div class="total-amount">
+        <?php if ($hasDiscount): ?>
+            <div style="margin-bottom: 8px;">
+                <div class="discount-row" style="font-size: 0.9rem; color: var(--text-light);">
+                    <span>Order Subtotal:</span>
+                    <span>₱<?php echo number_format($originalAmount, 2); ?></span>
+                </div>
+                <div class="discount-row" style="font-size: 0.9rem; color: #10b981; font-weight: 600;">
+                    <span><i class="fas fa-tag"></i> Total Discount:</span>
+                    <span>-₱<?php echo number_format($discountAmount, 2); ?></span>
+                </div>
+            </div>
+            <strong style="font-size: 1.1rem; display: block; color: #10b981;">Final Total: ₱<?php echo number_format($totalAmount, 2); ?></strong>
         <?php else: ?>
-            ₱<?php echo number_format($item['price'] * $item['quantity'], 2); ?>
+            <strong style="font-size: 1.1rem; display: block;">Total Amount: ₱<?php echo number_format($totalAmount, 2); ?></strong>
         <?php endif; ?>
     </div>
 </div>
-                    <?php endforeach; ?>
-                <?php else: ?>
-                    <div class="item-row" style="padding: 15px; text-align: center; color: var(--text-light);">
-                        <p>Order details are being processed. Your payment has been received successfully.</p>
-                    </div>
-                <?php endif; ?>
-            </div>
-            
-            <div class="total-amount">
-                <?php if ($hasDiscount): ?>
-                    <div style="margin-bottom: 8px;">
-                        <div class="discount-row" style="font-size: 0.9rem; color: var(--text-light);">
-                            <span>Subtotal:</span>
-                            <span>₱<?php echo number_format($originalAmount, 2); ?></span>
-                        </div>
-                        <div class="discount-row" style="font-size: 0.9rem; color: #10b981; font-weight: 600;">
-                            <span><i class="fas fa-tag"></i> Discount:</span>
-                            <span>-₱<?php echo number_format($discountAmount, 2); ?></span>
-                        </div>
-                    </div>
-                <?php endif; ?>
-                <strong style="font-size: 1.1rem; display: block;">Total Amount: ₱<?php echo number_format($totalAmount, 2); ?></strong>
-            </div>
-        </div>
-
         <!-- Compact Next Steps -->
         <div class="next-steps">
             <h3>What's Next?</h3>
