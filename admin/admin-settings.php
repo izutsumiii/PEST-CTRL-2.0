@@ -1212,7 +1212,8 @@ try {
     }
 
     .discount-table thead {
-        background: #f9fafb;
+        background: #130325;
+        color: #ffffff;
     }
 
     .discount-table th {
@@ -1220,8 +1221,38 @@ try {
         text-align: left;
         font-weight: 600;
         font-size: 13px;
-        color: #130325;
-        border-bottom: 2px solid #e5e7eb;
+        color: #ffffff;
+        border-bottom: 2px solid rgba(255, 255, 255, 0.15);
+    }
+
+    .discount-table th.sortable {
+        cursor: pointer;
+        user-select: none;
+        transition: background 0.2s ease, color 0.2s ease;
+    }
+
+    .discount-table th.sortable:hover {
+        background: #1f0641;
+    }
+
+    .discount-table th .sort-label {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .discount-table th .sort-indicator {
+        font-size: 12px;
+        opacity: 0.5;
+        transition: opacity 0.2s ease;
+        min-width: 10px;
+        display: inline-block;
+        text-align: center;
+    }
+
+    .discount-table th.sortable.active-asc .sort-indicator,
+    .discount-table th.sortable.active-desc .sort-indicator {
+        opacity: 1;
     }
 
     .discount-table td {
@@ -1903,13 +1934,27 @@ try {
             <table class="discount-table">
                 <thead>
                     <tr>
-                        <th>Code</th>
-                        <th>Type</th>
-                        <th>Value</th>
-                        <th>Min Order</th>
-                        <th>Uses</th>
-                        <th>Valid Period</th>
-                        <th>Status</th>
+                        <th class="sortable" data-column="code" data-type="text">
+                            <span class="sort-label">Code <span class="sort-indicator"></span></span>
+                        </th>
+                        <th class="sortable" data-column="type" data-type="text">
+                            <span class="sort-label">Type <span class="sort-indicator"></span></span>
+                        </th>
+                        <th class="sortable" data-column="value" data-type="number">
+                            <span class="sort-label">Value <span class="sort-indicator"></span></span>
+                        </th>
+                        <th class="sortable" data-column="min-order" data-type="number">
+                            <span class="sort-label">Min Order <span class="sort-indicator"></span></span>
+                        </th>
+                        <th class="sortable" data-column="uses" data-type="ratio">
+                            <span class="sort-label">Uses <span class="sort-indicator"></span></span>
+                        </th>
+                        <th class="sortable" data-column="period" data-type="date">
+                            <span class="sort-label">Valid Period <span class="sort-indicator"></span></span>
+                        </th>
+                        <th class="sortable" data-column="status" data-type="status">
+                            <span class="sort-label">Status <span class="sort-indicator"></span></span>
+                        </th>
                         <th>Actions</th>
                     </tr>
                 </thead>
@@ -1920,10 +1965,25 @@ try {
                     </tr>
                     <?php else: ?>
                     <?php foreach ($discountCodes as $dc): ?>
+                    <?php
+                        $codeSort = strtolower($dc['code']);
+                        $valueSort = number_format((float)$dc['discount_value'], 6, '.', '');
+                        $minOrderSort = number_format((float)$dc['min_order_amount'], 6, '.', '');
+                        $usedCount = isset($dc['used_count']) ? (int)$dc['used_count'] : 0;
+                        $maxUses = isset($dc['max_uses']) && $dc['max_uses'] ? (int)$dc['max_uses'] : null;
+                        $usesSort = $maxUses ? $usedCount / max($maxUses, 1) : -1;
+                        $usesDisplay = $usedCount . '/' . ($maxUses ? $maxUses : '∞');
+                        $startTimestamp = $dc['start_date'] ? strtotime($dc['start_date']) : 0;
+                        $statusSort = $dc['is_active'] ? 1 : 0;
+                    ?>
                     <tr>
-                        <td><strong><?php echo htmlspecialchars($dc['code']); ?></strong></td>
-                        <td><?php echo ucfirst($dc['discount_type']); ?></td>
-                        <td>
+                        <td data-sort-value="<?php echo htmlspecialchars($codeSort, ENT_QUOTES); ?>">
+                            <strong><?php echo htmlspecialchars($dc['code']); ?></strong>
+                        </td>
+                        <td data-sort-value="<?php echo htmlspecialchars($dc['discount_type'], ENT_QUOTES); ?>">
+                            <?php echo ucfirst($dc['discount_type']); ?>
+                        </td>
+                        <td data-sort-value="<?php echo $valueSort; ?>">
                             <?php 
                             if ($dc['discount_type'] === 'percentage') {
                                 echo number_format($dc['discount_value'], 0) . '%';
@@ -1932,9 +1992,9 @@ try {
                             }
                             ?>
                         </td>
-                        <td>₱<?php echo number_format($dc['min_order_amount'], 2); ?></td>
-                        <td><?php echo $dc['used_count']; ?>/<?php echo $dc['max_uses'] ? $dc['max_uses'] : '∞'; ?></td>
-                        <td>
+                        <td data-sort-value="<?php echo $minOrderSort; ?>">₱<?php echo number_format($dc['min_order_amount'], 2); ?></td>
+                        <td data-sort-value="<?php echo $usesSort; ?>"><?php echo $usesDisplay; ?></td>
+                        <td data-sort-value="<?php echo $startTimestamp; ?>">
                             <?php 
                             echo date('M d, Y', strtotime($dc['start_date']));
                             if ($dc['end_date']) {
@@ -1944,7 +2004,7 @@ try {
                             }
                             ?>
                         </td>
-                        <td>
+                        <td data-sort-value="<?php echo $statusSort; ?>">
                             <span class="status-badge-compact <?php echo $dc['is_active'] ? 'status-active' : 'status-inactive'; ?>">
                                 <?php echo $dc['is_active'] ? 'Active' : 'Inactive'; ?>
                             </span>
@@ -2917,6 +2977,82 @@ document.addEventListener('DOMContentLoaded', function() {
     // CRITICAL FIX: Ensure body is scrollable on page load
     document.body.style.overflow = 'visible';
     document.documentElement.style.overflow = 'visible';
+});
+
+// Discount table sorting
+document.addEventListener('DOMContentLoaded', function() {
+    const discountTable = document.querySelector('.discount-table');
+    if (!discountTable) return;
+
+    const headers = discountTable.querySelectorAll('th.sortable');
+
+    const getSortValue = (cell, type) => {
+        const rawValue = cell ? (cell.dataset.sortValue !== undefined ? cell.dataset.sortValue : cell.textContent.trim()) : '';
+        switch (type) {
+            case 'number':
+            case 'ratio': {
+                const numericValue = parseFloat(rawValue);
+                return isNaN(numericValue) ? 0 : numericValue;
+            }
+            case 'date': {
+                const dateValue = parseInt(rawValue, 10);
+                return isNaN(dateValue) ? 0 : dateValue;
+            }
+            case 'status': {
+                const statusValue = parseInt(rawValue, 10);
+                return isNaN(statusValue) ? 0 : statusValue;
+            }
+            default:
+                return (rawValue || '').toString().toLowerCase();
+        }
+    };
+
+    const sortDiscountTable = (table, columnIndex, type, order) => {
+        const tbody = table.querySelector('tbody');
+        if (!tbody) return;
+
+        const rows = Array.from(tbody.querySelectorAll('tr')).filter(row => row.querySelectorAll('td').length > 1);
+        const multiplier = order === 'asc' ? 1 : -1;
+
+        rows.sort((rowA, rowB) => {
+            const cellA = rowA.children[columnIndex];
+            const cellB = rowB.children[columnIndex];
+
+            const valueA = getSortValue(cellA, type);
+            const valueB = getSortValue(cellB, type);
+
+            if (type === 'text') {
+                return valueA.localeCompare(valueB) * multiplier;
+            }
+
+            if (valueA < valueB) return -1 * multiplier;
+            if (valueA > valueB) return 1 * multiplier;
+            return 0;
+        });
+
+        rows.forEach(row => tbody.appendChild(row));
+    };
+
+    headers.forEach((header, index) => {
+        header.addEventListener('click', function() {
+            const type = header.dataset.type || 'text';
+            const currentOrder = header.dataset.order === 'asc' ? 'desc' : 'asc';
+
+            headers.forEach(h => {
+                h.dataset.order = '';
+                h.classList.remove('active-asc', 'active-desc');
+                const indicator = h.querySelector('.sort-indicator');
+                if (indicator) indicator.textContent = '';
+            });
+
+            header.dataset.order = currentOrder;
+            header.classList.add(currentOrder === 'asc' ? 'active-asc' : 'active-desc');
+            const indicator = header.querySelector('.sort-indicator');
+            if (indicator) indicator.textContent = currentOrder === 'asc' ? '▲' : '▼';
+
+            sortDiscountTable(discountTable, index, type, currentOrder);
+        });
+    });
 });
 
 // Show maintenance popup notification

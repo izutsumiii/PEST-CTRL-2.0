@@ -159,9 +159,12 @@ function checkAdminSystemErrors($adminId) {
         $stmt = $pdo->prepare("
             SELECT id, name 
             FROM products 
-            WHERE (image_url IS NULL OR image_url = '' OR image_url = 'images/placeholder.jpg')
-               OR (price IS NULL OR price <= 0)
-               OR (description IS NULL OR description = '')
+            WHERE status = 'active'
+              AND (
+                (image_url IS NULL OR image_url = '' OR image_url = 'images/placeholder.jpg')
+             OR (price IS NULL OR price <= 0)
+             OR (description IS NULL OR description = '')
+              )
             LIMIT 1
         ");
         $stmt->execute();
@@ -172,9 +175,12 @@ function checkAdminSystemErrors($adminId) {
             $countStmt = $pdo->prepare("
                 SELECT COUNT(*) as count 
                 FROM products 
-                WHERE (image_url IS NULL OR image_url = '' OR image_url = 'images/placeholder.jpg')
-                   OR (price IS NULL OR price <= 0)
-                   OR (description IS NULL OR description = '')
+                WHERE status = 'active'
+                  AND (
+                    (image_url IS NULL OR image_url = '' OR image_url = 'images/placeholder.jpg')
+                 OR (price IS NULL OR price <= 0)
+                 OR (description IS NULL OR description = '')
+                  )
             ");
             $countStmt->execute();
             $countResult = $countStmt->fetch(PDO::FETCH_ASSOC);
