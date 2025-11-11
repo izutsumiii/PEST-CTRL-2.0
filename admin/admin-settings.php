@@ -83,6 +83,31 @@ if (isset($_GET['delete_discount']) && is_numeric($_GET['delete_discount'])) {
     }
 }
 
+// Handle discount code update - MUST be before header output
+if (isset($_POST['update_discount_code'])) {
+    $id = intval($_POST['discount_id']);
+    $code = strtoupper(trim(sanitizeInput($_POST['discount_code'])));
+    $discountType = sanitizeInput($_POST['discount_type']);
+    $discountValue = floatval($_POST['discount_value']);
+    $minOrderAmount = floatval($_POST['min_order_amount']);
+    $maxUses = intval($_POST['max_uses']);
+    $startDate = !empty($_POST['start_date']) ? date('Y-m-d H:i:s', strtotime($_POST['start_date'])) : date('Y-m-d H:i:s');
+    $endDate = !empty($_POST['end_date']) ? date('Y-m-d H:i:s', strtotime($_POST['end_date'])) : null;
+    $isActive = isset($_POST['is_active']) ? 1 : 0;
+    
+    try {
+        $stmt = $pdo->prepare("UPDATE discount_codes SET code = ?, discount_type = ?, discount_value = ?, min_order_amount = ?, max_uses = ?, start_date = ?, end_date = ?, is_active = ? WHERE id = ?");
+        $stmt->execute([$code, $discountType, $discountValue, $minOrderAmount, $maxUses > 0 ? $maxUses : null, $startDate, $endDate, $isActive, $id]);
+        $_SESSION['admin_success'] = "Discount code updated successfully!";
+        header("Location: admin-settings.php?section=order");
+        exit();
+    } catch (PDOException $e) {
+        $_SESSION['admin_error'] = "Error updating discount code: " . $e->getMessage();
+        header("Location: admin-settings.php?section=order&edit_discount=" . $id);
+        exit();
+    }
+}
+
 require_once 'includes/admin_header.php';
 
 // Get success/error messages from session (set by form processing before header)
@@ -276,27 +301,6 @@ try {
     $maintenanceAuto = '0';
 }
 
-// Handle discount code update (no redirect needed, so can stay after header)
-if (isset($_POST['update_discount_code'])) {
-    $id = intval($_POST['discount_id']);
-    $code = strtoupper(trim(sanitizeInput($_POST['discount_code'])));
-    $discountType = sanitizeInput($_POST['discount_type']);
-    $discountValue = floatval($_POST['discount_value']);
-    $minOrderAmount = floatval($_POST['min_order_amount']);
-    $maxUses = intval($_POST['max_uses']);
-    $startDate = !empty($_POST['start_date']) ? date('Y-m-d H:i:s', strtotime($_POST['start_date'])) : date('Y-m-d H:i:s');
-    $endDate = !empty($_POST['end_date']) ? date('Y-m-d H:i:s', strtotime($_POST['end_date'])) : null;
-    $isActive = isset($_POST['is_active']) ? 1 : 0;
-    
-    try {
-        $stmt = $pdo->prepare("UPDATE discount_codes SET code = ?, discount_type = ?, discount_value = ?, min_order_amount = ?, max_uses = ?, start_date = ?, end_date = ?, is_active = ? WHERE id = ?");
-        $stmt->execute([$code, $discountType, $discountValue, $minOrderAmount, $maxUses > 0 ? $maxUses : null, $startDate, $endDate, $isActive, $id]);
-        $success = "Discount code updated successfully!";
-    } catch (PDOException $e) {
-        $error = "Error updating discount code: " . $e->getMessage();
-    }
-}
-
 // Get all discount codes
 $discountCodes = [];
 try {
@@ -304,6 +308,19 @@ try {
     $discountCodes = $stmt->fetchAll(PDO::FETCH_ASSOC);
 } catch (PDOException $e) {
     // Table might not exist yet
+}
+
+// Get discount code for editing
+$editingDiscount = null;
+$editDiscountId = isset($_GET['edit_discount']) ? intval($_GET['edit_discount']) : 0;
+if ($editDiscountId > 0) {
+    try {
+        $stmt = $pdo->prepare("SELECT * FROM discount_codes WHERE id = ?");
+        $stmt->execute([$editDiscountId]);
+        $editingDiscount = $stmt->fetch(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+        $error = "Error loading discount code for editing: " . $e->getMessage();
+    }
 }
 
 // Handle general site settings (with authentication)
@@ -978,7 +995,6 @@ try {
     }
 
 
-
     /* Maintenance Mode Styles */
     .settings-card h3 {
         display: flex;
@@ -1001,6 +1017,18 @@ try {
 
     .status-badge i {
         font-size: 8px;
+    }
+
+    .status-badge-compact {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 4px 10px;
+        border-radius: 12px;
+        font-size: 10px;
+        font-weight: 700;
+        cursor: default;
+        white-space: nowrap;
     }
 
     .status-active {
@@ -1292,6 +1320,8 @@ try {
         transition: all 0.2s ease;
         text-decoration: none;
         margin: 0 4px;
+        padding: 0;
+        font-size: 14px;
     }
 
     .btn-edit-small {
@@ -1915,17 +1945,17 @@ try {
                             ?>
                         </td>
                         <td>
-                            <span class="status-badge <?php echo $dc['is_active'] ? 'status-active' : 'status-inactive'; ?>">
+                            <span class="status-badge-compact <?php echo $dc['is_active'] ? 'status-active' : 'status-inactive'; ?>">
                                 <?php echo $dc['is_active'] ? 'Active' : 'Inactive'; ?>
                             </span>
                         </td>
                         <td>
-                            <a href="?section=order&edit_discount=<?php echo $dc['id']; ?>" class="btn-edit-small" title="Edit">
+                            <button type="button" onclick="showEditDiscountConfirm(<?php echo $dc['id']; ?>);" class="btn-edit-small" title="Edit">
                                 <i class="fas fa-edit"></i>
-                            </a>
-                            <a href="?section=order&delete_discount=<?php echo $dc['id']; ?>" class="btn-delete-small" title="Delete" onclick="return confirm('Are you sure you want to delete this discount code?');">
+                            </button>
+                            <button type="button" onclick="showDeleteDiscountConfirm(<?php echo $dc['id']; ?>);" class="btn-delete-small" title="Delete">
                                 <i class="fas fa-trash"></i>
-                            </a>
+                            </button>
                         </td>
                     </tr>
                     <?php endforeach; ?>
@@ -1934,47 +1964,59 @@ try {
             </table>
         </div>
         
+        <?php if (!$editingDiscount): ?>
         <button type="button" class="btn-save" onclick="toggleDiscountForm()" style="margin-top: 16px;">
             <i class="fas fa-plus"></i> Create Code
         </button>
+        <?php else: ?>
+        <div style="margin-top: 16px; padding: 12px; background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 8px;">
+            <strong style="color: #3b82f6;"><i class="fas fa-edit"></i> Editing Discount Code: <?php echo htmlspecialchars($editingDiscount['code']); ?></strong>
+            <a href="?section=order" style="float: right; color: #6c757d; text-decoration: none; font-size: 12px;">
+                <i class="fas fa-times"></i> Cancel Edit
+            </a>
+        </div>
+        <?php endif; ?>
         
-        <div id="discountForm" class="discount-form" style="display: none;">
+        <div id="discountForm" class="discount-form" style="display: <?php echo $editingDiscount ? 'block' : 'none'; ?>;">
             <form method="POST" action="?section=order">
+                <?php if ($editingDiscount): ?>
+                    <input type="hidden" name="discount_id" value="<?php echo $editingDiscount['id']; ?>">
+                <?php endif; ?>
                 <div class="form-row">
                     <div class="form-group">
                         <label for="discount_code">Discount Code *</label>
-                        <input type="text" id="discount_code" name="discount_code" required placeholder="e.g., SUMMER2024" maxlength="50">
+                        <input type="text" id="discount_code" name="discount_code" required placeholder="e.g., SUMMER2024" maxlength="50" value="<?php echo $editingDiscount ? htmlspecialchars($editingDiscount['code']) : ''; ?>">
                     </div>
                     
                     <div class="form-group">
                         <label for="discount_type">Discount Type *</label>
                         <select id="discount_type" name="discount_type" required onchange="updateDiscountType()">
-                            <option value="percentage">Percentage (%)</option>
-                            <option value="fixed">Fixed Amount (₱)</option>
+                            <option value="percentage" <?php echo ($editingDiscount && $editingDiscount['discount_type'] === 'percentage') ? 'selected' : ''; ?>>Percentage (%)</option>
+                            <option value="fixed" <?php echo ($editingDiscount && $editingDiscount['discount_type'] === 'fixed') ? 'selected' : ''; ?>>Fixed Amount (₱)</option>
                         </select>
                     </div>
                     
                     <div class="form-group">
                         <label for="discount_value">Discount Value *</label>
-                        <input type="number" id="discount_value" name="discount_value" step="0.01" min="0.01" required placeholder="10">
-                        <small id="discount_value_hint">Enter percentage (0-100)</small>
+                        <input type="number" id="discount_value" name="discount_value" step="0.01" min="0.01" required placeholder="10" value="<?php echo $editingDiscount ? htmlspecialchars($editingDiscount['discount_value']) : ''; ?>">
+                        <small id="discount_value_hint">Enter <?php echo ($editingDiscount && $editingDiscount['discount_type'] === 'percentage') ? 'percentage (0-100)' : 'fixed amount in pesos'; ?></small>
                     </div>
                 </div>
                 
                 <div class="form-row">
                     <div class="form-group">
                         <label for="min_order_amount">Minimum Order Amount (₱)</label>
-                        <input type="number" id="min_order_amount" name="min_order_amount" step="0.01" min="0" value="0" placeholder="0.00">
+                        <input type="number" id="min_order_amount" name="min_order_amount" step="0.01" min="0" value="<?php echo $editingDiscount ? htmlspecialchars($editingDiscount['min_order_amount']) : '0'; ?>" placeholder="0.00">
                     </div>
                     
                     <div class="form-group">
                         <label for="max_uses">Maximum Uses (0 = unlimited)</label>
-                        <input type="number" id="max_uses" name="max_uses" min="0" value="0" placeholder="0">
+                        <input type="number" id="max_uses" name="max_uses" min="0" value="<?php echo $editingDiscount ? htmlspecialchars($editingDiscount['max_uses'] ?? 0) : '0'; ?>" placeholder="0">
                     </div>
                     
                     <div class="form-group">
                         <label>
-                            <input type="checkbox" name="is_active" checked> Active
+                            <input type="checkbox" name="is_active" <?php echo ($editingDiscount && $editingDiscount['is_active']) || !$editingDiscount ? 'checked' : ''; ?>> Active
                         </label>
                     </div>
                 </div>
@@ -1982,22 +2024,31 @@ try {
                 <div class="form-row">
                     <div class="form-group">
                         <label for="start_date">Start Date</label>
-                        <input type="datetime-local" id="start_date" name="start_date" value="<?php echo date('Y-m-d\TH:i'); ?>">
+                        <input type="datetime-local" id="start_date" name="start_date" value="<?php echo $editingDiscount ? date('Y-m-d\TH:i', strtotime($editingDiscount['start_date'])) : date('Y-m-d\TH:i'); ?>">
                     </div>
                     
                     <div class="form-group">
                         <label for="end_date">End Date (Optional)</label>
-                        <input type="datetime-local" id="end_date" name="end_date">
+                        <input type="datetime-local" id="end_date" name="end_date" value="<?php echo ($editingDiscount && $editingDiscount['end_date']) ? date('Y-m-d\TH:i', strtotime($editingDiscount['end_date'])) : ''; ?>">
                     </div>
                 </div>
                 
                 <div class="form-actions" style="display: flex; gap: 8px; margin-top: 16px;">
-                    <button type="submit" name="create_discount_code" class="btn-save">
-                        <i class="fas fa-plus"></i> Create Code
-                    </button>
-                    <button type="button" class="btn-cancel" onclick="toggleDiscountForm()" style="background: #6c757d; color: #ffffff; border: none; padding: 6px 12px; border-radius: 6px; font-weight: 600; font-size: 12px; cursor: pointer;">
-                        Cancel
-                    </button>
+                    <?php if ($editingDiscount): ?>
+                        <button type="submit" name="update_discount_code" class="btn-save">
+                            <i class="fas fa-save"></i> Update Code
+                        </button>
+                        <a href="?section=order" class="btn-cancel" style="background: #6c757d; color: #ffffff; border: none; padding: 6px 12px; border-radius: 6px; font-weight: 600; font-size: 12px; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center;">
+                            Cancel
+                        </a>
+                    <?php else: ?>
+                        <button type="submit" name="create_discount_code" class="btn-save">
+                            <i class="fas fa-plus"></i> Create Code
+                        </button>
+                        <button type="button" class="btn-cancel" onclick="toggleDiscountForm()" style="background: #6c757d; color: #ffffff; border: none; padding: 6px 12px; border-radius: 6px; font-weight: 600; font-size: 12px; cursor: pointer;">
+                            Cancel
+                        </button>
+                    <?php endif; ?>
                 </div>
             </form>
         </div>
@@ -2942,6 +2993,63 @@ function updateDiscountType() {
     }
 }
 
+// Initialize discount type on page load if editing
+document.addEventListener('DOMContentLoaded', function() {
+    const discountType = document.getElementById('discount_type');
+    if (discountType) {
+        updateDiscountType();
+    }
+});
+
+// Show edit discount confirmation modal
+function showEditDiscountConfirm(discountId) {
+    const modal = document.getElementById('editDiscountModal');
+    if (modal) {
+        modal._discountId = discountId;
+        modal.style.display = 'flex';
+    }
+}
+
+// Show delete discount confirmation modal
+function showDeleteDiscountConfirm(discountId) {
+    const modal = document.getElementById('deleteDiscountModal');
+    if (modal) {
+        modal._discountId = discountId;
+        modal.style.display = 'flex';
+    }
+}
+
+// Confirm edit discount
+function confirmEditDiscount() {
+    const modal = document.getElementById('editDiscountModal');
+    if (modal && modal._discountId) {
+        window.location.href = '?section=order&edit_discount=' + modal._discountId;
+    }
+}
+
+// Confirm delete discount
+function confirmDeleteDiscount() {
+    const modal = document.getElementById('deleteDiscountModal');
+    if (modal && modal._discountId) {
+        window.location.href = '?section=order&delete_discount=' + modal._discountId;
+    }
+}
+
+// Close modals
+function closeEditDiscountModal() {
+    const modal = document.getElementById('editDiscountModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
+function closeDeleteDiscountModal() {
+    const modal = document.getElementById('deleteDiscountModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
 // Edit Functions
 function editSiteSettings() {
     document.getElementById('siteSettingsView').style.display = 'none';
@@ -3126,4 +3234,67 @@ function updateChangeType() {
         }
     }
 }
+</script>
+
+<!-- Edit Discount Confirmation Modal -->
+<div id="editDiscountModal" class="modal-overlay" style="display: none;">
+    <div class="modal-dialog">
+        <div class="modal-header">
+            <h3 class="modal-title">
+                <i class="fas fa-edit" style="color: #FFD736; margin-right: 8px;"></i>
+                Edit Discount Code
+            </h3>
+            <button class="modal-close" onclick="closeEditDiscountModal()" aria-label="Close">×</button>
+        </div>
+        <div class="modal-body">
+            <p style="margin: 0; font-size: 13px; line-height: 1.5; color: #130325;">Are you sure you want to edit this discount code? You will be redirected to the edit form.</p>
+        </div>
+        <div class="modal-actions">
+            <button class="btn-outline" onclick="closeEditDiscountModal()">Cancel</button>
+            <button class="btn-primary-y" onclick="confirmEditDiscount()">Edit</button>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Discount Confirmation Modal -->
+<div id="deleteDiscountModal" class="modal-overlay" style="display: none;">
+    <div class="modal-dialog">
+        <div class="modal-header">
+            <h3 class="modal-title">
+                <i class="fas fa-trash" style="color: #FFD736; margin-right: 8px;"></i>
+                Delete Discount Code
+            </h3>
+            <button class="modal-close" onclick="closeDeleteDiscountModal()" aria-label="Close">×</button>
+        </div>
+        <div class="modal-body">
+            <p style="margin: 0; font-size: 13px; line-height: 1.5; color: #130325;">Are you sure you want to delete this discount code? This action cannot be undone.</p>
+        </div>
+        <div class="modal-actions">
+            <button class="btn-outline" onclick="closeDeleteDiscountModal()">Cancel</button>
+            <button class="btn-primary-y" onclick="confirmDeleteDiscount()" style="background: #ef4444; color: #ffffff;">Delete</button>
+        </div>
+    </div>
+</div>
+
+<script>
+// Close modals on overlay click
+document.addEventListener('click', function(e) {
+    const editModal = document.getElementById('editDiscountModal');
+    const deleteModal = document.getElementById('deleteDiscountModal');
+    
+    if (editModal && e.target === editModal) {
+        closeEditDiscountModal();
+    }
+    if (deleteModal && e.target === deleteModal) {
+        closeDeleteDiscountModal();
+    }
+});
+
+// Close modals on Escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeEditDiscountModal();
+        closeDeleteDiscountModal();
+    }
+});
 </script>
