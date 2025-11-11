@@ -31,15 +31,39 @@ if (!$order) {
     header('Location: view-orders.php');
     exit();
 }
-
-// Fetch only this seller's items for the order
-$itemsStmt = $pdo->prepare("SELECT oi.product_id, oi.quantity, oi.price AS item_price, p.name AS product_name, COALESCE(p.image_url, '') AS image_url
+// CRITICAL: Fetch items with original_price to check for item-level discounts
+$itemsStmt = $pdo->prepare("SELECT oi.product_id, oi.quantity, oi.price AS item_price, oi.original_price, p.name AS product_name, COALESCE(p.image_url, '') AS image_url
 FROM order_items oi
 JOIN products p ON oi.product_id = p.id
 WHERE oi.order_id = ? AND p.seller_id = ?
 ORDER BY p.name");
 $itemsStmt->execute([$orderId, $sellerId]);
 $orderItems = $itemsStmt->fetchAll(PDO::FETCH_ASSOC);
+
+// Fetch discount information from payment_transactions (similar to order-success.php)
+$hasDiscount = false;
+$originalAmount = 0;
+$discountAmount = 0;
+$totalAmount = 0;
+
+$transactionStmt = $pdo->prepare("
+    SELECT pt.discount_amount, pt.total_amount, pt.final_amount
+    FROM payment_transactions pt
+    WHERE pt.id = (SELECT payment_transaction_id FROM orders WHERE id = ?)
+    LIMIT 1
+");
+$transactionStmt->execute([$orderId]);
+$transaction = $transactionStmt->fetch(PDO::FETCH_ASSOC);
+
+if ($transaction && isset($transaction['discount_amount']) && $transaction['discount_amount'] > 0 && isset($transaction['final_amount'])) {
+    $hasDiscount = true;
+    $originalAmount = (float)$transaction['total_amount'];
+    $discountAmount = (float)$transaction['discount_amount'];
+    $totalAmount = (float)$transaction['final_amount'];
+} else {
+    $hasDiscount = false;
+    $totalAmount = (float)($order['total_amount'] ?? 0);
+}
 
 require_once 'includes/seller_header.php';
 ?>
@@ -127,40 +151,96 @@ main.sidebar-collapsed { margin-left: 0 !important; }
       </div>
 
       <table class="items-table">
-        <thead>
-          <tr>
-            <th style="width:60px;">Image</th>
-            <th>Product</th>
-            <th style="text-align:center;">Qty</th>
-            <th style="text-align:right;">Price</th>
-            <th style="text-align:right;">Total</th>
-          </tr>
-        </thead>
-        <tbody>
-          <?php foreach ($orderItems as $item): ?>
-          <tr>
-            <td>
-              <?php if (!empty($item['image_url'])): ?>
-                <img src="<?php echo htmlspecialchars($item['image_url']); ?>" alt="<?php echo htmlspecialchars($item['product_name']); ?>" style="width:56px; height:56px; object-fit:cover; border-radius:6px; border:1px solid #e5e7eb;" />
-              <?php else: ?>
-                <div style="width:56px; height:56px; border-radius:6px; background:#f3f4f6; border:1px solid #e5e7eb;"></div>
-              <?php endif; ?>
-            </td>
-            <td><?php echo htmlspecialchars($item['product_name']); ?></td>
-            <td style="text-align:center;">x<?php echo (int)$item['quantity']; ?></td>
-            <td style="text-align:right;">₱<?php echo number_format((float)$item['item_price'], 2); ?></td>
-            <td style="text-align:right;">₱<?php echo number_format((float)$item['item_price'] * (int)$item['quantity'], 2); ?></td>
-          </tr>
-          <?php endforeach; ?>
-        </tbody>
-        <tfoot>
-          <tr class="total-row">
-            <td colspan="3" style="text-align:right;">Grand Total</td>
-            <td style="text-align:right;">₱<?php echo number_format((float)$order['total_amount'], 2); ?></td>
-          </tr>
-        </tfoot>
-      </table>
+  <thead>
+    <tr>
+      <th style="width:60px;">Image</th>
+      <th>Product</th>
+      <th style="text-align:center;">Qty</th>
+      <th style="text-align:right;">Price</th>
+      <th style="text-align:right;">Total</th>
+    </tr>
+  </thead>
+  <tbody>
+    <?php foreach ($orderItems as $item): 
+      // Check if item has original_price (discount applied)
+      $hasItemDiscount = !empty($item['original_price']) && $item['original_price'] != $item['item_price'];
+      $originalPrice = $hasItemDiscount ? (float)$item['original_price'] : (float)$item['item_price'];
+      $finalPrice = (float)$item['item_price'];
+    ?>
+    <tr>
+      <td>
+        <?php if (!empty($item['image_url'])): ?>
+          <img src="<?php echo htmlspecialchars($item['image_url']); ?>" alt="<?php echo htmlspecialchars($item['product_name']); ?>" style="width:56px; height:56px; object-fit:cover; border-radius:6px; border:1px solid #e5e7eb;" />
+        <?php else: ?>
+          <div style="width:56px; height:56px; border-radius:6px; background:#f3f4f6; border:1px solid #e5e7eb;"></div>
+        <?php endif; ?>
+      </td>
+      <td>
+        <?php echo htmlspecialchars($item['product_name']); ?>
+        <?php if ($hasItemDiscount): ?>
+          <div style="font-size: 11px; color: #10b981; font-weight: 600; margin-top: 2px;">
+            <i class="fas fa-tag"></i> Discount Applied
+          </div>
+        <?php endif; ?>
+      </td>
+      <td style="text-align:center;">x<?php echo (int)$item['quantity']; ?></td>
+      <td style="text-align:right;">
+        <?php if ($hasItemDiscount): ?>
+          <div style="text-decoration: line-through; color: #999; font-size: 12px;">₱<?php echo number_format($originalPrice, 2); ?></div>
+          <div style="color: #10b981; font-weight: 700;">₱<?php echo number_format($finalPrice, 2); ?></div>
+        <?php else: ?>
+          ₱<?php echo number_format($finalPrice, 2); ?>
+        <?php endif; ?>
+      </td>
+      <td style="text-align:right;">
+        <?php if ($hasItemDiscount): ?>
+          <div style="text-decoration: line-through; color: #999; font-size: 12px;">₱<?php echo number_format($originalPrice * (int)$item['quantity'], 2); ?></div>
+          <div style="color: #10b981; font-weight: 700;">₱<?php echo number_format($finalPrice * (int)$item['quantity'], 2); ?></div>
+        <?php else: ?>
+          ₱<?php echo number_format($finalPrice * (int)$item['quantity'], 2); ?>
+        <?php endif; ?>
+      </td>
+    </tr>
+    <?php endforeach; ?>
+  </tbody>
+  <tfoot>
+    <?php
+      // Calculate seller's subtotal and check for item-level discounts
+      $sellerOriginalSubtotal = 0;
+      $sellerFinalSubtotal = 0;
+      
+      foreach ($orderItems as $item) {
+          // Check if item has original_price (indicates discount was applied)
+          $itemOriginalPrice = !empty($item['original_price']) && $item['original_price'] != $item['item_price'] 
+              ? $item['original_price'] 
+              : $item['item_price'];
+          
+          $sellerOriginalSubtotal += $itemOriginalPrice * (int)$item['quantity'];
+          $sellerFinalSubtotal += (float)$item['item_price'] * (int)$item['quantity'];
+      }
+      
+      // Calculate actual discount from item price differences
+      $sellerDiscountAmount = $sellerOriginalSubtotal - $sellerFinalSubtotal;
+      $hasSellerDiscount = $sellerDiscountAmount > 0;
+    ?>
+    <tr style="border-top: 2px solid #f0f0f0;">
+      <td colspan="4" style="text-align:right; color:#6b7280; font-size:13px; padding-top:12px;">Subtotal:</td>
+      <td style="text-align:right; color:#6b7280; font-size:13px; padding-top:12px;">₱<?php echo number_format($sellerOriginalSubtotal, 2); ?></td>
+    </tr>
+    <?php if ($hasSellerDiscount): ?>
+    <tr>
+      <td colspan="4" style="text-align:right; color:#10b981; font-weight:700; font-size:13px;">
+        <i class="fas fa-tag"></i> Discount:
+      </td>
+      <td style="text-align:right; color:#10b981; font-weight:700; font-size:13px;">-₱<?php echo number_format($sellerDiscountAmount, 2); ?></td>
+    </tr>
+    <?php endif; ?>
+    <tr class="total-row">
+      <td colspan="4" style="text-align:right; font-size:14px; font-weight:700;">Seller Total:</td>
+      <td style="text-align:right; font-size:14px; font-weight:700; color:#10b981;">₱<?php echo number_format($sellerFinalSubtotal, 2); ?></td>
+    </tr>
+  </tfoot>
+</table>
     </div>
   </div>
 </main>
-
