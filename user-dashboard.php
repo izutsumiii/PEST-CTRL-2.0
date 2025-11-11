@@ -471,8 +471,8 @@ try {
             // Log status change
             try {
                 $stmt = $pdo->prepare("INSERT INTO order_status_history (order_id, status, notes, updated_by, created_at) 
-                                      VALUES (?, 'completed', 'Automatically completed after 1 week', NULL, NOW())");
-                $stmt->execute([$orderId]);
+                                      VALUES (?, 'completed', 'Automatically completed after 1 week', ?, NOW())");
+                $stmt->execute([$orderId, $userId]);
             } catch (Exception $e) {
                 error_log("Failed to log auto-completion: " . $e->getMessage());
             }
@@ -3173,6 +3173,14 @@ document.addEventListener('DOMContentLoaded', function() {
                                     <div class="order-item-name item-name"><?php echo htmlspecialchars($item['product_name']); ?></div>
                                     <div class="order-item-details">
                                         <span class="item-qty">Qty: <?php echo $item['quantity']; ?></span>
+                                        <span class="item-price-info">
+                                            <?php if (isset($item['original_price']) && $item['original_price'] != $item['price']): ?>
+                                                <span style="text-decoration: line-through; color: #999; font-size: 0.85rem;">₱<?php echo number_format($item['original_price'], 2); ?></span>
+                                                <span style="color: #10b981; font-weight: 700;">₱<?php echo number_format($item['price'], 2); ?></span>
+                                            <?php else: ?>
+                                                ₱<?php echo number_format($item['price'], 2); ?>
+                                            <?php endif; ?>
+                                        </span>
                                     </div>
                                 </div>
                             </div>
