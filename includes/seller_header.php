@@ -992,9 +992,13 @@ function clearAllSellerNotifications() {
             }
             list.innerHTML = unread.map(notification => {
                 const badgeInfo = getNotificationBadge(notification.title, notification.type);
+                // Properly escape strings for onclick attribute
+                const safeTitle = (notification.title || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                const safeMessage = (notification.message || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                const safeActionUrl = (notification.action_url || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
                 return `
                 <div class="notification-item ${!notification.is_read ? 'unread' : ''}" 
-                    onclick="handleSellerNotificationClick(event, this, ${notification.id}, '${notification.action_url || ''}', '${(notification.title||'').replace(/'/g, "\'")}', '${(notification.message||'').replace(/'/g, "\'")}')">
+                    onclick="handleSellerNotificationClick(event, this, ${notification.id}, '${safeActionUrl}', '${safeTitle}', '${safeMessage}')">
                     <span class="notification-status-badge ${badgeInfo.class}">${badgeInfo.text}</span>
                     <div class="notification-content">
                         <div class="notification-title">${notification.title}</div>
@@ -1007,6 +1011,7 @@ function clearAllSellerNotifications() {
         }
         function handleSellerNotificationClick(event, element, notificationId, actionUrl, title, message) {
     event.preventDefault();
+    console.log('Notification clicked:', { notificationId, actionUrl, title, message });
     // Optimistically remove item from dropdown
     try {
         if (element && element.classList) {
@@ -1055,6 +1060,7 @@ function clearAllSellerNotifications() {
 
     // Redirect after a tiny delay to allow beacon to flush
     let href = actionUrl && actionUrl !== '' && actionUrl !== 'null' && actionUrl !== 'undefined' ? actionUrl : null;
+    console.log('Initial href:', href);
     
     // Infer fallback URL if missing
     if (!href) {
@@ -1067,14 +1073,17 @@ function clearAllSellerNotifications() {
         } else {
             href = 'view-orders.php';
         }
+        console.log('Fallback href:', href);
     }
     
     // Override legacy action urls to exact order details when possible
     if (href && /view-orders\.php/i.test(href)) {
         const m = (String(title||'') + ' ' + String(message||'')).match(/Order\s*#?0*(\d{1,10})/i);
         if (m && m[1]) href = 'seller-order-details.php?order_id=' + m[1];
+        console.log('Override href for view-orders:', href);
     }
     
+    console.log('Final redirect href:', href);
     if (href) {
         setTimeout(() => { window.location.href = href; }, 120);
     }

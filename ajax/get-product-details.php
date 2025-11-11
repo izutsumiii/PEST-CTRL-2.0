@@ -3,8 +3,8 @@ session_start();
 require_once '../config/database.php';
 require_once '../includes/functions.php';
 
-// Check if user is logged in as admin
-if (!isset($_SESSION['user_id']) || $_SESSION['user_type'] !== 'admin') {
+// Check if user is logged in as admin or seller
+if (!isset($_SESSION['user_id']) || !in_array($_SESSION['user_type'], ['admin', 'seller'])) {
     http_response_code(401);
     echo json_encode(['success' => false, 'message' => 'Unauthorized']);
     exit;
@@ -67,6 +67,13 @@ try {
     
     if (!$product) {
         echo json_encode(['success' => false, 'message' => 'Product not found']);
+        exit;
+    }
+    
+    // If user is a seller, ensure they can only view their own products
+    if ($_SESSION['user_type'] === 'seller' && $product['seller_id'] != $_SESSION['user_id']) {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'message' => 'Access denied. You can only view your own products.']);
         exit;
     }
     

@@ -40,7 +40,7 @@ if (isset($_GET['action']) && isset($_GET['id'])) {
                                 "Product Approved",
                                 "Your product '{$product['name']}' (ID: #{$productId}) has been approved by admin and is now active and visible to customers.",
                                 'success',
-                                'manage-products.php'
+                                'view-products.php?product_id=' . $productId
                             );
                         } catch (Exception $e) {
                             error_log("Error creating seller notification for product approval: " . $e->getMessage());
@@ -58,8 +58,8 @@ if (isset($_GET['action']) && isset($_GET['id'])) {
                                 $product['seller_id'],
                                 "Product Rejected",
                                 "Your product '{$product['name']}' (ID: #{$productId}) has been rejected by admin. Please review and resubmit if needed.",
-                                'warning',
-                                'manage-products.php'
+                                'error',
+                                'view-products.php?product_id=' . $productId
                             );
                         } catch (Exception $e) {
                             error_log("Error creating seller notification for product rejection: " . $e->getMessage());
@@ -78,7 +78,7 @@ if (isset($_GET['action']) && isset($_GET['id'])) {
                                 "Product Suspended",
                                 "Your product '{$product['name']}' (ID: #{$productId}) has been suspended by admin. It is temporarily hidden from customers.",
                                 'warning',
-                                'manage-products.php'
+                                'view-products.php?product_id=' . $productId
                             );
                         } catch (Exception $e) {
                             error_log("Error creating seller notification for product suspension: " . $e->getMessage());
@@ -97,7 +97,7 @@ if (isset($_GET['action']) && isset($_GET['id'])) {
                                 "Product Reactivated",
                                 "Your product '{$product['name']}' (ID: #{$productId}) has been reactivated by admin and is now active and visible to customers again.",
                                 'success',
-                                'manage-products.php'
+                                'view-products.php?product_id=' . $productId
                             );
                         } catch (Exception $e) {
                             error_log("Error creating seller notification for product reactivation: " . $e->getMessage());

@@ -571,6 +571,22 @@ h1 {
     color: #dc3545;
 }
 
+.status-badge-table.rejected {
+    background: rgba(220, 53, 69, 0.2);
+    color: #dc3545;
+    border: 1px solid rgba(220, 53, 69, 0.4);
+}
+
+.status-badge-table.suspended {
+    background: rgba(108, 117, 125, 0.15);
+    color: #6c757d;
+}
+
+.status-badge-table.pending {
+    background: rgba(255, 193, 7, 0.15);
+    color: #ffc107;
+}
+
 .table-actions {
     display: flex;
     gap: 8px;
@@ -738,6 +754,346 @@ h1 {
     .products-table { font-size: 12px; }
     .table-actions { flex-direction: row; }
 }
+
+/* Product ID Link */
+.product-id-link {
+    color: #130325;
+    text-decoration: underline;
+    font-weight: 600;
+    cursor: pointer;
+}
+.product-id-link:hover {
+    text-decoration: underline;
+}
+
+/* Product View Modal - Matching Admin Style */
+.product-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.7);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    overflow-y: auto;
+    padding: 20px;
+}
+.product-modal-overlay[aria-hidden="false"] {
+    display: flex;
+}
+.product-modal-dialog {
+    width: 1000px;
+    max-width: 95vw;
+    max-height: 90vh;
+    background: #f0f2f5;
+    border: none;
+    border-radius: 8px;
+    position: relative;
+    margin: auto;
+    animation: productModalSlideIn 0.3s ease;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+}
+@keyframes productModalSlideIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95) translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+.product-modal-close {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: rgba(255, 255, 255, 0.9);
+    border: none;
+    color: #130325;
+    font-size: 28px;
+    cursor: pointer;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+    z-index: 10;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+.product-modal-close:hover {
+    background: rgba(255, 255, 255, 1);
+    transform: scale(1.1);
+}
+.product-modal-body {
+    padding: 20px;
+    color: #130325;
+    max-height: calc(90vh - 40px);
+    overflow-y: auto;
+}
+.product-modal-body::-webkit-scrollbar {
+    width: 8px;
+}
+.product-modal-body::-webkit-scrollbar-track {
+    background: #e9ecef;
+    border-radius: 4px;
+}
+.product-modal-body::-webkit-scrollbar-thumb {
+    background: #adb5bd;
+    border-radius: 4px;
+}
+.product-modal-body::-webkit-scrollbar-thumb:hover {
+    background: #868e96;
+}
+.product-view-main {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 20px;
+}
+.product-image-gallery {
+    flex: 0 0 200px;
+}
+.product-main-image-container {
+    background: #ffffff;
+    border: 2px solid #666666;
+    padding: 10px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 200px;
+    max-width: 200px;
+    border-radius: 4px;
+}
+.product-main-image {
+    max-width: 100%;
+    max-height: 200px;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+}
+.product-info-section {
+    background: #ffffff;
+    padding: 20px;
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+    flex: 1;
+    border-radius: 4px;
+}
+.product-details {
+    flex: 1;
+}
+.product-title {
+    font-size: 20px;
+    font-weight: 900;
+    color: #130325;
+    margin-bottom: 12px;
+    line-height: 1.2;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    text-shadow: none !important;
+}
+.product-price-section {
+    background: rgba(255, 215, 54, 0.1);
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 12px;
+    border: 1px solid rgba(255, 215, 54, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+.product-price-left {
+    flex: 1;
+}
+.product-price-label {
+    font-size: 11px;
+    color: rgba(19, 3, 37, 0.6);
+    margin-bottom: 4px;
+}
+.product-price-amount {
+    font-size: 20px;
+    font-weight: 900;
+    color: #130325;
+    line-height: 1;
+}
+.product-price-stock {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.product-price-stock-label {
+    font-size: 11px;
+    color: rgba(19, 3, 37, 0.6);
+}
+.product-info-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+.product-info-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: rgba(255, 255, 255, 0.5);
+    border-radius: 6px;
+    border: 1px solid rgba(19, 3, 37, 0.1);
+}
+.product-info-row-full {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 8px 12px;
+    background: rgba(255, 255, 255, 0.5);
+    border-radius: 6px;
+    border: 1px solid rgba(19, 3, 37, 0.1);
+}
+.product-info-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    background: rgba(255, 255, 255, 0.5);
+    border-radius: 6px;
+    border: 1px solid rgba(19, 3, 37, 0.1);
+    min-width: 0;
+}
+.product-info-row-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex: 1;
+}
+.product-info-row-item-separator {
+    color: rgba(19, 3, 37, 0.3);
+    margin: 0 4px;
+}
+.product-info-icon {
+    color: #FFD736;
+    font-size: 12px;
+    width: 16px;
+    text-align: center;
+}
+.product-info-label {
+    color: rgba(19, 3, 37, 0.7);
+    font-size: 10px;
+    margin-right: 4px;
+}
+.product-info-value {
+    color: #130325;
+    font-weight: 600;
+    font-size: 10px;
+}
+.product-stock-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+}
+.product-stock-in {
+    background: #d4edda;
+    color: #155724;
+}
+.product-stock-low {
+    background: #fff3cd;
+    color: #856404;
+}
+.product-stock-out {
+    background: #f8d7da;
+    color: #721c24;
+}
+.product-status-badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+.product-status-badge.pending { background: #fef3c7; color: #92400e; }
+.product-status-badge.active { background: #d1fae5; color: #065f46; }
+.product-status-badge.inactive { background: #fee2e2; color: #991b1b; }
+.product-status-badge.rejected { background: #fee2e2; color: #991b1b; }
+.product-status-badge.suspended { background: #e5e7eb; color: #374151; }
+.product-details-section {
+    background: #ffffff;
+    padding: 14px 16px;
+    margin-bottom: 15px;
+    border-radius: 4px;
+}
+.product-details-section h3 {
+    font-size: 13px;
+    font-weight: 600;
+    color: #130325;
+    margin-bottom: 6px;
+    text-shadow: none !important;
+}
+.product-category-text {
+    font-size: 12px;
+    color: #666;
+    margin: 0;
+}
+.product-description-content {
+    font-size: 12px;
+    color: #666;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    margin: 0;
+}
+.preview-product-category,
+.preview-product-description {
+    margin-bottom: 12px;
+}
+.preview-product-category:last-child,
+.preview-product-description:last-child {
+    margin-bottom: 0;
+}
+.product-loading {
+    text-align: center;
+    padding: 60px 40px;
+    color: #6b7280;
+}
+.product-loading i {
+    font-size: 32px;
+    margin-bottom: 12px;
+    display: block;
+    animation: spin 1s linear infinite;
+    color: #130325;
+}
+.product-loading p {
+    font-size: 14px;
+    margin: 0;
+}
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+@media (max-width: 768px) {
+    .product-view-main {
+        flex-direction: column;
+    }
+    .product-image-gallery {
+        flex: 1;
+    }
+    .product-main-image-container {
+        max-width: 100%;
+    }
+    .product-modal-dialog {
+        width: 95vw;
+    }
+    .product-price-section {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
 </style>
 
 <main>
@@ -780,6 +1136,9 @@ h1 {
                 <option value="all">All Products</option>
                 <option value="active">Active Only</option>
                 <option value="inactive">Inactive Only</option>
+                <option value="pending">Pending Approval</option>
+                <option value="rejected">Rejected</option>
+                <option value="suspended">Suspended</option>
             </select>
         </div>
     </div>
@@ -826,7 +1185,11 @@ h1 {
                                 data-stock="<?php echo (int)$product['stock_quantity']; ?>"
                                 data-status="<?php echo htmlspecialchars($product['status'] ?? 'inactive'); ?>"
                                 data-date="<?php echo isset($product['created_at']) ? strtotime($product['created_at']) : 0; ?>">
-                                <td><?php echo $product['id']; ?></td>
+                                <td>
+                                    <a href="#" class="product-id-link" onclick="openProductModal(<?php echo $product['id']; ?>); return false;" title="View Product Details">
+                                        #<?php echo $product['id']; ?>
+                                    </a>
+                                </td>
                                 <td>
                                     <img src="<?php echo htmlspecialchars($product['image_url']); ?>" 
                                          alt="<?php echo htmlspecialchars($product['name']); ?>" 
@@ -842,17 +1205,13 @@ h1 {
                                     </span>
                                 </td>
                                 <td>
-                                    <span class="status-badge-table <?php echo ($product['status'] == 'active') ? 'active' : 'inactive'; ?>">
+                                    <span class="status-badge-table <?php echo htmlspecialchars($product['status'] ?? 'inactive'); ?>">
                                         <?php echo ucfirst($product['status'] ?? 'inactive'); ?>
                                     </span>
                                 </td>
                                 <td>
                                     <div class="table-actions">
-                                        <?php if (in_array($product['status'], ['suspended', 'rejected'])): ?>
-                                            <a href="edit-product.php?id=<?php echo $product['id']; ?>" class="action-btn edit-btn" title="View Details (Read-Only)">
-                                                <i class="fas fa-eye"></i>
-                                            </a>
-                                        <?php else: ?>
+                                        <?php if (!in_array($product['status'], ['suspended', 'rejected'])): ?>
                                             <a href="edit-product.php?id=<?php echo $product['id']; ?>" class="action-btn edit-btn" title="Edit">
                                                 <i class="fas fa-edit"></i>
                                             </a>
@@ -899,10 +1258,8 @@ function filterProducts() {
                              productCategory.includes(searchTerm);
         
         let matchesStatus = true;
-        if (statusFilter === 'active') {
-            matchesStatus = productStatus === 'active';
-        } else if (statusFilter === 'inactive') {
-            matchesStatus = productStatus === 'inactive';
+        if (statusFilter !== 'all') {
+            matchesStatus = productStatus === statusFilter;
         }
         
         if (matchesSearch && matchesStatus) {
@@ -1156,5 +1513,192 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
+
+// Product View Modal Functions
+function openProductModal(productId) {
+    const modal = document.getElementById('productViewModal');
+    if (!modal) return;
+    
+    // Show loading state
+    const modalBody = modal.querySelector('.product-modal-body');
+    modalBody.innerHTML = '<div class="product-loading"><i class="fas fa-spinner"></i><p>Loading product details...</p></div>';
+    modal.setAttribute('aria-hidden', 'false');
+    document.body.style.overflow = 'hidden';
+    
+    // Fetch product details
+    fetch(`ajax/get-product-details.php?id=${productId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                displayProductDetails(data.product);
+            } else {
+                modalBody.innerHTML = `<div class="product-loading"><i class="fas fa-exclamation-triangle"></i><p>${data.message || 'Error loading product details'}</p></div>`;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            modalBody.innerHTML = '<div class="product-loading"><i class="fas fa-exclamation-triangle"></i><p>Error loading product details. Please try again.</p></div>';
+        });
+}
+
+function displayProductDetails(product) {
+    const modalBody = document.querySelector('#productViewModal .product-modal-body');
+    
+    // Build images HTML
+    let mainImage = 'assets/uploads/tempo_image.jpg'; // default
+    let imageHTML = '';
+    
+    if (product.images && product.images.length > 0) {
+        let imgPath = product.images[0].image_url || '';
+        if (imgPath) {
+            mainImage = imgPath;
+        }
+    } else if (product.image_url) {
+        mainImage = product.image_url;
+    }
+    
+    imageHTML = `
+        <div class="product-main-image-container">
+            <img src="${mainImage}" alt="${escapeHtml(product.name)}" class="product-main-image" id="productMainImage" onerror="this.src='assets/uploads/tempo_image.jpg'">
+        </div>
+    `;
+    
+    // Build status badge
+    const statusClass = product.status || 'inactive';
+    const statusText = product.status ? product.status.charAt(0).toUpperCase() + product.status.slice(1) : 'Inactive';
+    
+    // Stock badge
+    const stock = parseInt(product.stock_quantity || 0);
+    let stockBadgeClass = 'product-stock-out';
+    let stockBadgeText = 'Out of Stock';
+    if (stock > 10) {
+        stockBadgeClass = 'product-stock-in';
+        stockBadgeText = 'In Stock';
+    } else if (stock > 0) {
+        stockBadgeClass = 'product-stock-low';
+        stockBadgeText = 'Low Stock';
+    }
+    
+    modalBody.innerHTML = `
+        <div class="product-view-main">
+            <div class="product-image-gallery">
+                ${imageHTML}
+            </div>
+            
+            <div class="product-info-section">
+                <div class="product-details">
+                    <h1 class="product-title">${escapeHtml(product.name)}</h1>
+                    
+                    <div class="product-price-section">
+                        <div class="product-price-left">
+                            <div class="product-price-label">Price:</div>
+                            <div class="product-price-amount">₱${parseFloat(product.price || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+                        </div>
+                        <div class="product-price-stock">
+                            <span class="product-price-stock-label">Stock:</span>
+                            <span class="product-stock-badge ${stockBadgeClass}">${stockBadgeText}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="product-info-list">
+                        <div class="product-info-row">
+                            <i class="fas fa-hashtag product-info-icon"></i>
+                            <span class="product-info-label">Product ID:</span>
+                            <span class="product-info-value">#${product.id}</span>
+                            <span class="product-info-row-item-separator">•</span>
+                            <i class="fas fa-calendar-plus product-info-icon"></i>
+                            <span class="product-info-label">Created:</span>
+                            <span class="product-info-value">${product.created_at_formatted}</span>
+                        </div>
+                        
+                        <div class="product-info-row">
+                            <i class="fas fa-tag product-info-icon"></i>
+                            <span class="product-info-label">Status:</span>
+                            <span class="product-status-badge ${statusClass}">${statusText}</span>
+                            <span class="product-info-row-item-separator">•</span>
+                            <i class="fas fa-box product-info-icon"></i>
+                            <span class="product-info-label">Stock Quantity:</span>
+                            <span class="product-info-value">${stock}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="product-details-section">
+            <div class="preview-product-category">
+                <h3>Product Category</h3>
+                <p class="product-category-text">${escapeHtml(product.category_name || 'No category assigned')}</p>
+            </div>
+            <div class="preview-product-description">
+                <h3>Product Description</h3>
+                <div class="product-description-content">${escapeHtml(product.description || 'No description provided.')}</div>
+            </div>
+        </div>
+    `;
+}
+
+function closeProductModal() {
+    const modal = document.getElementById('productViewModal');
+    if (modal) {
+        modal.setAttribute('aria-hidden', 'true');
+        document.body.style.overflow = '';
+    }
+}
+
+// Close modal when clicking outside
+document.addEventListener('click', function(e) {
+    const modal = document.getElementById('productViewModal');
+    if (modal && e.target === modal) {
+        closeProductModal();
+    }
+});
+
+// Close modal on Escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        const productModal = document.getElementById('productViewModal');
+        if (productModal && productModal.getAttribute('aria-hidden') === 'false') {
+            closeProductModal();
+        }
+    }
+});
+
+// Helper function to escape HTML
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// Check if product_id is in URL and auto-open modal
+document.addEventListener('DOMContentLoaded', function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const productId = urlParams.get('product_id');
+    
+    if (productId) {
+        // Small delay to ensure page is fully loaded
+        setTimeout(function() {
+            openProductModal(parseInt(productId));
+            // Remove product_id from URL without refreshing
+            const newUrl = window.location.pathname;
+            window.history.replaceState({}, document.title, newUrl);
+        }, 500);
+    }
+});
 </script>
+
+<!-- Product View Modal -->
+<div id="productViewModal" class="product-modal-overlay" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="product-modal-dialog">
+        <button class="product-modal-close" aria-label="Close" onclick="closeProductModal()">&times;</button>
+        <div class="product-modal-body">
+            <div class="product-loading">
+                <i class="fas fa-spinner"></i>
+                <p>Loading product details...</p>
+            </div>
+        </div>
+    </div>
+</div>
 

@@ -944,24 +944,321 @@ body {
     margin-right: 6px;
 }
 
-/* Force modal to be horizontal/wide */
+/* Compact Modal Styling */
 #detailsModal .modal-dialog {
-    max-width: 80vw !important;
-    width: 80vw !important;
-    height: 80vh !important;
-    margin: 10vh auto !important;
+    max-width: 700px !important;
+    width: 90vw !important;
+    height: auto !important;
+    margin: 8vh auto !important;
 }
 
 #detailsModal .modal-content {
-    height: 100% !important;
-    display: flex !important;
-    flex-direction: column !important;
+    border: none !important;
+    border-radius: 12px !important;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.15) !important;
+    overflow: hidden !important;
 }
 
-#detailsModal .modal-body {
-    flex: 1 !important;
-    overflow-y: auto !important;
-    padding: 15px !important;
+.modal-header-modern {
+    background: #130325 !important;
+    color: #ffffff !important;
+    padding: 16px 20px !important;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.modal-title-modern {
+    color: #ffffff !important;
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.modal-title-modern::before {
+    content: "\f05a";
+    font-family: "Font Awesome 5 Free";
+    font-weight: 900;
+    color: #FFD736;
+}
+
+.btn-close-modern {
+    background: transparent;
+    border: none;
+    color: #ffffff;
+    font-size: 24px;
+    cursor: pointer;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+.btn-close-modern:hover {
+    background: rgba(255,255,255,0.1);
+    color: #FFD736;
+}
+
+.modal-body-modern {
+    padding: 0 !important;
+    background: #f9fafb !important;
+}
+
+/* Compact Return Details Layout */
+.compact-return-details {
+    font-size: 0.875rem;
+}
+
+.details-header-bar {
+    background: #f9fafb;
+    padding: 12px 15px;
+    border-bottom: 1px solid #e5e7eb;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.header-info {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.info-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.8rem;
+    color: #6b7280;
+}
+
+.info-item i {
+    color: #FFD736;
+    font-size: 0.75rem;
+}
+
+.status-badge-compact {
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.status-badge-compact i {
+    font-size: 0.7rem;
+}
+
+.status-pending {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.status-approved {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.status-rejected {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.status-completed {
+    background: #dbeafe;
+    color: #1e40af;
+}
+
+.compact-grid {
+    padding: 15px;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+}
+
+.grid-section {
+    background: #ffffff;
+    padding: 12px;
+    border-radius: 6px;
+    border: 1px solid #e5e7eb;
+}
+
+.grid-section.full-width-section {
+    grid-column: 1 / -1;
+}
+
+.section-label {
+    color: #130325;
+    font-weight: 700;
+    font-size: 0.8rem;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.section-label i {
+    color: #FFD736;
+}
+
+.product-compact {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+}
+
+.product-thumb {
+    width: 50px;
+    height: 50px;
+    object-fit: cover;
+    border-radius: 4px;
+    border: 1px solid #e5e7eb;
+}
+
+.product-info-compact {
+    flex: 1;
+}
+
+.product-name-compact {
+    font-weight: 600;
+    color: #130325;
+    font-size: 0.85rem;
+    margin-bottom: 4px;
+    line-height: 1.3;
+}
+
+.product-price-compact {
+    color: #10b981;
+    font-weight: 600;
+    font-size: 0.8rem;
+}
+
+.customer-info-compact {
+    font-size: 0.85rem;
+    color: #130325;
+}
+
+.text-muted-compact {
+    color: #6b7280;
+    font-size: 0.8rem;
+    margin-top: 2px;
+}
+
+.issue-compact {
+    font-size: 0.85rem;
+}
+
+.issue-type-compact {
+    margin-bottom: 8px;
+    color: #130325;
+}
+
+.issue-desc-compact {
+    background: #f9fafb;
+    border-left: 3px solid #FFD736;
+    padding: 8px;
+    border-radius: 4px;
+    color: #130325;
+    line-height: 1.5;
+    font-size: 0.8rem;
+}
+
+.photos-compact {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+    gap: 8px;
+}
+
+.loading-compact {
+    text-align: center;
+    padding: 15px;
+    color: #6b7280;
+    font-size: 0.85rem;
+}
+
+.photo-card-modern {
+    position: relative;
+    aspect-ratio: 1;
+    border-radius: 4px;
+    overflow: hidden;
+    cursor: pointer;
+    border: 1px solid #e5e7eb;
+    transition: all 0.2s ease;
+}
+
+.photo-card-modern:hover {
+    border-color: #FFD736;
+    transform: scale(1.05);
+}
+
+.photo-img-modern {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.photo-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(19, 3, 37, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.photo-card-modern:hover .photo-overlay {
+    opacity: 1;
+}
+
+.photo-overlay i {
+    color: #FFD736;
+    font-size: 1.2rem;
+}
+
+.no-photos-message,
+.error-photos-message {
+    text-align: center;
+    padding: 20px;
+    color: #6b7280;
+    font-size: 0.85rem;
+}
+
+.no-photos-message i,
+.error-photos-message i {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 1.5rem;
+}
+
+.error-photos-message {
+    color: #ef4444;
+}
+
+@media (max-width: 768px) {
+    .compact-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .header-info {
+        flex-direction: column;
+        gap: 6px;
+    }
 }
 
 .info-grid {
@@ -1689,11 +1986,11 @@ body {
 <div class="modal fade" id="detailsModal" tabindex="-1" aria-hidden="true" style="display: none;">
     <div class="modal-dialog modal-xl" style="max-width: 80vw; width: 80vw;">
         <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Return Request Details</h5>
-                <button type="button" class="btn-close" onclick="closeDetailsModal()" aria-label="Close">×</button>
+            <div class="modal-header-modern">
+                <h5 class="modal-title-modern">Return Request Details</h5>
+                <button type="button" class="btn-close-modern" onclick="closeDetailsModal()" aria-label="Close">×</button>
             </div>
-            <div class="modal-body" id="detailsModalBody">
+            <div class="modal-body-modern" id="detailsModalBody">
                 <!-- Content will be loaded here -->
             </div>
         </div>
@@ -1914,50 +2211,61 @@ function displayReturnDetails(returnRequest) {
     const issueType = reasonParts[0] || 'Not specified';
     const details = reasonParts[1] || 'No additional details provided';
     
+    const statusBadgeClass = getStatusBadgeClass(returnRequest.status);
+    
     modalBody.innerHTML = `
-        <div class="return-details-wide">
-            <div class="row">
-                <div class="col-md-2">
-                    <h6><i class="fas fa-info-circle"></i> Info</h6>
-                    <div class="info-grid">
-                        <div><strong>ID:</strong> #${returnRequest.id}</div>
-                        <div><strong>Order:</strong> #${returnRequest.order_id}</div>
-                        <div><strong>Status:</strong> <span class="badge badge-${getStatusBadgeClass(returnRequest.status)}">${returnRequest.status}</span></div>
-                        <div><strong>Date:</strong> ${new Date(returnRequest.created_at).toLocaleDateString()}</div>
-                        <div><strong>Qty:</strong> ${returnRequest.quantity}</div>
+        <div class="compact-return-details">
+            <!-- Header with Status Badge -->
+            <div class="details-header-bar">
+                <div class="header-info">
+                    <div class="info-item">
+                        <i class="fas fa-hashtag"></i> Request #${returnRequest.id}
+                    </div>
+                    <div class="info-item">
+                        <i class="fas fa-shopping-bag"></i> Order #${String(returnRequest.order_id).padStart(6, '0')}
+                    </div>
+                    <div class="info-item">
+                        <i class="fas fa-calendar-alt"></i> ${new Date(returnRequest.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                     </div>
                 </div>
-                <div class="col-md-2">
-                    <h6><i class="fas fa-user"></i> Customer</h6>
-                    <div class="info-grid">
-                        <div><strong>Name:</strong> ${returnRequest.customer_name}</div>
-                        <div><strong>Email:</strong> ${returnRequest.customer_email}</div>
-                    </div>
-                </div>
-                <div class="col-md-2">
-                    <h6><i class="fas fa-box"></i> Product</h6>
-                    <div class="product-info-ultra-compact">
-                        <img src="${returnRequest.product_image}" alt="Product" class="product-image-ultra-compact">
-                        <div class="product-details-ultra-compact">
-                            <strong>${returnRequest.product_name}</strong><br>
-                            <small>₱${parseFloat(returnRequest.item_price).toFixed(2)}</small>
+                <span class="status-badge-compact status-${returnRequest.status}">
+                    <i class="fas ${getStatusIcon(returnRequest.status)}"></i> ${returnRequest.status.toUpperCase()}
+                </span>
+            </div>
+
+            <!-- Compact Grid Layout -->
+            <div class="compact-grid">
+                <div class="grid-section">
+                    <div class="section-label"><i class="fas fa-box"></i> Product</div>
+                    <div class="product-compact">
+                        <img src="${returnRequest.product_image}" alt="Product" class="product-thumb">
+                        <div class="product-info-compact">
+                            <div class="product-name-compact">${returnRequest.product_name}</div>
+                            <div class="product-price-compact">₱${parseFloat(returnRequest.item_price).toFixed(2)} × ${returnRequest.quantity}</div>
                         </div>
                     </div>
                 </div>
-                <div class="col-md-3">
-                    <h6><i class="fas fa-exclamation-triangle"></i> Issue</h6>
-                    <div class="issue-details-ultra-compact">
-                        <div><strong>Type:</strong> ${issueType}</div>
-                        <div><strong>Details:</strong></div>
-                        <div class="description-box-ultra-compact">${details}</div>
+
+                <div class="grid-section">
+                    <div class="section-label"><i class="fas fa-user"></i> Customer</div>
+                    <div class="customer-info-compact">
+                        <div>${returnRequest.customer_name}</div>
+                        <div class="text-muted-compact">${returnRequest.customer_email}</div>
                     </div>
                 </div>
-                <div class="col-md-3">
-                    <h6><i class="fas fa-images"></i> Photos</h6>
-                    <div class="photos-container-wide" id="photosContainer">
-                        <div class="text-center p-2">
-                            <i class="fas fa-spinner fa-spin"></i> Loading...
-                        </div>
+
+                <div class="grid-section full-width-section">
+                    <div class="section-label"><i class="fas fa-exclamation-circle"></i> Issue</div>
+                    <div class="issue-compact">
+                        <div class="issue-type-compact"><strong>Type:</strong> ${issueType}</div>
+                        <div class="issue-desc-compact">${details}</div>
+                    </div>
+                </div>
+
+                <div class="grid-section full-width-section">
+                    <div class="section-label"><i class="fas fa-images"></i> Photos</div>
+                    <div class="photos-compact" id="photosContainer">
+                        <div class="loading-compact"><i class="fas fa-spinner fa-spin"></i></div>
                     </div>
                 </div>
             </div>
@@ -1966,6 +2274,26 @@ function displayReturnDetails(returnRequest) {
     
     // Load photos
     loadReturnPhotos(returnRequest.id);
+}
+
+function getStatusColor(status) {
+    switch(status) {
+        case 'pending': return 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)';
+        case 'approved': return 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+        case 'rejected': return 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)';
+        case 'completed': return 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)';
+        default: return 'linear-gradient(135deg, #6b7280 0%, #4b5563 100%)';
+    }
+}
+
+function getStatusIcon(status) {
+    switch(status) {
+        case 'pending': return 'fa-clock';
+        case 'approved': return 'fa-check-circle';
+        case 'rejected': return 'fa-times-circle';
+        case 'completed': return 'fa-flag-checkered';
+        default: return 'fa-info-circle';
+    }
 }
 
 function getStatusBadgeClass(status) {
@@ -1985,16 +2313,19 @@ function loadReturnPhotos(returnId) {
             const photosContainer = document.getElementById('photosContainer');
             if (data.success && data.photos.length > 0) {
                 photosContainer.innerHTML = data.photos.map(photo => 
-                    `<div class="photo-item">
-                        <img src="${photo}" alt="Return photo" class="return-photo" onclick="openPhotoModal('${photo}')">
+                    `<div class="photo-card-modern" onclick="openPhotoModal('${photo}')">
+                        <img src="${photo}" alt="Return photo" class="photo-img-modern">
+                        <div class="photo-overlay">
+                            <i class="fas fa-search-plus"></i>
+                        </div>
                     </div>`
                 ).join('');
             } else {
-                photosContainer.innerHTML = '<div class="text-center p-3 text-muted">No photos uploaded</div>';
+                photosContainer.innerHTML = '<div class="no-photos-message"><i class="fas fa-image"></i> No photos uploaded</div>';
             }
         })
         .catch(error => {
-            document.getElementById('photosContainer').innerHTML = '<div class="text-center p-3 text-danger">Error loading photos</div>';
+            document.getElementById('photosContainer').innerHTML = '<div class="error-photos-message"><i class="fas fa-exclamation-triangle"></i> Error loading photos</div>';
         });
 }
 
