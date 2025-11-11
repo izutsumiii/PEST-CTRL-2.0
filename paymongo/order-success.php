@@ -73,12 +73,6 @@ $checkoutSessionId = isset($_GET['checkout_session_id']) ? $_GET['checkout_sessi
 // Rest of the redirect logic...
 if ($orderId <= 0 && $transactionId <= 0 && !$checkoutSessionId) {
     error_log('Order Success - CRITICAL: No valid order_id, transaction_id, or checkout_session_id found.');
-    error_log('Order Success - GET params: ' . json_encode($_GET));
-    error_log('Order Success - Redirecting to products.');
-    // CRITICAL: Update session activity before redirecting to prevent logout
-    if (isset($_SESSION['user_id'])) {
-        $_SESSION['last_activity'] = time();
-    }
     header("Location: ../products.php");
     exit();
 }
@@ -106,218 +100,25 @@ try {
         $order = $stmt->fetch(PDO::FETCH_ASSOC);
         
         // Get transaction details if available
-        $transaction = null;
         if ($order && $order['payment_transaction_id']) {
             $stmt = $pdo->prepare("SELECT * FROM payment_transactions WHERE id = ?");
             $stmt->execute([$order['payment_transaction_id']]);
             $transaction = $stmt->fetch(PDO::FETCH_ASSOC);
         }
-    } else {
-        // Multi-seller order lookup by transaction_id OR checkout_session_id
-        if ($transactionId > 0) {
-            $stmt = $pdo->prepare("SELECT * FROM payment_transactions WHERE id = ?");
-            $stmt->execute([$transactionId]);
-            $transaction = $stmt->fetch(PDO::FETCH_ASSOC);
-        } elseif ($checkoutSessionId) {
-            // Try to find transaction by checkout_session_id
-            error_log('Order Success - Looking up transaction by checkout_session_id: ' . $checkoutSessionId);
-            $stmt = $pdo->prepare("SELECT * FROM payment_transactions WHERE paymongo_session_id = ? ORDER BY created_at DESC LIMIT 1");
-            $stmt->execute([$checkoutSessionId]);
-            $transaction = $stmt->fetch(PDO::FETCH_ASSOC);
-            if ($transaction) {
-                $transactionId = (int)$transaction['id'];
-                error_log('Order Success - Found transaction by checkout_session_id: ' . $transactionId);
-            }
-        } else {
-            $transaction = null;
-        }
-        
-        if (!$transaction) {
-            error_log('Order Success - CRITICAL: Transaction not found. transactionId: ' . $transactionId . ', checkoutSessionId: ' . ($checkoutSessionId ?? 'NULL'));
-            
-            // If we have checkout_session_id but no transaction, try to create a transaction record
-            if ($checkoutSessionId) {
-                error_log('Order Success - Have checkout_session_id but no transaction - trying to create transaction from PayMongo data');
-                // We'll continue and try to create orders with minimal data
-                // Create a minimal transaction object for order creation
-                $transaction = [
-                    'id' => 0,
-                    'user_id' => $_SESSION['user_id'] ?? 0,
-                    'total_amount' => $_SESSION['pending_checkout_grand_total'] ?? 0,
-                    'payment_method' => 'card', // Default for PayMongo
-                    'shipping_address' => $_SESSION['pending_shipping_address'] ?? '',
-                    'status' => 'pending'
-                ];
-                error_log('Order Success - Created minimal transaction object for order creation');
-            } else {
-                // Don't redirect - try to create orders anyway if we have checkout_session_id
-                if (!$checkoutSessionId) {
-                    // CRITICAL: Update session activity before redirecting to prevent logout
-                    if (isset($_SESSION['user_id'])) {
-                        $_SESSION['last_activity'] = time();
-                    }
-                    header("Location: ../products.php");
-                    exit();
-                }
-                // If we have checkout_session_id, continue - we'll try to create orders
-                error_log('Order Success - Continuing with checkout_session_id only - will try to create orders');
-            }
-        }
-        
-        // CRITICAL: Verify payment status with PayMongo before creating orders
-        // Check if there's a checkout_session_id in the URL or we can get it from the transaction
-        // IMPORTANT: Re-get checkout_session_id from URL (it might have been set earlier but we need it here)
-        $checkoutSessionId = $_GET['checkout_session_id'] ?? $checkoutSessionId ?? null;
-        $paymentVerified = false;
-        
-        error_log('Order Success - Starting payment verification for transaction ' . $transactionId);
-        error_log('Order Success - checkout_session_id: ' . ($checkoutSessionId ?? 'NULL'));
-        error_log('Order Success - transaction status: ' . ($transaction['payment_status'] ?? 'NULL'));
-        
-        // If we have checkout_session_id, verify payment status with PayMongo
-        if ($checkoutSessionId) {
-            error_log('Order Success - Verifying payment with PayMongo for checkout_session_id: ' . $checkoutSessionId);
-            try {
-                require_once 'config.php';
-                
-                // Fetch checkout session from PayMongo to verify payment status
-                $ch = curl_init();
-                curl_setopt_array($ch, [
-                    CURLOPT_URL => PAYMONGO_BASE_URL . '/checkout_sessions/' . $checkoutSessionId,
-                    CURLOPT_RETURNTRANSFER => true,
-                    CURLOPT_HTTPHEADER => [
-                        'Content-Type: application/json',
-                        'Accept: application/json',
-                        'Authorization: Basic ' . base64_encode(PAYMONGO_SECRET_KEY . ':')
-                    ],
-                    CURLOPT_SSL_VERIFYPEER => true,
-                    CURLOPT_TIMEOUT => 10
-                ]);
-                
-                $response = curl_exec($ch);
-                $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-                $curlError = curl_error($ch);
-                curl_close($ch);
-                
-                error_log('Order Success - PayMongo API Response HTTP Code: ' . $http_code);
-                error_log('Order Success - PayMongo API Response: ' . substr($response, 0, 500));
-                
-                if ($curlError) {
-                    error_log('Order Success - PayMongo API cURL Error: ' . $curlError);
-                }
-                
-                if ($http_code === 200) {
-                    $response_data = json_decode($response, true);
-                    if (!$response_data) {
-                        error_log('Order Success - Failed to decode PayMongo response JSON');
-                        $paymentVerified = true; // Trust redirect if we're on success page
-                    } elseif (isset($response_data['data']['attributes']['payment_status'])) {
-                        $paymongoPaymentStatus = $response_data['data']['attributes']['payment_status'];
-                        error_log('Order Success - PayMongo payment status: ' . $paymongoPaymentStatus);
-                        
-                        // PayMongo payment statuses: 'paid', 'unpaid', 'awaiting_payment_method'
-                        // If we're on success_url, PayMongo only redirects here after successful payment
-                        // So even if status is not 'paid' yet, we should trust the redirect
-                        if ($paymongoPaymentStatus === 'paid') {
-                            $paymentVerified = true;
-                            error_log('Order Success - Payment status is paid - verified');
-                        } else {
-                            // Status might be 'unpaid' or 'awaiting_payment_method' but we're on success page
-                            // PayMongo ONLY redirects to success_url after payment succeeds
-                            // So trust the redirect and verify payment
-                            error_log('Order Success - Payment status is ' . $paymongoPaymentStatus . ' but we are on success page - trusting redirect');
-                            $paymentVerified = true;
-                            
-                            // Also check if there are any payments in the checkout session
-                            if (isset($response_data['data']['attributes']['payments']) && is_array($response_data['data']['attributes']['payments'])) {
-                                $payments = $response_data['data']['attributes']['payments'];
-                                if (!empty($payments)) {
-                                    $lastPayment = end($payments);
-                                    if (isset($lastPayment['attributes']['status']) && $lastPayment['attributes']['status'] === 'paid') {
-                                        error_log('Order Success - Found paid payment in checkout session - verified');
-                                        $paymentVerified = true;
-                                    }
-                                }
-                            }
-                        }
-                    } else {
-                        // No payment_status in response - but we're on success page
-                        // PayMongo only redirects to success_url after payment, so trust it
-                        error_log('Order Success - No payment_status in response, but on success page - trusting PayMongo redirect');
-                        $paymentVerified = true;
-                    }
-                } else {
-                    // API call failed - but we're on success page
-                    // PayMongo only redirects to success_url after payment, so trust it
-                    error_log('Order Success - Failed to verify with PayMongo API (HTTP ' . $http_code . '), but on success page - trusting redirect');
-                    $paymentVerified = true;
-                }
-            } catch (Exception $e) {
-                error_log('Order Success - Error verifying payment: ' . $e->getMessage());
-                // Even if API call fails, we're on success page
-                // PayMongo only redirects to success_url after payment, so trust it
-                $paymentVerified = true;
-            }
-        } else {
-            // No checkout_session_id - might be COD or PayMongo redirect without session ID
-            // For COD, we trust the transaction status
-            if ($transaction['payment_method'] === 'cod') {
-                $paymentVerified = true;
-            } else {
-                // For PayMongo without session ID:
-                // 1. Check if orders already exist (payment was successful before)
-                // 2. Check transaction status - if it's 'pending' and we're on success page, trust it
-                // 3. PayMongo redirects to success_url only after successful payment
-                $stmt = $pdo->prepare("SELECT COUNT(*) FROM orders WHERE payment_transaction_id = ?");
-                $stmt->execute([$transactionId]);
-                $existingOrdersCount = $stmt->fetchColumn();
-                
-                if ($existingOrdersCount > 0) {
-                    // Orders already exist - payment was successful
-                    $paymentVerified = true;
-                    error_log('Order Success - Orders already exist, payment verified');
-                } elseif ($transaction['payment_status'] === 'failed') {
-                    // Transaction status is explicitly failed - don't trust it
-                    error_log('Order Success - Transaction status is failed, redirecting to failure');
-                    header("Location: order-failure.php?transaction_id=" . $transactionId . "&error=Payment verification failed");
-                    exit();
-                } else {
-                    // Transaction is pending/null/completed and we're on success page
-                    // PayMongo ONLY redirects to success_url after payment succeeds
-                    // So if we're here, payment was successful - trust it!
-                    $paymentVerified = true;
-                    error_log('Order Success - No checkout_session_id but on success page - trusting PayMongo redirect (status: ' . ($transaction['payment_status'] ?? 'NULL') . ')');
-                }
-            }
-        }
-        
-        // CRITICAL: Check if orders already exist for this transaction
-        if ($transaction) {
-            $stmt = $pdo->prepare("SELECT * FROM orders WHERE payment_transaction_id = ? LIMIT 1");
-            $stmt->execute([$transactionId]);
-            $order = $stmt->fetch(PDO::FETCH_ASSOC);
-        }
+    } elseif ($transaction) {
+        $stmt = $pdo->prepare("SELECT * FROM orders WHERE payment_transaction_id = ? LIMIT 1");
+        $stmt->execute([$transactionId]);
+        $order = $stmt->fetch(PDO::FETCH_ASSOC);
     }
     
-    // If no order found, check if transaction exists and is completed
-    // If payment was successful, show success page even without order details
-    if (!$order) {
-        error_log('Order Success - No order found after all attempts.');
-        
-        // Check if transaction exists and is completed
-        if ($transaction && ($transaction['payment_status'] === 'completed' || $transaction['payment_status'] === 'pending')) {
-            error_log('Order Success - Transaction exists and is completed/pending, showing success page without order details');
-            // We'll show the success page with transaction info only
-            $order = null; // Keep as null, we'll handle this in the display
-        } else {
-            error_log('Order Success - Transaction not found or failed, redirecting to products.');
-            // CRITICAL: Update session activity before redirecting to prevent logout
-            if (isset($_SESSION['user_id'])) {
-                $_SESSION['last_activity'] = time();
-            }
-            header("Location: ../products.php");
-            exit();
+    // If no order or transaction found, redirect
+    if (!$order && !$transaction) {
+        // CRITICAL: Update session activity before redirecting to prevent logout
+        if (isset($_SESSION['user_id'])) {
+            $_SESSION['last_activity'] = time();
         }
+        header("Location: ../products.php");
+        exit();
     }
     
     // Get customer info - from transaction if available, otherwise from order
@@ -380,10 +181,6 @@ if ($order && isset($order['id'])) {
     
 } catch (PDOException $e) {
     error_log('Order success page error: ' . $e->getMessage());
-    // CRITICAL: Update session activity before redirecting to prevent logout
-    if (isset($_SESSION['user_id'])) {
-        $_SESSION['last_activity'] = time();
-    }
     header("Location: ../products.php");
     exit();
 }
