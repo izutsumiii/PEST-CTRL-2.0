@@ -145,6 +145,10 @@ if ($orderId <= 0 && $transactionId <= 0 && !$checkoutSessionId) {
     error_log('Order Success - CRITICAL: No valid order_id, transaction_id, or checkout_session_id found.');
     error_log('Order Success - GET params: ' . json_encode($_GET));
     error_log('Order Success - Redirecting to products.');
+    // CRITICAL: Update session activity before redirecting to prevent logout
+    if (isset($_SESSION['user_id'])) {
+        $_SESSION['last_activity'] = time();
+    }
     header("Location: ../products.php");
     exit();
 }
@@ -211,6 +215,10 @@ try {
             } else {
                 // Don't redirect - try to create orders anyway if we have checkout_session_id
                 if (!$checkoutSessionId) {
+                    // CRITICAL: Update session activity before redirecting to prevent logout
+                    if (isset($_SESSION['user_id'])) {
+                        $_SESSION['last_activity'] = time();
+                    }
                     header("Location: ../products.php");
                     exit();
                 }
@@ -1095,8 +1103,12 @@ try {
             $order = null; // Keep as null, we'll handle this in the display
         } else {
             error_log('Order Success - Transaction not found or failed, redirecting to products.');
-        header("Location: ../products.php");
-        exit();
+            // CRITICAL: Update session activity before redirecting to prevent logout
+            if (isset($_SESSION['user_id'])) {
+                $_SESSION['last_activity'] = time();
+            }
+            header("Location: ../products.php");
+            exit();
     }
     }
     
@@ -1158,6 +1170,10 @@ try {
     
 } catch (PDOException $e) {
     error_log('Order success page error: ' . $e->getMessage());
+    // CRITICAL: Update session activity before redirecting to prevent logout
+    if (isset($_SESSION['user_id'])) {
+        $_SESSION['last_activity'] = time();
+    }
     header("Location: ../products.php");
     exit();
 }
