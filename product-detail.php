@@ -65,12 +65,34 @@ $reviewsStmt = $pdo->prepare("
     SELECT pr.*, u.username 
     FROM product_reviews pr 
     JOIN users u ON pr.user_id = u.id 
-    WHERE pr.product_id = ? 
+    WHERE pr.product_id = ? AND pr.is_hidden = FALSE
     ORDER BY pr.created_at DESC
     LIMIT 20
 ");
 $reviewsStmt->execute([$productId]);
 $reviews = $reviewsStmt->fetchAll(PDO::FETCH_ASSOC);
+
+// If user is the reviewer, also fetch their hidden reviews
+$userHiddenReviews = [];
+if (isLoggedIn()) {
+    $hiddenStmt = $pdo->prepare("
+        SELECT pr.*, u.username 
+        FROM product_reviews pr 
+        JOIN users u ON pr.user_id = u.id 
+        WHERE pr.product_id = ? AND pr.is_hidden = TRUE AND pr.user_id = ?
+        ORDER BY pr.created_at DESC
+    ");
+    $hiddenStmt->execute([$productId, $_SESSION['user_id']]);
+    $userHiddenReviews = $hiddenStmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    // Merge user's hidden reviews with regular reviews
+    $reviews = array_merge($reviews, $userHiddenReviews);
+    
+    // Sort by created_at DESC
+    usort($reviews, function($a, $b) {
+        return strtotime($b['created_at']) - strtotime($a['created_at']);
+    });
+}
 
 // Calculate average rating
 $avgRating = 0;
@@ -83,20 +105,44 @@ if ($reviewCount > 0) {
 // Check if user can review
 $canReview = false;
 $hasReviewed = false;
+$eligibleOrderId = null;
+
 if (isLoggedIn()) {
     $userId = $_SESSION['user_id'];
-    $checkReviewed = $pdo->prepare("SELECT 1 FROM product_reviews WHERE user_id = ? AND product_id = ? LIMIT 1");
-    $checkReviewed->execute([$userId, $productId]);
-    $hasReviewed = (bool)$checkReviewed->fetchColumn();
-
-    if (!$hasReviewed) {
-        $checkDelivered = $pdo->prepare("SELECT 1
-            FROM order_items oi
+    
+    // Get a completed/delivered order for this product that hasn't been reviewed yet
+    $checkOrder = $pdo->prepare("
+        SELECT o.id 
+        FROM order_items oi
+        JOIN orders o ON oi.order_id = o.id
+        LEFT JOIN product_reviews pr ON pr.order_id = o.id AND pr.product_id = oi.product_id AND pr.user_id = o.user_id
+        WHERE o.user_id = ? 
+          AND oi.product_id = ? 
+          AND o.status IN ('delivered', 'completed')
+          AND pr.id IS NULL
+        ORDER BY o.completed_at DESC
+        LIMIT 1
+    ");
+    $checkOrder->execute([$userId, $productId]);
+    $eligibleOrderId = $checkOrder->fetchColumn();
+    
+    if ($eligibleOrderId) {
+        $canReview = true;
+        error_log("Product #{$productId} - User #{$userId} - Can review from order #{$eligibleOrderId}");
+    } else {
+        // Check if they've reviewed from ALL their orders
+        $checkAnyOrder = $pdo->prepare("
+            SELECT COUNT(*) FROM order_items oi
             JOIN orders o ON oi.order_id = o.id
-            WHERE o.user_id = ? AND oi.product_id = ? AND o.status = 'delivered'
-            LIMIT 1");
-        $checkDelivered->execute([$userId, $productId]);
-        $canReview = (bool)$checkDelivered->fetchColumn();
+            WHERE o.user_id = ? AND oi.product_id = ? AND o.status IN ('delivered', 'completed')
+        ");
+        $checkAnyOrder->execute([$userId, $productId]);
+        $totalOrders = $checkAnyOrder->fetchColumn();
+        
+        if ($totalOrders > 0) {
+            $hasReviewed = true;
+            error_log("Product #{$productId} - User #{$userId} - Already reviewed all orders");
+        }
     }
 }
 
@@ -106,7 +152,7 @@ if (isset($_POST['submit_review']) && isLoggedIn()) {
     $rating = intval($_POST['rating']);
     $reviewText = sanitizeInput($_POST['review_text']);
     
-    if (addProductReview($productId, $rating, $reviewText)) {
+    if ($eligibleOrderId && addProductReview($productId, $rating, $reviewText, $eligibleOrderId)) {
         header("Location: product-detail.php?id=" . $productId . "&review_success=1");
         exit();
     } else {
@@ -136,17 +182,7 @@ require_once 'includes/header.php';
 <?php if (isset($_GET['review_success']) && $_GET['review_success'] == '1'): ?>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const toast = document.createElement('div');
-    toast.className = 'floating-toast';
-    toast.style.cssText = 'position:fixed; left:50%; bottom:24px; transform:translateX(-50%); background:#ffffff; color:#130325; border:1px solid #e5e7eb; border-radius:12px; padding:12px 16px; z-index:10000; box-shadow:0 10px 30px rgba(0,0,0,0.2); max-width:90%; width:auto; text-align:center; font-weight:700;';
-    toast.textContent = 'Review submitted successfully!';
-    document.body.appendChild(toast);
-    setTimeout(function(){
-        toast.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
-        toast.style.opacity = '0';
-        toast.style.transform = 'translate(-50%, 10px)';
-        setTimeout(function(){ if (toast.parentElement) toast.remove(); }, 400);
-    }, 2500);
+    showReviewSuccessModal();
 });
 </script>
 <?php endif; ?>
@@ -891,13 +927,244 @@ main h3 {
     margin-bottom: 30px;
 }
 
+/* No Reviews Message */
+.no-reviews-container {
+    text-align: center;
+    padding: 60px 20px;
+    background: rgba(255, 215, 54, 0.05);
+    border-radius: 10px;
+    border: 1px dashed rgba(255, 215, 54, 0.3);
+}
+
+.no-reviews-text {
+    font-size: 18px;
+    color: rgba(19, 3, 37, 0.5);
+    font-weight: 600;
+    margin: 0;
+}
+
+/* Review Filter */
+.review-filter {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid rgba(19, 3, 37, 0.1);
+}
+
+.filter-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #130325;
+}
+
+.star-filter-dropdown {
+    padding: 8px 12px;
+    border: 1px solid rgba(19, 3, 37, 0.2);
+    border-radius: 6px;
+    background: #ffffff;
+    color: #130325;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.star-filter-dropdown:hover {
+    border-color: #FFD736;
+}
+
+.star-filter-dropdown:focus {
+    outline: none;
+    border-color: #FFD736;
+    box-shadow: 0 0 0 3px rgba(255, 215, 54, 0.1);
+}
+
 .review-item {
     padding: 15px 0;
     border-bottom: 1px solid rgba(19, 3, 37, 0.1);
+    transition: opacity 0.3s ease;
 }
 
 .review-item:last-child {
     border-bottom: none;
+}
+
+.review-item.hidden {
+    display: none;
+}
+
+/* Hidden Review Styling */
+.review-item.hidden-review {
+    opacity: 0.6;
+    background: rgba(108, 117, 125, 0.05);
+}
+
+.hidden-review-message {
+    padding: 12px 16px;
+    background: rgba(108, 117, 125, 0.1);
+    border-left: 3px solid #6c757d;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: rgba(19, 3, 37, 0.5);
+}
+
+.hidden-review-message i {
+    font-size: 16px;
+    color: #6c757d;
+}
+
+.hidden-review-message em {
+    font-size: 14px;
+    font-style: italic;
+}
+
+/* Seller Reply Styling */
+.seller-reply-container {
+    margin-top: 15px;
+    padding: 12px 16px;
+    background: rgba(255, 215, 54, 0.08);
+    border-left: 3px solid #FFD736;
+    border-radius: 4px;
+}
+
+.seller-reply-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.seller-reply-header i {
+    color: #FFD736;
+    font-size: 14px;
+}
+
+.seller-label {
+    font-weight: 700;
+    color: #130325;
+    font-size: 13px;
+}
+
+.reply-date {
+    font-size: 11px;
+    color: rgba(19, 3, 37, 0.4);
+    margin-left: auto;
+}
+
+.seller-reply-text {
+    color: #130325;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+/* Review Success Modal */
+.modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.35);
+    z-index: 99999;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-dialog {
+    width: 420px;
+    max-width: 90vw;
+    background: #ffffff;
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    animation: modalSlideIn 0.3s ease;
+}
+
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.modal-header {
+    padding: 8px 12px;
+    background: #130325;
+    color: #F9F9F9;
+    border-bottom: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-radius: 12px 12px 0 0;
+}
+
+.modal-title {
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.3px;
+    margin: 0;
+}
+
+.modal-close {
+    background: transparent;
+    border: none;
+    color: #F9F9F9;
+    font-size: 20px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.2s;
+}
+
+.modal-close:hover {
+    opacity: 0.8;
+}
+
+.modal-body {
+    padding: 16px;
+    color: #130325;
+    font-size: 12px;
+}
+
+.modal-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    padding: 0 12px 12px 12px;
+}
+
+.btn-primary-y {
+    background: linear-gradient(135deg, #FFD736 0%, #FFC107 100%);
+    color: #130325;
+    border: none;
+    border-radius: 8px;
+    padding: 6px 16px;
+    font-weight: 700;
+    font-size: 12px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    transition: all 0.2s ease;
+}
+
+.btn-primary-y:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(255, 215, 54, 0.3);
 }
 
 .review-header {
@@ -1081,7 +1348,7 @@ main h3 {
 
 .reviewer-name {
     font-weight: 700;
-    color: #FFD736;
+    color: #130325;
     font-size: 15px;
 }
 
@@ -1408,6 +1675,7 @@ main h3 {
         <div class="reviews-section" id="reviews-tab">
             <div class="reviews-header">
                 <h3>Product Reviews</h3>
+                <?php if (!empty($reviews)): ?>
                 <div class="overall-rating">
                     <div class="rating-score"><?php echo number_format($avgRating, 1); ?></div>
                     <div class="rating-stars">
@@ -1419,17 +1687,33 @@ main h3 {
                     </div>
                     <div class="rating-text">out of 5 stars</div>
                 </div>
+                <?php endif; ?>
             </div>
+
+            <?php if (!empty($reviews)): ?>
+            <!-- Star Filter -->
+            <div class="review-filter">
+                <label for="starFilter" class="filter-label">Filter by rating:</label>
+                <select id="starFilter" class="star-filter-dropdown" onchange="filterReviewsByStars()">
+                    <option value="all">All Reviews (<?php echo count($reviews); ?>)</option>
+                    <option value="5">5 Stars</option>
+                    <option value="4">4 Stars</option>
+                    <option value="3">3 Stars</option>
+                    <option value="2">2 Stars</option>
+                    <option value="1">1 Star</option>
+                </select>
+            </div>
+            <?php endif; ?>
 
             <!-- Review List -->
             <div class="reviews-list">
                 <?php if (empty($reviews)): ?>
-                    <div class="no-reviews">
-                        <p>No reviews yet. Be the first to review this product!</p>
+                    <div class="no-reviews-container">
+                        <p class="no-reviews-text">No Reviews Yet.</p>
                     </div>
                 <?php else: ?>
                     <?php foreach ($reviews as $review): ?>
-                        <div class="review-item">
+                        <div class="review-item <?php echo $review['is_hidden'] ? 'hidden-review' : ''; ?>" data-rating="<?php echo $review['rating']; ?>">
                             <div class="review-header">
                                 <span class="reviewer-name"><?php echo htmlspecialchars($review['username']); ?></span>
                                 <span class="review-date"><?php echo date('F j, Y', strtotime($review['created_at'])); ?></span>
@@ -1441,7 +1725,26 @@ main h3 {
                                 }
                                 ?>
                             </div>
-                            <div class="review-text"><?php echo nl2br(htmlspecialchars($review['review_text'])); ?></div>
+                            
+                            <?php if ($review['is_hidden']): ?>
+                                <div class="hidden-review-message">
+                                    <i class="fas fa-eye-slash"></i>
+                                    <em>This review is hidden by the admin.</em>
+                                </div>
+                            <?php else: ?>
+                                <div class="review-text"><?php echo nl2br(htmlspecialchars($review['review_text'])); ?></div>
+                                
+                                <?php if (!empty($review['seller_reply'])): ?>
+                                    <div class="seller-reply-container">
+                                        <div class="seller-reply-header">
+                                            <i class="fas fa-store"></i>
+                                            <span class="seller-label">Seller</span>
+                                            <span class="reply-date"><?php echo date('F j, Y', strtotime($review['seller_replied_at'])); ?></span>
+                                        </div>
+                                        <div class="seller-reply-text"><?php echo nl2br(htmlspecialchars($review['seller_reply'])); ?></div>
+                                    </div>
+                                <?php endif; ?>
+                            <?php endif; ?>
                         </div>
                     <?php endforeach; ?>
                 <?php endif; ?>
@@ -1805,6 +2108,27 @@ function showBuyNowError(message) {
         }
     }, 5000);
 }
+
+// Filter reviews by star rating
+function filterReviewsByStars() {
+    const filterValue = document.getElementById('starFilter').value;
+    const reviewItems = document.querySelectorAll('.review-item[data-rating]');
+    
+    reviewItems.forEach(item => {
+        const rating = item.getAttribute('data-rating');
+        
+        if (filterValue === 'all') {
+            item.classList.remove('hidden');
+            item.style.display = '';
+        } else if (rating === filterValue) {
+            item.classList.remove('hidden');
+            item.style.display = '';
+        } else {
+            item.classList.add('hidden');
+            item.style.display = 'none';
+        }
+    });
+}
 </script>
 
 <style>
@@ -1899,5 +2223,77 @@ function showBuyNowError(message) {
             </div>
 
         </div>
+
+<!-- Review Success Modal -->
+<div id="reviewSuccessModal" class="modal-overlay" role="dialog" aria-modal="true" aria-hidden="true" style="display: none;">
+    <div class="modal-dialog" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <div class="modal-title">Review Submitted!</div>
+            <button type="button" class="modal-close" onclick="closeReviewSuccessModal()">×</button>
+        </div>
+        <div class="modal-body">
+            <div style="text-align: center; padding: 10px 0;">
+                <i class="fas fa-check-circle" style="font-size: 48px; color: #28a745; margin-bottom: 12px;"></i>
+                <p style="margin: 0; color: #130325; font-size: 14px; line-height: 1.5; font-weight: 500;">
+                    Thank you for your review! Your feedback helps other customers make informed decisions.
+                </p>
+            </div>
+        </div>
+        <div class="modal-actions">
+            <button type="button" class="btn-primary-y" onclick="closeReviewSuccessModal()">
+                <i class="fas fa-check"></i> Got it!
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+function showReviewSuccessModal() {
+    const modal = document.getElementById('reviewSuccessModal');
+    if (modal) {
+        modal.style.display = 'flex';
+        modal.setAttribute('aria-hidden', 'false');
+        document.body.style.overflow = 'hidden';
+        
+        // Clean URL by removing review_success parameter
+        const url = new URL(window.location.href);
+        url.searchParams.delete('review_success');
+        window.history.replaceState({}, document.title, url.toString());
+    }
+}
+
+function closeReviewSuccessModal() {
+    const modal = document.getElementById('reviewSuccessModal');
+    if (modal) {
+        modal.style.display = 'none';
+        modal.setAttribute('aria-hidden', 'true');
+        document.body.style.overflow = '';
+        
+        // Scroll to reviews section after closing
+        const reviewsTab = document.getElementById('reviews-tab');
+        if (reviewsTab) {
+            reviewsTab.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    }
+}
+
+// Close modal on Escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        const modal = document.getElementById('reviewSuccessModal');
+        if (modal && modal.style.display === 'flex') {
+            closeReviewSuccessModal();
+        }
+    }
+});
+
+// Close modal when clicking outside
+document.addEventListener('click', function(e) {
+    const modal = document.getElementById('reviewSuccessModal');
+    if (modal && e.target === modal) {
+        closeReviewSuccessModal();
+    }
+});
+</script>
 
  <?php require_once 'includes/footer.php'; ?>

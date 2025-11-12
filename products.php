@@ -1138,19 +1138,25 @@ body {
                             <div class="rating">
                                 <?php
                                     $rating = $product['rating'] ?? 0;
-                                    $fullStars = floor($rating);
-                                    $hasHalfStar = ($rating - $fullStars) >= 0.5;
-                                    for ($i = 1; $i <= 5; $i++) {
-                                        if ($i <= $fullStars) {
-                                            echo '★';
-                                        } elseif ($i == $fullStars + 1 && $hasHalfStar) {
-                                            echo '☆';
-                                        } else {
-                                            echo '☆';
+                                    $reviewCount = $product['review_count'] ?? 0;
+                                    
+                                    if ($reviewCount > 0) {
+                                        $fullStars = floor($rating);
+                                        $hasHalfStar = ($rating - $fullStars) >= 0.5;
+                                        for ($i = 1; $i <= 5; $i++) {
+                                            if ($i <= $fullStars) {
+                                                echo '★';
+                                            } elseif ($i == $fullStars + 1 && $hasHalfStar) {
+                                                echo '☆';
+                                            } else {
+                                                echo '☆';
+                                            }
                                         }
+                                        echo '<span class="rating-text">(' . number_format($rating, 1) . ')</span>';
+                                    } else {
+                                        echo '<span class="no-reviews-text" style="color: #999; font-size: 0.9rem;">No reviews yet</span>';
                                     }
                                 ?>
-                                <span class="rating-text">(<?php echo number_format($product['rating'] ?? 0, 1); ?>)</span>
                             </div>
                             <div class="stock"><?php echo $product['stock_quantity']; ?> in stock</div>
                             <div class="product-actions">

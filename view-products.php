@@ -345,6 +345,124 @@ main.sidebar-collapsed { margin-left: 0px !important; }
     transform: scale(1.1);
 }
 
+/* Reply Modal Overlay - Matches Logout Modal Style */
+.modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.35);
+    z-index: 99999;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-dialog {
+    width: 400px;
+    max-width: 90vw;
+    background: #ffffff;
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.modal-header {
+    padding: 8px 12px;
+    background: #130325;
+    color: #F9F9F9;
+    border-bottom: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-radius: 12px 12px 0 0;
+}
+
+.modal-title {
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.3px;
+    margin: 0;
+}
+
+.modal-close {
+    background: transparent;
+    border: none;
+    color: #F9F9F9;
+    font-size: 20px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-close:hover {
+    opacity: 0.8;
+}
+
+.modal-body {
+    padding: 12px;
+    color: #130325;
+    font-size: 12px;
+}
+
+.modal-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    padding: 0 12px 12px 12px;
+}
+
+.btn-outline {
+    background: #ffffff;
+    color: #130325;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-weight: 700;
+    font-size: 12px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    transition: all 0.2s ease;
+}
+
+.btn-outline:hover {
+    background: #f3f4f6;
+}
+
+.btn-primary-y {
+    background: linear-gradient(135deg, #FFD736 0%, #FFC107 100%);
+    color: #130325;
+    border: none;
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-weight: 700;
+    font-size: 12px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    transition: all 0.2s ease;
+}
+
+.btn-primary-y:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(255, 215, 54, 0.3);
+}
+
+.btn-primary-y:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
 h1 { 
     color: #130325 !important; 
     font-size: 20px !important; 
@@ -1076,6 +1194,252 @@ h1 {
     from { transform: rotate(0deg); }
     to { transform: rotate(360deg); }
 }
+
+/* Reviews Section in Modal */
+.product-reviews-section {
+    background: #ffffff;
+    padding: 20px;
+    margin-top: 20px;
+    border-radius: 4px;
+    border-top: 2px solid #FFD736;
+}
+
+.reviews-section-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #130325;
+    margin: 0 0 15px 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.reviews-section-title i {
+    color: #FFD736;
+    font-size: 18px;
+}
+
+.reviews-container-modal {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.reviews-container-modal::-webkit-scrollbar {
+    width: 6px;
+}
+
+.reviews-container-modal::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+}
+
+.reviews-container-modal::-webkit-scrollbar-thumb {
+    background: #adb5bd;
+    border-radius: 3px;
+}
+
+.reviews-container-modal::-webkit-scrollbar-thumb:hover {
+    background: #868e96;
+}
+
+.reviews-loading {
+    text-align: center;
+    padding: 30px;
+    color: #6b7280;
+}
+
+.reviews-loading i {
+    font-size: 24px;
+    margin-bottom: 8px;
+    display: block;
+    color: #130325;
+}
+
+.reviews-loading p {
+    margin: 0;
+    font-size: 13px;
+}
+
+.reviews-error {
+    text-align: center;
+    padding: 30px;
+    color: #dc3545;
+}
+
+.reviews-error i {
+    font-size: 24px;
+    margin-bottom: 8px;
+    display: block;
+}
+
+.reviews-error p {
+    margin: 0;
+    font-size: 13px;
+}
+
+.no-reviews-modal {
+    text-align: center;
+    padding: 40px 20px;
+    color: #130325;
+}
+
+.no-reviews-modal i {
+    font-size: 32px;
+    margin-bottom: 12px;
+    display: block;
+    color: #FFD736;
+    opacity: 0.5;
+}
+
+.no-reviews-modal p {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: #130325;
+}
+
+.review-item-modal {
+    padding: 15px;
+    border-bottom: 1px solid rgba(19, 3, 37, 0.1);
+    transition: background 0.2s ease;
+}
+
+.review-item-modal:last-child {
+    border-bottom: none;
+}
+
+.review-item-modal:hover {
+    background: rgba(255, 215, 54, 0.03);
+}
+
+.review-item-modal.review-hidden {
+    opacity: 0.6;
+    background: rgba(108, 117, 125, 0.05);
+}
+
+.review-header-modal {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.review-user-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.review-username {
+    font-size: 13px;
+    font-weight: 700;
+    color: #130325;
+}
+
+.review-date-small {
+    font-size: 11px;
+    color: rgba(19, 3, 37, 0.4);
+}
+
+.review-rating-modal {
+    color: #FFD736;
+    font-size: 14px;
+}
+
+.review-text-modal {
+    font-size: 13px;
+    color: #130325;
+    line-height: 1.5;
+    margin-bottom: 12px;
+}
+
+.review-hidden-message {
+    padding: 10px 14px;
+    background: rgba(108, 117, 125, 0.1);
+    border-left: 3px solid #6c757d;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: rgba(19, 3, 37, 0.5);
+}
+
+.review-hidden-message i {
+    font-size: 14px;
+    color: #6c757d;
+}
+
+.review-hidden-message em {
+    font-size: 12px;
+    font-style: italic;
+}
+
+.seller-reply-modal {
+    margin-top: 12px;
+    padding: 12px 14px;
+    background: rgba(255, 215, 54, 0.08);
+    border-left: 3px solid #FFD736;
+    border-radius: 4px;
+}
+
+.reply-header-modal {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 8px;
+}
+
+.reply-header-modal i {
+    color: #FFD736;
+    font-size: 12px;
+}
+
+.reply-label {
+    font-weight: 700;
+    color: #130325;
+    font-size: 12px;
+}
+
+.reply-date-small {
+    font-size: 10px;
+    color: rgba(19, 3, 37, 0.4);
+    margin-left: auto;
+}
+
+.reply-text-modal {
+    color: #130325;
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.review-actions {
+    margin-top: 12px;
+}
+
+.btn-reply-review {
+    background: transparent;
+    color: #130325;
+    border: none;
+    padding: 6px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s ease;
+    border-radius: 4px;
+}
+
+.btn-reply-review:hover {
+    background: rgba(255, 215, 54, 0.1);
+    color: #130325;
+}
+
+.btn-reply-review i {
+    font-size: 12px;
+}
+
 @media (max-width: 768px) {
     .product-view-main {
         flex-direction: column;
@@ -1635,7 +1999,107 @@ function displayProductDetails(product) {
                 <div class="product-description-content">${escapeHtml(product.description || 'No description provided.')}</div>
             </div>
         </div>
+        
+        <!-- Reviews Section -->
+        <div class="product-reviews-section">
+            <h3 class="reviews-section-title">
+                <i class="fas fa-star"></i> Product Reviews
+            </h3>
+            <div id="reviewsContainer" class="reviews-container-modal">
+                <div class="reviews-loading">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <p>Loading reviews...</p>
+                </div>
+            </div>
+        </div>
     `;
+    
+    // Load reviews after displaying product details
+    loadProductReviews(product.id);
+}
+
+// Load product reviews
+function loadProductReviews(productId) {
+    const container = document.getElementById('reviewsContainer');
+    
+    fetch(`ajax/get-product-reviews.php?product_id=${productId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                displayReviews(data.reviews);
+            } else {
+                container.innerHTML = `<div class="reviews-error"><i class="fas fa-exclamation-triangle"></i><p>${data.message}</p></div>`;
+            }
+        })
+        .catch(error => {
+            console.error('Error loading reviews:', error);
+            container.innerHTML = '<div class="reviews-error"><i class="fas fa-exclamation-triangle"></i><p>Error loading reviews</p></div>';
+        });
+}
+
+// Display reviews in modal
+function displayReviews(reviews) {
+    const container = document.getElementById('reviewsContainer');
+    
+    console.log('displayReviews called with:', reviews);
+    
+    if (!reviews || reviews.length === 0) {
+        container.innerHTML = `
+            <div class="no-reviews-modal">
+                <i class="fas fa-comments"></i>
+                <p>No reviews yet for this product</p>
+            </div>
+        `;
+        return;
+    }
+    
+    const reviewsHTML = reviews.map(review => {
+        console.log('Processing review:', review);
+        console.log('Review ID being used:', review.id, 'Type:', typeof review.id);
+        const stars = '★'.repeat(review.rating) + '☆'.repeat(5 - review.rating);
+        const isHidden = review.is_hidden;
+        const hasReply = review.seller_reply && review.seller_reply.trim() !== '';
+        
+        return `
+            <div class="review-item-modal ${isHidden ? 'review-hidden' : ''}" data-review-id="${review.id}">
+                <div class="review-header-modal">
+                    <div class="review-user-info">
+                        <span class="review-username">${escapeHtml(review.customer_name)}</span>
+                        <span class="review-date-small">${review.created_at_formatted}</span>
+                    </div>
+                    <div class="review-rating-modal">${stars}</div>
+                </div>
+                
+                ${isHidden ? `
+                    <div class="review-hidden-message">
+                        <i class="fas fa-eye-slash"></i>
+                        <em>This review is hidden by the admin</em>
+                    </div>
+                ` : `
+                    <div class="review-text-modal">${escapeHtml(review.review_text).replace(/\n/g, '<br>')}</div>
+                    
+                    ${hasReply ? `
+                        <div class="seller-reply-modal">
+                            <div class="reply-header-modal">
+                                <i class="fas fa-store"></i>
+                                <span class="reply-label">Your Reply</span>
+                                <span class="reply-date-small">${review.seller_replied_at ? new Date(review.seller_replied_at).toLocaleDateString('en-US', {month: 'short', day: 'numeric', year: 'numeric'}) : ''}</span>
+                            </div>
+                            <div class="reply-text-modal">${escapeHtml(review.seller_reply).replace(/\n/g, '<br>')}</div>
+                        </div>
+                    ` : `
+                        <div class="review-actions">
+                            <button class="btn-reply-review" onclick="openReplyModal(${review.id}, '${review.customer_name.replace(/'/g, "\\'")}'); return false;">
+                                <i class="fas fa-reply"></i> Reply
+                            </button>
+                        </div>
+                    `}
+                `}
+            </div>
+        `;
+    }).join('');
+    
+    container.innerHTML = reviewsHTML;
 }
 
 function closeProductModal() {
@@ -1672,6 +2136,181 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
+// Reply to review functions
+let currentReviewId = null;
+
+function openReplyModal(reviewId, customerName) {
+    console.log('openReplyModal called with reviewId:', reviewId, 'customerName:', customerName);
+    currentReviewId = reviewId;
+    const modal = document.getElementById('replyConfirmModal');
+    const messageEl = document.getElementById('replyCustomerName');
+    const textarea = document.getElementById('replyTextarea');
+    const charCount = document.getElementById('replyCharCount');
+    
+    if (messageEl) {
+        messageEl.textContent = customerName;
+    }
+    if (textarea) {
+        textarea.value = '';
+        if (charCount) charCount.textContent = '0';
+    }
+    
+    if (modal) {
+        modal.style.display = 'flex';
+        modal.setAttribute('aria-hidden', 'false');
+        document.body.style.overflow = 'hidden';
+        setTimeout(() => textarea && textarea.focus(), 100);
+    }
+}
+
+function closeReplyModal() {
+    const modal = document.getElementById('replyConfirmModal');
+    const textarea = document.getElementById('replyTextarea');
+    
+    if (modal) {
+        modal.style.display = 'none';
+        modal.setAttribute('aria-hidden', 'true');
+        document.body.style.overflow = '';
+    }
+    if (textarea) {
+        textarea.value = '';
+    }
+    currentReviewId = null;
+}
+
+function updateCharCount() {
+    const textarea = document.getElementById('replyTextarea');
+    const charCount = document.getElementById('replyCharCount');
+    if (textarea && charCount) {
+        const length = textarea.value.length;
+        charCount.textContent = length;
+        if (length > 500) {
+            charCount.style.color = '#dc3545';
+        } else {
+            charCount.style.color = 'rgba(19, 3, 37, 0.6)';
+        }
+    }
+}
+
+function submitReply() {
+    console.log('submitReply called, currentReviewId:', currentReviewId);
+    const textarea = document.getElementById('replyTextarea');
+    const replyText = textarea ? textarea.value.trim() : '';
+    
+    if (!replyText) {
+        showReplyErrorModal('Please enter a reply');
+        return;
+    }
+    
+    if (replyText.length > 500) {
+        showReplyErrorModal('Reply must be 500 characters or less');
+        return;
+    }
+    
+    if (currentReviewId === null || currentReviewId === undefined) {
+        console.error('currentReviewId is null or undefined');
+        showReplyErrorModal('Error: Review ID not found');
+        return;
+    }
+    
+    console.log('Sending reply request with:', { review_id: currentReviewId, reply_text: replyText });
+    
+    // Disable button to prevent double submission
+    const submitBtn = document.querySelector('#replyConfirmModal .btn-primary-y');
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+    }
+    
+    fetch('ajax/seller-reply-review.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            review_id: currentReviewId,
+            reply_text: replyText
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            closeReplyModal();
+            // Reload reviews to show the new reply
+            const container = document.getElementById('reviewsContainer');
+            const productId = container ? container.dataset.productId : null;
+            if (productId) {
+                loadProductReviews(parseInt(productId));
+            }
+            showReplySuccessModal('Reply posted successfully!');
+        } else {
+            showReplyErrorModal(data.message || 'Failed to post reply');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showReplyErrorModal('Error posting reply. Please try again.');
+    })
+    .finally(() => {
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="fas fa-check"></i> Confirm';
+        }
+    });
+}
+
+// Success modal for seller reply
+function showReplySuccessModal(message) {
+    const modal = document.getElementById('replySuccessModal');
+    const messageEl = document.getElementById('replySuccessMessage');
+    if (messageEl) {
+        messageEl.textContent = message;
+    }
+    if (modal) {
+        modal.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+    }
+}
+
+function closeReplySuccessModal() {
+    const modal = document.getElementById('replySuccessModal');
+    if (modal) {
+        modal.style.display = 'none';
+        document.body.style.overflow = '';
+    }
+}
+
+// Error modal for seller reply
+function showReplyErrorModal(message) {
+    const modal = document.getElementById('replyErrorModal');
+    const messageEl = document.getElementById('replyErrorMessage');
+    if (messageEl) {
+        messageEl.textContent = message;
+    }
+    if (modal) {
+        modal.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+    }
+}
+
+function closeReplyErrorModal() {
+    const modal = document.getElementById('replyErrorModal');
+    if (modal) {
+        modal.style.display = 'none';
+        document.body.style.overflow = '';
+    }
+}
+
+// Store product ID when loading reviews
+const originalLoadReviews = loadProductReviews;
+loadProductReviews = function(productId) {
+    const container = document.getElementById('reviewsContainer');
+    if (container) {
+        container.dataset.productId = productId;
+    }
+    originalLoadReviews(productId);
+};
+
 // Check if product_id is in URL and auto-open modal
 document.addEventListener('DOMContentLoaded', function() {
     const urlParams = new URLSearchParams(window.location.search);
@@ -1686,6 +2325,29 @@ document.addEventListener('DOMContentLoaded', function() {
             window.history.replaceState({}, document.title, newUrl);
         }, 500);
     }
+    
+    // Close modals on outside click
+    document.getElementById('replySuccessModal')?.addEventListener('click', function(e) {
+        if (e.target === this) closeReplySuccessModal();
+    });
+    document.getElementById('replyErrorModal')?.addEventListener('click', function(e) {
+        if (e.target === this) closeReplyErrorModal();
+    });
+    
+    // Close modals on Escape key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            const replySuccessModal = document.getElementById('replySuccessModal');
+            const replyErrorModal = document.getElementById('replyErrorModal');
+            
+            if (replySuccessModal && replySuccessModal.style.display === 'flex') {
+                closeReplySuccessModal();
+            }
+            if (replyErrorModal && replyErrorModal.style.display === 'flex') {
+                closeReplyErrorModal();
+            }
+        }
+    });
 });
 </script>
 
@@ -1698,6 +2360,70 @@ document.addEventListener('DOMContentLoaded', function() {
                 <i class="fas fa-spinner"></i>
                 <p>Loading product details...</p>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- Reply Confirmation Modal -->
+<div id="replyConfirmModal" class="modal-overlay" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="modal-dialog" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <div class="modal-title">Reply to Review</div>
+            <button type="button" class="modal-close" onclick="closeReplyModal()">×</button>
+        </div>
+        <div class="modal-body">
+            <p style="margin: 0 0 12px 0; color: #130325; font-size: 12px; line-height: 1.5; font-weight: 500;">
+                Reply to <strong id="replyCustomerName"></strong>'s review
+            </p>
+            <div class="form-group" style="margin-bottom: 8px;">
+                <label for="replyTextarea" style="font-size: 11px; color: #6b7280; margin-bottom: 6px; display: block; font-weight: 600;">Your Reply:</label>
+                <textarea 
+                    id="replyTextarea" 
+                    maxlength="500" 
+                    rows="4"
+                    placeholder="Write your reply here..."
+                    oninput="updateCharCount()"
+                    style="padding: 8px 10px; border: 1px solid rgba(0,0,0,0.15); border-radius: 6px; font-size: 13px; width: 100%; font-family: inherit; resize: vertical;"></textarea>
+                <div style="text-align: right; font-size: 11px; color: rgba(19, 3, 37, 0.6); margin-top: 4px;">
+                    <span id="replyCharCount">0</span>/500
+                </div>
+            </div>
+        </div>
+        <div class="modal-actions">
+            <button type="button" class="btn-outline" onclick="closeReplyModal()">
+                <i class="fas fa-times"></i> Cancel
+            </button>
+            <button type="button" class="btn-primary-y" onclick="submitReply()">
+                <i class="fas fa-check"></i> Confirm
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Reply Success Modal -->
+<div id="replySuccessModal" class="modal-overlay" style="display: none;">
+    <div class="modal-dialog" onclick="event.stopPropagation()" style="max-width: 400px;">
+        <div class="modal-body" style="text-align: center; padding: 30px;">
+            <i class="fas fa-check-circle" style="font-size: 48px; color: #28a745; margin-bottom: 16px;"></i>
+            <h3 style="color: #130325; font-size: 18px; font-weight: 700; margin-bottom: 12px;">Success</h3>
+            <p id="replySuccessMessage" style="color: #130325; font-size: 14px; margin-bottom: 20px;"></p>
+            <button type="button" class="btn-primary-y" onclick="closeReplySuccessModal()" style="padding: 8px 20px;">
+                <i class="fas fa-check"></i> Got it!
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Reply Error Modal -->
+<div id="replyErrorModal" class="modal-overlay" style="display: none;">
+    <div class="modal-dialog" onclick="event.stopPropagation()" style="max-width: 400px;">
+        <div class="modal-body" style="text-align: center; padding: 30px;">
+            <i class="fas fa-exclamation-circle" style="font-size: 48px; color: #dc3545; margin-bottom: 16px;"></i>
+            <h3 style="color: #130325; font-size: 18px; font-weight: 700; margin-bottom: 12px;">Error</h3>
+            <p id="replyErrorMessage" style="color: #130325; font-size: 14px; margin-bottom: 20px;"></p>
+            <button type="button" class="btn-primary-y" onclick="closeReplyErrorModal()" style="padding: 8px 20px;">
+                <i class="fas fa-times"></i> Close
+            </button>
         </div>
     </div>
 </div>

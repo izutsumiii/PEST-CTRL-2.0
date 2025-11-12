@@ -262,30 +262,18 @@ function getDeliveredOrders() {
 // Function to check if user has reviewed a product from an order
 function hasUserReviewedProduct($pdo, $userId, $orderId) {
     try {
-        // Get all products from the order
-        $stmt = $pdo->prepare("
-            SELECT oi.product_id 
-            FROM order_items oi 
-            JOIN orders o ON oi.order_id = o.id 
-            WHERE o.id = ? AND o.user_id = ?
-        ");
-        $stmt->execute([$orderId, $userId]);
-        $products = $stmt->fetchAll(PDO::FETCH_COLUMN);
+        // Check if user has reviewed THIS SPECIFIC ORDER
+        // Now that we have order_id in product_reviews, we can check precisely
         
-        if (empty($products)) {
-            return false;
-        }
-        
-        // Check if user has reviewed any of these products
-        $placeholders = str_repeat('?,', count($products) - 1) . '?';
         $stmt = $pdo->prepare("
-            SELECT 1 FROM product_reviews 
-            WHERE user_id = ? AND product_id IN ($placeholders) 
+            SELECT COUNT(*) FROM product_reviews pr
+            WHERE pr.order_id = ? 
+              AND pr.user_id = ?
             LIMIT 1
         ");
-        $stmt->execute(array_merge([$userId], $products));
+        $stmt->execute([$orderId, $userId]);
         
-        return (bool)$stmt->fetchColumn();
+        return (int)$stmt->fetchColumn() > 0;
     } catch (PDOException $e) {
         error_log("Error checking if user reviewed product: " . $e->getMessage());
         return false;
@@ -708,11 +696,12 @@ body {
     letter-spacing: 0.5px;
 }
 
-.status-pending { background: #fff3cd; color: #856404; }
-.status-processing { background: #d1ecf1; color: #0c5460; }
-.status-shipped { background: #d4edda; color: #155724; }
-.status-delivered { background: #d1ecf1; color: #0c5460; }
-.status-cancelled { background: #f8d7da; color: #721c24; }
+.status-pending { background: rgba(255,193,7,0.2); color: #ff8c00; border: 1px solid #ff8c00; }
+.status-processing { background: rgba(0,123,255,0.2); color: #007bff; border: 1px solid #007bff; }
+.status-shipped { background: #d4edda; color: #155724; border: 1px solid #155724; }
+.status-delivered { background: #d1ecf1; color: #0c5460; border: 1px solid #0c5460; }
+.status-completed { background: rgba(40,167,69,0.2); color: #28a745; border: 1px solid #28a745; }
+.status-cancelled { background: #f8d7da; color: #721c24; border: 1px solid #721c24; }
 
 /* Order items - compact */
 .order-items {
@@ -1332,13 +1321,15 @@ body {
 
 .order-status { padding:6px 12px; border-radius:999px; font-size:.78rem; font-weight:800; text-transform:uppercase; letter-spacing:.5px; border:1px solid transparent; }
 
-.order-status.pending { background: rgba(255,193,7,0.2); color:#ffc107; border-color:#ffc107; }
+.order-status.pending { background: rgba(255,193,7,0.2); color:#ff8c00; border-color:#ff8c00; }
 
 .order-status.processing { background: rgba(0,123,255,0.2); color:#007bff; border-color:#007bff; }
 
 .order-status.shipped { background: rgba(23,162,184,0.2); color:#17a2b8; border-color:#17a2b8; }
 
 .order-status.delivered { background: rgba(40,167,69,0.2); color:#28a745; border-color:#28a745; }
+
+.order-status.completed { background: rgba(40,167,69,0.2); color:#28a745; border-color:#28a745; }
 
 .order-status.cancelled { background: rgba(220,53,69,0.2); color:#dc3545; border-color:#dc3545; }
 
@@ -3045,7 +3036,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 ?>
                 <a href="#" class="filter-tab <?php echo $currentFilter === 'pending' ? 'active' : ''; ?>" data-status="pending">PENDING</a>
                 <a href="#" class="filter-tab <?php echo $currentFilter === 'processing' ? 'active' : ''; ?>" data-status="processing">TO SHIP</a>
-                <a href="#" class="filter-tab <?php echo ($currentFilter === 'shipped' || $currentFilter === 'delivered') ? 'active' : ''; ?>" data-status="to_receive">TO RECEIVE</a>
+                <a href="#" class="filter-tab <?php echo $currentFilter === 'to_receive' ? 'active' : ''; ?>" data-status="to_receive">TO RECEIVE</a>
                 <a href="#" class="filter-tab <?php echo $currentFilter === 'completed' ? 'active' : ''; ?>" data-status="completed">COMPLETED</a>
                 <a href="#" class="filter-tab <?php echo $currentFilter === 'cancelled' ? 'active' : ''; ?>" data-status="cancelled">CANCELLED</a>
                 <a href="#" class="filter-tab <?php echo $currentFilter === 'return_requested' ? 'active' : ''; ?>" data-status="return_requested">REFUNDED/RETURNS</a>
@@ -3235,16 +3226,48 @@ document.addEventListener('DOMContentLoaded', function() {
             </button>
         <?php endif; ?>
         <?php 
-        // Check if user has already reviewed this product
+        // Determine whether to show "Rate Product" or "Buy Again" button
+        // Logic:
+        // 1. If user has already reviewed the product → Show "Buy Again"
+        // 2. If 7 days have passed since completed_at → Show "Buy Again"
+        // 3. Otherwise → Show "Rate Product"
+        
         $hasReviewed = hasUserReviewedProduct($pdo, $userId, $order['id']);
+        $showBuyAgain = false;
+        
+        // DEBUG: Show values
+        error_log("Order #{$order['id']} - Status: {$order['status']}, completed_at: " . ($order['completed_at'] ?? 'NULL') . ", hasReviewed: " . ($hasReviewed ? 'YES' : 'NO'));
+        
+        if ($hasReviewed) {
+            // User already reviewed → Show Buy Again
+            $showBuyAgain = true;
+            error_log("Order #{$order['id']} - Showing Buy Again (already reviewed)");
+        } else if (!empty($order['completed_at'])) {
+            // Check if 7 days have passed since order was marked completed
+            $completedDate = new DateTime($order['completed_at']);
+            $currentDate = new DateTime();
+            $daysSinceCompleted = $currentDate->diff($completedDate)->days;
+            
+            error_log("Order #{$order['id']} - Days since completed: {$daysSinceCompleted}");
+            
+            if ($daysSinceCompleted >= 7) {
+                // 7 days passed → Show Buy Again
+                $showBuyAgain = true;
+                error_log("Order #{$order['id']} - Showing Buy Again (7+ days)");
+            } else {
+                error_log("Order #{$order['id']} - Showing Rate Product (within 7 days)");
+            }
+        } else {
+            error_log("Order #{$order['id']} - completed_at is empty, showing Rate Product");
+        }
         ?>
-        <?php if ($hasReviewed): ?>
+        <?php if ($showBuyAgain): ?>
             <a href="product-detail.php?id=<?php echo $order['order_items'][0]['product_id']; ?>" class="btn btn-warning">
                 <i class="fas fa-shopping-cart"></i> Buy Again
             </a>
         <?php else: ?>
             <a href="product-detail.php?id=<?php echo $order['order_items'][0]['product_id']; ?>#reviews-tab" class="btn btn-secondary">
-                <i class="fas fa-star"></i> Rate
+                <i class="fas fa-star"></i> Rate Product
             </a>
         <?php endif; ?>
         

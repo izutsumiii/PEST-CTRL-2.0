@@ -48,13 +48,25 @@ function getSellerNotifications($sellerId, $limit = 10) {
     
     try {
         $stmt = $pdo->prepare("
-            SELECT * FROM seller_notifications 
+            SELECT *,
+                   CONVERT_TZ(created_at, '+00:00', '+08:00') as created_at_ph
+            FROM seller_notifications 
             WHERE seller_id = ? 
             ORDER BY created_at DESC 
             LIMIT " . intval($limit)
         );
         $stmt->execute([$sellerId]);
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $notifications = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        // Use Philippine time for created_at
+        foreach ($notifications as &$notification) {
+            if (isset($notification['created_at_ph'])) {
+                $notification['created_at'] = $notification['created_at_ph'];
+                unset($notification['created_at_ph']);
+            }
+        }
+        
+        return $notifications;
     } catch (Exception $e) {
         error_log("Error getting seller notifications: " . $e->getMessage());
         return [];

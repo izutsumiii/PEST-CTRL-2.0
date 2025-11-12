@@ -1007,7 +1007,7 @@ function getSellerRatingDistribution($sellerId) {
 ------------------------------ */
 
 // Add product review
-function addProductReview($productId, $rating, $reviewText) {
+function addProductReview($productId, $rating, $reviewText, $orderId = null) {
     if (!isLoggedIn()) {
         return false;
     }
@@ -1015,31 +1015,71 @@ function addProductReview($productId, $rating, $reviewText) {
     global $pdo;
     $userId = $_SESSION['user_id'];
     
-    $stmt = $pdo->prepare("SELECT oi.* 
+    // Verify user purchased this product in a completed order
+    $stmt = $pdo->prepare("SELECT oi.order_id 
                           FROM order_items oi 
                           JOIN orders o ON oi.order_id = o.id 
-                          WHERE o.user_id = ? AND oi.product_id = ? AND o.status = 'delivered'");
-    $stmt->execute([$userId, $productId]);
-    $purchased = $stmt->fetch(PDO::FETCH_ASSOC);
+                          WHERE o.user_id = ? AND oi.product_id = ? AND o.status IN ('delivered', 'completed')
+                          " . ($orderId ? "AND o.id = ?" : "") . "
+                          ORDER BY o.completed_at DESC
+                          LIMIT 1");
+    if ($orderId) {
+        $stmt->execute([$userId, $productId, $orderId]);
+    } else {
+        $stmt->execute([$userId, $productId]);
+    }
+    $orderData = $stmt->fetch(PDO::FETCH_ASSOC);
     
-    if (!$purchased) {
+    if (!$orderData) {
         return false;
     }
     
-    $stmt = $pdo->prepare("SELECT * FROM product_reviews WHERE user_id = ? AND product_id = ?");
-    $stmt->execute([$userId, $productId]);
+    $reviewOrderId = $orderData['order_id'];
+    
+    // Check if already reviewed THIS specific order
+    $stmt = $pdo->prepare("SELECT * FROM product_reviews WHERE user_id = ? AND product_id = ? AND order_id = ?");
+    $stmt->execute([$userId, $productId, $reviewOrderId]);
     $existingReview = $stmt->fetch(PDO::FETCH_ASSOC);
     
     if ($existingReview) {
         return false;
     }
     
-    $stmt = $pdo->prepare("INSERT INTO product_reviews (product_id, user_id, rating, review_text) 
-                          VALUES (?, ?, ?, ?)");
-    $result = $stmt->execute([$productId, $userId, $rating, $reviewText]);
+    $stmt = $pdo->prepare("INSERT INTO product_reviews (product_id, user_id, rating, review_text, order_id) 
+                          VALUES (?, ?, ?, ?, ?)");
+    $result = $stmt->execute([$productId, $userId, $rating, $reviewText, $reviewOrderId]);
     
     if ($result) {
         updateProductRating($productId);
+        
+        // Send notification to seller
+        require_once __DIR__ . '/seller_notification_functions.php';
+        
+        // Get product details and seller ID
+        $productStmt = $pdo->prepare("SELECT p.name, p.seller_id, u.first_name, u.last_name, u.username 
+                                       FROM products p 
+                                       JOIN users u ON p.seller_id = u.id 
+                                       WHERE p.id = ?");
+        $productStmt->execute([$productId]);
+        $productInfo = $productStmt->fetch(PDO::FETCH_ASSOC);
+        
+        // Get customer name
+        $customerStmt = $pdo->prepare("SELECT first_name, last_name, username FROM users WHERE id = ?");
+        $customerStmt->execute([$userId]);
+        $customerInfo = $customerStmt->fetch(PDO::FETCH_ASSOC);
+        $customerName = trim($customerInfo['first_name'] . ' ' . $customerInfo['last_name']) ?: $customerInfo['username'];
+        
+        if ($productInfo) {
+            $stars = str_repeat('⭐', $rating);
+            createSellerNotification(
+                $productInfo['seller_id'],
+                'New Product Review',
+                $customerName . ' left a ' . $rating . '-star review on "' . $productInfo['name'] . '"',
+                'info',
+                'view-products.php?product_id=' . $productId
+            );
+        }
+        
         return true;
     }
     
@@ -2193,6 +2233,24 @@ function createOrderNotification($userId, $orderId, $message, $type = 'order_upd
         return true;
     } catch (Exception $e) {
         error_log('Failed to create notification: ' . $e->getMessage());
+        return false;
+    }
+}
+
+// Create customer notification (for non-order related notifications like reviews)
+function createCustomerNotification($userId, $message, $type = 'general') {
+    global $pdo;
+    
+    try {
+        $stmt = $pdo->prepare("
+            INSERT INTO notifications (user_id, order_id, message, type) 
+            VALUES (?, NULL, ?, ?)
+        ");
+        $stmt->execute([$userId, $message, $type]);
+        
+        return true;
+    } catch (Exception $e) {
+        error_log('Failed to create customer notification: ' . $e->getMessage());
         return false;
     }
 }

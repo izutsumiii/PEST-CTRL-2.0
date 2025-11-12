@@ -169,6 +169,7 @@ require_once 'includes/seller_header.php';
 
 <script>
 function markAndGo(notificationId, actionUrl, title, message){
+  console.log('markAndGo called with:', { notificationId, actionUrl, title, message });
   console.log('=== SELLER NOTIFICATION REDIRECT DEBUG ===');
   console.log('Notification ID:', notificationId);
   console.log('Action URL (raw):', actionUrl);

@@ -1,4 +1,7 @@
 <?php
+// Set timezone to Philippine Time
+date_default_timezone_set('Asia/Manila');
+
 // Start output buffering to prevent encoding issues
 if (!ob_get_level()) {
     ob_start();

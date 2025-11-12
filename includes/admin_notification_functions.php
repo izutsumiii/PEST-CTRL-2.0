@@ -48,13 +48,25 @@ function getAdminNotifications($adminId, $limit = 10) {
     
     try {
         $stmt = $pdo->prepare("
-            SELECT * FROM admin_notifications 
+            SELECT *,
+                   CONVERT_TZ(created_at, '+00:00', '+08:00') as created_at_ph
+            FROM admin_notifications 
             WHERE admin_id = ? 
             ORDER BY created_at DESC 
             LIMIT " . intval($limit)
         );
         $stmt->execute([$adminId]);
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $notifications = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        // Use Philippine time for created_at
+        foreach ($notifications as &$notification) {
+            if (isset($notification['created_at_ph'])) {
+                $notification['created_at'] = $notification['created_at_ph'];
+                unset($notification['created_at_ph']);
+            }
+        }
+        
+        return $notifications;
     } catch (Exception $e) {
         error_log("Error getting admin notifications: " . $e->getMessage());
         return [];

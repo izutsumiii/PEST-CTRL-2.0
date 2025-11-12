@@ -1,4 +1,7 @@
 <?php
+// Set timezone to Philippine Time
+date_default_timezone_set('Asia/Manila');
+
 $rootPath = dirname(__DIR__, 2);
 require_once $rootPath . '/includes/functions.php';
 ?>
@@ -1557,9 +1560,29 @@ require_once $rootPath . '/includes/functions.php';
             }
 
             function clearAllAdminNotifications() {
-                if (!confirm('Are you sure you want to mark all notifications as read?')) {
-                    return;
+                showMarkAllReadModal();
+            }
+            
+            function showMarkAllReadModal() {
+                const modal = document.getElementById('markAllReadModal');
+                if (modal) {
+                    modal.style.display = 'flex';
+                    modal.setAttribute('aria-hidden', 'false');
+                    document.body.style.overflow = 'hidden';
                 }
+            }
+            
+            function closeMarkAllReadModal() {
+                const modal = document.getElementById('markAllReadModal');
+                if (modal) {
+                    modal.style.display = 'none';
+                    modal.setAttribute('aria-hidden', 'true');
+                    document.body.style.overflow = '';
+                }
+            }
+            
+            function confirmMarkAllRead() {
+                closeMarkAllReadModal();
                 fetch('../ajax/mark-all-admin-notifications-read.php', { method: 'POST' })
                     .then(r => r.json())
                     .then(data => {
@@ -1798,18 +1821,26 @@ require_once $rootPath . '/includes/functions.php';
 
             // Close modal on overlay click
             document.addEventListener('click', function(e) {
-                const modal = document.getElementById('logoutModal');
-                if (modal && e.target === modal) {
+                const logoutModal = document.getElementById('logoutModal');
+                const markAllModal = document.getElementById('markAllReadModal');
+                if (logoutModal && e.target === logoutModal) {
                     closeLogoutModal();
+                }
+                if (markAllModal && e.target === markAllModal) {
+                    closeMarkAllReadModal();
                 }
             });
 
             // Close modal on Escape key
             document.addEventListener('keydown', function(e) {
                 if (e.key === 'Escape') {
-                    const modal = document.getElementById('logoutModal');
-                    if (modal) {
+                    const logoutModal = document.getElementById('logoutModal');
+                    const markAllModal = document.getElementById('markAllReadModal');
+                    if (logoutModal && logoutModal.style.display === 'flex') {
                         closeLogoutModal();
+                    }
+                    if (markAllModal && markAllModal.style.display === 'flex') {
+                        closeMarkAllReadModal();
                     }
                 }
             });
@@ -1828,6 +1859,27 @@ require_once $rootPath . '/includes/functions.php';
             <div class="modal-actions">
                 <button class="btn-outline" onclick="closeLogoutModal()">Cancel</button>
                 <a href="../logout.php" class="btn-primary-y">Logout</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mark All Notifications as Read Modal -->
+    <div id="markAllReadModal" class="modal-overlay" role="dialog" aria-modal="true" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-header">
+                <div class="modal-title">Confirm Action</div>
+                <button class="modal-close" aria-label="Close" onclick="closeMarkAllReadModal()">×</button>
+            </div>
+            <div class="modal-body">
+                Are you sure you want to mark all notifications as read?
+            </div>
+            <div class="modal-actions">
+                <button class="btn-outline" onclick="closeMarkAllReadModal()">
+                    <i class="fas fa-times"></i> No
+                </button>
+                <button class="btn-primary-y" onclick="confirmMarkAllRead()">
+                    <i class="fas fa-check"></i> Yes
+                </button>
             </div>
         </div>
     </div>

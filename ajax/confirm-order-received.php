@@ -52,8 +52,8 @@ try {
         exit();
     }
     
-    // Update order status to 'completed' and set delivery_date if not set
-    $stmt = $pdo->prepare("UPDATE orders SET status = 'completed', delivery_date = COALESCE(delivery_date, NOW()), updated_at = NOW() WHERE id = ?");
+    // Update order status to 'completed', set delivery_date if not set, and set completed_at timestamp
+    $stmt = $pdo->prepare("UPDATE orders SET status = 'completed', delivery_date = COALESCE(delivery_date, NOW()), completed_at = NOW(), updated_at = NOW() WHERE id = ?");
     $stmt->execute([$orderId]);
     
     // Verify the update actually worked
