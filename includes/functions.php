@@ -1070,13 +1070,14 @@ function addProductReview($productId, $rating, $reviewText, $orderId = null) {
         $customerName = trim($customerInfo['first_name'] . ' ' . $customerInfo['last_name']) ?: $customerInfo['username'];
         
         if ($productInfo) {
-            $stars = str_repeat('⭐', $rating);
+            $reviewNotificationUrl = 'view-products.php?product_id=' . $productId;
+            
             createSellerNotification(
                 $productInfo['seller_id'],
                 'New Product Review',
                 $customerName . ' left a ' . $rating . '-star review on "' . $productInfo['name'] . '"',
                 'info',
-                'view-products.php?product_id=' . $productId
+                $reviewNotificationUrl
             );
         }
         

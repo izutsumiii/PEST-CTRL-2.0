@@ -1062,12 +1062,36 @@ function clearAllSellerNotifications() {
     }
 
     // Redirect after a tiny delay to allow beacon to flush
-    let href = actionUrl && actionUrl !== '' && actionUrl !== 'null' && actionUrl !== 'undefined' ? actionUrl : null;
-    console.log('Initial href:', href);
+    const text = (title||'') + ' ' + (message||'');
+    let productId = null;
     
-    // Infer fallback URL if missing
-    if (!href) {
-        const text = (title||'') + ' ' + (message||'');
+    // Extract product ID from action URL (for product review notifications)
+    if (actionUrl) {
+        const urlProductMatch = actionUrl.match(/[?&]product_id=(\d+)/i);
+        if (urlProductMatch && urlProductMatch[1]) {
+            productId = urlProductMatch[1];
+        }
+    }
+    
+    let href = null;
+    
+    // Priority 0: Product reviews
+    if (productId) {
+        href = 'view-products.php?product_id=' + productId;
+    }
+    // Check if action URL is valid
+    else if (actionUrl && actionUrl !== '' && actionUrl !== 'null' && actionUrl !== 'undefined') {
+        href = actionUrl;
+        // Override view-orders.php to order details when possible
+        if (/view-orders\.php/i.test(href)) {
+            const m = text.match(/Order\s*#?0*(\d{1,10})/i);
+            if (m && m[1]) {
+                href = 'seller-order-details.php?order_id=' + m[1];
+            }
+        }
+    }
+    // Fallback
+    else {
         const m = text.match(/Order\s*#?0*(\d{1,10})/i);
         if (m && m[1]) {
             href = 'seller-order-details.php?order_id=' + m[1];
@@ -1076,17 +1100,8 @@ function clearAllSellerNotifications() {
         } else {
             href = 'view-orders.php';
         }
-        console.log('Fallback href:', href);
     }
     
-    // Override legacy action urls to exact order details when possible
-    if (href && /view-orders\.php/i.test(href)) {
-        const m = (String(title||'') + ' ' + String(message||'')).match(/Order\s*#?0*(\d{1,10})/i);
-        if (m && m[1]) href = 'seller-order-details.php?order_id=' + m[1];
-        console.log('Override href for view-orders:', href);
-    }
-    
-    console.log('Final redirect href:', href);
     if (href) {
         setTimeout(() => { window.location.href = href; }, 120);
     }

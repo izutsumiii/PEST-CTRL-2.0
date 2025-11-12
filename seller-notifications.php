@@ -125,12 +125,12 @@ require_once 'includes/seller_header.php';
     <?php else: ?>
       <div class="notif-list" style="display:flex; flex-direction:column; gap:12px;">
         <?php foreach ($notifications as $notification): ?>
-              <?php 
-              $actionUrlClick = $notification['action_url'] ? addslashes($notification['action_url']) : '';
-              $titleClick = addslashes($notification['title']);
-              $messageClick = addslashes($notification['message']);
-              ?>
-              <div class="notif-item" style="position: relative; cursor:pointer;" onclick="markAndGo(<?php echo (int)$notification['id']; ?>, <?php echo $actionUrlClick ? "'{$actionUrlClick}'" : 'null'; ?>, '<?php echo $titleClick; ?>', '<?php echo $messageClick; ?>')">
+              <div class="notif-item" style="position: relative; cursor:pointer;" 
+                   data-notif-id="<?php echo (int)$notification['id']; ?>"
+                   data-notif-url="<?php echo htmlspecialchars($notification['action_url'] ?: '', ENT_QUOTES); ?>"
+                   data-notif-title="<?php echo htmlspecialchars($notification['title'], ENT_QUOTES); ?>"
+                   data-notif-msg="<?php echo htmlspecialchars($notification['message'], ENT_QUOTES); ?>"
+                   onclick="markAndGoFromData(this)">
             <div style="display:flex; gap:12px; align-items:center; background:#ffffff; border:1px solid rgba(0,0,0,0.1); padding:14px; border-radius:10px; width:100%;">
               <span class="notification-status-badge <?php echo getNotificationBadgeClass($notification['title'], $notification['type']); ?>">
                 <?php echo getNotificationBadgeText($notification['title'], $notification['type']); ?>
@@ -145,13 +145,8 @@ require_once 'includes/seller_header.php';
                 <div style="color:#6b7280; font-size:0.8rem; white-space:nowrap;">
                   <?php echo htmlspecialchars(date('M d, h:i A', strtotime($notification['created_at']))); ?>
                 </div>
-                <?php 
-                $actionUrl = $notification['action_url'] ? addslashes($notification['action_url']) : '';
-                $title = addslashes($notification['title']);
-                $message = addslashes($notification['message']);
-                ?>
                 <button 
-                  onclick="event.stopPropagation(); event.preventDefault(); markAndGo(<?php echo (int)$notification['id']; ?>, <?php echo $actionUrl ? "'{$actionUrl}'" : 'null'; ?>, '<?php echo $title; ?>', '<?php echo $message; ?>')" 
+                  onclick="event.stopPropagation(); event.preventDefault(); markAndGoFromData(this.closest('.notif-item'))" 
                   style="background: transparent; color: #130325; border: 1px solid rgba(19, 3, 37, 0.2); border-radius: 8px; padding: 8px 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.3s ease; width: 36px; height: 36px;"
                   onmouseover="this.style.backgroundColor='rgba(19, 3, 37, 0.05)'; this.style.borderColor='rgba(19, 3, 37, 0.3)'; this.style.transform='translateY(-2px)';"
                   onmouseout="this.style.backgroundColor='transparent'; this.style.borderColor='rgba(19, 3, 37, 0.2)'; this.style.transform='translateY(0)';"
@@ -168,41 +163,53 @@ require_once 'includes/seller_header.php';
 </main>
 
 <script>
-function markAndGo(notificationId, actionUrl, title, message){
-  console.log('markAndGo called with:', { notificationId, actionUrl, title, message });
-  console.log('=== SELLER NOTIFICATION REDIRECT DEBUG ===');
-  console.log('Notification ID:', notificationId);
-  console.log('Action URL (raw):', actionUrl);
-  console.log('Action URL type:', typeof actionUrl);
-  console.log('Title:', title);
-  console.log('Message:', message);
+// Wrapper function to read data from HTML data attributes
+function markAndGoFromData(element) {
+  const notificationId = parseInt(element.getAttribute('data-notif-id'));
+  const actionUrl = element.getAttribute('data-notif-url') || null;
+  const title = element.getAttribute('data-notif-title') || '';
+  const message = element.getAttribute('data-notif-msg') || '';
   
-  // Mark as read
+  markAndGo(notificationId, actionUrl, title, message);
+}
+
+function markAndGo(notificationId, actionUrl, title, message){
+  // Mark notification as read
   try {
     navigator.sendBeacon('ajax/mark-seller-notification-read.php', new Blob([JSON.stringify({ notification_id: notificationId })], { type:'application/json' }));
-    console.log('Marked as read via sendBeacon');
   } catch(e){
-    console.log('sendBeacon failed, using fetch:', e);
-    fetch('ajax/mark-seller-notification-read.php', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ notification_id: notificationId }), credentials:'same-origin', keepalive:true }).catch((err)=>{console.error('Fetch failed:', err);});
+    fetch('ajax/mark-seller-notification-read.php', { 
+      method:'POST', 
+      headers:{'Content-Type':'application/json'}, 
+      body: JSON.stringify({ notification_id: notificationId }), 
+      credentials:'same-origin', 
+      keepalive:true 
+    }).catch(() => {});
   }
   
-  // Always extract order ID from title/message first for order-related notifications
   const text = (title||'') + ' ' + (message||'');
   let orderId = null;
   let returnId = null;
+  let productId = null;
   
-  // Extract order ID (supports formats like "Order #000123", "Order 123", "order_id=123", etc.)
+  // Extract product ID from action URL (for product review notifications)
+  if (actionUrl) {
+    const urlProductMatch = actionUrl.match(/[?&]product_id=(\d+)/i);
+    if (urlProductMatch && urlProductMatch[1]) {
+      productId = urlProductMatch[1];
+    }
+  }
+  
+  // Extract order ID
   const orderMatch = text.match(/(?:Order\s*#?0*|order_id[=:])\s*(\d{1,10})/i);
   if (orderMatch && orderMatch[1]) {
     orderId = orderMatch[1];
-    console.log('Extracted Order ID:', orderId);
   }
   
-  // Extract return ID (for return request notifications)
+  // Extract return ID
   const returnMatch = text.match(/(?:return_id[=:]|return\s*request\s*#?)\s*(\d{1,10})/i);
   if (returnMatch && returnMatch[1]) {
     returnId = returnMatch[1];
-    console.log('Extracted Return ID:', returnId);
   }
   
   // Check action URL for order_id or return_id parameters
@@ -210,79 +217,59 @@ function markAndGo(notificationId, actionUrl, title, message){
     const urlOrderMatch = actionUrl.match(/[?&]order_id=(\d+)/i);
     if (urlOrderMatch && urlOrderMatch[1]) {
       orderId = urlOrderMatch[1];
-      console.log('Extracted Order ID from action URL:', orderId);
     }
     const urlReturnMatch = actionUrl.match(/[?&]return_id=(\d+)/i);
     if (urlReturnMatch && urlReturnMatch[1]) {
       returnId = urlReturnMatch[1];
-      console.log('Extracted Return ID from action URL:', returnId);
     }
   }
   
-  // Determine final href
+  // Determine redirect URL based on priority
   let href = null;
   
-  // Priority 1: Return requests go to seller-returns.php
-  if (returnId || (text.toLowerCase().includes('return request') && orderId)) {
+  // Priority 0: Product reviews
+  if (productId) {
+    href = 'view-products.php?product_id=' + productId;
+  }
+  // Priority 1: Return requests
+  else if (returnId || (text.toLowerCase().includes('return request') && orderId)) {
     if (returnId) {
       href = 'seller-returns.php?return_id=' + returnId;
-      console.log('Redirecting to return request:', href);
     } else if (orderId) {
-      // Try to find return_id from action_url or use order_id
       const actionReturnMatch = actionUrl ? actionUrl.match(/[?&]return_id=(\d+)/i) : null;
-      if (actionReturnMatch && actionReturnMatch[1]) {
-        href = 'seller-returns.php?return_id=' + actionReturnMatch[1];
-      } else {
-        href = 'seller-returns.php?order_id=' + orderId;
-      }
-      console.log('Redirecting to return request (inferred):', href);
+      href = actionReturnMatch ? 'seller-returns.php?return_id=' + actionReturnMatch[1] : 'seller-returns.php?order_id=' + orderId;
     }
   }
-  // Priority 2: Orders go to seller-order-details.php
+  // Priority 2: Orders
   else if (orderId) {
     href = 'seller-order-details.php?order_id=' + orderId;
-    console.log('Redirecting to order details:', href);
   }
-  // Priority 3: Use action URL if provided and valid
+  // Priority 3: Use action URL
   else if (actionUrl && actionUrl !== '' && actionUrl !== 'null' && actionUrl !== 'undefined') {
     href = actionUrl;
-    console.log('Using action URL:', href);
-    
-    // Override view-orders.php to order details if we can extract order ID
+    // Override view-orders.php to order details if possible
     if (/view-orders\.php/i.test(href) && orderId) {
       href = 'seller-order-details.php?order_id=' + orderId;
-      console.log('Overridden view-orders.php to order details:', href);
     }
   }
-  // Priority 4: Infer from text content
+  // Priority 4: Fallback
   else {
-    console.log('No href found, inferring from title/message...');
     if (/low stock/i.test(text)) {
       href = 'manage-products.php';
-      console.log('Inferred from low stock:', href);
     } else if (orderId) {
       href = 'seller-order-details.php?order_id=' + orderId;
-      console.log('Inferred order details from text:', href);
     } else {
       href = 'view-orders.php';
-      console.log('Using default fallback:', href);
     }
   }
   
-  console.log('Final href:', href);
-  
-  // Navigate
+  // Redirect
   if (href) {
-    console.log('Redirecting to:', href);
-    setTimeout(()=>{ 
-      console.log('Executing redirect now...');
-      window.location.href = href; 
-    }, 120);
+    setTimeout(() => { window.location.href = href; }, 120);
   } else {
-    console.error('ERROR: No href to redirect to!');
-    alert('Error: Could not determine redirect URL. Check console for details.');
+    console.error('Could not determine redirect URL for notification:', notificationId);
+    alert('Error: Could not determine where to redirect. Please refresh and try again.');
   }
-  console.log('=== END DEBUG ===');
 }
 // Custom styled confirmation dialog function
 function openConfirm(message, onConfirm) {
