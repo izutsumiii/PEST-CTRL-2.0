@@ -381,6 +381,21 @@ body {
     gap: 0;
 }
 
+/* Mobile Swipe Hint - Hidden by default */
+.mobile-swipe-hint {
+    display: none;
+    color: #FFD736;
+    font-size: 13px;
+    margin-top: 8px;
+    font-weight: 500;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+}
+
 .section-header {
     text-align: center;
     margin-bottom: 50px;
@@ -1149,6 +1164,617 @@ section.featured-products .product-card .rating-text {
         font-size: 0.9rem;
     }
 }
+
+/* ===================================== */
+/* HOMEPAGE MOBILE RESPONSIVE STYLES */
+/* ===================================== */
+
+/* Hide scroll arrows on desktop */
+.scroll-arrow {
+    display: none;
+}
+
+/* Tablet (768px and below) */
+@media screen and (max-width: 768px) {
+    /* Fix body and main containers */
+    body {
+        overflow-x: hidden !important;
+        width: 100% !important;
+        max-width: 100vw !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+    
+    /* Overall container - minimized */
+    .dark-purple-container {
+        padding: 25px 0;
+        width: 100% !important;
+        max-width: 100vw !important;
+        margin: 0 !important;
+        overflow-x: hidden !important;
+        box-sizing: border-box;
+    }
+    
+    /* All sections should not overflow */
+    section {
+        width: 100%;
+        max-width: 100vw;
+        overflow-x: hidden;
+        box-sizing: border-box;
+    }
+    
+    /* Section headers - smaller */
+    .section-title {
+        font-size: 22px;
+        margin-bottom: 10px;
+        padding: 0 12px;
+    }
+    
+    .section-subtitle {
+        font-size: 13px;
+        margin-bottom: 20px;
+        padding: 0 12px;
+    }
+    
+    /* Hero Section - minimized and centered */
+    .hero-layout {
+        flex-direction: column;
+        padding: 0;
+        gap: 12px;
+        width: 100%;
+        margin: 0 auto;
+        max-width: 100vw;
+        box-sizing: border-box;
+    }
+    
+    .promo-banners {
+        width: 100%;
+        gap: 10px;
+        padding: 0 12px;
+        box-sizing: border-box;
+        display: flex;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+    
+    .promo-banner {
+        padding: 15px;
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+    }
+    
+    .promo-banner h3 {
+        font-size: 14px;
+    }
+    
+    .promo-banner p {
+        font-size: 11px;
+    }
+    
+    .slideshow-container {
+        height: 220px;
+        width: calc(100% - 24px);
+        margin: 0 auto;
+        max-width: 100vw;
+        box-sizing: border-box;
+    }
+    
+    .hero-slide {
+        height: 220px;
+        padding: 15px;
+        width: 100%;
+        box-sizing: border-box;
+    }
+    
+    .hero-slide h2 {
+        font-size: 18px;
+    }
+    
+    .hero-slide p {
+        font-size: 12px;
+    }
+    
+    .hero-btn {
+        padding: 8px 16px;
+        font-size: 11px;
+    }
+    
+    /* Hide swipe hint - using grid not scroll */
+    .mobile-swipe-hint {
+        display: none !important;
+    }
+    
+    /* Featured Products Section */
+    .featured-products {
+        margin: 0 auto 40px auto;
+        width: 100%;
+        overflow-x: hidden;
+    }
+    
+    .featured-products .hero-layout {
+        width: 100%;
+        padding: 0;
+    }
+    
+    .section-header {
+        margin-bottom: 20px;
+        width: 100%;
+    }
+    
+    /* Featured Products - 2x2 GRID layout (4 items only) - NARROWER CONTAINER */
+    .products-container,
+    section.featured-products .products-container {
+        display: grid !important;
+        grid-template-columns: repeat(2, 1fr) !important;
+        grid-template-rows: repeat(2, auto) !important;
+        gap: 15px !important;
+        padding: 0 40px !important;
+        width: 100% !important;
+        max-width: 400px !important;
+        margin: 0 auto !important;
+        box-sizing: border-box !important;
+        flex-wrap: wrap !important;
+    }
+    
+    /* Limit to 4 items only on mobile */
+    .product-card:nth-child(n+5) {
+        display: none !important;
+    }
+    
+    /* Product cards - Compact size within narrow container */
+    .product-card {
+        padding: 6px;
+        display: flex;
+        flex-direction: column;
+        box-sizing: border-box;
+        width: 100%;
+        height: auto;
+    }
+    
+    .product-image {
+        height: 100%;
+        width: 100%;
+        aspect-ratio: 1/1;
+        object-fit: cover;
+        border-radius: 5px;
+    }
+    
+    .product-title {
+        font-size: 9px;
+        line-height: 1.3;
+        margin: 4px 0 3px 0;
+        min-height: 24px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+    }
+    
+    .product-price {
+        font-size: 11px;
+        font-weight: 700;
+        margin: 3px 0;
+    }
+    
+    .product-rating {
+        font-size: 8px;
+        margin: 2px 0;
+    }
+    
+    /* Make sure add to cart button is visible */
+    .add-to-cart-btn,
+    .product-actions button,
+    .btn-buy-now {
+        display: block !important;
+        width: 100%;
+        padding: 6px 3px !important;
+        font-size: 8px !important;
+        font-weight: 600;
+        margin-top: 3px;
+        box-sizing: border-box;
+        line-height: 1.3;
+        border: 1px solid #FFD736 !important;
+    }
+    
+    .product-actions {
+        display: flex !important;
+        flex-direction: column;
+        gap: 3px;
+        width: 100%;
+    }
+    
+    /* Hide scroll arrows on grid layout */
+    .scroll-arrow {
+        display: none !important;
+    }
+    
+    /* Shop by Category Section */
+    .shop-by-category {
+        width: 100%;
+        overflow-x: hidden;
+        margin: 40px 0;
+    }
+    
+    /* Shop by Category - maintain 3 column grid like desktop */
+    .shop-by-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+        padding: 0 12px;
+        width: 100%;
+        margin: 0;
+        box-sizing: border-box;
+    }
+    
+    .category-card {
+        padding: 12px 6px;
+        width: 100%;
+        box-sizing: border-box;
+    }
+    
+    .category-icon {
+        font-size: 22px;
+        margin-bottom: 5px;
+    }
+    
+    .category-name {
+        font-size: 10px;
+    }
+    
+    /* Features Section */
+    .features-section {
+        width: 100%;
+        overflow-x: hidden;
+        padding: 30px 0;
+    }
+    
+    /* Features Section - 2 columns on tablet */
+    .features-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+        padding: 0 12px;
+        width: 100%;
+        margin: 0;
+        box-sizing: border-box;
+    }
+    
+    .feature-item {
+        padding: 12px;
+        width: 100%;
+        box-sizing: border-box;
+    }
+    
+    .feature-icon {
+        font-size: 24px;
+        margin-bottom: 6px;
+    }
+    
+    .feature-item h3 {
+        font-size: 13px;
+        margin-bottom: 4px;
+    }
+    
+    .feature-item p {
+        font-size: 11px;
+        line-height: 1.4;
+    }
+}
+
+/* Mobile (480px and below) */
+@media screen and (max-width: 480px) {
+    /* Fix body and containers */
+    body {
+        overflow-x: hidden !important;
+        width: 100% !important;
+        max-width: 100vw !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+    
+    /* Hero Section */
+    .dark-purple-container {
+        padding: 20px 0;
+        width: 100% !important;
+        max-width: 100vw !important;
+        margin: 0 !important;
+        overflow-x: hidden !important;
+        box-sizing: border-box;
+    }
+    
+    /* All sections should not overflow */
+    section {
+        width: 100%;
+        max-width: 100vw;
+        overflow-x: hidden;
+        box-sizing: border-box;
+    }
+    
+    .section-title {
+        font-size: 20px;
+        padding: 0 10px;
+    }
+    
+    .section-subtitle {
+        font-size: 12px;
+        padding: 0 10px;
+    }
+    
+    .hero-layout {
+        padding: 0;
+        gap: 10px;
+        width: 100%;
+        margin: 0 auto;
+        max-width: 100vw;
+        box-sizing: border-box;
+    }
+    
+    .promo-banners {
+        width: 100%;
+        padding: 0 10px;
+        box-sizing: border-box;
+        display: flex;
+        justify-content: center;
+    }
+    
+    .promo-banner {
+        padding: 12px;
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+    }
+    
+    .promo-banner h3 {
+        font-size: 13px;
+    }
+    
+    .promo-banner p {
+        font-size: 10px;
+    }
+    
+    .promo-image {
+        width: 50px;
+        height: 50px;
+    }
+    
+    .slideshow-container {
+        height: 200px;
+        width: calc(100% - 20px);
+        margin: 0 auto;
+        max-width: 100vw;
+        box-sizing: border-box;
+    }
+    
+    .hero-slide {
+        height: 200px;
+        padding: 12px;
+        width: 100%;
+        box-sizing: border-box;
+    }
+    
+    .hero-slide h2 {
+        font-size: 16px;
+    }
+    
+    .hero-slide p {
+        font-size: 11px;
+    }
+    
+    .hero-btn {
+        padding: 7px 14px;
+        font-size: 10px;
+    }
+    
+    /* Featured Products Section */
+    .featured-products {
+        width: 100%;
+        overflow-x: hidden;
+        margin: 0 auto 30px auto;
+    }
+    
+    /* Featured Products - 2x2 GRID on small mobile - NARROWER CONTAINER */
+    .products-container,
+    section.featured-products .products-container {
+        display: grid !important;
+        grid-template-columns: repeat(2, 1fr) !important;
+        grid-template-rows: repeat(2, auto) !important;
+        gap: 12px !important;
+        padding: 0 30px !important;
+        width: 100% !important;
+        max-width: 350px !important;
+        margin: 0 auto !important;
+        box-sizing: border-box !important;
+        flex-wrap: wrap !important;
+    }
+    
+    /* Limit to 4 items only on mobile */
+    .product-card:nth-child(n+5) {
+        display: none !important;
+    }
+    
+    /* Product cards - Compact within narrow container on small mobile */
+    .product-card {
+        padding: 5px;
+        display: flex;
+        flex-direction: column;
+        box-sizing: border-box;
+        width: 100%;
+        height: auto;
+    }
+    
+    .product-image {
+        height: 100%;
+        width: 100%;
+        aspect-ratio: 1/1;
+        object-fit: cover;
+        border-radius: 5px;
+    }
+    
+    .product-title {
+        font-size: 8px;
+        min-height: 22px;
+        line-height: 1.3;
+        margin: 3px 0 2px 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+    }
+    
+    .product-price {
+        font-size: 10px;
+        font-weight: 700;
+        margin: 2px 0;
+    }
+    
+    .product-rating {
+        font-size: 7px;
+        margin: 1px 0;
+    }
+    
+    .add-to-cart-btn,
+    .product-actions button,
+    .btn-buy-now {
+        padding: 5px 2px !important;
+        font-size: 7px !important;
+        width: 100%;
+        box-sizing: border-box;
+        margin-top: 2px;
+        line-height: 1.3;
+        display: block !important;
+        border: 1px solid #FFD736 !important;
+    }
+    
+    .product-actions {
+        display: flex !important;
+        flex-direction: column;
+        gap: 2px;
+        width: 100%;
+    }
+    
+    /* Hide scroll arrows */
+    .scroll-arrow {
+        display: none !important;
+    }
+    
+    /* Shop by Category Section */
+    .shop-by-category {
+        width: 100%;
+        overflow-x: hidden;
+    }
+    
+    /* Shop by Category */
+    .shop-by-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+        padding: 0 10px;
+        width: 100%;
+        margin: 0;
+        box-sizing: border-box;
+    }
+    
+    .category-card {
+        padding: 12px 8px;
+        width: 100%;
+        box-sizing: border-box;
+    }
+    
+    .category-icon {
+        font-size: 24px;
+        margin-bottom: 6px;
+    }
+    
+    .category-name {
+        font-size: 10px;
+    }
+    
+    /* Features Section */
+    .features-section {
+        width: 100%;
+        overflow-x: hidden;
+    }
+    
+    .features-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+        padding: 0 10px;
+        width: 100%;
+        margin: 0;
+        box-sizing: border-box;
+    }
+    
+    .feature-item {
+        padding: 10px;
+        width: 100%;
+        box-sizing: border-box;
+    }
+    
+    .feature-icon {
+        font-size: 22px;
+    }
+    
+    .feature-item h3 {
+        font-size: 12px;
+    }
+    
+    .feature-item p {
+        font-size: 10px;
+    }
+    
+    /* Section titles */
+    .section-title {
+        font-size: 20px;
+        padding: 0 10px;
+        margin-bottom: 20px;
+    }
+    
+    /* Product buttons */
+    .product-actions {
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .product-actions button {
+        width: 100%;
+    }
+}
+
+/* Extra Small (360px and below) */
+@media screen and (max-width: 360px) {
+    .hero-layout {
+        padding: 0 8px;
+    }
+    
+    .promo-banner {
+        min-width: 200px;
+        height: 110px;
+    }
+    
+    .slideshow-container {
+        height: 200px;
+    }
+    
+    .hero-slide {
+        height: 200px;
+    }
+    
+    .hero-slide h2 {
+        font-size: 20px;
+    }
+    
+    .featured-grid {
+        padding: 0 8px;
+    }
+    
+    .shop-by-grid {
+        padding: 0 8px;
+    }
+    
+    .category-icon {
+        font-size: 28px;
+    }
+}
 </style>
 
 <!-- Hero Slideshow -->
@@ -1253,6 +1879,7 @@ section.featured-products .product-card .rating-text {
             <div class="section-header">
                 <h2 class="section-title">Featured Products</h2>
                 <p class="section-subtitle">Best-selling pest control solutions</p>
+                <p class="mobile-swipe-hint"><i class="fas fa-hand-point-right"></i> Swipe to see more</p>
             </div>
             
             <div class="products-grid">
@@ -1439,6 +2066,26 @@ function handleBuyNow(productId, quantity = 1) {
         console.error('Error:', error);
         alert('Error processing buy now request');
     });
+}
+
+// Scroll products on mobile with arrow buttons
+function scrollProducts(direction) {
+    const container = document.getElementById('productsContainer');
+    if (!container) return;
+    
+    const scrollAmount = 105; // Scroll by approximately one card width (100px + gap)
+    
+    if (direction === 'left') {
+        container.scrollBy({
+            left: -scrollAmount,
+            behavior: 'smooth'
+        });
+    } else {
+        container.scrollBy({
+            left: scrollAmount,
+            behavior: 'smooth'
+        });
+    }
 }
 
 // Slideshow

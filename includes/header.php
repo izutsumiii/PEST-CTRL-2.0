@@ -179,36 +179,37 @@ $pathPrefix = ($currentDir === 'paymongo') ? '../' : '';
             position: absolute !important;
             top: -8px !important;
             right: -8px !important;
-            background: #FFD736 !important;
-            color: #130325 !important;
+            background: #FF4757 !important;
+            color: #FFF !important;
             border-radius: 50% !important;
             width: 20px !important;
             height: 20px !important;
             display: flex !important;
             align-items: center !important;
             justify-content: center !important;
-            font-size: 12px !important;
+            font-size: 11px !important;
             font-weight: bold !important;
             min-width: 20px !important;
             opacity: 0;
             transform: scale(0);
             transition: all 0.3s ease;
             z-index: 1000 !important;
+            border: 2px solid #130325 !important;
         }
         
         .notif-badge {
             position: absolute !important;
-            top: -10px !important;
+            top: -8px !important;
             right: -8px !important;
-            background: #FFD736 !important;
-            color: #130325 !important;
+            background: #FF4757 !important;
+            color: #FFF !important;
             border-radius: 50% !important;
             width: 20px !important;
             height: 20px !important;
             display: flex !important;
             align-items: center !important;
             justify-content: center !important;
-            font-size: 12px !important;
+            font-size: 11px !important;
             font-weight: bold !important;
             min-width: 20px !important;
             opacity: 0;
@@ -216,6 +217,7 @@ $pathPrefix = ($currentDir === 'paymongo') ? '../' : '';
             transition: all 0.3s ease;
             z-index: 1000 !important;
             visibility: hidden;
+            border: 2px solid #130325 !important;
         }
         
         .notif-badge.show {
@@ -469,38 +471,143 @@ $pathPrefix = ($currentDir === 'paymongo') ? '../' : '';
             }
         }
 
+        /* Mobile Drawer v2.0 - Fixed positioning */
         .mobile-drawer {
             position: fixed;
             top: 0;
-            left: -100%;
+            left: -280px;
             width: 280px;
             height: 100vh;
-            background: #F9F9F9;
-            box-shadow: 6px 0 18px rgba(0,0,0,0.08);
-            transition: all 280ms ease;
-            z-index: 1050;
-            padding: 18px;
+            background: #130325;
+            box-shadow: 6px 0 30px rgba(0,0,0,0.3);
+            transition: all 0.3s ease;
+            z-index: 2000;
+            padding: 0 !important;
+            margin: 0 !important;
+            overflow-y: auto;
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: stretch !important;
+            justify-content: flex-start !important;
         }
         
         .mobile-drawer.show {
             left: 0;
         }
         
+        .mobile-drawer-header {
+            background: linear-gradient(135deg, #130325 0%, #1a0a33 100%);
+            padding: 12px 15px;
+            border-bottom: 2px solid #FFD736;
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            flex-shrink: 0;
+        }
+        
         .mobile-drawer .close-btn {
             background: transparent;
             border: none;
-            font-size: 20px;
+            color: #FFD736;
+            font-size: 26px;
+            cursor: pointer;
+            padding: 0;
+            margin: 0;
+            transition: all 0.3s ease;
+        }
+        
+        .mobile-drawer .close-btn:hover {
+            color: #FFF;
+            transform: rotate(90deg);
         }
         
         .mobile-drawer .links {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            margin-top: 12px;
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 0 !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            align-items: flex-start !important;
+            justify-content: flex-start !important;
+            flex-shrink: 0 !important;
+            flex-grow: 0 !important;
+            width: 100% !important;
         }
         
         .mobile-drawer .links a {
-            color: #130325;
+            color: #F9F9F9;
+            padding: 15px 20px !important;
+            text-decoration: none;
+            font-size: 15px;
+            font-weight: 500;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.3s ease;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: flex-start !important;
+            gap: 15px;
+            text-align: left !important;
+            width: 100% !important;
+            box-sizing: border-box;
+            margin: 0 !important;
+        }
+        
+        .mobile-drawer .links a:first-child {
+            border-top: none;
+        }
+        
+        .mobile-drawer .links a:hover {
+            background: rgba(255, 215, 54, 0.15);
+            color: #FFD736;
+            padding-left: 25px !important;
+        }
+        
+        .mobile-drawer .links a i {
+            font-size: 18px;
+            width: 22px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+        
+        .mobile-drawer .cart-link {
+            position: relative;
+        }
+        
+        .mobile-drawer .cart-notification {
+            position: absolute;
+            top: 8px;
+            left: 32px;
+            background: #FF4757;
+            color: white;
+            border-radius: 50%;
+            padding: 2px 5px;
+            font-size: 10px;
+            font-weight: 700;
+            min-width: 18px;
+            height: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid #130325;
+        }
+        
+        /* Mobile Drawer Overlay */
+        .mobile-drawer-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1999;
+            display: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .mobile-drawer-overlay.show {
+            display: block;
+            opacity: 1;
         }
         
         .categories-nav {
@@ -627,6 +734,237 @@ $pathPrefix = ($currentDir === 'paymongo') ? '../' : '';
 #notifList::-webkit-scrollbar-thumb:hover {
     background: #e6c230;
 }
+
+/* ===================================== */
+/* MOBILE RESPONSIVE STYLES */
+/* ===================================== */
+
+/* Hamburger Menu Styling */
+.hamburger {
+    display: none; /* Hide on desktop, show on mobile */
+    background: transparent;
+    border: none;
+    color: #FFD736;
+    font-size: 22px;
+    cursor: pointer;
+    padding: 8px;
+    transition: all 0.3s ease;
+}
+
+.hamburger:hover {
+    color: #FFF;
+}
+
+/* Tablet Styles (768px and below) */
+@media screen and (max-width: 768px) {
+    /* Show hamburger on mobile */
+    .hamburger {
+        display: block !important;
+    }
+    
+    .site-header .container {
+        flex-wrap: nowrap;
+        padding: 10px 12px;
+        gap: 10px;
+    }
+    
+    .header-left {
+        flex: 0 0 auto;
+        order: 1;
+        gap: 8px;
+    }
+    
+    .brand-logo {
+        font-size: 16px;
+        padding: 6px 12px;
+    }
+    
+    .brand-text {
+        font-size: 10px;
+    }
+    
+    /* Minimize search bar on mobile */
+    .header-center {
+        flex: 1;
+        order: 2;
+        max-width: none;
+    }
+    
+    .search-box {
+        width: 100%;
+        max-width: none;
+    }
+    
+    .search-box select {
+        font-size: 11px;
+        padding: 8px 6px;
+        max-width: 70px;
+    }
+    
+    .search-box input {
+        font-size: 12px;
+        padding: 8px 10px;
+    }
+    
+    .search-box button {
+        padding: 8px 10px;
+        font-size: 14px;
+    }
+    
+    /* Hide ALL header-right items on mobile (they're in sidebar) */
+    .header-right {
+        display: none !important;
+    }
+    
+    .search-box form {
+        width: 100%;
+    }
+    
+    .search-box select {
+        min-width: 70px !important;
+        font-size: 12px !important;
+    }
+    
+    .search-box input {
+        font-size: 12px !important;
+        padding: 6px 8px !important;
+    }
+    
+    .search-box button {
+        font-size: 12px !important;
+        padding: 0 10px !important;
+    }
+    
+    .header-right {
+        order: 2;
+        gap: 8px;
+    }
+    
+    .header-actions {
+        gap: 6px;
+    }
+    
+    .action-btn {
+        padding: 6px 8px;
+        font-size: 14px;
+    }
+    
+    /* Make notification dropdown work better on mobile */
+    .notif-popper {
+        width: 280px;
+        max-height: 300px;
+        right: -10px;
+    }
+    
+    .nav-links {
+        gap: 6px;
+    }
+    
+    .nav-links a {
+        font-size: 12px;
+        padding: 6px 8px;
+    }
+    
+    /* Mobile menu toggle */
+    .mobile-menu-toggle {
+        display: block;
+        order: 3;
+    }
+}
+
+/* Mobile Styles (480px and below) */
+@media screen and (max-width: 480px) {
+    .site-header .container {
+        padding: 8px 10px;
+        gap: 8px;
+    }
+    
+    .brand-logo {
+        font-size: 16px;
+        padding: 6px 12px;
+    }
+    
+    .brand-text {
+        font-size: 9px;
+    }
+    
+    /* Simplify header on very small screens */
+    .header-actions {
+        gap: 4px;
+    }
+    
+    .action-btn {
+        padding: 6px;
+        font-size: 16px;
+    }
+    
+    .action-btn i {
+        font-size: 18px;
+    }
+    
+    .cart-notification,
+    .notif-badge {
+        width: 18px !important;
+        height: 18px !important;
+        font-size: 10px !important;
+        top: -5px !important;
+        right: -5px !important;
+        border: 2px solid #130325 !important;
+    }
+    
+    /* Stack notification dropdown */
+    .notif-popper {
+        width: calc(100vw - 20px);
+        right: -5px;
+        max-width: 320px;
+    }
+    
+    .notif-item {
+        font-size: 12px;
+    }
+    
+    .nav-links {
+        flex-wrap: wrap;
+    }
+    
+    .nav-links a {
+        font-size: 11px;
+        padding: 5px 6px;
+    }
+    
+    /* Search box adjustments */
+    .search-box select {
+        min-width: 60px !important;
+        font-size: 11px !important;
+        padding: 6px 8px !important;
+    }
+    
+    .search-box input {
+        font-size: 11px !important;
+        padding: 5px 6px !important;
+    }
+    
+    .search-box button {
+        font-size: 11px !important;
+        padding: 0 8px !important;
+    }
+}
+
+/* Extra Small (360px and below) */
+@media screen and (max-width: 360px) {
+    .brand-text {
+        display: none;
+    }
+    
+    .header-actions .action-btn {
+        padding: 4px;
+    }
+    
+    .nav-links a {
+        font-size: 10px;
+        padding: 4px 5px;
+    }
+}
     </style>
 </head>
 <body>
@@ -639,7 +977,7 @@ $pathPrefix = ($currentDir === 'paymongo') ? '../' : '';
                 </a>
             </div>
 
-            <div class="header-center">
+            <div class="header-center" id="headerCenter">
                 <div class="search-box">
                     <form action="<?php echo $pathPrefix; ?>products.php" method="GET" role="search" id="headerSearchForm">
                         <select name="search_type" id="searchTypeSelect">
@@ -771,35 +1109,41 @@ $pathPrefix = ($currentDir === 'paymongo') ? '../' : '';
         </div>
     </header>
 
+    <!-- Mobile Drawer Overlay -->
+    <div class="mobile-drawer-overlay" id="mobileDrawerOverlay"></div>
+    
     <!-- Mobile Drawer -->
     <nav class="mobile-drawer" id="mobileDrawer">
-        <div style="display:flex;align-items:center;justify-content:space-between">
-            <a class="brand" href="<?php echo $pathPrefix; ?>index.php"><div class="brand-logo">PEST-CTRL</div></a>
+        <div class="mobile-drawer-header">
             <button class="close-btn" id="drawerClose"><i class="fas fa-times"></i></button>
         </div>
         <div class="links">
-            <a href="<?php echo $pathPrefix; ?>index.php">Home</a>
-            <a href="<?php echo $pathPrefix; ?>products.php">Products</a>
+            <a href="<?php echo $pathPrefix; ?>index.php"><i class="fas fa-home"></i> Home</a>
+            <a href="<?php echo $pathPrefix; ?>products.php"><i class="fas fa-box"></i> Products</a>
             <a href="<?php echo $pathPrefix; ?>cart.php" class="cart-link">
-                Cart
+                <i class="fas fa-shopping-cart"></i> Cart
                 <?php if (isLoggedIn()): ?>
                     <span id="cart-notification-mobile" class="cart-notification">0</span>
                 <?php endif; ?>
             </a>
             <?php if (isLoggedIn()): ?>
                 <?php if (isSeller()): ?>
-                    <a href="<?php echo $pathPrefix; ?>seller-dashboard.php">Seller Dashboard</a>
+                    <a href="<?php echo $pathPrefix; ?>seller-notifications.php"><i class="fas fa-bell"></i> Notifications</a>
+                    <a href="<?php echo $pathPrefix; ?>seller-dashboard.php"><i class="fas fa-store"></i> Seller Dashboard</a>
+                    <a href="<?php echo $pathPrefix; ?>manage-products.php"><i class="fas fa-boxes"></i> Manage Products</a>
+                    <a href="<?php echo $pathPrefix; ?>seller-orders.php"><i class="fas fa-clipboard-list"></i> View Orders</a>
                 <?php elseif (isAdmin()): ?>
-                    <a href="<?php echo $pathPrefix; ?>admin-dashboard.php">Admin Dashboard</a>
+                    <a href="<?php echo $pathPrefix; ?>admin-notifications.php"><i class="fas fa-bell"></i> Notifications</a>
+                    <a href="<?php echo $pathPrefix; ?>admin-dashboard.php"><i class="fas fa-user-shield"></i> Admin Dashboard</a>
                 <?php else: ?>
-                    <a href="<?php echo $pathPrefix; ?>user-dashboard.php">My Orders</a>
+                    <a href="<?php echo $pathPrefix; ?>customer-notifications.php"><i class="fas fa-bell"></i> Notifications</a>
+                    <a href="<?php echo $pathPrefix; ?>user-dashboard.php"><i class="fas fa-shopping-bag"></i> My Orders</a>
                 <?php endif; ?>
-                <a href="<?php echo $pathPrefix; ?>edit-profile.php">Edit Profile</a>
-                <a href="<?php echo $pathPrefix; ?>customer-notifications.php">Notifications</a>
-                <a href="<?php echo $pathPrefix; ?>logout.php">Logout</a>
+                <a href="<?php echo $pathPrefix; ?>edit-profile.php"><i class="fas fa-user-edit"></i> My Account</a>
+                <a href="<?php echo $pathPrefix; ?>logout.php"><i class="fas fa-sign-out-alt"></i> Logout</a>
             <?php else: ?>
-                <a href="<?php echo $pathPrefix; ?>login.php">Login</a>
-                <a href="<?php echo $pathPrefix; ?>register.php">Register</a>
+                <a href="<?php echo $pathPrefix; ?>login.php"><i class="fas fa-sign-in-alt"></i> Login</a>
+                <a href="<?php echo $pathPrefix; ?>register.php"><i class="fas fa-user-plus"></i> Register</a>
             <?php endif; ?>
         </div>
     </nav>
@@ -810,10 +1154,26 @@ $pathPrefix = ($currentDir === 'paymongo') ? '../' : '';
             const hb = document.getElementById('hamburgerBtn');
             const drawer = document.getElementById('mobileDrawer');
             const closeBtn = document.getElementById('drawerClose');
+            const overlay = document.getElementById('mobileDrawerOverlay');
             const userMenuBtn = document.getElementById('userMenuBtn');
             const userMenu = document.getElementById('userMenu');
-            if (hb && drawer) hb.addEventListener('click', ()=> drawer.classList.add('show'));
-            if (closeBtn && drawer) closeBtn.addEventListener('click', ()=> drawer.classList.remove('show'));
+            
+            function openDrawer() {
+                if (drawer) drawer.classList.add('show');
+                if (overlay) overlay.classList.add('show');
+                document.body.style.overflow = 'hidden';
+            }
+            
+            function closeDrawer() {
+                if (drawer) drawer.classList.remove('show');
+                if (overlay) overlay.classList.remove('show');
+                document.body.style.overflow = '';
+            }
+            
+            if (hb) hb.addEventListener('click', openDrawer);
+            if (closeBtn) closeBtn.addEventListener('click', closeDrawer);
+            if (overlay) overlay.addEventListener('click', closeDrawer);
+            
             if (userMenuBtn && userMenu) {
                 userMenuBtn.addEventListener('click', (e)=> {
                     e.stopPropagation();
@@ -1102,6 +1462,35 @@ document.addEventListener('DOMContentLoaded', function() {
         // Update localStorage when dropdown changes
         searchTypeSelect.addEventListener('change', function() {
             localStorage.setItem('headerSearchType', this.value);
+        });
+    }
+    
+    // Mobile Search Toggle
+    const mobileSearchToggle = document.getElementById('mobileSearchToggle');
+    const headerCenter = document.getElementById('headerCenter');
+    
+    if (mobileSearchToggle && headerCenter) {
+        mobileSearchToggle.addEventListener('click', function() {
+            headerCenter.classList.toggle('active');
+            // Change icon based on state
+            const icon = this.querySelector('i');
+            if (headerCenter.classList.contains('active')) {
+                icon.classList.remove('fa-search');
+                icon.classList.add('fa-times');
+            } else {
+                icon.classList.remove('fa-times');
+                icon.classList.add('fa-search');
+            }
+        });
+        
+        // Close search when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!mobileSearchToggle.contains(e.target) && !headerCenter.contains(e.target)) {
+                headerCenter.classList.remove('active');
+                const icon = mobileSearchToggle.querySelector('i');
+                icon.classList.remove('fa-times');
+                icon.classList.add('fa-search');
+            }
         });
     }
 });
