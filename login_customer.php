@@ -44,8 +44,10 @@ if (isset($_POST['login'])) {
                     $stmt = $pdo->prepare("UPDATE users SET remember_token = ? WHERE id = ?");
                     $stmt->execute([$rememberToken, $user['id']]);
 
-                    // Set cookie
-                    setcookie('remember_token', $rememberToken, $expiry, '/', '', true, true);
+                    // Set cookie with proper settings for ngrok/production
+                    $isSecure = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on';
+                    setcookie('remember_token', $rememberToken, $expiry, '/', '', $isSecure, true);
+                    error_log('Login Customer - Remember token cookie set | Secure: ' . ($isSecure ? 'yes' : 'no'));
                 }
 
                 // Update last login

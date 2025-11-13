@@ -147,8 +147,13 @@ function checkSessionTimeout() {
 }
 
 // Call session timeout check on every request
-if (isset($_SESSION['user_id'])) {
+// SKIP if we're on a page that handles session restoration itself (like order-success.php)
+if (isset($_SESSION['user_id']) && !isset($_SESSION['skip_timeout_check'])) {
     checkSessionTimeout();
+}
+// Clear the skip flag after check
+if (isset($_SESSION['skip_timeout_check'])) {
+    unset($_SESSION['skip_timeout_check']);
 }
 
 function isLoggedIn() {
@@ -2161,11 +2166,13 @@ function updatePaymentTransactionStatus($paymentTransactionId, $status, $payment
 }
 
 // Get seller orders (for seller dashboard)
+// CRITICAL FIX: Check BOTH o.seller_id (new multi-seller) AND through products (legacy)
 function getSellerOrders($sellerId, $limit = 50, $offset = 0) {
     global $pdo;
     
+    // First try to get orders directly by seller_id (new multi-seller orders)
     $stmt = $pdo->prepare("
-        SELECT 
+        SELECT DISTINCT
             o.*, 
             pt.total_amount as payment_total,
             pt.payment_status,
@@ -2175,11 +2182,13 @@ function getSellerOrders($sellerId, $limit = 50, $offset = 0) {
         FROM orders o
         JOIN payment_transactions pt ON o.payment_transaction_id = pt.id
         JOIN users u ON o.user_id = u.id
-        WHERE o.seller_id = ?
+        LEFT JOIN order_items oi ON o.id = oi.order_id
+        LEFT JOIN products p ON oi.product_id = p.id
+        WHERE o.seller_id = ? OR p.seller_id = ?
         ORDER BY o.created_at DESC
         LIMIT ? OFFSET ?
     ");
-    $stmt->execute([$sellerId, $limit, $offset]);
+    $stmt->execute([$sellerId, $sellerId, $limit, $offset]);
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 

@@ -28,8 +28,9 @@ if (isset($_POST['update_status'])) {
     $newStatus = sanitizeInput($_POST['status']);
     $cancellationReason = isset($_POST['cancellation_reason']) ? sanitizeInput($_POST['cancellation_reason']) : '';
     
-    $stmt = $pdo->prepare("SELECT o.* FROM orders o JOIN order_items oi ON o.id = oi.order_id JOIN products p ON oi.product_id = p.id WHERE o.id = ? AND p.seller_id = ? GROUP BY o.id");
-    $stmt->execute([$orderId, $userId]);
+    // CRITICAL FIX: Check BOTH o.seller_id (new multi-seller orders) AND p.seller_id (legacy compatibility)
+    $stmt = $pdo->prepare("SELECT o.* FROM orders o LEFT JOIN order_items oi ON o.id = oi.order_id LEFT JOIN products p ON oi.product_id = p.id WHERE o.id = ? AND (o.seller_id = ? OR p.seller_id = ?) GROUP BY o.id");
+    $stmt->execute([$orderId, $userId, $userId]);
     $order = $stmt->fetch(PDO::FETCH_ASSOC);
     
     // Update order status and set delivery_date if status is 'delivered'
@@ -219,8 +220,10 @@ function sendOrderStatusUpdateEmail($customerEmail, $customerName, $orderId, $ne
 }
 
 
-$stmt = $pdo->prepare("SELECT o.*, oi.quantity, oi.price as item_price, p.name as product_name, p.id as product_id, COALESCE(u.username, 'Guest Customer') as customer_name FROM orders o JOIN order_items oi ON o.id = oi.order_id JOIN products p ON oi.product_id = p.id LEFT JOIN users u ON o.user_id = u.id WHERE p.seller_id = ? ORDER BY o.created_at DESC");
-$stmt->execute([$userId]);
+// CRITICAL FIX: Check BOTH o.seller_id (new multi-seller orders) AND p.seller_id (legacy compatibility)
+// This ensures orders created with proper seller_id in orders table are shown
+$stmt = $pdo->prepare("SELECT o.*, oi.quantity, oi.price as item_price, p.name as product_name, p.id as product_id, COALESCE(u.username, 'Guest Customer') as customer_name FROM orders o JOIN order_items oi ON o.id = oi.order_id JOIN products p ON oi.product_id = p.id LEFT JOIN users u ON o.user_id = u.id WHERE (o.seller_id = ? OR p.seller_id = ?) ORDER BY o.created_at DESC");
+$stmt->execute([$userId, $userId]);
 $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 $groupedOrders = [];

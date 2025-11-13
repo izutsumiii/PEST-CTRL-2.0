@@ -11,6 +11,7 @@ if ($orderId <= 0) {
     exit();
 }
 
+// CRITICAL FIX: Check BOTH o.seller_id (new multi-seller orders) AND p.seller_id (legacy compatibility)
 // Fetch order header scoped to this seller (exists if seller sold at least one item in this order)
 $stmt = $pdo->prepare("SELECT o.id, o.total_amount, o.status, o.created_at,
        COALESCE(u.username, 'Guest Customer') AS customer_name,
@@ -18,12 +19,12 @@ $stmt = $pdo->prepare("SELECT o.id, o.total_amount, o.status, o.created_at,
        u.phone AS customer_phone,
        o.shipping_address
 FROM orders o
-JOIN order_items oi ON o.id = oi.order_id
-JOIN products p ON oi.product_id = p.id
+LEFT JOIN order_items oi ON o.id = oi.order_id
+LEFT JOIN products p ON oi.product_id = p.id
 LEFT JOIN users u ON o.user_id = u.id
-WHERE o.id = ? AND p.seller_id = ?
+WHERE o.id = ? AND (o.seller_id = ? OR p.seller_id = ?)
 GROUP BY o.id");
-$stmt->execute([$orderId, $sellerId]);
+$stmt->execute([$orderId, $sellerId, $sellerId]);
 $order = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if (!$order) {
@@ -32,12 +33,14 @@ if (!$order) {
     exit();
 }
 // CRITICAL: Fetch items with original_price to check for item-level discounts
+// CRITICAL FIX: Check both o.seller_id and p.seller_id for compatibility
 $itemsStmt = $pdo->prepare("SELECT oi.product_id, oi.quantity, oi.price AS item_price, oi.original_price, p.name AS product_name, COALESCE(p.image_url, '') AS image_url
 FROM order_items oi
 JOIN products p ON oi.product_id = p.id
-WHERE oi.order_id = ? AND p.seller_id = ?
+JOIN orders o ON oi.order_id = o.id
+WHERE oi.order_id = ? AND (o.seller_id = ? OR p.seller_id = ?)
 ORDER BY p.name");
-$itemsStmt->execute([$orderId, $sellerId]);
+$itemsStmt->execute([$orderId, $sellerId, $sellerId]);
 $orderItems = $itemsStmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Fetch discount information from payment_transactions (similar to order-success.php)

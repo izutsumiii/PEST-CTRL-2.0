@@ -10,7 +10,9 @@ if (isset($_SESSION['user_id'])) {
 
 // Clear remember me cookie
 if (isset($_COOKIE['remember_token'])) {
-    setcookie('remember_token', '', time() - 3600, '/', '', true, true);
+    $isSecure = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on';
+    setcookie('remember_token', '', time() - 3600, '/', '', $isSecure, true);
+    error_log('Logout - Remember token cookie cleared');
 }
 
 // Destroy session

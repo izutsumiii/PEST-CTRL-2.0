@@ -1,6 +1,28 @@
 <?php
-// Ensure session is started
-if (session_status() == PHP_SESSION_NONE) {
+// CRITICAL: Start session FIRST with proper cookie settings to ensure it persists after PayMongo redirect
+if (session_status() === PHP_SESSION_NONE) {
+    // Configure session cookie to persist across redirects
+    // IMPORTANT: For ngrok, we need to set secure to false in development, true in production
+    $isSecure = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on';
+    $cookiePath = '/';
+    $cookieDomain = ''; // Empty string = current domain (works with ngrok)
+    
+    ini_set('session.cookie_httponly', '1');
+    ini_set('session.cookie_samesite', 'Lax');
+    ini_set('session.use_strict_mode', '1');
+    ini_set('session.cookie_lifetime', '0'); // Session cookie (until browser closes)
+    ini_set('session.cookie_path', $cookiePath);
+    ini_set('session.cookie_domain', $cookieDomain);
+    ini_set('session.cookie_secure', $isSecure ? '1' : '0');
+    
+    // Start session
+    session_start();
+    
+    // Log session info for debugging
+    error_log('Order Failure - Session started: ' . session_id() . ' | Cookie domain: ' . $cookieDomain . ' | Secure: ' . ($isSecure ? 'yes' : 'no'));
+} else {
+    // Session already started
+    error_log('Order Failure - Session already active: ' . session_id());
     session_start();
 }
 
@@ -32,12 +54,14 @@ if (!isset($_SESSION['user_id']) && isset($_COOKIE['remember_token'])) {
 }
 
 // CRITICAL: Update last_activity BEFORE including functions.php to prevent timeout
+// AND set flag to skip timeout check since we're handling session restoration manually
 if (isset($_SESSION['user_id'])) {
     $_SESSION['last_activity'] = time();
-    error_log('Order Failure - Updated last_activity for user: ' . $_SESSION['user_id']);
+    $_SESSION['skip_timeout_check'] = true;
+    error_log('Order Failure - Updated last_activity for user: ' . $_SESSION['user_id'] . ', skip_timeout_check set');
 }
 
-// NOW include functions.php - checkSessionTimeout() will see updated last_activity
+// NOW include functions.php - checkSessionTimeout() will be skipped for this request
 require_once '../includes/functions.php';
 
 $transactionId = isset($_GET['transaction_id']) ? (int)$_GET['transaction_id'] : 0;

@@ -2,29 +2,27 @@
 // CRITICAL: Start session FIRST with proper cookie settings to ensure it persists after PayMongo redirect
 if (session_status() === PHP_SESSION_NONE) {
     // Configure session cookie to persist across redirects
+    // IMPORTANT: For ngrok, we need to set secure to false in development, true in production
+    $isSecure = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on';
+    $cookiePath = '/';
+    $cookieDomain = ''; // Empty string = current domain (works with ngrok)
+    
     ini_set('session.cookie_httponly', '1');
     ini_set('session.cookie_samesite', 'Lax');
     ini_set('session.use_strict_mode', '1');
+    ini_set('session.cookie_lifetime', '0'); // Session cookie (until browser closes)
+    ini_set('session.cookie_path', $cookiePath);
+    ini_set('session.cookie_domain', $cookieDomain);
+    ini_set('session.cookie_secure', $isSecure ? '1' : '0');
+    
     // Start session
     session_start();
     
-    // Ensure session cookie is set with proper parameters
-    if (isset($_COOKIE[session_name()])) {
-        // Session cookie exists, ensure it's properly configured
-        $sessionParams = session_get_cookie_params();
-        $expires = $sessionParams['lifetime'] ? time() + $sessionParams['lifetime'] : 0;
-        setcookie(
-            session_name(),
-            session_id(),
-            $expires,
-            $sessionParams['path'],
-            $sessionParams['domain'],
-            $sessionParams['secure'],
-            $sessionParams['httponly']
-        );
-    }
+    // Log session info for debugging
+    error_log('Order Success - Session started: ' . session_id() . ' | Cookie domain: ' . $cookieDomain . ' | Secure: ' . ($isSecure ? 'yes' : 'no'));
 } else {
-    // Session already started, just ensure it's active
+    // Session already started
+    error_log('Order Success - Session already active: ' . session_id());
     session_start();
 }
 
@@ -58,12 +56,14 @@ if (!isset($_SESSION['user_id']) && isset($_COOKIE['remember_token'])) {
 }
 
 // CRITICAL: Update last_activity BEFORE including functions.php to prevent timeout
+// AND set flag to skip timeout check since we're handling session restoration manually
 if (isset($_SESSION['user_id'])) {
     $_SESSION['last_activity'] = time();
-    error_log('Order Success - Updated last_activity for user: ' . $_SESSION['user_id']);
+    $_SESSION['skip_timeout_check'] = true;
+    error_log('Order Success - Updated last_activity for user: ' . $_SESSION['user_id'] . ', skip_timeout_check set');
 }
 
-// NOW include functions.php - checkSessionTimeout() will see updated last_activity
+// NOW include functions.php - checkSessionTimeout() will be skipped for this request
 require_once '../includes/functions.php';
 
 $orderId = isset($_GET['order_id']) ? (int)$_GET['order_id'] : 0;
@@ -78,6 +78,152 @@ if ($orderId <= 0 && $transactionId <= 0 && !$checkoutSessionId) {
 }
 
 try {
+    // CRITICAL: Create orders from pending checkout items for PayMongo payments
+    // This is the MISSING PIECE - orders must be created after payment confirmation!
+    if (isset($_SESSION['pending_checkout_items']) && $transactionId > 0) {
+        error_log('Order Success - Found pending checkout items, creating orders for transaction: ' . $transactionId);
+        
+        $pendingItems = $_SESSION['pending_checkout_items'];
+        $shippingAddress = $_SESSION['pending_shipping_address'] ?? '';
+        $userId = $_SESSION['user_id'];
+        
+        // Get payment method from transaction
+        $stmt = $pdo->prepare("SELECT payment_method FROM payment_transactions WHERE id = ?");
+        $stmt->execute([$transactionId]);
+        $txn = $stmt->fetch(PDO::FETCH_ASSOC);
+        $paymentMethod = $txn['payment_method'] ?? 'card';
+        
+        error_log('Order Success - Creating ' . count($pendingItems) . ' orders for user ' . $userId);
+        
+        // Create orders for each seller
+        foreach ($pendingItems as $sellerId => $sellerGroup) {
+            error_log('Order Success - Creating order for seller ' . $sellerId . ' (type: ' . gettype($sellerId) . '), subtotal: ' . $sellerGroup['subtotal']);
+            error_log('Order Success - Seller group data: ' . json_encode($sellerGroup));
+            
+            // CRITICAL: Ensure seller_id is a valid integer
+            $sellerIdInt = (int)$sellerId;
+            if ($sellerIdInt <= 0) {
+                error_log('Order Success - WARNING: Invalid seller_id ' . $sellerId . ', trying to get from items');
+                // Try to get seller_id from first product in items
+                if (!empty($sellerGroup['items'])) {
+                    $firstItem = $sellerGroup['items'][0];
+                    $stmt = $pdo->prepare("SELECT seller_id FROM products WHERE id = ?");
+                    $stmt->execute([$firstItem['product_id']]);
+                    $product = $stmt->fetch(PDO::FETCH_ASSOC);
+                    if ($product && $product['seller_id']) {
+                        $sellerIdInt = (int)$product['seller_id'];
+                        error_log('Order Success - Retrieved seller_id ' . $sellerIdInt . ' from product ' . $firstItem['product_id']);
+                    }
+                }
+            }
+            
+            // Create order for this seller
+            $stmt = $pdo->prepare("
+                INSERT INTO orders (
+                    user_id, payment_transaction_id, seller_id, total_amount,
+                    shipping_address, payment_method, status, payment_status
+                ) VALUES (?, ?, ?, ?, ?, ?, 'pending', 'completed')
+            ");
+            $stmt->execute([
+                $userId, 
+                $transactionId, 
+                $sellerIdInt,  // Use validated integer seller_id
+                $sellerGroup['subtotal'],
+                $shippingAddress, 
+                $paymentMethod
+            ]);
+            $orderId = $pdo->lastInsertId();
+            error_log('Order Success - Order #' . $orderId . ' created with seller_id: ' . $sellerIdInt);
+            
+            // Create order items for this order
+            foreach ($sellerGroup['items'] as $item) {
+                $stmt = $pdo->prepare("
+                    INSERT INTO order_items (
+                        order_id, product_id, quantity, price, original_price
+                    ) VALUES (?, ?, ?, ?, ?)
+                ");
+                $stmt->execute([
+                    $orderId,
+                    $item['product_id'],
+                    $item['quantity'],
+                    $item['price'],
+                    $item['original_price'] ?? $item['price']
+                ]);
+                error_log('Order Success - Order item created: Product ' . $item['product_id'] . ', Qty ' . $item['quantity']);
+                
+                // Update product stock
+                $stmt = $pdo->prepare("UPDATE products SET stock_quantity = stock_quantity - ? WHERE id = ?");
+                $stmt->execute([$item['quantity'], $item['product_id']]);
+            }
+        }
+        
+        // Update payment transaction status
+        $stmt = $pdo->prepare("UPDATE payment_transactions SET payment_status = 'completed' WHERE id = ?");
+        $stmt->execute([$transactionId]);
+        
+        // Create seller notifications for all created orders
+        if (file_exists(__DIR__ . '/../includes/seller_notification_functions.php')) {
+            require_once __DIR__ . '/../includes/seller_notification_functions.php';
+            
+            // Get all orders we just created
+            $stmt = $pdo->prepare("SELECT * FROM orders WHERE payment_transaction_id = ?");
+            $stmt->execute([$transactionId]);
+            $createdOrders = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            foreach ($createdOrders as $createdOrder) {
+                $sellerId = $createdOrder['seller_id'];
+                $orderId = $createdOrder['id'];
+                $orderTotal = $createdOrder['total_amount'];
+                
+                // Create seller notification
+                createSellerNotification(
+                    $sellerId,
+                    'New Order Received',
+                    'You have a new order #' . str_pad($orderId, 6, '0', STR_PAD_LEFT) . ' totaling ₱' . number_format($orderTotal, 2) . '. Please review and process it.',
+                    'success',
+                    'seller-order-details.php?order_id=' . $orderId
+                );
+                error_log('Order Success - Seller notification created for seller ' . $sellerId . ', order ' . $orderId);
+            }
+        }
+        
+        // Create customer notifications for each order
+        try {
+            foreach ($createdOrders as $createdOrder) {
+                $orderId = $createdOrder['id'];
+                $orderTotal = $createdOrder['total_amount'];
+                
+                $stmt = $pdo->prepare("
+                    INSERT INTO notifications (user_id, order_id, message, type, created_at) 
+                    VALUES (?, ?, ?, 'order_placed', NOW())
+                ");
+                $message = "Your order #" . str_pad($orderId, 6, '0', STR_PAD_LEFT) . " totaling ₱" . number_format($orderTotal, 2) . " has been placed successfully.";
+                $stmt->execute([$userId, $orderId, $message]);
+            }
+            error_log('Order Success - Customer notifications created for ' . count($createdOrders) . ' orders');
+        } catch (Exception $e) {
+            error_log('Order Success - Error creating customer notification: ' . $e->getMessage());
+        }
+        
+        // Clear cart items for this user
+        if (isset($_SESSION['cart_session_id'])) {
+            $stmt = $pdo->prepare("DELETE FROM cart_items WHERE session_id = ?");
+            $stmt->execute([$_SESSION['cart_session_id']]);
+            error_log('Order Success - Cart cleared for session: ' . $_SESSION['cart_session_id']);
+        }
+        
+        // Clear pending checkout session data
+        unset($_SESSION['pending_checkout_items']);
+        unset($_SESSION['pending_checkout_grand_total']);
+        unset($_SESSION['pending_checkout_transaction_id']);
+        unset($_SESSION['pending_customer_name']);
+        unset($_SESSION['pending_customer_email']);
+        unset($_SESSION['pending_customer_phone']);
+        unset($_SESSION['pending_shipping_address']);
+        
+        error_log('Order Success - All orders created successfully with notifications, cleared pending session data');
+    }
+    
     // Initialize variables
     $order = null;
     $transaction = null;
