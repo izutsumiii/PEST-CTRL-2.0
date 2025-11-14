@@ -71,7 +71,6 @@ if (isset($_GET['as']) && $_GET['as'] === 'json') {
     $userId = $_SESSION['user_id'];
 }
 // Combined query - get order updates WITH custom messages joined
-// Group by order_id to show only ONE notification per order (the most recent)
 $stmt = $pdo->prepare("
     SELECT 
         o.id as order_id, 
@@ -84,6 +83,8 @@ $stmt = $pdo->prepare("
         rr.processed_at as return_updated_at,
         n.message,
         n.type,
+        n.id as notification_id,
+        n.product_id,
         GREATEST(
             COALESCE(o.updated_at, o.created_at), 
             COALESCE(rr.processed_at, o.created_at),
@@ -91,27 +92,53 @@ $stmt = $pdo->prepare("
         ) as sort_date
     FROM orders o
     LEFT JOIN payment_transactions pt ON pt.id = o.payment_transaction_id
-    LEFT JOIN hidden_notifications hn ON hn.user_id = o.user_id AND hn.order_id = o.id
     LEFT JOIN (
         SELECT user_id, order_id, MAX(read_at) as read_at
         FROM notification_reads
+        WHERE user_id = ?
         GROUP BY user_id, order_id
     ) nr ON nr.user_id = o.user_id AND nr.order_id = o.id
     LEFT JOIN return_requests rr ON rr.order_id = o.id
     LEFT JOIN (
-        SELECT order_id, user_id, message, type, created_at
+        SELECT order_id, user_id, message, type, id, created_at, product_id
         FROM notifications
-        WHERE (order_id, created_at) IN (
+        WHERE user_id = ? AND (order_id, created_at) IN (
             SELECT order_id, MAX(created_at)
             FROM notifications
+            WHERE user_id = ? AND order_id IS NOT NULL
             GROUP BY order_id
         )
     ) n ON n.order_id = o.id AND n.user_id = o.user_id
-    WHERE o.user_id = ? AND hn.id IS NULL
-    GROUP BY o.id
+    WHERE o.user_id = ?
+    
+    UNION ALL
+    
+    SELECT 
+        COALESCE(n.order_id, 0) as order_id,
+        'notification' as status,
+        n.created_at,
+        n.created_at as updated_at,
+        NULL as payment_status,
+        IF(nr.read_at IS NULL OR n.created_at > nr.read_at, 0, 1) as is_read,
+        NULL as return_status,
+        NULL as return_updated_at,
+        n.message,
+        n.type,
+        n.id as notification_id,
+        n.product_id,
+        n.created_at as sort_date
+    FROM notifications n
+    LEFT JOIN (
+        SELECT notification_id, MAX(read_at) as read_at
+        FROM notification_reads
+        WHERE user_id = ?
+        GROUP BY notification_id
+    ) nr ON nr.notification_id = n.id
+    WHERE n.user_id = ? AND n.order_id IS NULL
+    
     ORDER BY sort_date DESC
 ");
-$stmt->execute([$userId]);
+$stmt->execute([$userId, $userId, $userId, $userId, $userId, $userId]);
 $events = $stmt->fetchAll(PDO::FETCH_ASSOC);
 // JSON mode for header popup
 if (isset($_GET['as']) && $_GET['as'] === 'json') {
@@ -128,56 +155,47 @@ if (isset($_GET['as']) && $_GET['as'] === 'json') {
     header('Content-Type: application/json');
     
     try {
-       $items = [];
+        $items = [];
         $unreadCount = 0;
+        
         foreach ($events as $e) {
             $isRead = isset($e['is_read']) ? (bool)$e['is_read'] : false;
             if (!$isRead) {
                 $unreadCount++;
             }
             
-            // CRITICAL FIX: Always include actual order status, even for custom notifications
-            // This ensures status badges match the actual order status
+            // Get the actual order status
             $actualOrderStatus = (string)($e['status'] ?? 'unknown');
             $mostRecentUpdate = $e['updated_at'] ?: $e['created_at'];
+            
             if (!empty($e['return_updated_at']) && strtotime($e['return_updated_at']) > strtotime($mostRecentUpdate)) {
                 $mostRecentUpdate = $e['return_updated_at'];
             }
             
-            if (isset($e['message']) && !empty($e['message'])) {
-                // This is a custom notification - but still include actual order status
-                $items[] = [
-                    'order_id' => (int)$e['order_id'],
-                    'status' => $actualOrderStatus, // Use actual order status, not 'notification'
-                    'message' => $e['message'],
-                    'type' => $e['type'],
-                    'payment_status' => !empty($e['payment_status']) ? (string)$e['payment_status'] : null,
-                    'return_status' => !empty($e['return_status']) ? (string)$e['return_status'] : null,
-                    'updated_at' => $mostRecentUpdate,
-                    'updated_at_human' => date('M d, Y h:i A', strtotime($mostRecentUpdate)),
-                    'is_read' => $isRead,
-                    'is_custom_notification' => true // Flag to identify custom notifications
-                ];
-            } else {
-                // This is an order event
-                $items[] = [
-                    'order_id' => (int)$e['order_id'],
-                    'status' => $actualOrderStatus,
-                    'payment_status' => !empty($e['payment_status']) ? (string)$e['payment_status'] : null,
-                    'return_status' => !empty($e['return_status']) ? (string)$e['return_status'] : null,
-                    'updated_at' => $mostRecentUpdate,
-                    'updated_at_human' => date('M d, Y h:i A', strtotime($mostRecentUpdate)),
-                    'is_read' => $isRead,
-                    'is_custom_notification' => false
-                ];
-            }
-            
+            // Build notification item
+            $items[] = [
+                'order_id' => (int)$e['order_id'],
+                'status' => $actualOrderStatus,
+                'message' => !empty($e['message']) ? (string)$e['message'] : null,
+                'type' => !empty($e['type']) ? (string)$e['type'] : 'info',
+                'notification_id' => !empty($e['notification_id']) ? (int)$e['notification_id'] : null,
+                'product_id' => !empty($e['product_id']) ? (int)$e['product_id'] : null,
+                'payment_status' => !empty($e['payment_status']) ? (string)$e['payment_status'] : null,
+                'return_status' => !empty($e['return_status']) ? (string)$e['return_status'] : null,
+                'updated_at' => $mostRecentUpdate,
+                'updated_at_human' => date('M d, Y h:i A', strtotime($mostRecentUpdate)),
+                'is_read' => $isRead,
+                'is_custom_notification' => !empty($e['message'])
+            ];
         }
+        
         echo json_encode(['success' => true, 'items' => $items, 'unread_count' => $unreadCount]);
     } catch (Exception $e) {
+        error_log("Error in notifications JSON: " . $e->getMessage());
         echo json_encode(['success' => false, 'message' => 'Error loading notifications', 'items' => []]);
     }
     exit;
+       
 }
 
 function statusBadge($status) {
@@ -833,61 +851,100 @@ h1 {
     <?php else: ?>
       <div class="notif-list">
         <?php foreach ($events as $e): ?>
-          <div class="notif-item" <?php if (empty($e['is_read'])): ?>style="border-left: 4px solid var(--primary-dark);"<?php endif; ?>>
-            <?php
-            $status = strtolower($e['status']);
-            $filterStatus = $status;
-            
-            switch($status) {
-                case 'pending': $filterStatus = 'pending'; break;
-                case 'processing': $filterStatus = 'processing'; break;
-                case 'shipped': $filterStatus = 'shipped'; break;
-                case 'delivered': $filterStatus = 'delivered'; break;
-                case 'cancelled': $filterStatus = 'cancelled'; break;
-            }
-            
-            if (!empty($e['return_status'])) {
-                $filterStatus = 'return_requested';
+          
+            <div class="notif-item" <?php if (empty($e['is_read'])): ?>style="border-left: 4px solid var(--primary-dark);"<?php endif; ?>>
+    <?php
+    $hasOrderId = !empty($e['order_id']);
+    $hasProductId = !empty($e['product_id']);
+    
+    // Determine link URL: product > order > default
+    if ($hasProductId) {
+        $linkUrl = "product-detail.php?id=" . (int)$e['product_id'];
+    } elseif ($hasOrderId) {
+        $linkUrl = "order-details.php?id=" . (int)$e['order_id'];
+    } else {
+        $linkUrl = "#";
+    }
+    ?>
+    <a href="<?php echo $linkUrl; ?>" 
+       <?php if ($hasOrderId): ?>data-order-id="<?php echo (int)$e['order_id']; ?>"<?php endif; ?>
+       <?php if ($hasProductId): ?>data-product-id="<?php echo (int)$e['product_id']; ?>"<?php endif; ?>
+       data-notification-id="<?php echo (int)$e['notification_id']; ?>"
+       data-is-custom="<?php echo isset($e['message']) ? '1' : '0'; ?>"
+       <?php if (!$hasOrderId && !$hasProductId): ?>onclick="event.preventDefault(); markStandaloneNotificationRead(<?php echo (int)$e['notification_id']; ?>);"<?php elseif ($hasProductId): ?>onclick="event.preventDefault(); markStandaloneNotificationRead(<?php echo (int)$e['notification_id']; ?>, <?php echo (int)$e['product_id']; ?>); window.location.href='product-detail.php?id=<?php echo (int)$e['product_id']; ?>';"<?php endif; ?>>
+      <div class="notif-item-content">
+        <div class="notif-icon">
+          <i class="fas fa-<?php echo $e['type'] === 'warning' ? 'exclamation-triangle' : 'bell'; ?>"></i>
+        </div>
+        <div class="notif-body">
+        <div class="notif-title">
+            <?php 
+            $isReviewNotification = false;
+            if (!empty($e['message'])) {
+                echo htmlspecialchars($e['message']);
+                // Check if this is a review-related notification
+                $lowerMessage = strtolower($e['message']);
+                if (strpos($lowerMessage, 'review') !== false || 
+                    strpos($lowerMessage, 'rating') !== false || 
+                    strpos($lowerMessage, 'feedback') !== false) {
+                    $isReviewNotification = true;
+                }
+            } else {
+                // Generate default message based on status
+                $status = $e['status'] ?? 'unknown';
+                $orderId = $e['order_id'] ?? 0;
+                
+                if (!empty($e['return_status'])) {
+                    echo "Return request update for Order #" . $orderId;
+                } elseif ($status === 'pending') {
+                    echo "Your order #" . $orderId . " is pending confirmation";
+                } elseif ($status === 'processing') {
+                    echo "Your order #" . $orderId . " is now being processed";
+                } elseif ($status === 'shipped') {
+                    echo "Your order #" . $orderId . " has been shipped!";
+                } elseif ($status === 'delivered') {
+                    echo "Your order #" . $orderId . " has been delivered";
+                } elseif ($status === 'cancelled') {
+                    echo "Order #" . $orderId . " has been cancelled";
+                } elseif ($status === 'completed') {
+                    echo "Order #" . $orderId . " is complete";
+                } else {
+                    echo "Order #" . $orderId . " update";
+                }
             }
             ?>
-            <a href="order-details.php?id=<?php echo (int)$e['order_id']; ?>" data-order-id="<?php echo (int)$e['order_id']; ?>" data-is-custom="<?php echo isset($e['message']) ? '1' : '0'; ?>">
-              <div class="notif-item-content">
-                <div class="notif-icon">
-                  <i class="fas fa-bell"></i>
-                </div>
-                <div class="notif-body">
-                  <div class="notif-title">
-                    <?php if (isset($e['message']) && !empty($e['message'])): ?>
-                      <?php echo htmlspecialchars($e['message']); ?>
-                    <?php else: ?>
-                      Order #<?php echo (int)$e['order_id']; ?> update
-                    <?php endif; ?>
-                  </div>
-                  <div class="notif-details">
-                    <span>Order #<?php echo (int)$e['order_id']; ?></span>
-                    <span>•</span>
-                    <span>Status: <?php echo statusBadge($e['status'] ?? 'unknown'); ?></span>
-                    <?php if (!empty($e['payment_status']) && $e['payment_status'] !== ''): ?>
-                      <span>Payment: <?php echo statusBadge($e['payment_status']); ?></span>
-                    <?php endif; ?>
-                    <?php if (!empty($e['return_status']) && $e['return_status'] !== ''): ?>
-                      <span>Return: <?php echo statusBadge($e['return_status']); ?></span>
-                    <?php endif; ?>
-                  </div>
-                </div>
-                <div class="notif-meta">
-                  <span class="notif-time" data-timestamp="<?php echo strtotime($e['updated_at'] ?: $e['created_at']); ?>"><?php echo htmlspecialchars(date('M d, Y h:i A', strtotime($e['updated_at'] ?: $e['created_at']))); ?></span>
-                  <button 
-                    type="button"
-                    onclick="event.stopPropagation(); handleViewNotification(<?php echo (int)$e['order_id']; ?>, <?php echo isset($e['message']) ? '1' : '0'; ?>);"
-                    class="btn-view"
-                    title="View Details">
-                    <i class="fas fa-eye"></i> View
-                  </button>
-                </div>
-              </div>
-            </a>
-          </div>
+            </div>
+            <?php if (!$isReviewNotification && !empty($e['order_id'])): ?>
+            <div class="notif-details">
+                <span>Order #<?php echo htmlspecialchars($e['order_id']); ?></span>
+                <span>•</span>
+                <span>Status: <?php echo statusBadge($e['status']); ?></span>
+                <?php if (!empty($e['payment_status'])): ?>
+                    <span>Payment: <?php echo statusBadge($e['payment_status']); ?></span>
+                <?php endif; ?>
+                <?php if (!empty($e['return_status'])): ?>
+                    <span>Return: <?php echo statusBadge($e['return_status']); ?></span>
+                <?php endif; ?>
+            </div>
+            <?php endif; ?>
+        <div class="notif-meta">
+          <span class="notif-time" data-timestamp="<?php echo strtotime($e['created_at']); ?>">
+            <?php echo htmlspecialchars(date('M d, Y h:i A', strtotime($e['created_at']))); ?>
+          </span>
+          <?php if ($hasOrderId): ?>
+          <button 
+            type="button"
+            onclick="event.stopPropagation(); handleViewNotification(<?php echo (int)$e['order_id']; ?>, <?php echo isset($e['message']) ? '1' : '0'; ?>);"
+            class="btn-view"
+            title="View Details">
+            <i class="fas fa-eye"></i> View
+          </button>
+          <?php endif; ?>
+        </div>
+      </div>
+    </a>
+</div>
+
         <?php endforeach; ?>
       </div>
     <?php endif; ?>
@@ -1124,6 +1181,9 @@ function createNotificationElement(item) {
     
     const notifDiv = document.createElement('a');
     notifDiv.setAttribute('data-order-id', item.order_id);
+    if (item.product_id) {
+        notifDiv.setAttribute('data-product-id', item.product_id);
+    }
     notifDiv.setAttribute('data-is-custom', item.is_custom_notification ? '1' : '0');
     
 // Determine correct filter based on status
@@ -1158,8 +1218,10 @@ if (item.return_status) {
     filterStatus = 'return_requested';
 }
 
-// Link directly to order details for precision
-const targetUrl = item.order_id ? `order-details.php?id=${item.order_id}` : 'customer-notifications.php';
+// Link directly: product > order > default
+const targetUrl = item.product_id 
+    ? `product-detail.php?id=${item.product_id}` 
+    : (item.order_id ? `order-details.php?id=${item.order_id}` : 'customer-notifications.php');
 notifDiv.href = targetUrl;
 notifDiv.style.textDecoration = 'none';
 notifDiv.style.display = 'block';
@@ -1174,7 +1236,18 @@ notifDiv.addEventListener('click', function(e) {
     e.preventDefault();
     const isCustom = item.is_custom_notification || false;
     
-    if (!item.is_read) {
+    // Handle product notifications differently
+    if (item.product_id) {
+        // Mark standalone notification as read
+        markStandaloneNotificationRead(item.notification_id || 0, item.product_id);
+        // Redirect to product page
+        setTimeout(function() { 
+            window.location.href = 'product-detail.php?id=' + item.product_id; 
+        }, 100);
+        return;
+    }
+    
+    if (!item.is_read && item.order_id) {
         markNotificationAsRead(item.order_id, isCustom);
         // Update UI immediately
         updateNotificationItemUI(item.order_id);
@@ -1216,13 +1289,54 @@ notifDiv.addEventListener('click', function(e) {
         returnBadge = `<span>Return: ${getStatusBadge(item.return_status)}</span>`;
     }
     
-    // Build title - show message if custom notification, otherwise show order update
-    let titleText = '';
-    if (item.is_custom_notification && item.message) {
-        titleText = escapeHtml(item.message);
-    } else {
-        titleText = `Order #${item.order_id} update`;
+   // Build title - show message if custom notification, otherwise generate status-based message
+let titleText = '';
+let isReviewNotification = false;
+
+if (item.is_custom_notification && item.message) {
+    titleText = escapeHtml(item.message);
+    // Check if this is a review-related notification
+    const lowerMessage = item.message.toLowerCase();
+    if (lowerMessage.includes('review') || lowerMessage.includes('rating') || lowerMessage.includes('feedback')) {
+        isReviewNotification = true;
     }
+} else {
+    // Generate message based on status
+    const orderId = item.order_id || 0;
+    const status = (item.status || 'unknown').toLowerCase();
+    
+    if (item.return_status) {
+        titleText = `Return request update for Order #${orderId}`;
+    } else if (status === 'pending') {
+        titleText = `Your order #${orderId} is pending confirmation`;
+    } else if (status === 'processing') {
+        titleText = `Your order #${orderId} is now being processed`;
+    } else if (status === 'shipped') {
+        titleText = `Your order #${orderId} has been shipped!`;
+    } else if (status === 'delivered') {
+        titleText = `Your order #${orderId} has been delivered`;
+    } else if (status === 'cancelled') {
+        titleText = `Order #${orderId} has been cancelled`;
+    } else if (status === 'completed') {
+        titleText = `Order #${orderId} is complete`;
+    } else {
+        titleText = `Order #${orderId} update`;
+    }
+}
+
+// Build details section - hide order info for review notifications
+let detailsContent = '';
+if (!isReviewNotification && item.order_id) {
+    detailsContent = `
+        <div class="notif-details">
+            <span>Order #${item.order_id}</span>
+            <span>•</span>
+            <span>Status: ${statusBadge}</span>
+            ${paymentBadge}
+            ${returnBadge}
+        </div>
+    `;
+}
     
     content = `
         <div class="notif-item-content">
@@ -1231,13 +1345,7 @@ notifDiv.addEventListener('click', function(e) {
             </div>
             <div class="notif-body">
                 <div class="notif-title">${titleText}</div>
-                <div class="notif-details">
-                    <span>Order #${item.order_id}</span>
-                    <span>•</span>
-                    <span>Status: ${statusBadge}</span>
-                    ${paymentBadge}
-                    ${returnBadge}
-                </div>
+                ${detailsContent}
             </div>
             <div class="notif-meta">
                 <span class="notif-time" data-timestamp="${timestamp}">${item.updated_at_human}</span>
@@ -1522,7 +1630,52 @@ function deleteNotificationFromPage(orderId, button, isCustomNotification) {
         }, 1000);
     });
 }
-
+// Mark standalone notification as read (no order_id)
+function markStandaloneNotificationRead(notificationId, productId = null) {
+    // Mark as read via beacon (fire and forget)
+    if (navigator.sendBeacon) {
+        const formData = new FormData();
+        formData.append('notification_id', notificationId);
+        navigator.sendBeacon('ajax/mark-notification-read.php', formData);
+    }
+    
+    // Also try fetch for immediate feedback
+    fetch('ajax/mark-notification-read.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            notification_id: notificationId
+        }),
+        credentials: 'same-origin'
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            // Update UI immediately
+            const notifItem = document.querySelector(`a[data-notification-id="${notificationId}"]`);
+            if (notifItem) {
+                const parentItem = notifItem.closest('.notif-item');
+                if (parentItem) {
+                    parentItem.style.borderLeft = 'none';
+                }
+            }
+            // Update header badge
+            updateHeaderBadge();
+        }
+    })
+    .catch(error => {
+        console.error('Error marking notification as read:', error);
+    });
+    
+    // Redirect to product if productId provided (handled in onclick, but keep for safety)
+    if (productId) {
+        setTimeout(() => {
+            window.location.href = 'product-detail.php?id=' + productId;
+        }, 100);
+    }
+}
 function startRealTimeUpdates() {
     // Clear any existing interval first
     if (refreshInterval) {
