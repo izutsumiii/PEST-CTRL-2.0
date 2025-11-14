@@ -23,6 +23,7 @@ if (isLoggedIn()) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - PEST CTRL</title>
+    <link rel="icon" type="image/x-icon" href="assets/uploads/pest_icon_216780.ico">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Libre+Barcode+128+Text&display=swap" rel="stylesheet">
     <style>
@@ -279,7 +280,7 @@ if (isLoggedIn()) {
         }
 
         .register-btn:hover {
-            color: var(--primary-dark);
+            color: var(--accent-yellow);
         }
 
         /* BUG LOGO */
