@@ -2090,8 +2090,14 @@ function displayReviews(reviews) {
                 ${isHidden ? `
                     <div class="review-hidden-message">
                         <i class="fas fa-eye-slash"></i>
-                        <em>This review is hidden</em>
-                        ${review.hidden_reason ? `<span class="hidden-reason"> - ${escapeHtml(review.hidden_reason)}</span>` : ''}
+                        <div>
+                            <em>This review is hidden</em>
+                            ${review.hidden_reason ? `
+                                <div class="hidden-reason" style="margin-top: 8px; font-size: 12px;">
+                                    <strong>Reason:</strong> ${escapeHtml(review.hidden_reason)}
+                                </div>
+                            ` : ''}
+                        </div>
                     </div>
                 ` : `
                     <div class="review-text-modal">${escapeHtml(review.review_text).replace(/\n/g, '<br>')}</div>
@@ -2287,7 +2293,20 @@ function submitHideAction() {
             reason: reason
         })
     })
-    .then(response => response.json())
+    .then(response => {
+        // Check if response is ok
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        // Check if response is JSON
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+            return response.text().then(text => {
+                throw new Error('Invalid JSON response: ' + text.substring(0, 100));
+            });
+        }
+        return response.json();
+    })
     .then(data => {
         if (data.success) {
             closeHideModal();
@@ -2305,7 +2324,11 @@ function submitHideAction() {
     })
     .catch(error => {
         console.error('Error:', error);
-        showHideErrorModal('Error processing request. Please try again.');
+        let errorMessage = 'Error processing request. Please try again.';
+        if (error.message) {
+            errorMessage = error.message;
+        }
+        showHideErrorModal(errorMessage);
     })
     .finally(() => {
         if (confirmBtn) {
