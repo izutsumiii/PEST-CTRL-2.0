@@ -134,6 +134,29 @@ try {
     $userProfile = null;
 }
 
+// Load user saved addresses
+$userAddresses = [];
+try {
+    $stmt = $pdo->prepare("SELECT * FROM user_addresses WHERE user_id = ? ORDER BY is_default DESC, created_at DESC");
+    $stmt->execute([$userId]);
+    $userAddresses = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    // Get default address if exists
+    $defaultAddress = null;
+    foreach ($userAddresses as $addr) {
+        if ($addr['is_default']) {
+            $defaultAddress = $addr;
+            break;
+        }
+    }
+    if (!$defaultAddress && !empty($userAddresses)) {
+        $defaultAddress = $userAddresses[0];
+    }
+} catch (Exception $e) {
+    $userAddresses = [];
+    $defaultAddress = null;
+}
+
 // CRITICAL FIX: Strict Buy Now detection - ONLY use buy_now if session data exists
 // This ensures buy_now checkout ONLY processes the single buy_now item and IGNORES cart table
 $isBuyNow = (isset($_GET['buy_now']) && $_GET['buy_now'] == '1') && isset($_SESSION['buy_now_data']) && isset($_SESSION['buy_now_active']);
@@ -466,11 +489,66 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['checkout'])) {
     $customerEmail = trim($_POST['customer_email'] ?? '');
     $customerPhone = trim($_POST['customer_phone'] ?? '');
     
+    // Get selected items from checkboxes
+    $selectedItems = isset($_POST['selected_items']) ? array_map('intval', $_POST['selected_items']) : [];
+    
+    // Filter groupedItems to only include selected items
+    if (!empty($selectedItems)) {
+        $filteredGroupedItems = [];
+        foreach ($groupedItems as $sellerId => $sellerGroup) {
+            $filteredItems = array_filter($sellerGroup['items'], function($item) use ($selectedItems) {
+                return in_array((int)$item['product_id'], $selectedItems, true);
+            });
+            
+            if (!empty($filteredItems)) {
+                $filteredGroupedItems[$sellerId] = [
+                    'seller_id' => $sellerGroup['seller_id'],
+                    'seller_display_name' => $sellerGroup['seller_display_name'],
+                    'items' => array_values($filteredItems),
+                    'subtotal' => 0,
+                    'item_count' => 0
+                ];
+                
+                // Recalculate subtotal for filtered items
+                foreach ($filteredItems as $item) {
+                    $filteredGroupedItems[$sellerId]['subtotal'] += $item['price'] * $item['quantity'];
+                    $filteredGroupedItems[$sellerId]['item_count'] += $item['quantity'];
+                }
+            }
+        }
+        $groupedItems = $filteredGroupedItems;
+        
+        // Recalculate grand total
+        $grandTotal = 0;
+        foreach ($groupedItems as $sg) {
+            $grandTotal += $sg['subtotal'];
+        }
+        
+        // Recalculate discount if applied
+        if (isset($_SESSION['applied_discount']) && $_SESSION['applied_discount']) {
+            $discount = $_SESSION['applied_discount'];
+            if ($discount['discount_type'] === 'percentage') {
+                $discountAmount = ($grandTotal * $discount['discount_value']) / 100;
+            } else {
+                $discountAmount = $discount['discount_value'];
+            }
+            $discountAmount = min($discountAmount, $grandTotal);
+            $finalTotal = $grandTotal - $discountAmount;
+        } else {
+            $finalTotal = $grandTotal;
+        }
+        
+        error_log('CHECKOUT - Filtered to ' . count($selectedItems) . ' selected items');
+    }
+    
     if (empty($shippingAddress)) {
         $errors[] = 'Shipping address is required';
     }
     if (empty($paymentMethod)) {
         $errors[] = 'Please select a payment method';
+    }
+    if (empty($groupedItems)) {
+        $errors[] = 'Please select at least one item to checkout';
     }
     
     if (empty($errors)) {
@@ -479,7 +557,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['checkout'])) {
             ensureAutoIncrementPrimary('orders');
         }
         
-        // CRITICAL: Store the grouped items with discount applied for checkout
+        // CRITICAL: Store the filtered grouped items with discount applied for checkout
         $_SESSION['checkout_grouped_items'] = $groupedItems;
         $_SESSION['checkout_grand_total'] = $finalTotal; // Use finalTotal (after discount)
         
@@ -707,9 +785,9 @@ if ($isBuyNow && !empty($groupedItems)) {
 require_once '../includes/header.php';
 ?>
 
-<main style="background: #ffffff; min-height: 100vh; padding: 5px 20px 20px 20px;">
+<main style="background: var(--bg-light); min-height: 100vh; padding: 0;">
 <div class="checkout-container">
-    <h1>Checkout</h1>
+    <h1 class="page-title">Checkout</h1>
 
     <?php if (!empty($errors)): ?>
         <div class="alert alert-error">
@@ -736,6 +814,13 @@ require_once '../includes/header.php';
                         <a href="../products.php" class="btn btn-primary">Continue Shopping</a>
                     </div>
                 <?php else: ?>
+                    <div style="margin-bottom: 20px; padding: 16px; background: var(--bg-light); border: 1px solid var(--border-light); border-radius: 12px; display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-weight: 600; color: var(--text-dark); font-size: 14px;">Select items to checkout:</span>
+                        <div style="display: flex; gap: 8px;">
+                            <button type="button" onclick="selectAllItems()" class="btn-select-all" style="padding: 8px 16px; background: var(--primary-dark); color: var(--bg-white); border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 13px; transition: all 0.2s ease;">Select All</button>
+                            <button type="button" onclick="deselectAllItems()" class="btn-deselect-all" style="padding: 8px 16px; background: var(--text-light); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 13px; transition: all 0.2s ease;">Deselect All</button>
+                        </div>
+                    </div>
                     <?php foreach ($groupedItems as $sellerId => $sellerGroup): ?>
                         <div class="seller-group">
                             <div class="seller-header">
@@ -747,13 +832,24 @@ require_once '../includes/header.php';
                             $sellerOriginalSubtotal = 0;
                             $sellerFinalSubtotal = 0;
                             
-                            foreach ($sellerGroup['items'] as $item): 
+                            foreach ($sellerGroup['items'] as $itemIndex => $item): 
                                 // Use original_price if discount was applied
                                 $itemOriginalPrice = !empty($item['original_price']) ? $item['original_price'] : $item['price'];
                                 $sellerOriginalSubtotal += $itemOriginalPrice * $item['quantity'];
                                 $sellerFinalSubtotal += $item['price'] * $item['quantity'];
+                                $itemKey = $sellerId . '_' . $item['product_id'];
                             ?>
-                                <div class="order-item">
+                                <div class="order-item" data-product-id="<?php echo $item['product_id']; ?>" data-seller-id="<?php echo $sellerId; ?>">
+                                    <div class="item-checkbox-wrapper">
+                                        <input type="checkbox" 
+                                               class="item-checkbox" 
+                                               id="item_<?php echo $itemKey; ?>" 
+                                               name="selected_items[]" 
+                                               value="<?php echo $item['product_id']; ?>"
+                                               checked
+                                               onchange="updateCheckoutTotal()">
+                                        <label for="item_<?php echo $itemKey; ?>" class="checkbox-label"></label>
+                                    </div>
                                     <img src="<?php echo htmlspecialchars('../' . $item['image_url']); ?>" alt="<?php echo htmlspecialchars($item['name']); ?>" class="item-image">
                                     <div class="item-details">
                                         <h4><?php echo htmlspecialchars($item['name']); ?></h4>
@@ -776,25 +872,31 @@ require_once '../includes/header.php';
                                             ₱<?php echo number_format($item['price'] * $item['quantity'], 2); ?>
                                         <?php endif; ?>
                                     </div>
+                                    <button type="button" 
+                                            class="remove-item-btn" 
+                                            onclick="removeItem(<?php echo $item['product_id']; ?>, <?php echo $sellerId; ?>)"
+                                            title="Remove item">
+                                        <i class="fas fa-times"></i>
+                                    </button>
                                 </div>
                             <?php endforeach; ?>
                             
                             <!-- Seller Subtotal with Discount -->
-                            <div style="text-align: right; padding-top: 12px; margin-top: 12px; border-top: 2px solid var(--primary-dark);">
+                            <div style="text-align: right; padding-top: 16px; margin-top: 16px; border-top: 2px solid var(--border-light);">
                                 <?php if (isset($_SESSION['applied_discount']) && $sellerOriginalSubtotal > $sellerFinalSubtotal): ?>
                                     <?php $sellerDiscountAmount = $sellerOriginalSubtotal - $sellerFinalSubtotal; ?>
-                                    <div style="font-size: 14px; color: #6c757d; margin-bottom: 4px;">
+                                    <div style="font-size: 14px; color: var(--text-light); margin-bottom: 6px;">
                                         Subtotal: <span style="color: var(--text-dark);">₱<?php echo number_format($sellerOriginalSubtotal, 2); ?></span>
                                     </div>
-                                    <div style="font-size: 14px; color: #10b981; font-weight: 600; margin-bottom: 6px;">
+                                    <div style="font-size: 14px; color: var(--success-green); font-weight: 600; margin-bottom: 8px;">
                                         <i class="fas fa-tag"></i> Discount: <span>-₱<?php echo number_format($sellerDiscountAmount, 2); ?></span>
                                     </div>
-                                    <strong style="color: #10b981; font-size: 16px;">
+                                    <strong style="color: var(--success-green); font-size: 18px; font-weight: 700;">
                                         Seller Total: ₱<?php echo number_format($sellerFinalSubtotal, 2); ?>
                                     </strong>
                                 <?php else: ?>
-                                    <strong style="color: var(--text-dark); font-size: 16px;">
-                                        Seller Subtotal: <span style="color: var(--accent-yellow);">₱<?php echo number_format($sellerFinalSubtotal, 2); ?></span>
+                                    <strong style="color: var(--text-dark); font-size: 18px; font-weight: 700;">
+                                        Seller Subtotal: <span style="color: var(--primary-dark);">₱<?php echo number_format($sellerFinalSubtotal, 2); ?></span>
                                     </strong>
                                 <?php endif; ?>
                             </div>
@@ -860,7 +962,7 @@ require_once '../includes/header.php';
                             <?php endforeach; ?>
                             
                             <!-- Review Seller Subtotal -->
-                            <div class="review-seller-subtotal" style="text-align: right; margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255, 215, 54, 0.3);">
+                                <div class="review-seller-subtotal" style="text-align: right; margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(19, 3, 37, 0.2);">
                                 <?php if (isset($_SESSION['applied_discount']) && $sellerOriginalSubtotal > $sellerFinalSubtotal): ?>
                                     <?php $sellerDiscountAmount = $sellerOriginalSubtotal - $sellerFinalSubtotal; ?>
                                     <div style="font-size: 13px; color: #6c757d; margin-bottom: 3px;">
@@ -909,7 +1011,7 @@ require_once '../includes/header.php';
                     </div>
                     <div class="review-payment-info">
                         <h4 style="font-size: 14px; color: var(--primary-dark); margin-bottom: 8px;">Payment Method:</h4>
-                        <p id="reviewPaymentMethod" style="font-size: 13px; color: var(--accent-yellow); font-weight: 600; margin: 0;"></p>
+                        <p id="reviewPaymentMethod" style="font-size: 13px; color: var(--primary-dark); font-weight: 600; margin: 0;"></p>
                     </div>
                 </div>
                 <div class="review-modal-footer">
@@ -923,24 +1025,46 @@ require_once '../includes/header.php';
             <h2>Billing & Shipping Information</h2>
 
             <form method="POST" action="" id="ms-checkout-form">
+                <?php if (!empty($userAddresses)): ?>
+                <div class="form-group">
+                    <label for="selected_address">Select Saved Address</label>
+                    <select id="selected_address" name="selected_address" onchange="loadAddress(this.value)">
+                        <option value="">Choose an address...</option>
+                        <?php foreach ($userAddresses as $addr): ?>
+                            <option value="<?php echo $addr['id']; ?>" 
+                                    data-name="<?php echo htmlspecialchars($addr['full_name']); ?>"
+                                    data-phone="<?php echo htmlspecialchars($addr['phone']); ?>"
+                                    data-address="<?php echo htmlspecialchars($addr['address']); ?>"
+                                    <?php echo ($defaultAddress && $defaultAddress['id'] == $addr['id']) ? 'selected' : ''; ?>>
+                                <?php echo htmlspecialchars($addr['address_name']); ?> - <?php echo htmlspecialchars($addr['full_name']); ?>
+                                <?php if ($addr['is_default']): ?> (Default)<?php endif; ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                    <a href="../edit-profile.php" style="margin-top: 8px; display: inline-block; color: var(--primary-dark); font-size: 13px; text-decoration: none;">
+                        <i class="fas fa-plus"></i> Manage Addresses
+                    </a>
+                </div>
+                <?php endif; ?>
+
                 <div class="form-group">
                     <label for="customer_name">Full Name*</label>
-                    <input type="text" id="customer_name" name="customer_name" value="<?php echo htmlspecialchars($_POST['customer_name'] ?? (trim(($userProfile['first_name'] ?? '') . ' ' . ($userProfile['last_name'] ?? '')))); ?>">
+                    <input type="text" id="customer_name" name="customer_name" value="<?php echo htmlspecialchars($_POST['customer_name'] ?? ($defaultAddress ? $defaultAddress['full_name'] : trim(($userProfile['first_name'] ?? '') . ' ' . ($userProfile['last_name'] ?? '')))); ?>" readonly>
                 </div>
 
                 <div class="form-group">
                     <label for="customer_email">Email Address</label>
-                    <input type="email" id="customer_email" name="customer_email" value="<?php echo htmlspecialchars($_POST['customer_email'] ?? ($userProfile['email'] ?? '')); ?>">
+                    <input type="email" id="customer_email" name="customer_email" value="<?php echo htmlspecialchars($_POST['customer_email'] ?? ($userProfile['email'] ?? '')); ?>" readonly>
                 </div>
 
                 <div class="form-group">
                     <label for="customer_phone">Phone Number*</label>
-                    <input type="tel" id="customer_phone" name="customer_phone" value="<?php echo htmlspecialchars($_POST['customer_phone'] ?? ($userProfile['phone'] ?? '')); ?>">
+                    <input type="tel" id="customer_phone" name="customer_phone" value="<?php echo htmlspecialchars($_POST['customer_phone'] ?? ($defaultAddress ? $defaultAddress['phone'] : ($userProfile['phone'] ?? ''))); ?>" readonly>
                 </div>
 
                 <div class="form-group">
                     <label for="shipping_address">Shipping Address *</label>
-                    <textarea id="shipping_address" name="shipping_address" rows="3" required><?php echo htmlspecialchars($_POST['shipping_address'] ?? ($userProfile['address'] ?? '')); ?></textarea>
+                    <textarea id="shipping_address" name="shipping_address" rows="3" required readonly><?php echo htmlspecialchars($_POST['shipping_address'] ?? ($defaultAddress ? $defaultAddress['address'] : ($userProfile['address'] ?? ''))); ?></textarea>
                 </div>
 <!-- Discount Code Section -->
 <div class="form-group discount-code-group">
@@ -1050,8 +1174,8 @@ require_once '../includes/header.php';
 .discount-code-group {
     margin-bottom: 12px;
     padding: 10px 12px;
-    background: rgba(255, 215, 54, 0.05);
-    border: 1px solid rgba(255, 215, 54, 0.2);
+    background: rgba(19, 3, 37, 0.04);
+    border: 1px solid rgba(19, 3, 37, 0.15);
     border-radius: 6px;
 }
 
@@ -1224,8 +1348,8 @@ require_once '../includes/header.php';
 }
 
 .btn-primary-y {
-    background: linear-gradient(135deg, #FFD736 0%, #FFC107 100%);
-    color: #130325;
+    background: var(--primary-dark);
+    color: var(--bg-white);
     border: none;
     border-radius: 8px;
     padding: 6px 10px;
@@ -1238,8 +1362,9 @@ require_once '../includes/header.php';
 }
 
 .btn-primary-y:hover {
+    background: #0a0118;
     transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(255, 215, 54, 0.3);
+    box-shadow: 0 2px 8px rgba(19, 3, 37, 0.3);
 }
 
 .discount-success-badge {
@@ -1284,9 +1409,10 @@ require_once '../includes/header.php';
     display: flex;
     justify-content: space-between;
     padding-top: 12px;
-    margin-top: 8px;
-    border-top: 2px solid var(--primary-dark);
+    margin-top: 10px;
+    border-top: 2px solid var(--border-light);
     font-size: 18px;
+    font-weight: 700;
 }
 
 @media (max-width: 576px) {
@@ -1304,41 +1430,298 @@ require_once '../includes/header.php';
 :root {
     --primary-dark: #130325;
     --accent-yellow: #FFD736;
-    --text-dark: #130325;
-    --border-light: #e9ecef;
+    --text-dark: #1a1a1a;
+    --text-light: #6b7280;
+    --border-light: #e5e7eb;
+    --bg-light: #f9fafb;
+    --bg-white: #ffffff;
+    --success-green: #10b981;
+    --error-red: #ef4444;
 }
 
-body { background: #ffffff !important; color: var(--text-dark); }
-.checkout-container { max-width: 1200px; margin: 0 auto; padding: 5px 20px 20px 20px; }
-h1 { color: var(--text-dark); text-align: center; margin: 5px 0 15px 0; font-size: 1.6rem; border-bottom: 3px solid var(--primary-dark); padding-bottom: 10px; text-shadow: none; }
+body { 
+    background: var(--bg-light) !important; 
+    color: var(--text-dark); 
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
 
-.alert { padding: 12px 16px; border-radius: 8px; margin-bottom: 20px; }
-.alert-error { background-color: #ffebee; border: 1px solid #f44336; color: #d32f2f; }
-.alert ul { margin: 0; padding-left: 20px; }
+.checkout-container { 
+    max-width: 1600px; 
+    margin: 0 auto; 
+    padding: 12px 20px; 
+}
 
-.checkout-content { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 15px; }
-.order-summary, .checkout-form { background-color: #f0f0f0; border: 1px solid var(--border-light); padding: 25px; border-radius: 12px; box-shadow: none; }
-.order-summary h2, .checkout-form h2 { color: var(--text-dark); border-bottom: 2px solid var(--primary-dark); padding-bottom: 10px; margin-bottom: 20px; font-weight: 600; font-size: 1.3rem; text-shadow: none; }
+.page-title,
+h1.page-title { 
+    color: var(--text-dark); 
+    text-align: left; 
+    margin: 0 0 16px 0; 
+    font-size: 1.35rem; 
+    font-weight: 600;
+    letter-spacing: -0.3px;
+    line-height: 1.2;
+}
 
-.seller-group { margin-bottom: 30px; border: 1px solid var(--border-light); border-radius: 12px; padding: 20px; background: #f0f0f0; }
-.seller-header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 15px; margin-bottom: 15px; border-bottom: 2px solid var(--primary-dark); }
-.seller-header h3 { color: var(--text-dark); margin: 0; font-size: 18px; display: flex; align-items: center; gap: 8px; font-weight: 600; }
-.seller-total { color: var(--text-dark); font-weight: bold; font-size: 16px; }
+.alert { 
+    padding: 10px 14px; 
+    border-radius: 8px; 
+    margin-bottom: 14px; 
+    border-left: 4px solid;
+    font-size: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
 
-.order-item { display: flex; align-items: center; padding: 15px 0; border-bottom: 1px solid var(--border-light); }
-.order-item:last-child { border-bottom: none; }
-.item-image { width: 60px; height: 60px; object-fit: cover; border-radius: 8px; margin-right: 15px; border: 2px solid var(--border-light); }
-.item-details { flex-grow: 1; }
-.item-details h4 { margin: 0 0 5px 0; font-size: 16px; color: var(--text-dark); font-weight: 600; }
-.item-details p { margin: 2px 0; color: #6c757d; font-size: 14px; }
-.item-total { font-weight: bold; font-size: 16px; color: var(--text-dark); }
+.alert-error { 
+    background-color: #fef2f2; 
+    border-left-color: var(--error-red);
+    border: 1px solid #fecaca;
+    color: #991b1b; 
+}
 
-.order-total { border-top: 2px solid var(--primary-dark); padding-top: 15px; font-size: 18px; text-align: right; color: var(--text-dark); }
+.alert ul { 
+    margin: 8px 0 0 0; 
+    padding-left: 20px; 
+    list-style: none;
+}
 
-.form-group { margin-bottom: 20px; }
-.form-group label { color: var(--text-dark); font-weight: 600; margin-bottom: 5px; display: block; }
-.form-group input, .form-group textarea, .form-group select { width: 100%; padding: 12px 16px; border: 1px solid var(--border-light); border-radius: 8px; font-size: 14px; background: #ffffff; color: var(--text-dark); }
-.form-group input:focus, .form-group textarea:focus, .form-group select:focus { outline: none; border-color: var(--primary-dark); box-shadow: 0 0 0 2px rgba(19, 3, 37, 0.1); }
+.alert ul li::before {
+    content: "• ";
+    color: var(--error-red);
+    font-weight: bold;
+}
+
+.checkout-content { 
+    display: grid; 
+    grid-template-columns: 1.2fr 1fr; 
+    gap: 16px; 
+    margin-top: 12px; 
+}
+
+.order-summary, .checkout-form { 
+    background-color: var(--bg-white); 
+    border: 1px solid var(--border-light); 
+    padding: 14px 16px; 
+    border-radius: 12px; 
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.order-summary h2, .checkout-form h2 { 
+    color: var(--text-dark); 
+    border-bottom: none;
+    padding-bottom: 0; 
+    margin-bottom: 12px; 
+    font-weight: 600; 
+    font-size: 1.1rem;
+    letter-spacing: -0.3px;
+}
+
+.seller-group { 
+    margin-bottom: 16px; 
+    border: 1px solid var(--border-light); 
+    border-radius: 10px; 
+    padding: 16px; 
+    background: var(--bg-white);
+    transition: box-shadow 0.2s ease;
+}
+
+.seller-group:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.seller-header { 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+    padding-bottom: 12px; 
+    margin-bottom: 12px; 
+    border-bottom: 2px solid var(--border-light); 
+}
+
+.seller-header h3 { 
+    color: var(--text-dark); 
+    margin: 0; 
+    font-size: 14px; 
+    display: flex; 
+    align-items: center; 
+    gap: 8px; 
+    font-weight: 600; 
+}
+
+.seller-header h3 i {
+    color: var(--primary-dark);
+}
+
+.seller-total { 
+    color: var(--text-dark); 
+    font-weight: 600; 
+    font-size: 16px; 
+}
+
+.order-item { 
+    display: flex; 
+    align-items: center; 
+    padding: 12px; 
+    border: 1px solid var(--border-light);
+    border-radius: 10px;
+    margin-bottom: 10px;
+    gap: 12px; 
+    position: relative; 
+    background: var(--bg-light);
+    transition: all 0.2s ease;
+}
+
+.order-item:hover {
+    border-color: var(--primary-dark);
+    background: rgba(19, 3, 37, 0.02);
+    box-shadow: 0 2px 6px rgba(19, 3, 37, 0.1);
+}
+
+.order-item:last-child { 
+    margin-bottom: 0;
+}
+
+.order-item.item-unchecked { 
+    opacity: 0.6; 
+    background-color: #f3f4f6; 
+}
+
+.item-checkbox-wrapper { 
+    display: flex; 
+    align-items: center; 
+}
+
+.item-checkbox { 
+    width: 20px; 
+    height: 20px; 
+    cursor: pointer; 
+    accent-color: var(--primary-dark); 
+}
+
+.checkbox-label { 
+    display: none; 
+}
+
+.item-image { 
+    width: 60px; 
+    height: 60px; 
+    object-fit: cover; 
+    border-radius: 8px; 
+    border: 1px solid var(--border-light); 
+    flex-shrink: 0; 
+    background: var(--bg-white);
+}
+
+.item-details { 
+    flex-grow: 1; 
+    min-width: 0; 
+}
+
+.item-details h4 { 
+    margin: 0 0 6px 0; 
+    font-size: 14px; 
+    color: var(--text-dark); 
+    font-weight: 600; 
+    line-height: 1.4;
+}
+
+.item-details p { 
+    margin: 3px 0; 
+    color: var(--text-light); 
+    font-size: 12px; 
+}
+
+.item-total { 
+    font-weight: 700; 
+    font-size: 14px; 
+    color: var(--text-dark); 
+    flex-shrink: 0; 
+    min-width: 80px; 
+    text-align: right; 
+}
+
+.remove-item-btn { 
+    background: var(--error-red); 
+    color: white; 
+    border: none; 
+    border-radius: 6px; 
+    width: 32px; 
+    height: 32px; 
+    cursor: pointer; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    transition: all 0.2s ease; 
+    flex-shrink: 0; 
+}
+
+.remove-item-btn:hover { 
+    background: #dc2626; 
+    transform: scale(1.05); 
+}
+
+.remove-item-btn i { 
+    font-size: 14px; 
+}
+
+.order-total { 
+    border-top: 2px solid var(--border-light); 
+    padding-top: 16px; 
+    margin-top: 16px;
+    font-size: 18px; 
+    text-align: right; 
+    color: var(--text-dark); 
+}
+
+.form-group { 
+    margin-bottom: 14px; 
+}
+
+.form-group label { 
+    color: var(--text-dark); 
+    font-weight: 600; 
+    margin-bottom: 5px; 
+    display: block; 
+    font-size: 12px;
+}
+
+.form-group input, .form-group textarea, .form-group select { 
+    width: 100%; 
+    padding: 8px 10px; 
+    border: 1.5px solid var(--border-light); 
+    border-radius: 8px; 
+    font-size: 13px; 
+    background: var(--bg-white); 
+    color: var(--text-dark); 
+    transition: all 0.2s ease;
+    font-family: inherit;
+}
+
+.form-group input:focus, .form-group textarea:focus, .form-group select:focus { 
+    outline: none; 
+    border-color: var(--primary-dark); 
+    box-shadow: 0 0 0 3px rgba(19, 3, 37, 0.1); 
+}
+
+.form-group input[readonly], .form-group textarea[readonly] { 
+    background-color: var(--bg-light); 
+    color: var(--text-light); 
+    cursor: not-allowed; 
+    border-color: var(--border-light); 
+}
+
+.form-group input[readonly]:focus, .form-group textarea[readonly]:focus { 
+    border-color: var(--border-light); 
+    box-shadow: none; 
+}
+
+.form-group select {
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23130325' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 16px center;
+    padding-right: 40px;
+}
 
 .payment-method-warning {
     margin-top: 8px;
@@ -1363,14 +1746,59 @@ h1 { color: var(--text-dark); text-align: center; margin: 5px 0 15px 0; font-siz
     display: flex;
 }
 
-.form-actions { display: flex; justify-content: space-between; gap: 15px; margin-top: 30px; }
-.btn { padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; text-decoration: none; text-align: center; transition: all 0.3s; font-weight: 600; }
-.btn-secondary { background-color: #6c757d; color: white; }
-.btn-secondary:hover { background-color: #5a6268; }
-.btn-primary { background-color: var(--primary-dark); color: white; }
-.btn-primary:hover { background-color: #0f0220; }
-.btn-yellow { background-color: var(--accent-yellow); color: var(--text-dark); }
-.btn-yellow:hover { background-color: #e6c230; }
+.form-actions { 
+    display: flex; 
+    justify-content: space-between; 
+    gap: 10px; 
+    margin-top: 20px; 
+}
+
+.btn { 
+    padding: 10px 18px; 
+    border: none; 
+    border-radius: 8px; 
+    cursor: pointer; 
+    font-size: 14px; 
+    text-decoration: none; 
+    text-align: center; 
+    transition: all 0.2s ease; 
+    font-weight: 600; 
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    font-family: inherit;
+}
+
+.btn-secondary { 
+    background-color: var(--text-light); 
+    color: white; 
+}
+
+.btn-secondary:hover { 
+    background-color: #4b5563; 
+    transform: translateY(-1px);
+}
+
+.btn-primary { 
+    background-color: var(--primary-dark); 
+    color: white; 
+}
+
+.btn-primary:hover { 
+    background-color: #0a0118; 
+    transform: translateY(-1px);
+}
+
+.btn-yellow { 
+    background-color: var(--primary-dark); 
+    color: var(--bg-white); 
+}
+
+.btn-yellow:hover { 
+    background-color: #0a0118; 
+    transform: translateY(-1px);
+}
 
 .empty-cart-message { text-align: center; padding: 40px; }
 .empty-cart-message p { font-size: 1.2rem; color: var(--text-dark); margin-bottom: 20px; }
@@ -1392,12 +1820,12 @@ h1 { color: var(--text-dark); text-align: center; margin: 5px 0 15px 0; font-siz
 
 .review-modal-content {
     background: white;
-    border-radius: 8px;
+    border-radius: 16px;
     width: 90%;
     max-width: 1000px;
     max-height: 90vh;
     overflow-y: auto;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
     display: flex;
     flex-direction: column;
 }
@@ -1406,35 +1834,40 @@ h1 { color: var(--text-dark); text-align: center; margin: 5px 0 15px 0; font-siz
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 15px 20px;
-    border-bottom: 2px solid var(--primary-dark);
-    background: var(--primary-dark);
-    color: white;
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border-light);
+    background: var(--bg-white);
+    color: var(--text-dark);
 }
 
 .review-modal-header h2 {
-    color: white !important;
-    font-size: 20px !important;
+    color: var(--text-dark) !important;
+    font-size: 1.35rem !important;
     margin: 0 !important;
+    font-weight: 600;
+    letter-spacing: -0.3px;
 }
 
 .review-modal-close {
-    background: none;
+    background: var(--bg-light);
     border: none;
-    font-size: 28px;
-    color: white;
+    font-size: 24px;
+    color: var(--text-dark);
     cursor: pointer;
     padding: 0;
-    width: 30px;
-    height: 30px;
+    width: 32px;
+    height: 32px;
     display: flex;
     align-items: center;
     justify-content: center;
     line-height: 1;
+    border-radius: 8px;
+    transition: all 0.2s ease;
 }
 
 .review-modal-close:hover {
-    opacity: 0.7;
+    background: var(--border-light);
+    opacity: 1;
 }
 
 .review-modal-body {
@@ -1450,7 +1883,7 @@ h1 { color: var(--text-dark); text-align: center; margin: 5px 0 15px 0; font-siz
 .review-seller-group {
     margin-bottom: 15px;
     padding-bottom: 15px;
-    border-bottom: 1px solid rgba(255, 215, 54, 0.3);
+    border-bottom: 1px solid rgba(19, 3, 37, 0.2);
 }
 
 .review-seller-group:last-child {
@@ -1490,7 +1923,7 @@ h1 { color: var(--text-dark); text-align: center; margin: 5px 0 15px 0; font-siz
 .review-item-price {
     font-size: 14px;
     font-weight: 600;
-    color: var(--accent-yellow);
+    color: var(--primary-dark);
 }
 
 .review-seller-subtotal {
@@ -1505,29 +1938,60 @@ h1 { color: var(--text-dark); text-align: center; margin: 5px 0 15px 0; font-siz
     text-align: right;
     margin-top: 15px;
     padding-top: 15px;
-    border-top: 2px solid var(--accent-yellow);
+    border-top: 2px solid var(--primary-dark);
 }
 
 .review-shipping-info,
 .review-payment-info {
     margin-top: 15px;
     padding: 12px;
-    background: rgba(255, 215, 54, 0.1);
+    background: rgba(19, 3, 37, 0.04);
     border-radius: 6px;
+    border: 1px solid rgba(19, 3, 37, 0.1);
 }
 
 .review-modal-footer {
     display: flex;
-    gap: 10px;
+    gap: 12px;
     justify-content: flex-end;
-    padding: 15px 20px;
+    padding: 20px 24px;
     border-top: 1px solid var(--border-light);
-    background: #f8f9fa;
+    background: var(--bg-light);
 }
 
-@media (max-width: 768px) {
-    .checkout-content { grid-template-columns: 1fr; }
-    .form-actions { flex-direction: column; }
+@media (max-width: 968px) {
+    .checkout-container {
+        padding: 10px 12px;
+        max-width: 100%;
+    }
+    
+    .checkout-content { 
+        grid-template-columns: 1fr; 
+        gap: 12px;
+    }
+    
+    .order-summary, .checkout-form {
+        padding: 12px 14px;
+    }
+    
+    .page-title,
+    h1.page-title {
+        font-size: 1.2rem;
+        margin-bottom: 12px;
+    }
+    
+    .order-summary h2, .checkout-form h2 {
+        font-size: 1rem;
+        margin-bottom: 10px;
+    }
+    
+    .form-actions { 
+        flex-direction: column; 
+    }
+    
+    .form-actions .btn {
+        width: 100%;
+    }
     
     .review-modal-content {
         width: 95%;
@@ -1535,11 +1999,21 @@ h1 { color: var(--text-dark); text-align: center; margin: 5px 0 15px 0; font-siz
     }
     
     .review-modal-header {
-        padding: 12px 15px;
+        padding: 16px 18px;
     }
     
     .review-modal-body {
         padding: 15px;
+    }
+    
+    .order-item {
+        padding: 10px;
+        gap: 10px;
+    }
+    
+    .item-image {
+        width: 50px;
+        height: 50px;
     }
     
     .review-modal-footer {
@@ -1553,6 +2027,20 @@ h1 { color: var(--text-dark); text-align: center; margin: 5px 0 15px 0; font-siz
 </style>
 
 <script>
+// Load address from selected dropdown
+function loadAddress(addressId) {
+    if (!addressId) return;
+    
+    const select = document.getElementById('selected_address');
+    const option = select.options[select.selectedIndex];
+    
+    if (option && option.dataset) {
+        document.getElementById('customer_name').value = option.dataset.name || '';
+        document.getElementById('customer_phone').value = option.dataset.phone || '';
+        document.getElementById('shipping_address').value = option.dataset.address || '';
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     const reviewBtn = document.getElementById('reviewOrderBtn');
     const checkoutForm = document.getElementById('ms-checkout-form');
@@ -1699,6 +2187,14 @@ document.addEventListener('DOMContentLoaded', function() {
     // Confirm checkout from modal
     if (confirmCheckoutBtn) {
         confirmCheckoutBtn.addEventListener('click', function() {
+            // Validate that at least one item is selected
+            const checkedItems = document.querySelectorAll('.item-checkbox:checked');
+            if (checkedItems.length === 0) {
+                alert('Please select at least one item to checkout.');
+                closeModal();
+                return;
+            }
+            
             closeModal();
             // Submit form
             const checkoutInput = document.createElement('input');
@@ -1911,6 +2407,112 @@ document.addEventListener('click', function(e) {
     if (e.target === removeDiscountModal) {
         closeRemoveDiscountModal();
     }
+});
+
+// Item selection and removal functions
+function removeItem(productId, sellerId) {
+    if (!confirm('Are you sure you want to remove this item from checkout?')) {
+        return;
+    }
+    
+    // Remove from cart via AJAX
+    fetch('../ajax/remove-from-cart.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        credentials: 'same-origin',
+        body: JSON.stringify({
+            product_id: productId
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Remove the item from DOM
+            const itemElement = document.querySelector(`.order-item[data-product-id="${productId}"][data-seller-id="${sellerId}"]`);
+            if (itemElement) {
+                itemElement.style.transition = 'opacity 0.3s';
+                itemElement.style.opacity = '0';
+                setTimeout(() => {
+                    itemElement.remove();
+                    updateCheckoutTotal();
+                    // Reload page if no items left
+                    const remainingItems = document.querySelectorAll('.order-item').length;
+                    if (remainingItems === 0) {
+                        window.location.href = '../cart.php';
+                    }
+                }, 300);
+            }
+        } else {
+            alert('Error removing item: ' + (data.message || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error removing item. Please try again.');
+    });
+}
+
+function updateCheckoutTotal() {
+    // Update visual state of unchecked items
+    const checkboxes = document.querySelectorAll('.item-checkbox');
+    checkboxes.forEach(checkbox => {
+        const itemElement = checkbox.closest('.order-item');
+        if (itemElement) {
+            if (checkbox.checked) {
+                itemElement.classList.remove('item-unchecked');
+            } else {
+                itemElement.classList.add('item-unchecked');
+            }
+        }
+    });
+    
+    // Update form to only submit checked items
+    const form = document.getElementById('ms-checkout-form');
+    if (form) {
+        // The form will automatically only submit checked checkboxes
+        // We just need to ensure at least one item is selected
+        const checkedItems = document.querySelectorAll('.item-checkbox:checked');
+        const checkoutBtn = form.querySelector('button[type="submit"]');
+        if (checkoutBtn) {
+            if (checkedItems.length === 0) {
+                checkoutBtn.disabled = true;
+                checkoutBtn.title = 'Please select at least one item to checkout';
+            } else {
+                checkoutBtn.disabled = false;
+                checkoutBtn.title = '';
+            }
+        }
+    }
+}
+
+// Select/Deselect All functions
+function selectAllItems() {
+    const checkboxes = document.querySelectorAll('.item-checkbox');
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = true;
+    });
+    updateCheckoutTotal();
+}
+
+function deselectAllItems() {
+    const checkboxes = document.querySelectorAll('.item-checkbox');
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = false;
+    });
+    updateCheckoutTotal();
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    updateCheckoutTotal();
+    
+    // Add event listeners to all checkboxes
+    const checkboxes = document.querySelectorAll('.item-checkbox');
+    checkboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', updateCheckoutTotal);
+    });
 });
 
 </script>

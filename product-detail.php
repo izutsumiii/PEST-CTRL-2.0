@@ -188,24 +188,35 @@ document.addEventListener('DOMContentLoaded', function() {
 <?php endif; ?>
 
 <style>
-/* Base Styles */
-body {
-    background: #f0f2f5;
-    color: #130325;
-    min-height: 100vh;
+:root {
+    --primary-dark: #130325;
+    --accent-yellow: #FFD736;
+    --text-dark: #1a1a1a;
+    --text-light: #6b7280;
+    --border-light: #e5e7eb;
+    --bg-light: #f9fafb;
+    --bg-white: #ffffff;
+    --success-green: #10b981;
+    --error-red: #ef4444;
 }
 
-/* Container backgrounds - different shade of white */
+body {
+    background: var(--bg-light);
+    color: var(--text-dark);
+    min-height: 100vh;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
 .product-info-section,
 .seller-section,
 .product-details-section,
 .reviews-section {
-    background: #ffffff !important;
+    background: var(--bg-white) !important;
 }
 
 main {
     background: transparent !important;
-    padding: 0 0 80px 0 !important; /* reduce top spacing */
+    padding: 0 0 60px 0 !important;
     margin: 0 !important;
 }
 
@@ -215,40 +226,41 @@ main h3 {
     text-shadow: none !important;
 }
 
-/* Container */
 .product-container {
-    max-width: 1400px;
+    max-width: 1600px;
     margin: 0 auto;
-    padding: 20px;
+    padding: 12px 20px;
 }
 
 /* Breadcrumb */
 .breadcrumb-nav {
-    background: rgba(30, 15, 50, 0.3);
-    padding: 12px 20px;
+    background: var(--bg-white);
+    border: 1px solid var(--border-light);
+    padding: 8px 14px;
     border-radius: 8px;
-    margin-bottom: 20px;
-    font-size: 13px;
+    margin-bottom: 12px;
+    font-size: 12px;
 }
 
 .breadcrumb-nav a {
-    color: #FFD736;
+    color: var(--primary-dark);
     text-decoration: none;
-    transition: color 0.3s;
+    transition: color 0.2s;
+    font-weight: 500;
 }
 
 .breadcrumb-nav a:hover {
-    color: #e6c230;
+    color: var(--accent-yellow);
 }
 
 .breadcrumb-nav span {
-    color: rgba(19, 3, 37, 0.6);
-    margin: 0 8px;
+    color: var(--text-light);
+    margin: 0 6px;
 }
 
 /* Main Product Grid */
 .product-main {
-    margin: 16px 0 32px 0; /* pull content up */
+    margin: 12px 0 20px 0;
 }
 
 /* Image Gallery */
@@ -258,15 +270,17 @@ main h3 {
 }
 
 .main-image-container {
-    background: #ffffff;
-    border: 2px solid #666666;
-    padding: 15px;
-    margin-bottom: 15px;
+    background: var(--bg-white);
+    border: 1px solid var(--border-light);
+    padding: 12px;
+    margin-bottom: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
-    min-height: 300px;
-    max-width: 300px;
+    min-height: 280px;
+    max-width: 100%;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .main-image {
@@ -284,21 +298,23 @@ main h3 {
 }
 
 .thumbnail {
-    background: rgba(30, 15, 50, 0.4);
-    border: 2px solid rgba(255, 215, 54, 0.15);
-    padding: 8px;
+    background: var(--bg-white);
+    border: 1px solid var(--border-light);
+    padding: 6px;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.2s ease;
     aspect-ratio: 1;
     display: flex;
     align-items: center;
     justify-content: center;
+    border-radius: 8px;
 }
 
 .thumbnail:hover,
 .thumbnail.active {
-    border-color: #FFD736;
-    transform: translateY(-2px);
+    border-color: var(--primary-dark);
+    box-shadow: 0 2px 6px rgba(19, 3, 37, 0.15);
+    transform: translateY(-1px);
 }
 
 /* Promotional Banners */
@@ -349,11 +365,15 @@ main h3 {
 
 /* Product Info */
 .product-info-section {
-    background: #ffffff;
-    padding: 20px;
+    background: var(--bg-white);
+    padding: 14px 16px;
     display: flex;
-    gap: 30px;
+    gap: 20px;
     align-items: flex-start;
+    border: 1px solid var(--border-light);
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    margin-bottom: 16px;
 }
 
 /* Product Details */
@@ -362,33 +382,32 @@ main h3 {
 }
 
 .product-title {
-    font-size: 28px;
-    font-weight: 900;
-    color: #130325;
-    margin-bottom: 20px;
-    line-height: 1.2;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--text-dark);
+    margin-bottom: 12px;
+    line-height: 1.3;
+    letter-spacing: -0.3px;
 }
 
 /* Rating Section */
 .rating-section {
     display: flex;
     align-items: center;
-    gap: 10px;
-    margin-bottom: 15px;
-    padding-bottom: 15px;
-    border-bottom: 1px solid rgba(19, 3, 37, 0.2);
+    gap: 8px;
+    margin-bottom: 12px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border-light);
 }
 
 .stars {
-    color: #FFD736;
-    font-size: 16px;
-    letter-spacing: 1px;
+    color: var(--accent-yellow);
+    font-size: 14px;
+    letter-spacing: 0.5px;
 }
 
 .rating-text {
-    color: rgba(19, 3, 37, 0.7);
+    color: var(--text-light);
     font-size: 12px;
 }
 
@@ -406,24 +425,25 @@ main h3 {
 
 /* Price Section */
 .price-section {
-    background: rgba(255, 215, 54, 0.1);
-    padding: 15px;
+    background: rgba(19, 3, 37, 0.04);
+    padding: 12px 14px;
     border-radius: 8px;
-    margin-bottom: 15px;
-    border: 1px solid rgba(255, 215, 54, 0.3);
+    margin-bottom: 12px;
+    border: 1px solid var(--border-light);
 }
 
 .price-label {
-    font-size: 12px;
-    color: rgba(19, 3, 37, 0.6);
-    margin-bottom: 5px;
+    font-size: 11px;
+    color: var(--text-light);
+    margin-bottom: 4px;
+    font-weight: 500;
 }
 
 .price-amount {
-    font-size: 24px;
-    font-weight: 900;
-    color: #130325;
-    line-height: 1;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--primary-dark);
+    line-height: 1.2;
 }
 
 /* Stock & Seller Info */
@@ -438,26 +458,27 @@ main h3 {
     align-items: center;
     gap: 8px;
     padding: 8px 12px;
-    background: rgba(255, 255, 255, 0.5);
+    background: var(--bg-light);
     border-radius: 6px;
-    border: 1px solid rgba(19, 3, 37, 0.1);
+    border: 1px solid var(--border-light);
 }
 
 .info-icon {
-    color: #FFD736;
-    font-size: 14px;
-    width: 20px;
+    color: var(--primary-dark);
+    font-size: 13px;
+    width: 18px;
     text-align: center;
 }
 
 .info-label {
-    color: rgba(19, 3, 37, 0.7);
+    color: var(--text-light);
     font-size: 11px;
-    margin-right: 5px;
+    margin-right: 4px;
+    font-weight: 500;
 }
 
 .info-value {
-    color: #130325;
+    color: var(--text-dark);
     font-weight: 600;
     font-size: 11px;
 }
@@ -545,57 +566,58 @@ main h3 {
 
 /* Quantity Selector */
 .quantity-section {
-    margin: 20px 0;
-    padding: 15px;
-    background: rgba(255, 255, 255, 0.5);
+    margin: 16px 0;
+    padding: 12px 14px;
+    background: var(--bg-light);
     border-radius: 8px;
-    border: 1px solid rgba(19, 3, 37, 0.1);
+    border: 1px solid var(--border-light);
 }
 
 .quantity-selector {
     display: flex;
     align-items: center;
-    gap: 15px;
+    gap: 12px;
 }
 
 .quantity-label {
     font-size: 12px;
-    color: #130325;
+    color: var(--text-dark);
     font-weight: 600;
 }
 
 .quantity-control {
     display: flex;
     align-items: center;
-    border: 1px solid #130325;
+    border: 1px solid var(--border-light);
     border-radius: 6px;
     overflow: hidden;
+    background: var(--bg-white);
 }
 
 .qty-btn {
-    background: #f8f9fa;
+    background: var(--bg-white);
     border: none;
-    padding: 8px 12px;
+    padding: 6px 10px;
     cursor: pointer;
-    font-size: 16px;
-    font-weight: bold;
-    color: #130325;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--primary-dark);
     transition: background 0.2s;
 }
 
 .qty-btn:hover {
-    background: #e9ecef;
+    background: var(--bg-light);
 }
 
 .qty-input {
     border: none;
-    padding: 8px 12px;
+    padding: 6px 10px;
     text-align: center;
-    width: 60px;
-    font-size: 14px;
+    width: 50px;
+    font-size: 13px;
     font-weight: 600;
-    color: #130325;
-    background: white;
+    color: var(--text-dark);
+    background: var(--bg-white);
 }
 
 .stock-status {
@@ -613,56 +635,57 @@ main h3 {
 }
 
 .btn-add-to-cart {
-    background: #FFD736;
-    color: #130325;
-    border: 2px solid #130325;
-    padding: 12px 16px;
-    border-radius: 6px; /* minimal rounding */
-    font-size: 14px;
+    background: var(--accent-yellow);
+    color: var(--primary-dark);
+    border: 1px solid var(--accent-yellow);
+    padding: 10px 16px;
+    border-radius: 8px;
+    font-size: 13px;
     font-weight: 600;
-    text-transform: uppercase;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.2s ease;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
+    gap: 6px;
     width: auto;
-    min-width: 140px;
-    height: 48px;
+    min-width: 130px;
+    height: 40px;
     flex-shrink: 0;
 }
 
 .btn-add-to-cart:hover {
-    background: #130325;
-    color: #FFD736;
+    background: #ffd020;
+    border-color: #ffd020;
     transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(255, 215, 54, 0.3);
 }
 
 .btn-buy-now {
-    background: #130325;
-    color: white;
-    border: none;
-    padding: 12px 24px;
-    border-radius: 6px; /* minimal rounding */
-    font-size: 14px;
+    background: var(--primary-dark);
+    color: var(--bg-white);
+    border: 1px solid var(--primary-dark);
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 13px;
     font-weight: 600;
-    text-transform: uppercase;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.2s ease;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
-    margin-left: 10px;
+    gap: 6px;
+    margin-left: 8px;
     width: auto;
-    min-width: 160px;
+    min-width: 140px;
+    height: 40px;
 }
 
 .btn-buy-now:hover {
-    background: #FFD736;
-    color: #130325;
+    background: #0a0118;
+    border-color: #0a0118;
     transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(19, 3, 37, 0.3);
 }
 
 /* Social Sharing & Favorites */
@@ -766,34 +789,38 @@ main h3 {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin: 30px 0;
-    padding: 20px;
-    background: #ffffff;
+    margin: 20px 0;
+    padding: 14px 16px;
+    background: var(--bg-white);
+    border: 1px solid var(--border-light);
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .seller-profile {
     display: flex;
     align-items: center;
-    gap: 15px;
+    gap: 12px;
 }
 
 .seller-avatar {
-    width: 60px;
-    height: 60px;
-    background: #FFD736;
+    width: 48px;
+    height: 48px;
+    background: var(--primary-dark);
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 24px;
-    color: #130325;
+    font-size: 18px;
+    color: var(--bg-white);
+    font-weight: 600;
 }
 
 .seller-info h3 {
     margin: 0;
-    font-size: 18px;
-    color: #130325;
-    font-weight: 700;
+    font-size: 15px;
+    color: var(--text-dark);
+    font-weight: 600;
 }
 
 .seller-name-row { display:flex; align-items:center; justify-content:space-between; gap:10px; }
@@ -852,17 +879,24 @@ main h3 {
 
 /* Product Details Section */
 .product-details-section {
-    margin: 30px 0;
-    padding: 20px;
-    background: #ffffff;
+    margin: 20px 0;
+    padding: 14px 16px;
+    background: var(--bg-white);
+    border: 1px solid var(--border-light);
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .product-category h3,
 .product-description h3 {
     margin: 0 0 10px 0;
-    font-size: 16px;
-    color: #130325;
-    font-weight: 700;
+    font-size: 1.1rem;
+    color: var(--text-dark);
+    font-weight: 600;
+    padding: 6px 10px;
+    background: rgba(19, 3, 37, 0.04);
+    border-radius: 6px;
+    display: inline-block;
 }
 
 .product-category p {
@@ -879,24 +913,28 @@ main h3 {
 
 /* Reviews Section */
 .reviews-section {
-    margin: 30px 0;
-    padding: 20px;
-    background: #ffffff;
+    margin: 20px 0;
+    padding: 14px 16px;
+    background: var(--bg-white);
+    border: 1px solid var(--border-light);
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .reviews-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 20px;
-    padding-bottom: 15px;
-    border-bottom: 1px solid rgba(19, 3, 37, 0.2);
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border-light);
 }
 
 .reviews-header h3 {
     margin: 0;
-    font-size: 18px;
-    color: #130325;
+    font-size: 1.1rem;
+    color: var(--text-dark);
+    font-weight: 600;
     font-weight: 700;
 }
 
@@ -1761,7 +1799,7 @@ main h3 {
     </div>
 <?php endif; ?>
 
-                        <form method="POST" action="">
+                        <form method="POST" action="" id="reviewForm">
                             <div class="form-group">
                                 <label class="form-label">Your Rating</label>
                                 <div class="star-rating">
@@ -1775,6 +1813,9 @@ main h3 {
                                     <label for="star2" title="2 stars">★</label>
                                     <input type="radio" id="star1" name="rating" value="1">
                                     <label for="star1" title="1 star">★</label>
+                                </div>
+                                <div id="ratingWarning" style="display: none; color: var(--error-red); font-size: 12px; margin-top: 8px; padding: 8px; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 6px;">
+                                    <i class="fas fa-exclamation-triangle"></i> Please select a rating before submitting your review.
                                 </div>
                             </div>
                             
@@ -1889,6 +1930,49 @@ function addToCart() {
     });
 }
 
+// Review form validation
+document.addEventListener('DOMContentLoaded', function() {
+    const reviewForm = document.getElementById('reviewForm');
+    if (reviewForm) {
+        reviewForm.addEventListener('submit', function(e) {
+            const ratingInputs = reviewForm.querySelectorAll('input[name="rating"]');
+            let ratingSelected = false;
+            
+            ratingInputs.forEach(input => {
+                if (input.checked) {
+                    ratingSelected = true;
+                }
+            });
+            
+            if (!ratingSelected) {
+                e.preventDefault();
+                const warningDiv = document.getElementById('ratingWarning');
+                if (warningDiv) {
+                    warningDiv.style.display = 'block';
+                    // Scroll to warning
+                    warningDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                    // Hide warning after 5 seconds
+                    setTimeout(() => {
+                        warningDiv.style.display = 'none';
+                    }, 5000);
+                }
+                return false;
+            }
+        });
+        
+        // Hide warning when rating is selected
+        const ratingInputs = reviewForm.querySelectorAll('input[name="rating"]');
+        ratingInputs.forEach(input => {
+            input.addEventListener('change', function() {
+                const warningDiv = document.getElementById('ratingWarning');
+                if (warningDiv) {
+                    warningDiv.style.display = 'none';
+                }
+            });
+        });
+    }
+});
+
 function buyNow() {
     const qtyInput = document.getElementById('quantity');
     const quantity = qtyInput.value;
@@ -1912,7 +1996,7 @@ function buyNow() {
     button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
     button.disabled = true;
     
-    // Make AJAX call
+    // Make AJAX call - checkout only this item (no cart items)
     fetch('ajax/buy-now.php', {
         method: 'POST',
         headers: {
@@ -1921,7 +2005,8 @@ function buyNow() {
         credentials: 'same-origin', // Include session cookie
         body: JSON.stringify({
             product_id: productId,
-            quantity: parseInt(quantity)
+            quantity: parseInt(quantity),
+            include_cart: false
         })
     })
     .then(response => {
@@ -1942,17 +2027,8 @@ function buyNow() {
     .then(data => {
         console.log('Buy Now Response Data:', data);
         if (data.success) {
-            // Check if cart was actually added
-            if (data.debug && data.debug.cart_items_count === 0) {
-                alert('Warning: Item may not have been added to cart. Please check your cart before proceeding.');
-            }
-            // Verify product is in cart before redirecting
-            if (data.debug && data.debug.product_in_cart) {
-                console.log('Buy Now - Product confirmed in cart, redirecting to:', data.redirect_url);
-            }
-            // Session is already written by buy-now.php, redirect immediately
-            // Default to cart.php to show items, user can proceed to checkout from there
-            window.location.href = data.redirect_url || 'cart.php';
+            // Redirect directly to checkout (no confirmation needed)
+            window.location.href = data.redirect_url || 'paymongo/multi-seller-checkout.php?buy_now=1';
         } else {
             // Show styled error message instead of plain alert
             console.error('Buy Now Failed:', data);

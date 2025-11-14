@@ -127,6 +127,18 @@ if (!function_exists('resolveProductImageUrl')) {
 ?>
 
 <style>
+:root {
+    --primary-dark: #130325;
+    --accent-yellow: #FFD736;
+    --text-dark: #1a1a1a;
+    --text-light: #6b7280;
+    --border-light: #e5e7eb;
+    --bg-light: #f9fafb;
+    --bg-white: #ffffff;
+    --success-green: #10b981;
+    --error-red: #ef4444;
+}
+
     .category-item {
     margin: 5px 0;
     display: flex;
@@ -162,12 +174,13 @@ if (!function_exists('resolveProductImageUrl')) {
 
 /* Body background - Light like index.php */
 body {
-    background: #f0f2f5;
+    background: var(--bg-light);
     min-height: 100vh;
-    color: #130325;
+    color: var(--text-dark);
     margin: 0;
     padding: 0;
     text-align: center;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
 /* Override text-align for header and navigation */
@@ -185,8 +198,8 @@ body {
     display: grid;
     grid-template-columns: 220px 1fr;
     align-items: start;
-    gap: 30px;
-    max-width: 1400px;
+    gap: 20px;
+    max-width: 1600px;
     margin: 0 auto;
     padding: 0 20px;
 }
@@ -199,11 +212,12 @@ body {
 }
 
 .products-list h2 {
-    color: #130325;
-    margin: 0 0 25px 0;
-    font-size: 1.8rem;
-    font-weight: 700;
-    text-align: center;
+    color: var(--text-dark);
+    margin: 0 0 16px 0;
+    font-size: 1.35rem;
+    font-weight: 600;
+    text-align: left;
+    letter-spacing: -0.3px;
 }
 
 .applied-filters {
@@ -212,12 +226,12 @@ body {
 }
 
 .filter-tag {
-    background: #FFD736;
-    color: #130325;
-    padding: 8px 16px;
-    border-radius: 25px;
-    font-size: 0.8rem;
-    margin: 5px 8px;
+    background: var(--primary-dark);
+    color: var(--bg-white);
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    margin: 4px 6px;
     display: inline-block;
     font-weight: 600;
 }
@@ -237,26 +251,27 @@ body {
     flex-wrap: wrap !important;
 }
 
-/* Product Card - EXACT MATCH TO INDEX.PHP */
+/* Product Card - Modern Compact Design */
 .product-card {
     position: relative !important;
-    background: rgba(26, 10, 46, 0.6) !important;
-    border: 1px solid rgba(255, 215, 54, 0.2) !important;
-    border-radius: 16px !important;
-    padding: 15px !important;
+    background: var(--bg-white) !important;
+    border: 1px solid var(--border-light) !important;
+    border-radius: 12px !important;
+    padding: 12px !important;
     text-align: center !important;
-    transition: all 0.3s ease !important;
+    transition: all 0.2s ease !important;
     display: flex !important;
     flex-direction: column !important;
     flex: 0 0 19% !important;
     min-width: 200px !important;
     max-width: 250px !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
 }
 
 .product-card:hover {
-    transform: translateY(-8px) !important;
-    border-color: #FFD736 !important;
-    box-shadow: 0 15px 35px rgba(255, 215, 54, 0.2) !important;
+    transform: translateY(-2px) !important;
+    border-color: var(--primary-dark) !important;
+    box-shadow: 0 4px 12px rgba(19, 3, 37, 0.15) !important;
 }
 
 /* Product Image - EXACT MATCH */
@@ -268,28 +283,30 @@ body {
     margin-bottom: 10px !important;
 }
 
-/* Product Checkbox - EXACT MATCH */
+/* Product Checkbox - Modern Design */
 .product-checkbox {
     position: absolute !important;
-    top: 15px !important;
-    right: 15px !important;
-    background: rgba(255, 215, 54, 0.15) !important;
-    padding: 8px 12px !important;
-    border: 1px solid rgba(255, 215, 54, 0.4) !important;
+    top: 12px !important;
+    right: 12px !important;
+    background: rgba(19, 3, 37, 0.08) !important;
+    padding: 6px 10px !important;
+    border: 1px solid rgba(19, 3, 37, 0.2) !important;
+    border-radius: 6px !important;
     display: flex !important;
     align-items: center !important;
-    gap: 8px !important;
+    gap: 6px !important;
     z-index: 2 !important;
-    transition: all 0.3s ease !important;
+    transition: all 0.2s ease !important;
 }
 
 .product-checkbox:hover {
-    background: rgba(255, 215, 54, 0.25) !important;
+    background: rgba(19, 3, 37, 0.15) !important;
+    border-color: var(--primary-dark) !important;
 }
 
 .product-checkbox input[type="checkbox"] {
-    accent-color: #FFD736 !important;
-    transform: scale(1.3) !important;
+    accent-color: var(--primary-dark) !important;
+    transform: scale(1.2) !important;
 }
 
 .product-checkbox label {
@@ -326,16 +343,16 @@ body {
     margin: 4px 0 !important;
 }
 
-/* Rating - EXACT MATCH */
+/* Rating - Modern Design */
 .products-layout .product-card .rating,
 .products-list .product-card .rating {
-    color: #FFD736 !important;
-    font-size: 1.3rem !important;
-    margin: 5px 0 !important;
+    color: var(--accent-yellow) !important;
+    font-size: 1.1rem !important;
+    margin: 4px 0 !important;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
-    gap: 8px !important;
+    gap: 6px !important;
 }
 
 .products-layout .product-card .rating-text,
@@ -355,27 +372,22 @@ body {
     font-weight: 600 !important;
 }
 
-/* Product Actions - EXACT MATCH */
+/* Product Actions - Updated Layout */
 .product-actions {
     display: flex !important;
-    flex-direction: column !important;
+    flex-direction: row !important;
     gap: 8px !important;
+    align-items: center !important;
     margin-top: auto !important;
     margin-bottom: 0 !important;
     padding-top: 8px !important;
 }
 
-.cart-actions {
-    display: flex !important;
-    gap: 8px !important;
-    align-items: center !important;
-}
-
 .btn-cart-icon {
-    background: #FFD736 !important;
-    color: #130325 !important;
-    border: 2px solid #FFD736 !important; /* match yellow */
-    border-radius: 4px !important; /* slight rounding */
+    background: var(--accent-yellow) !important;
+    color: var(--primary-dark) !important;
+    border: 1px solid var(--accent-yellow) !important;
+    border-radius: 6px !important;
     padding: 4px !important;
     cursor: pointer !important;
     font-size: 10px !important;
@@ -384,42 +396,18 @@ body {
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
-    transition: all 0.3s ease !important;
+    transition: all 0.2s ease !important;
     flex-shrink: 0 !important;
 }
 
 .btn-cart-icon:hover {
-    background: #ffde62 !important; /* lighter yellow hover */
-    border-color: #FFD736 !important;
-    color: #130325 !important;
-    transform: translateY(-2px) !important;
+    background: #ffd020 !important;
+    border-color: #ffd020 !important;
+    color: var(--primary-dark) !important;
+    transform: translateY(-1px) !important;
 }
 
-.btn-buy-now {
-    background: #130325 !important;
-    color: white !important;
-    border: 2px solid #FFD736 !important;
-    padding: 4px 10px !important;
-    cursor: pointer !important;
-    font-size: 0.75rem !important;
-    font-weight: 700 !important;
-    text-transform: uppercase !important;
-    letter-spacing: 0.5px !important;
-    transition: all 0.3s ease !important;
-    text-decoration: none !important;
-    display: inline-flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    gap: 4px !important;
-    flex: 1 !important;
-    height: 24px !important;
-}
-
-.btn-buy-now:hover {
-    background: #FFD736 !important;
-    color: #130325 !important;
-    transform: translateY(-2px) !important;
-}
+/* Buy Now button removed from product cards - kept in product-detail.php only */
 
 /* Buttons - EXACT MATCH */
 .btn {
@@ -443,15 +431,16 @@ body {
     background: #130325 !important;
     color: #ffffff !important;
     border: 2px solid #130325 !important;
-    padding: 1px 4px !important;
-    font-size: 0.6rem !important;
-    width: 100% !important;
+    padding: 4px 10px !important;
+    font-size: 0.75rem !important;
+    flex: 1 !important;
     justify-content: center !important;
-    border-radius: 2px !important;
+    border-radius: 4px !important;
     margin: 0 !important;
     line-height: 1.2 !important;
     min-height: auto !important;
-    height: auto !important;
+    height: 24px !important;
+    text-align: center !important;
 }
 
 .btn-details i {
@@ -460,9 +449,9 @@ body {
 }
 
 .btn-details:hover {
-    background: #FFD736 !important;
-    color: #130325 !important;
-    transform: translateY(-2px) !important;
+    background: #0a0118 !important;
+    color: var(--bg-white) !important;
+    transform: translateY(-1px) !important;
     text-decoration: none !important;
 }
 
@@ -496,19 +485,23 @@ body {
 }
 
 .filters h2 {
-    color: #130325;
-    margin-bottom: 20px;
+    color: var(--text-dark);
+    margin-bottom: 14px;
     font-size: 1.1rem;
-    font-weight: 500;
-    text-align: center;
-    border-bottom: 2px solid #130325;
-    padding-bottom: 10px;
+    font-weight: 600;
+    text-align: left;
+    padding: 6px 10px;
+    background: rgba(19, 3, 37, 0.04);
+    border-radius: 6px;
+    display: inline-block;
+    border-bottom: none;
+    padding-bottom: 6px;
 }
 
 .filter-group {
     margin-bottom: 12px;
     padding-bottom: 8px;
-    border-bottom: 1px solid rgba(255, 215, 54, 0.1);
+    border-bottom: 1px solid rgba(19, 3, 37, 0.1);
 }
 
 .filter-group:last-child {
@@ -526,18 +519,18 @@ body {
 .filter-group input[type="number"] {
     width: 100%;
     padding: 6px 10px;
-    border: 1px solid rgba(255, 215, 54, 0.3);
-    border-radius: 0;
-    background: rgba(26, 10, 46, 0.4);
-    color: #130325;
-    font-size: 0.8rem;
+    border: 1.5px solid var(--border-light);
+    border-radius: 6px;
+    background: var(--bg-white);
+    color: var(--text-dark);
+    font-size: 12px;
 }
 
 .filter-group select:focus,
 .filter-group input:focus {
     outline: none;
-    border-color: #FFD736;
-    background: rgba(26, 10, 46, 0.6);
+    border-color: var(--primary-dark);
+    box-shadow: 0 0 0 3px rgba(19, 3, 37, 0.1);
 }
 
 .price-range {
@@ -572,7 +565,7 @@ body {
 }
 
 .rating-options input[type="radio"] {
-    accent-color: #FFD736;
+    accent-color: var(--primary-dark);
 }
 
 .rating-stars {
@@ -597,7 +590,7 @@ body {
 }
 
 .filter-group input[type="checkbox"] {
-    accent-color: #FFD736;
+    accent-color: var(--primary-dark);
 }
 
 .filter-actions {
@@ -623,9 +616,9 @@ body {
 
 .filter-actions button:hover,
 .filter-group button:hover {
-    background: #FFD736;
-    color: #130325;
-    transform: translateY(-2px);
+    background: #0a0118;
+    color: var(--bg-white);
+    transform: translateY(-1px);
 }
 
 .clear-filters {
@@ -644,19 +637,19 @@ body {
 }
 
 .clear-filters:hover {
-    background: #dc3545;
-    color: #130325;
-    transform: translateY(-2px);
+    background: #dc2626;
+    color: var(--bg-white);
+    transform: translateY(-1px);
 }
 
 /* Sorting Container */
 .sorting-container {
-    background: #f0f2f5;
-    padding: 15px 20px;
-    margin-bottom: 20px;
-    box-shadow: 0 2px 8px rgba(19, 3, 37, 0.1);
-    border: 2px solid #f0f2f5; /* match background */
-    border-radius: 8px; /* slight rounding */
+    background: var(--bg-white);
+    padding: 12px 16px;
+    margin-bottom: 16px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    border: 1px solid var(--border-light);
+    border-radius: 8px;
 }
 
 .sorting-wrapper {
@@ -666,39 +659,39 @@ body {
 }
 
 .sort-label {
-    color: #130325;
-    font-weight: 700;
-    font-size: 0.9rem;
-    text-transform: uppercase;
+    color: var(--text-dark);
+    font-weight: 600;
+    font-size: 12px;
     margin: 0;
 }
 
 .sort-select,
 .order-select {
-    background: #ffffff;
-    color: #130325;
-    border: 2px solid #e5e7eb; /* light border */
-    padding: 8px 12px;
-    border-radius: 6px; /* slight rounding */
-    font-size: 0.9rem;
-    font-weight: 600;
+    background: var(--bg-white);
+    color: var(--text-dark);
+    border: 1.5px solid var(--border-light);
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
     cursor: pointer;
-    min-width: 160px; /* widened for better readability */
+    min-width: 140px;
 }
 
 .sort-select:focus,
 .order-select:focus {
     outline: none;
-    background: #ffffff;
-    color: #130325;
-    border-color: #130325;
+    background: var(--bg-white);
+    color: var(--text-dark);
+    border-color: var(--primary-dark);
+    box-shadow: 0 0 0 3px rgba(19, 3, 37, 0.1);
 }
 
 /* Ensure dropdown options are white */
 .sort-select option,
 .order-select option {
-    background: #ffffff;
-    color: #130325;
+    background: var(--bg-white);
+    color: var(--text-dark);
 }
 
 /* Category Tree */
@@ -742,39 +735,44 @@ body {
     font-size: 0.8rem;
 }
 
-/* Compare Bar - EXACT MATCH TO INDEX.PHP */
+/* Compare Bar - Modern Design */
 .compare-bar {
     display: none;
     position: fixed;
     bottom: 0;
     left: 0;
     right: 0;
-    background: #FFD736;
-    box-shadow: 0 -5px 20px rgba(0, 0, 0, 0.3);
+    background: var(--primary-dark);
+    box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.2);
     z-index: 1000;
-    padding: 20px;
-    border-top: 3px solid #130325;
+    padding: 10px 14px;
+    border-top: 2px solid var(--primary-dark);
+}
+
+.compare-bar.show {
+    display: block !important;
 }
 
 .compare-content {
-    max-width: 1400px;
+    max-width: 1600px;
     margin: 0 auto;
     display: flex;
     align-items: center;
-    gap: 20px;
+    gap: 12px;
     flex-wrap: wrap;
 }
 
 .compare-content h4 {
-    margin: 0;
-    color: #ffffff;
-    font-size: 1.1rem;
-    font-weight: 700;
+    margin: 0 !important;
+    color: var(--bg-white) !important;
+    font-size: 0.9rem !important;
+    font-weight: 600 !important;
+    letter-spacing: -0.2px !important;
 }
 
 #compare-items {
     display: flex;
-    gap: 12px;
+    gap: 10px;
     flex: 1;
     flex-wrap: wrap;
 }
@@ -782,45 +780,52 @@ body {
 .compare-item {
     display: flex;
     align-items: center;
-    gap: 10px;
-    background: rgba(255, 215, 54, 0.15);
-    padding: 10px 15px;
-    border: 2px solid #FFD736;
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    padding: 6px 10px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 6px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .compare-item img {
-    width: 35px;
-    height: 35px;
+    width: 32px;
+    height: 32px;
     object-fit: cover;
+    border-radius: 4px;
+    border: 1px solid var(--border-light);
 }
 
 .compare-item span {
-    color: #ffffff;
-    max-width: 150px;
+    color: var(--bg-white) !important;
+    max-width: 120px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    font-weight: 600;
+    font-weight: 500;
+    font-size: 11px;
 }
 
 .remove-compare {
     background: none;
     border: none;
-    color: #dc3545;
-    font-size: 20px;
+    color: var(--bg-white);
+    font-size: 18px;
     cursor: pointer;
     padding: 0;
-    width: 25px;
-    height: 25px;
+    width: 24px;
+    height: 24px;
     display: flex;
     align-items: center;
     justify-content: center;
     border-radius: 50%;
-    transition: all 0.3s ease;
+    transition: all 0.2s ease;
+    opacity: 0.8;
 }
 
 .remove-compare:hover {
-    background: rgba(220, 53, 69, 0.2);
+    background: rgba(255, 255, 255, 0.2);
+    opacity: 1;
 }
 
 .compare-actions {
@@ -829,41 +834,56 @@ body {
 }
 
 .btn-compare {
-    background: #FFD736 !important;
-    color: #130325 !important;
-    font-weight: 700;
+    background: var(--accent-yellow) !important;
+    color: var(--primary-dark) !important;
+    font-weight: 600 !important;
     border: none !important;
     outline: none !important;
     box-shadow: none !important;
-    padding: 10px 20px;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: all 0.3s ease;
+    padding: 8px 14px !important;
+    border-radius: 6px !important;
+    cursor: pointer !important;
+    font-size: 12px !important;
+    transition: all 0.2s ease !important;
+    text-transform: none !important;
+    letter-spacing: normal !important;
 }
 
 .btn-compare:hover:not(:disabled) {
-    background: #e6c230 !important;
-    color: #130325 !important;
+    background: #ffd020 !important;
+    color: var(--primary-dark) !important;
     border: none !important;
     outline: none !important;
     box-shadow: none !important;
-    transform: translateY(-1px);
+    transform: translateY(-1px) !important;
 }
 
 .btn-compare:disabled {
-    background: #6c757d;
-    opacity: 0.5;
-    cursor: not-allowed;
-    transform: none;
+    background: var(--text-light) !important;
+    color: var(--bg-white) !important;
+    opacity: 0.5 !important;
+    cursor: not-allowed !important;
+    transform: none !important;
 }
 
 .btn-clear {
-    background: #dc3545;
-    color: #130325 !important;
+    background: var(--error-red) !important;
+    color: var(--bg-white) !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    padding: 8px 14px !important;
+    border-radius: 6px !important;
+    border: none !important;
+    cursor: pointer !important;
+    text-transform: none !important;
+    letter-spacing: normal !important;
+    transition: all 0.2s ease !important;
 }
 
 .btn-clear:hover {
-    background: #c82333;
+    background: #dc2626 !important;
+    color: var(--bg-white) !important;
+    transform: translateY(-1px) !important;
 }
 
 /* Responsive */
@@ -952,11 +972,11 @@ body {
         font-size: 0.8rem !important;
     }
     
-    /* Products Grid - 2x2 Layout */
+    /* Products Grid - 3x3 Layout */
     .products-grid {
         display: grid !important;
-        grid-template-columns: repeat(2, 1fr) !important;
-        gap: 12px !important;
+        grid-template-columns: repeat(3, 1fr) !important;
+        gap: 8px !important;
         justify-content: center !important;
         width: 100% !important;
         max-width: 100vw !important;
@@ -1031,11 +1051,7 @@ body {
         font-size: 8px !important;
     }
     
-    .btn-buy-now {
-        font-size: 0.65rem !important;
-        padding: 3px 6px !important;
-        height: 20px !important;
-    }
+    /* Buy Now button removed from product cards */
     
     /* Compare Bar Mobile */
     .compare-bar {
@@ -1048,7 +1064,7 @@ body {
     }
     
     .compare-content h4 {
-        font-size: 0.9rem !important;
+        font-size: 0.8rem !important;
     }
     
     #compare-items {
@@ -1086,7 +1102,8 @@ body {
 
 @media (max-width: 480px) {
     .products-grid {
-        gap: 10px !important;
+        grid-template-columns: repeat(3, 1fr) !important;
+        gap: 6px !important;
         padding: 0 5px !important;
     }
     
@@ -1095,7 +1112,7 @@ body {
     }
     
     .product-card img {
-        height: 100px !important;
+        height: 90px !important;
     }
     
     .products-layout .product-card .product-name,
@@ -1129,11 +1146,7 @@ body {
         font-size: 7px !important;
     }
     
-    .btn-buy-now {
-        font-size: 0.6rem !important;
-        padding: 2px 4px !important;
-        height: 18px !important;
-    }
+    /* Buy Now button removed from product cards */
 }
 </style>
 
@@ -1389,23 +1402,16 @@ body {
                             </div>
                             <div class="stock"><?php echo $product['stock_quantity']; ?> in stock</div>
                             <div class="product-actions">
+                                <button onclick="addToCart(<?php echo $product['id']; ?>, 1)" 
+                                        class="btn-cart-icon" 
+                                        data-product-id="<?php echo $product['id']; ?>"
+                                        title="Add to Cart">
+                                    <i class="fas fa-shopping-cart"></i>
+                                </button>
                                 <a href="product-detail.php?id=<?php echo $product['id']; ?>" 
                                    class="btn btn-details">
-                                    <i class="fas fa-eye"></i> View Details
+                                    View Details
                                 </a>
-                                <div class="cart-actions">
-                                    <button onclick="addToCart(<?php echo $product['id']; ?>, 1)" 
-                                            class="btn-cart-icon" 
-                                            data-product-id="<?php echo $product['id']; ?>"
-                                            title="Add to Cart">
-                                        <i class="fas fa-shopping-cart"></i>
-                                    </button>
-                                    <button onclick="handleBuyNow(<?php echo $product['id']; ?>, 1)" 
-                                            class="btn btn-buy-now" 
-                                            data-product-id="<?php echo $product['id']; ?>">
-                                        Buy Now
-                                    </button>
-                                </div>
                             </div>
                         </div>
                     <?php endforeach; ?>
@@ -1542,6 +1548,7 @@ function updateCompareBar() {
     compareCount.textContent = compareProducts.length;
     
     if (compareProducts.length > 0) {
+        compareBar.classList.add('show');
         compareBar.style.display = 'block';
         compareBtn.disabled = compareProducts.length < 2;
         
@@ -1557,6 +1564,7 @@ function updateCompareBar() {
             </div>`
         ).join('');
     } else {
+        compareBar.classList.remove('show');
         compareBar.style.display = 'none';
     }
 }
@@ -1586,32 +1594,7 @@ function compareSelected() {
     const productIds = compareProducts.map(p => p.id).join(',');
     window.location.href = `compare.php?products=${productIds}`;
 }
-function handleBuyNow(productId, quantity = 1) {
-    // Send buy now request to backend
-    fetch('ajax/buy-now-handler.php', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            product_id: productId,
-            quantity: quantity
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            // Redirect directly to checkout with buy_now flag
-            window.location.href = 'paymongo/multi-seller-checkout.php?buy_now=1';
-        } else {
-            alert(data.message || 'Error processing buy now request');
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert('Error processing buy now request');
-    });
-}
+// handleBuyNow function removed from products.php - Buy Now is only available in product-detail.php
 
 document.addEventListener('DOMContentLoaded', function() {
     const compareBtn = document.getElementById('compare-btn');

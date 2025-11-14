@@ -129,18 +129,374 @@ function statusBadge($status, $bg, $fg) {
   }
 </style>
 
-<main style="background:#f8f9fa; min-height:100vh; padding: 10px 0 60px 0;">
-  <div style="max-width: 1200px; margin: 0 auto; padding: 0 20px;">
+<style>
+:root {
+    --primary-dark: #130325;
+    --accent-yellow: #FFD736;
+    --text-dark: #1a1a1a;
+    --text-light: #6b7280;
+    --border-light: #e5e7eb;
+    --bg-light: #f9fafb;
+    --bg-white: #ffffff;
+    --success-green: #10b981;
+    --error-red: #ef4444;
+}
+
+body {
+    background: var(--bg-light) !important;
+    color: var(--text-dark);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+.compare-container {
+    max-width: 1600px;
+    margin: 0 auto;
+    padding: 12px 20px;
+}
+
+.compare-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.back-arrow {
+    color: var(--bg-white);
+    text-decoration: none;
+    font-size: 16px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    padding: 6px 8px;
+    border-radius: 8px;
+    width: 32px;
+    height: 32px;
+    background: var(--primary-dark);
+    border: 1px solid var(--primary-dark);
+}
+
+.back-arrow:hover {
+    color: var(--bg-white);
+    background: #0a0118;
+    border-color: #0a0118;
+    transform: translateX(-2px);
+    box-shadow: 0 2px 6px rgba(19, 3, 37, 0.3);
+}
+
+.back-arrow i {
+    margin: 0;
+}
+
+.compare-header h1 {
+    color: var(--text-dark);
+    margin: 0;
+    font-size: 1.35rem;
+    font-weight: 600;
+    letter-spacing: -0.3px;
+}
+
+.compare-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 16px;
+}
+
+.compare-card {
+    background: var(--bg-white);
+    border: 1px solid var(--border-light);
+    border-radius: 12px;
+    padding: 14px;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    min-height: 500px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    transition: all 0.2s ease;
+}
+
+.compare-card:hover {
+    border-color: var(--primary-dark);
+    box-shadow: 0 4px 12px rgba(19, 3, 37, 0.15);
+    transform: translateY(-2px);
+}
+
+.compare-card.best {
+    border: 2px solid var(--primary-dark);
+    box-shadow: 0 4px 16px rgba(19, 3, 37, 0.2);
+}
+
+.best-badge {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: var(--primary-dark);
+    color: var(--bg-white);
+    padding: 4px 10px;
+    border-radius: 999px;
+    border: 1px solid var(--primary-dark);
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    z-index: 2;
+}
+
+.compare-image {
+    text-align: center;
+    margin-bottom: 12px;
+}
+
+.compare-image img {
+    width: 140px;
+    height: 140px;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 1px solid var(--border-light);
+}
+
+.compare-name {
+    color: var(--text-dark);
+    margin: 0 0 10px 0;
+    text-align: center;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.4;
+}
+
+.compare-name a {
+    text-decoration: none;
+    color: var(--text-dark);
+}
+
+.compare-name a:hover {
+    color: var(--primary-dark);
+}
+
+.compare-price {
+    text-align: center;
+    margin-bottom: 10px;
+    color: var(--primary-dark);
+    font-weight: 700;
+    font-size: 18px;
+}
+
+.compare-rating {
+    background: rgba(19, 3, 37, 0.04);
+    padding: 8px;
+    border-radius: 6px;
+    margin-bottom: 10px;
+    text-align: center;
+    border: 1px solid rgba(19, 3, 37, 0.1);
+}
+
+.compare-rating-stars {
+    color: var(--accent-yellow);
+    margin-bottom: 4px;
+    font-size: 14px;
+}
+
+.compare-rating-value {
+    color: var(--text-dark);
+    font-weight: 600;
+    font-size: 13px;
+}
+
+.compare-rating-count {
+    color: var(--text-light);
+    opacity: 0.7;
+    font-size: 11px;
+}
+
+.compare-stock {
+    text-align: center;
+    margin-bottom: 10px;
+}
+
+.compare-category {
+    text-align: center;
+    margin-bottom: 10px;
+}
+
+.compare-category span {
+    background: var(--bg-light);
+    color: var(--text-dark);
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-weight: 600;
+    border: 1px solid var(--border-light);
+    font-size: 11px;
+}
+
+.compare-description {
+    background: var(--bg-light);
+    padding: 10px;
+    border-radius: 6px;
+    margin-bottom: 10px;
+    border: 1px solid var(--border-light);
+}
+
+.compare-description-title {
+    color: var(--text-dark);
+    margin-bottom: 6px;
+    font-weight: 600;
+    font-size: 12px;
+}
+
+.compare-description-text {
+    color: var(--text-light);
+    line-height: 1.5;
+    font-size: 11px;
+}
+
+.compare-specs {
+    background: var(--bg-light);
+    padding: 10px;
+    border-radius: 6px;
+    margin-bottom: 10px;
+    border: 1px solid var(--border-light);
+}
+
+.compare-specs-title {
+    color: var(--text-dark);
+    margin-bottom: 8px;
+    font-weight: 600;
+    font-size: 12px;
+}
+
+.compare-spec-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 4px 0;
+    border-bottom: 1px solid rgba(19, 3, 37, 0.1);
+    font-size: 11px;
+}
+
+.compare-spec-item:last-child {
+    border-bottom: none;
+}
+
+.compare-spec-label {
+    color: var(--text-light);
+    opacity: 0.8;
+}
+
+.compare-spec-value {
+    color: var(--text-dark);
+    font-weight: 600;
+}
+
+.compare-actions {
+    display: flex;
+    flex-direction: row;
+    gap: 8px;
+    align-items: center;
+    margin-top: auto;
+}
+
+/* Add to Cart Button - Small Icon Button, Yellow (LEFT SIDE) */
+.compare-btn-cart {
+    background: var(--accent-yellow);
+    color: var(--primary-dark);
+    border: 1px solid var(--accent-yellow);
+    border-radius: 6px;
+    padding: 6px;
+    cursor: pointer;
+    font-size: 10px;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.compare-btn-cart:hover {
+    background: #ffd020;
+    border-color: #ffd020;
+    color: var(--primary-dark);
+    transform: translateY(-1px);
+}
+
+/* View Details Button - Large, Dark Purple (RIGHT SIDE) */
+.compare-btn {
+    background: var(--primary-dark);
+    border: 1px solid var(--primary-dark);
+    color: var(--bg-white);
+    padding: 6px 10px;
+    border-radius: 6px;
+    text-decoration: none;
+    text-align: center;
+    font-weight: 600;
+    font-size: 12px;
+    transition: all 0.2s ease;
+    flex: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    line-height: 1.2;
+    min-height: 28px;
+}
+
+.compare-btn:hover {
+    background: #0a0118;
+    border-color: #0a0118;
+    transform: translateY(-1px);
+    color: var(--bg-white);
+    text-decoration: none;
+}
+
+.compare-btn i {
+    font-size: 10px;
+}
+
+.compare-empty {
+    background: var(--bg-white);
+    border: 1px solid var(--border-light);
+    color: var(--text-light);
+    border-radius: 12px;
+    padding: 40px 20px;
+    text-align: center;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+@media (max-width: 968px) {
+    .compare-container {
+        padding: 10px 12px;
+        max-width: 100%;
+    }
+    
+    .compare-header h1 {
+        font-size: 1.2rem;
+    }
+    
+    .compare-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+    
+    .compare-card {
+        min-height: auto;
+        padding: 12px;
+    }
+}
+</style>
+
+<main style="background: var(--bg-light); min-height: 100vh; padding: 10px 0 60px 0;">
+  <div class="compare-container">
     
     <!-- Header with back arrow and title -->
-    <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
-      <a href="products.php" style="color: #130325; text-decoration: none; font-size: 1.8rem; font-weight: 600; display: flex; align-items: center; gap: 12px;">
+    <div class="compare-header">
+      <a href="products.php" class="back-arrow" title="Back to Products">
         <i class="fas fa-arrow-left"></i>
       </a>
-      <h1 style="color: #130325; margin: 0; font-size: 1.5rem; font-weight: 700;">Compare Products</h1>
+      <h1>Compare Products</h1>
     </div>
 
-    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap:10px;">
+    <div class="compare-grid">
       <?php foreach ($products as $product): 
         $isBestPrice = ($product['price'] == $minPrice);
         $rating = floatval($product['rating']);
@@ -150,10 +506,10 @@ function statusBadge($status, $bg, $fg) {
         $emptyStars = 5 - $fullStars - ($hasHalfStar ? 1 : 0);
         $stock = intval($product['stock_quantity'] ?? 0);
       ?>
-        <div style="background:#ffffff; border:<?php echo ($isBestPrice || $isBestRating) ? '3px solid #130325' : '1px solid rgba(0,0,0,0.1)'; ?>; border-radius:8px; padding:10px; position:relative; display:flex; flex-direction:column; min-height:450px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+        <div class="compare-card <?php echo ($isBestPrice || $isBestRating) ? 'best' : ''; ?>">
           
           <?php if ($isBestPrice || $isBestRating): ?>
-            <div style="position:absolute; top:8px; right:8px; background:#130325; color:#FFD736; padding:4px 8px; border-radius:20px; border:1px solid #130325; font-size:0.75rem;">
+            <div class="best-badge">
               <i class="fas fa-star" style="margin-right:3px;"></i>
               <?php if ($isBestPrice) echo 'Best Price'; ?>
               <?php if ($isBestPrice && $isBestRating) echo ' & '; ?>
@@ -162,38 +518,35 @@ function statusBadge($status, $bg, $fg) {
           <?php endif; ?>
  
           <!-- Product Image -->
-          <div style="text-align:center; margin-bottom:10px;">
+          <div class="compare-image">
             <img src="<?php echo htmlspecialchars($product['image_url'] ?? 'default-image.jpg'); ?>" 
                  alt="<?php echo htmlspecialchars($product['name']); ?>"
-                 style="width:150px; height:150px; object-fit:cover; border-radius:8px; border:2px solid #2d1b4e;"
                  onerror="this.src='default-image.jpg'">
           </div>
 
           <!-- Product Name -->
-          <h3 style="color:#130325; margin:0 0 8px 0; text-align:center; font-size:1rem;">
-            <a href="product-detail.php?id=<?php echo $product['id']; ?>" style="text-decoration:none; color:#130325;">
+          <h3 class="compare-name">
+            <a href="product-detail.php?id=<?php echo $product['id']; ?>">
               <?php echo htmlspecialchars($product['name']); ?>
             </a>
           </h3>
 
           <!-- Price -->
-          <div style="text-align:center; margin-bottom:10px;">
-            <div style="color:#130325; font-weight:700; font-size:20px;">₱<?php echo number_format($product['price'], 2); ?></div>
-          </div>
+          <div class="compare-price">₱<?php echo number_format($product['price'], 2); ?></div>
 
           <!-- Rating -->
-          <div style="background:rgba(255,215,54,0.1); padding:8px; border-radius:6px; margin-bottom:8px; text-align:center;">
-            <div style="color:#FFD736; margin-bottom:4px;">
+          <div class="compare-rating">
+            <div class="compare-rating-stars">
               <?php echo str_repeat('★', $fullStars); ?>
               <?php echo $hasHalfStar ? '☆' : ''; ?>
               <?php echo str_repeat('☆', $emptyStars); ?>
             </div>
-            <div style="color:#130325; font-weight:600; font-size:0.9rem;"><?php echo number_format($rating, 1); ?>/5.0</div>
-            <div style="color:#130325; opacity:0.7; font-size:0.85rem;">(<?php echo $product['review_count']; ?> reviews)</div>
+            <div class="compare-rating-value"><?php echo number_format($rating, 1); ?>/5.0</div>
+            <div class="compare-rating-count">(<?php echo $product['review_count']; ?> reviews)</div>
           </div>
 
           <!-- Stock Status -->
-          <div style="text-align:center; margin-bottom:10px;">
+          <div class="compare-stock">
             <?php 
             if ($stock > 20) {
                 echo statusBadge("In Stock ($stock)", '#28a745', '#ffffff');
@@ -206,31 +559,29 @@ function statusBadge($status, $bg, $fg) {
           </div>
 
           <!-- Category -->
-          <div style="text-align:center; margin-bottom:8px;">
-            <span style="background:#f8f9fa; color:#130325; padding:4px 10px; border-radius:12px; font-weight:600; border:1px solid rgba(0,0,0,0.1); font-size:0.85rem;">
-              <?php echo htmlspecialchars($product['category_name'] ?? 'Uncategorized'); ?>
-            </span>
+          <div class="compare-category">
+            <span><?php echo htmlspecialchars($product['category_name'] ?? 'Uncategorized'); ?></span>
           </div>
 
           <!-- Description -->
-          <div style="background:#f8f9fa; padding:8px; border-radius:6px; margin-bottom:8px;">
-            <div style="color:#130325; margin-bottom:4px; font-weight:600; font-size:0.9rem;">Description</div>
-            <div style="color:#130325; opacity:0.8; line-height:1.4; font-size:0.85rem;">
+          <div class="compare-description">
+            <div class="compare-description-title">Description</div>
+            <div class="compare-description-text">
               <?php echo htmlspecialchars(substr($product['description'] ?? '', 0, 100)); ?>
               <?php if (strlen($product['description'] ?? '') > 100): ?>
-                <a href="product-detail.php?id=<?php echo $product['id']; ?>" style="color:#1e3a8a; text-decoration:none;">...read more</a>
+                <a href="product-detail.php?id=<?php echo $product['id']; ?>" style="color: var(--primary-dark); text-decoration: none;">...read more</a>
               <?php endif; ?>
             </div>
           </div>
 
           <!-- Product Features -->
           <?php if (!empty($allFeatureNames)): ?>
-            <div style="background:#f8f9fa; padding:8px; border-radius:6px; margin-bottom:8px;">
-              <div style="color:#130325; margin-bottom:6px; font-weight:600; font-size:0.9rem;">Specifications</div>
+            <div class="compare-specs">
+              <div class="compare-specs-title">Specifications</div>
               <?php foreach ($allFeatureNames as $featureName): ?>
-                <div style="display:flex; justify-content:space-between; padding:3px 0; border-bottom:1px solid rgba(0,0,0,0.1);">
-                  <span style="color:#130325; opacity:0.8; font-size:0.85rem;"><?php echo htmlspecialchars($featureName); ?>:</span>
-                  <span style="color:#130325; font-weight:600; font-size:0.85rem;">
+                <div class="compare-spec-item">
+                  <span class="compare-spec-label"><?php echo htmlspecialchars($featureName); ?>:</span>
+                  <span class="compare-spec-value">
                     <?php 
                     if (isset($productFeatures[$product['id']][$featureName])) {
                         echo htmlspecialchars($productFeatures[$product['id']][$featureName]);
@@ -244,21 +595,20 @@ function statusBadge($status, $bg, $fg) {
             </div>
           <?php endif; ?>
 
-
           <!-- Spacer to push buttons to bottom -->
           <div style="flex:1;"></div>
 
           <!-- Action Buttons -->
-          <div style="display:flex; flex-direction:row; gap:6px; margin-top:auto;">
-            <a href="product-detail.php?id=<?php echo $product['id']; ?>" 
-               style="background:#130325; border:none; color:#ffffff; padding:6px 8px; border-radius:4px; text-decoration:none; text-align:center; font-weight:600; font-size:0.75rem; transition:all 0.3s; flex:1;">
-              <i class="fas fa-eye" style="margin-right:4px;"></i>View Details
-            </a>
+          <div class="compare-actions">
             <button onclick="addToCart(<?php echo $product['id']; ?>, 1)" 
                     data-product-id="<?php echo $product['id']; ?>"
-                    style="background:#FFD736; border:none; color:#130325; padding:6px 8px; border-radius:4px; cursor:pointer; font-weight:600; font-size:0.75rem; transition:all 0.3s; flex:1;">
-              <i class="fas fa-shopping-cart" style="margin-right:4px;"></i>Add to Cart
+                    class="compare-btn-cart"
+                    title="Add to Cart">
+              <i class="fas fa-shopping-cart"></i>
             </button>
+            <a href="product-detail.php?id=<?php echo $product['id']; ?>" class="compare-btn">
+              <i class="fas fa-eye"></i>View Details
+            </a>
           </div>
 
         </div>
@@ -266,7 +616,7 @@ function statusBadge($status, $bg, $fg) {
     </div>
 
     <?php if (empty($products)): ?>
-      <div style="background:#1a0a2e; border:1px solid #2d1b4e; color:#F9F9F9; border-radius:8px; padding:20px; text-align:center;">
+      <div class="compare-empty">
         No products to compare.
       </div>
     <?php endif; ?>

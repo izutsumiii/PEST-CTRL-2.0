@@ -54,53 +54,63 @@ function resolveProductImageUrlLocal($url) {
 ?>
 
 <style>
-/* EXACT MATCH TO PRODUCTS.PHP STYLING */
-
-/* Body background - Light like products.php */
-body {
-    background: #f0f2f5;
-    min-height: 100vh;
-    color: #130325;
-    margin: 0;
-    padding: 0;
+:root {
+    --primary-dark: #130325;
+    --accent-yellow: #FFD736;
+    --text-dark: #1a1a1a;
+    --text-light: #6b7280;
+    --border-light: #e5e7eb;
+    --bg-light: #f9fafb;
+    --bg-white: #ffffff;
+    --success-green: #10b981;
+    --error-red: #ef4444;
 }
 
-/* Main container */
+body {
+    background: var(--bg-light);
+    min-height: 100vh;
+    color: var(--text-dark);
+    margin: 0;
+    padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
 main { 
     background: transparent !important; 
     margin: 0 !important; 
-    padding: 8px 0 60px 0 !important; 
+    padding: 0 0 60px 0 !important; 
 }
 
 .seller-container { 
-    max-width: 1400px; 
+    max-width: 1600px; 
     margin: 0 auto; 
-    padding: 10px 20px; 
+    padding: 12px 20px; 
 }
 
 /* Seller Header */
 .seller-header { 
-    background: #ffffff; 
-    border: 1px solid rgba(0,0,0,0.1); 
+    background: var(--bg-white); 
+    border: 1px solid var(--border-light); 
     border-radius: 12px; 
-    padding: 16px 20px; 
+    padding: 14px 16px; 
     display: flex; 
     align-items: center; 
-    gap: 16px; 
-    margin-bottom: 20px;
+    gap: 12px; 
+    margin-bottom: 16px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .seller-avatar { 
-    width: 56px; 
-    height: 56px; 
+    width: 48px; 
+    height: 48px; 
     border-radius: 50%; 
-    background: #FFD736; 
-    color: #130325; 
+    background: var(--primary-dark); 
+    color: var(--bg-white); 
     display: flex; 
     align-items: center; 
     justify-content: center; 
-    font-weight: 800; 
-    font-size: 1.5rem;
+    font-weight: 600; 
+    font-size: 1.2rem;
 }
 
 .seller-meta { 
@@ -109,58 +119,59 @@ main {
 }
 
 .seller-name { 
-    font-size: 1.2rem; 
-    font-weight: 800; 
-    color: #130325; 
+    font-size: 1.1rem; 
+    font-weight: 600; 
+    color: var(--text-dark); 
 }
 
 .seller-sub { 
-    color: #6b7280; 
-    font-size: 0.9rem; 
+    color: var(--text-light); 
+    font-size: 0.85rem; 
 }
 
-/* Sorting Container - EXACT MATCH TO PRODUCTS.PHP */
+/* Sorting Container */
 .sorting-bar {
-    background: #f0f2f5;
-    padding: 15px 20px;
-    margin-bottom: 20px;
-    box-shadow: 0 2px 8px rgba(19, 3, 37, 0.1);
-    border: 2px solid #f0f2f5;
+    background: var(--bg-white);
+    padding: 12px 16px;
+    margin-bottom: 16px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    border: 1px solid var(--border-light);
     border-radius: 8px;
 }
 
 .sorting-bar form {
     display: flex;
     align-items: center;
-    gap: 15px;
+    gap: 12px;
+    flex-wrap: wrap;
 }
 
 .sorting-bar label {
-    color: #130325;
-    font-weight: 700;
-    font-size: 0.9rem;
-    text-transform: uppercase;
+    color: var(--text-dark);
+    font-weight: 600;
+    font-size: 12px;
     margin: 0;
 }
 
 .sort-select,
 .order-select {
-    background: #130325;
-    color: white;
-    border: 2px solid #130325;
-    padding: 8px 12px;
+    background: var(--bg-white);
+    color: var(--text-dark);
+    border: 1.5px solid var(--border-light);
+    padding: 6px 10px;
     border-radius: 6px;
-    font-size: 0.9rem;
-    font-weight: 600;
+    font-size: 12px;
+    font-weight: 500;
     cursor: pointer;
-    min-width: 160px;
+    min-width: 140px;
+    transition: all 0.2s;
 }
 
 .sort-select:focus,
 .order-select:focus {
     outline: none;
-    background: #FFD736;
-    color: #130325;
+    border-color: var(--primary-dark);
+    box-shadow: 0 0 0 3px rgba(19, 3, 37, 0.1);
 }
 
 /* Products Grid - EXACT MATCH TO PRODUCTS.PHP */
@@ -181,23 +192,24 @@ main {
 /* Product Card - EXACT MATCH TO PRODUCTS.PHP */
 .product-card {
     position: relative !important;
-    background: rgba(26, 10, 46, 0.6) !important;
-    border: 1px solid rgba(255, 215, 54, 0.2) !important;
-    border-radius: 16px !important;
-    padding: 15px !important;
+    background: var(--bg-white) !important;
+    border: 1px solid var(--border-light) !important;
+    border-radius: 12px !important;
+    padding: 12px !important;
     text-align: center !important;
-    transition: all 0.3s ease !important;
+    transition: all 0.2s ease !important;
     display: flex !important;
     flex-direction: column !important;
     flex: 0 0 19% !important;
     min-width: 200px !important;
     max-width: 250px !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
 }
 
 .product-card:hover {
-    transform: translateY(-8px) !important;
-    border-color: #FFD736 !important;
-    box-shadow: 0 15px 35px rgba(255, 215, 54, 0.2) !important;
+    transform: translateY(-2px) !important;
+    border-color: var(--primary-dark) !important;
+    box-shadow: 0 4px 12px rgba(19, 3, 37, 0.15) !important;
 }
 
 /* Product Image - EXACT MATCH */
@@ -216,28 +228,32 @@ main {
     font-weight: 700 !important;
     margin: 5px 0 !important;
     min-height: 35px !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
+    max-height: 50px !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    display: -webkit-box !important;
+    -webkit-line-clamp: 2 !important;
+    -webkit-box-orient: vertical !important;
+    line-height: 1.4 !important;
 }
 
 /* Price - EXACT MATCH */
 .product-card .price {
     color: #212529 !important;
-    font-weight: 800 !important;
-    font-size: 1.5rem !important;
-    margin: 5px 0 !important;
+    font-weight: 700 !important;
+    font-size: 1.2rem !important;
+    margin: 4px 0 !important;
 }
 
 /* Rating - EXACT MATCH */
 .product-card .rating {
-    color: #FFD736 !important;
-    font-size: 1.3rem !important;
-    margin: 5px 0 !important;
+    color: var(--accent-yellow) !important;
+    font-size: 1.1rem !important;
+    margin: 4px 0 !important;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
-    gap: 8px !important;
+    gap: 6px !important;
 }
 
 .product-card .rating-text {
@@ -259,75 +275,45 @@ main {
 /* Product Actions - EXACT MATCH */
 .product-actions {
     display: flex !important;
-    flex-direction: column !important;
-    gap: 10px !important;
-    margin-top: auto !important;
-}
-
-.cart-actions {
-    display: flex !important;
+    flex-direction: row !important;
     gap: 8px !important;
     align-items: center !important;
+    margin-top: auto !important;
+    margin-bottom: 0 !important;
+    padding-top: 8px !important;
 }
 
 .btn-cart-icon {
-    background: #FFD736 !important;
-    color: #130325 !important;
-    border: 2px solid #FFD736 !important;
+    background: var(--accent-yellow) !important;
+    color: var(--primary-dark) !important;
+    border: 1px solid var(--accent-yellow) !important;
     border-radius: 6px !important;
-    padding: 6px !important;
+    padding: 4px !important;
     cursor: pointer !important;
-    font-size: 12px !important;
-    width: 32px !important;
-    height: 32px !important;
+    font-size: 10px !important;
+    width: 24px !important;
+    height: 24px !important;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
-    transition: all 0.3s ease !important;
+    transition: all 0.2s ease !important;
     flex-shrink: 0 !important;
 }
 
 .btn-cart-icon:hover {
-    background: #ffde62 !important;
-    border-color: #FFD736 !important;
-    color: #130325 !important;
-    transform: translateY(-2px) !important;
-}
-
-.btn-buy-now {
-    background: #130325 !important;
-    color: white !important;
-    border: 2px solid #FFD736 !important;
-    padding: 6px 12px !important;
-    cursor: pointer !important;
-    font-size: 0.8rem !important;
-    font-weight: 700 !important;
-    text-transform: uppercase !important;
-    letter-spacing: 0.5px !important;
-    transition: all 0.3s ease !important;
-    text-decoration: none !important;
-    display: inline-flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    gap: 8px !important;
-    flex: 1 !important;
-    height: 32px !important;
-    border-radius: 6px !important;
-}
-
-.btn-buy-now:hover {
-    background: #FFD736 !important;
-    color: #130325 !important;
-    transform: translateY(-2px) !important;
+    background: #ffd020 !important;
+    border-color: #ffd020 !important;
+    color: var(--primary-dark) !important;
+    transform: translateY(-1px) !important;
 }
 
 /* Buttons - EXACT MATCH */
 .btn {
-    padding: 12px 20px !important;
+    padding: 4px 10px !important;
     border: none !important;
-    border-radius: 8px !important;
+    border-radius: 4px !important;
     cursor: pointer !important;
-    font-size: 0.95rem !important;
+    font-size: 0.75rem !important;
     font-weight: 700 !important;
     text-transform: uppercase !important;
     letter-spacing: 0.5px !important;
@@ -336,19 +322,34 @@ main {
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
-    gap: 8px !important;
+    gap: 4px !important;
 }
 
 .btn-details {
     background: #130325 !important;
     color: #ffffff !important;
     border: 2px solid #130325 !important;
+    padding: 4px 10px !important;
+    font-size: 0.75rem !important;
+    flex: 1 !important;
+    justify-content: center !important;
+    border-radius: 4px !important;
+    margin: 0 !important;
+    line-height: 1.2 !important;
+    min-height: auto !important;
+    height: 24px !important;
+    text-align: center !important;
+}
+
+.btn-details i {
+    font-size: 0.6rem !important;
+    margin-right: 2px !important;
 }
 
 .btn-details:hover {
-    background: #FFD736 !important;
-    color: #130325 !important;
-    transform: translateY(-2px) !important;
+    background: #0a0118 !important;
+    color: var(--bg-white) !important;
+    transform: translateY(-1px) !important;
     text-decoration: none !important;
 }
 
@@ -357,30 +358,32 @@ main {
     display: flex;
     gap: 6px;
     justify-content: center;
-    margin-top: 30px;
+    margin-top: 24px;
+    flex-wrap: wrap;
 }
 
 .pagination a {
-    padding: 8px 14px;
-    border: 2px solid #130325;
+    padding: 6px 12px;
+    border: 1px solid var(--border-light);
     border-radius: 6px;
-    color: #130325;
+    color: var(--text-dark);
     text-decoration: none;
-    font-size: 0.9rem;
-    font-weight: 600;
-    transition: all 0.3s ease;
+    font-size: 12px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    background: var(--bg-white);
 }
 
 .pagination a:hover {
-    background: #FFD736;
-    border-color: #FFD736;
-    color: #130325;
+    background: var(--primary-dark);
+    border-color: var(--primary-dark);
+    color: var(--bg-white);
 }
 
 .pagination a.active {
-    background: #130325;
-    color: #fff;
-    border-color: #130325;
+    background: var(--primary-dark);
+    color: var(--bg-white);
+    border-color: var(--primary-dark);
 }
 
 /* Responsive */
@@ -392,6 +395,10 @@ main {
     .product-card {
         flex: 0 0 45% !important;
         min-width: 150px !important;
+    }
+    
+    .seller-container {
+        padding: 10px 12px;
     }
 }
 
@@ -464,23 +471,16 @@ main {
               </div>
               <div class="stock"><?php echo (int)($p['stock_quantity'] ?? 0); ?> in stock</div>
               <div class="product-actions">
+                <button onclick="addToCart(<?php echo (int)$p['id']; ?>, 1)" 
+                        class="btn-cart-icon" 
+                        data-product-id="<?php echo (int)$p['id']; ?>"
+                        title="Add to Cart">
+                    <i class="fas fa-shopping-cart"></i>
+                </button>
                 <a href="product-detail.php?id=<?php echo (int)$p['id']; ?>" 
                    class="btn btn-details">
-                    <i class="fas fa-eye"></i> View Details
+                    View Details
                 </a>
-                <div class="cart-actions">
-                  <button onclick="addToCart(<?php echo (int)$p['id']; ?>, 1)" 
-                          class="btn-cart-icon" 
-                          data-product-id="<?php echo (int)$p['id']; ?>"
-                          title="Add to Cart">
-                      <i class="fas fa-shopping-cart"></i>
-                  </button>
-                  <button onclick="handleBuyNow(<?php echo (int)$p['id']; ?>, 1)" 
-                          class="btn btn-buy-now" 
-                          data-product-id="<?php echo (int)$p['id']; ?>">
-                      Buy Now
-                  </button>
-                </div>
               </div>
             </div>
           <?php endforeach; ?>
@@ -499,38 +499,5 @@ main {
   </div>
 </main>
 
-<script>
-function handleBuyNow(productId, quantity = 1) {
-    <?php if (!isLoggedIn()): ?>
-        window.location.href = 'login.php';
-        return;
-    <?php endif; ?>
-    
-    // Send buy now request to backend (which will add to cart automatically)
-    fetch('ajax/buy-now-handler.php', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            product_id: productId,
-            quantity: quantity
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            // Redirect directly to checkout with buy_now flag
-            window.location.href = 'paymongo/multi-seller-checkout.php?buy_now=1';
-        } else {
-            alert(data.message || 'Error processing buy now request');
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert('Error processing buy now request');
-    });
-}
-</script>
 
 <?php require_once 'includes/footer.php'; ?>

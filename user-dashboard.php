@@ -541,18 +541,27 @@ if (!$user) {
 ?>
 
 <style>
-/* Modern Dashboard Styles - Matching Products.php Design */
+:root {
+    --primary-dark: #130325;
+    --accent-yellow: #FFD736;
+    --text-dark: #1a1a1a;
+    --text-light: #6b7280;
+    --border-light: #e5e7eb;
+    --bg-light: #f9fafb;
+    --bg-white: #ffffff;
+    --success-green: #10b981;
+    --error-red: #ef4444;
+}
 
-/* Body background - Lighter white like products.php */
 body {
-    background: #f8f9fa !important;
+    background: var(--bg-light) !important;
     min-height: 100vh;
-    color: #130325;
+    color: var(--text-dark);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     margin: 0;
     padding: 0;
 }
 
-/* Override text-align for header and navigation */
 .site-header,
 .site-header *,
 .navbar,
@@ -562,150 +571,172 @@ body {
     text-align: left !important;
 }
 
-/* Dashboard Layout - Matching delivered products width */
 .dashboard-layout {
-    display: grid;
-    grid-template-columns: 1fr;
-    align-items: start;
-    gap: 30px;
     max-width: 1600px;
     margin: 0 auto;
-    padding: 0 20px;
-    margin-top: 5px;
+    padding: 12px 20px;
 }
 
-/* Main dashboard content */
 .dashboard-main {
-    min-width: 0;
-    grid-column: 1;
-    grid-row: 1;
+    width: 100%;
 }
 
-/* Page title styling */
-.page-title {
-    color: #130325 !important;
-    text-align: left;
-    margin: 0 0 30px 60px;
-    font-size: 1.8rem;
+h1 {
+    color: var(--text-dark);
+    margin: 0 0 12px 0;
+    font-size: 1.5rem;
     font-weight: 700;
-    text-shadow: none;
+    letter-spacing: -0.5px;
 }
 
-/* Filter container */
+.page-title,
+h1.page-title {
+    color: var(--text-dark);
+    margin: 0;
+    font-size: 1.35rem;
+    font-weight: 600;
+    letter-spacing: -0.3px;
+    line-height: 1.2;
+}
+
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border-light);
+}
+
 .filter-container {
-    background: #ffffff;
-    border: 1px solid rgba(0, 0, 0, 0.1);
-    border-radius: 8px;
-    padding: 20px;
-    margin: 0 60px 30px 60px;
-    box-shadow: none;
+    background: var(--bg-white);
+    border: 1px solid var(--border-light);
+    border-radius: 12px;
+    padding: 10px 12px;
+    margin-bottom: 14px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
-/* Filter tabs styling */
 .filter-tabs {
     display: flex;
     justify-content: center;
-    gap: 10px;
+    gap: 6px;
     flex-wrap: wrap;
 }
 
 .filter-tab {
-    background: #f8f9fa !important;
-    border: 1px solid rgba(0, 0, 0, 0.1) !important;
-    color: #130325 !important;
-    padding: 10px 20px;
-    border-radius: 4px;
+    background: var(--bg-light);
+    border: 1px solid var(--border-light);
+    color: var(--text-dark);
+    padding: 6px 14px;
+    border-radius: 8px;
     text-decoration: none;
     font-weight: 600;
-    font-size: 14px;
-    transition: all 0.3s ease;
+    font-size: 12px;
+    transition: all 0.2s ease;
     cursor: pointer;
+    white-space: nowrap;
 }
 
 .filter-tab:hover {
-    background: #130325 !important;
-    color: #ffffff !important;
-    border-color: #130325 !important;
+    background: var(--primary-dark);
+    color: #ffffff;
+    border-color: var(--primary-dark);
+    transform: translateY(-1px);
 }
 
 .filter-tab.active {
-    background: #130325 !important;
-    color: #ffffff !important;
-    border-color: #130325 !important;
+    background: var(--primary-dark);
+    color: #ffffff;
+    border-color: var(--primary-dark);
 }
 
-/* Order cards styling - compact cards */
 .order-card {
-    background: #ffffff !important;
-    border: 1px solid rgba(0, 0, 0, 0.1) !important;
-    border-radius: 6px !important;
-    padding: 15px !important;
-    margin: 0 60px 10px 60px !important;
-    transition: all 0.3s ease !important;
-    box-shadow: none;
-    min-height: 80px;
-    max-width: 100%;
+    background: var(--bg-white);
+    border: 1px solid var(--border-light);
+    border-radius: 12px;
+    padding: 12px 16px;
+    margin-bottom: 12px;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 .order-card:hover {
-    border-color: rgba(0, 0, 0, 0.2) !important;
-    box-shadow: none !important;
+    border-color: var(--border-light);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transform: translateY(-1px);
 }
 
-/* Order header - compact layout */
 .order-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 10px;
-    padding-bottom: 8px;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-}
-
-.order-number {
-    color: #130325 !important;
-    font-size: 1.1rem;
-    font-weight: 700;
-}
-
-.order-date {
-    color: #666 !important;
-    font-size: 0.8rem;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border-light);
+    flex-wrap: wrap;
+    gap: 8px;
 }
 
 .order-left {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 4px;
+    flex: 1;
+    min-width: 0;
+}
+
+.order-number {
+    color: var(--text-dark);
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+}
+
+.order-date {
+    color: var(--text-light);
+    font-size: 11px;
 }
 
 .seller-info {
-    color: #666 !important;
-    font-size: 0.8rem;
+    color: var(--text-light);
+    font-size: 11px;
     font-weight: 500;
 }
 
-/* Order status */
-.order-status {
-    display: inline-block;
-    padding: 6px 12px;
-    border-radius: 4px;
-    font-size: 0.85rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
+.order-status-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
 }
 
-.status-pending { background: rgba(255,193,7,0.2); color: #ff8c00; border: 1px solid #ff8c00; }
-.status-processing { background: rgba(0,123,255,0.2); color: #007bff; border: 1px solid #007bff; }
-.status-shipped { background: #d4edda; color: #155724; border: 1px solid #155724; }
-.status-delivered { background: #d1ecf1; color: #0c5460; border: 1px solid #0c5460; }
-.status-completed { background: rgba(40,167,69,0.2); color: #28a745; border: 1px solid #28a745; }
-.status-cancelled { background: #f8d7da; color: #721c24; border: 1px solid #721c24; }
+.order-status {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 0.7rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+    border: 1px solid transparent;
+}
 
-/* Order items - compact */
+.status-pending { background: rgba(255,193,7,0.2); color: #ff8c00; border-color: #ff8c00; }
+.status-processing { background: rgba(0,123,255,0.2); color: #007bff; border-color: #007bff; }
+.status-shipped { background: rgba(23,162,184,0.2); color: #17a2b8; border-color: #17a2b8; }
+.status-delivered { background: rgba(40,167,69,0.2); color: #28a745; border-color: #28a745; }
+.status-completed { background: rgba(40,167,69,0.2); color: #28a745; border-color: #28a745; }
+.status-cancelled { background: rgba(220,53,69,0.2); color: #dc3545; border-color: #dc3545; }
+
 .order-items {
-    margin: 8px 0;
+    margin: 10px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
 }
 
 .order-item {
@@ -713,243 +744,335 @@ body {
     align-items: center;
     gap: 10px;
     padding: 8px;
-    background: #ffffff;
-    border-radius: 4px;
-    margin-bottom: 6px;
-    border: 1px solid rgba(0, 0, 0, 0.1);
+    background: var(--bg-light);
+    border-radius: 8px;
+    border: 1px solid var(--border-light);
 }
 
 .order-item img {
     width: 40px;
     height: 40px;
     object-fit: cover;
-    border-radius: 4px;
-    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 6px;
+    border: 1px solid var(--border-light);
+    flex-shrink: 0;
 }
 
 .order-item-info {
     flex: 1;
+    min-width: 0;
 }
 
 .order-item-name {
-    color: #130325 !important;
+    color: var(--text-dark);
     font-weight: 600;
-    font-size: 0.9rem;
-    margin-bottom: 2px;
+    font-size: 13px;
+    margin-bottom: 3px;
+    line-height: 1.4;
 }
 
 .order-item-details {
-    color: #666 !important;
-    font-size: 0.8rem;
+    color: var(--text-light);
+    font-size: 11px;
+    line-height: 1.4;
 }
 
-/* Order bottom section */
 .order-bottom {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-top: 10px;
-    padding-top: 8px;
-    border-top: 1px solid rgba(0, 0, 0, 0.1);
+    padding-top: 10px;
+    border-top: 1px solid var(--border-light);
+    flex-wrap: wrap;
+    gap: 10px;
 }
 
-/* Order total */
 .order-total {
     text-align: left;
 }
 
 .order-total-amount {
-    color: #130325 !important;
-    font-size: 1.1rem;
+    color: var(--text-dark);
+    font-size: 15px;
     font-weight: 700;
+    letter-spacing: -0.3px;
 }
 
-/* Order actions */
 .order-actions {
     display: flex;
-    gap: 8px;
+    gap: 6px;
     flex-wrap: wrap;
 }
 
 .btn {
-    padding: 4px 10px;
+    padding: 8px 14px;
     border: none;
-    border-radius: 4px;
-    font-weight: 600;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 12px;
     text-decoration: none;
+    text-align: center;
+    transition: all 0.2s ease;
+    font-weight: 600;
     display: inline-flex;
     align-items: center;
-    gap: 4px;
-    transition: all 0.3s ease;
-    cursor: pointer;
-    font-size: 0.75rem;
+    justify-content: center;
+    gap: 5px;
+    font-family: inherit;
+    white-space: nowrap;
 }
 
 .btn-primary {
-    background: #130325;
-    color: #ffffff;
+    background-color: var(--primary-dark);
+    color: white;
 }
 
 .btn-primary:hover {
-    background: #0f0220;
-    box-shadow: 0 4px 12px rgba(19, 3, 37, 0.3);
+    background-color: #0a0118;
+    transform: translateY(-1px);
 }
 
 .btn-danger {
-    background: #dc3545;
+    background-color: var(--error-red);
     color: white;
 }
 
 .btn-danger:hover {
-    background: #c82333;
-    box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
+    background-color: #dc2626;
+    transform: translateY(-1px);
 }
 
 .btn-secondary {
-    background: #FFD736;
-    color: #130325;
+    background-color: var(--accent-yellow);
+    color: var(--text-dark);
 }
 
 .btn-secondary:hover {
-    background: #e6c230;
-    box-shadow: 0 4px 12px rgba(255, 215, 54, 0.3);
+    background-color: #ffd020;
+    transform: translateY(-1px);
 }
 
 .btn-warning {
-    background: #FFD736;
-    color: #130325;
+    background-color: var(--accent-yellow);
+    color: var(--text-dark);
 }
 
 .btn-warning:hover {
-    background: #e6c230;
-    box-shadow: 0 4px 12px rgba(255, 215, 54, 0.3);
+    background-color: #ffd020;
+    transform: translateY(-1px);
 }
 
-/* No orders message */
 .no-orders {
+    background: var(--bg-white);
+    border: 1px solid var(--border-light);
+    border-radius: 12px;
     text-align: center;
-    padding: 60px 20px;
-    color: #666;
+    padding: 40px 20px;
+    color: var(--text-light);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .no-orders p {
-    font-size: 1.1rem;
-    margin-bottom: 20px;
+    font-size: 14px;
+    margin-bottom: 16px;
+    color: var(--text-dark);
 }
 
-/* Alert Styles */
+.user-orders {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
 .alert {
-    padding: 15px 20px;
-    margin: 20px auto;
-    max-width: 1200px;
-    border-radius: 12px;
-    font-size: 1rem;
-    border: none;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin-bottom: 16px;
+    border-left: 4px solid;
+    font-size: 14px;
 }
 
 .alert-success {
-    background: linear-gradient(135deg, #d4edda, #c3e6cb);
-    color: #155724;
-    border-left: 5px solid #28a745;
+    background-color: #d1fae5;
+    border-left-color: var(--success-green);
+    border: 1px solid #a7f3d0;
+    color: #065f46;
 }
 
 .alert-error {
-    background: linear-gradient(135deg, #f8d7da, #f1b0b7);
-    color: #721c24;
-    border-left: 5px solid #dc3545;
+    background-color: #fef2f2;
+    border-left-color: var(--error-red);
+    border: 1px solid #fecaca;
+    color: #991b1b;
 }
 
 .alert-warning {
-    background: linear-gradient(135deg, #fff3cd, #ffeaa7);
-    color: #856404;
-    border-left: 5px solid #ffc107;
+    background-color: #fef3c7;
+    border-left-color: #f59e0b;
+    border: 1px solid #fde68a;
+    color: #92400e;
 }
 
 /* Responsive design */
-@media (max-width: 768px) {
+@media (max-width: 968px) {
     .dashboard-layout {
-        padding: 0 15px;
-        margin-top: 60px;
+        padding: 10px 12px;
+        max-width: 100%;
+    }
+    
+    h1,
+    .page-title,
+    h1.page-title {
+        font-size: 1.2rem;
+        margin-bottom: 12px;
+    }
+    
+    .page-header {
+        flex-direction: column;
+        align-items: flex-start;
+        padding-bottom: 10px;
+        margin-bottom: 14px;
+    }
+    
+    .filter-container {
+        padding: 8px 10px;
+        margin-bottom: 12px;
+    }
+    
+    .filter-tabs {
+        gap: 4px;
+        justify-content: center;
+    }
+    
+    .filter-tab {
+        padding: 5px 10px;
+        font-size: 11px;
+    }
+    
+    .order-card {
+        padding: 10px 12px;
+        margin-bottom: 10px;
     }
     
     .order-header {
         flex-direction: column;
         align-items: flex-start;
-        gap: 10px;
+        gap: 6px;
+        margin-bottom: 8px;
+        padding-bottom: 8px;
+    }
+    
+    .order-number {
+        font-size: 13px;
+    }
+    
+    .order-status {
+        font-size: 0.65rem;
+        padding: 3px 8px;
+    }
+    
+    .order-item {
+        padding: 6px;
+        gap: 8px;
+    }
+    
+    .order-item img {
+        width: 36px;
+        height: 36px;
+    }
+    
+    .order-item-name {
+        font-size: 12px;
+    }
+    
+    .order-item-details {
+        font-size: 10px;
+    }
+    
+    .order-bottom {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+        margin-top: 8px;
+        padding-top: 8px;
     }
     
     .order-actions {
+        width: 100%;
         flex-direction: column;
+        gap: 6px;
     }
     
     .btn {
+        width: 100%;
         justify-content: center;
+        padding: 8px 12px;
+        font-size: 11px;
     }
 }
 
-/* Reviews Section - Wider and Modern Design */
 .delivered-reviews-wrap { 
     max-width: 1600px; 
-    margin: 40px auto 20px auto; 
+    margin: 16px auto; 
     padding: 0 20px;
 }
 
 .delivered-card { 
-    background: #ffffff !important;
-    border: 1px solid rgba(0, 0, 0, 0.1) !important;
-    border-radius: 8px !important;
+    background: var(--bg-white);
+    border: 1px solid var(--border-light);
+    border-radius: 12px;
     overflow: hidden; 
-    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
-    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    transition: all 0.2s ease;
 }
 
 .delivered-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 15px 35px rgba(255, 215, 54, 0.2);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .delivered-card .header { 
     display: flex; 
     align-items: center; 
     justify-content: space-between; 
-    padding: 20px 25px; 
-    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-    background: rgba(248, 249, 250, 0.8);
+    padding: 12px 16px; 
+    border-bottom: 1px solid var(--border-light);
+    background: var(--bg-light);
+    flex-wrap: wrap;
+    gap: 8px;
 }
 
 .delivered-card .title { 
-    color: #130325 !important; 
-    font-size: 20px; 
+    color: var(--text-dark); 
+    font-size: 16px; 
     font-weight: 700; 
-    letter-spacing: 0.3px; 
+    letter-spacing: -0.3px; 
     margin: 0;
 }
 
 .delivered-card .subtitle { 
-    color: #666 !important; 
-    font-size: 14px; 
-    opacity: 0.9; 
-    margin: 5px 0 0 0;
+    color: var(--text-light); 
+    font-size: 13px; 
+    margin: 4px 0 0 0;
 }
 
 .delivered-list { 
-    max-height: 500px; 
+    max-height: 400px; 
     overflow-y: auto; 
-    padding: 10px 0;
+    padding: 8px 0;
 }
 
 .delivered-item { 
     display: flex; 
-    gap: 20px; 
+    gap: 14px; 
     align-items: flex-start; 
-    padding: 18px 25px; 
-    border-bottom: 1px solid rgba(255, 215, 54, 0.1);
-    transition: all 0.3s ease;
+    padding: 14px 20px; 
+    border-bottom: 1px solid var(--border-light);
+    transition: all 0.2s ease;
 }
 
 .delivered-item:hover {
-    background: rgba(255, 255, 255, 0.05);
+    background: var(--bg-light);
 }
 
 .delivered-item:last-child { 
@@ -957,19 +1080,18 @@ body {
 }
 
 .delivered-thumb { 
-    width: 80px; 
-    height: 80px; 
-    border-radius: 12px; 
-    border: 2px solid #130325; 
+    width: 60px; 
+    height: 60px; 
+    border-radius: 8px; 
+    border: 1px solid var(--border-light); 
     object-fit: cover; 
-    background: #f8f9fa; 
+    background: var(--bg-light); 
     flex-shrink: 0;
-    transition: all 0.3s ease;
+    transition: all 0.2s ease;
 }
 
 .delivered-thumb:hover {
-    transform: scale(1.05);
-    border-color: #FFD736;
+    border-color: var(--border-light);
 }
 
 .delivered-body { 
@@ -978,111 +1100,119 @@ body {
 }
 
 .delivered-name { 
-    color: #130325 !important; 
-    font-weight: 700; 
-    margin: 0 0 8px 0; 
-    font-size: 16px;
-    line-height: 1.3;
+    color: var(--text-dark); 
+    font-weight: 600; 
+    margin: 0 0 6px 0; 
+    font-size: 14px;
+    line-height: 1.4;
 }
 
 .delivered-meta { 
     display: flex; 
-    gap: 16px; 
+    gap: 12px; 
     flex-wrap: wrap; 
-    color: #666 !important; 
-    font-size: 13px; 
+    color: var(--text-light); 
+    font-size: 12px; 
     margin-bottom: 8px; 
 }
 
 .delivered-meta .price { 
-    color: #FFD736 !important; 
-    font-weight: 700; 
+    color: var(--text-dark); 
+    font-weight: 600; 
 }
 
 .delivered-meta .date { 
-    color: #999 !important; 
+    color: var(--text-light); 
 }
 
 .review-cta { 
     display: flex; 
     align-items: center; 
-    gap: 12px; 
-    margin-top: 8px;
+    gap: 10px; 
+    margin-top: 6px;
 }
 
 .btn-review { 
-    background: #FFD736 !important;
-    color: #130325 !important; 
-    border: 2px solid #FFD736 !important; 
-    padding: 12px 20px; 
-    border-radius: 10px; 
-    font-weight: 700; 
-    font-size: 14px; 
+    background: var(--accent-yellow);
+    color: var(--text-dark); 
+    border: none; 
+    padding: 8px 16px; 
+    border-radius: 8px; 
+    font-weight: 600; 
+    font-size: 13px; 
     text-decoration: none; 
     display: inline-flex; 
     align-items: center; 
-    gap: 8px; 
-    transition: all 0.3s ease;
+    gap: 6px; 
+    transition: all 0.2s ease;
     cursor: pointer;
 }
 
 .btn-review:hover { 
-    background: #e6c230 !important;
-    border-color: #e6c230 !important; 
-    transform: translateY(-2px); 
-    box-shadow: 0 8px 20px rgba(255, 215, 54, 0.4); 
-    color: #130325 !important; 
+    background: #ffd020;
+    transform: translateY(-1px); 
+    color: var(--text-dark); 
     text-decoration: none; 
 }
 
 .badge-reviewed { 
     display: inline-block; 
-    padding: 8px 14px; 
-    border-radius: 20px; 
-    border: 1px solid #28a745; 
-    color: #28a745; 
-    background: rgba(40, 167, 69, 0.15); 
-    font-weight: 700; 
-    font-size: 13px;
+    padding: 4px 10px; 
+    border-radius: 6px; 
+    border: 1px solid var(--success-green); 
+    color: var(--success-green); 
+    background: rgba(16, 185, 129, 0.1); 
+    font-weight: 600; 
+    font-size: 11px;
 }
 
 .delivered-list::-webkit-scrollbar { 
-    width: 8px; 
+    width: 6px; 
 }
 
 .delivered-list::-webkit-scrollbar-track { 
-    background: rgba(255, 255, 255, 0.1); 
-    border-radius: 4px;
+    background: var(--bg-light); 
+    border-radius: 3px;
 }
 
 .delivered-list::-webkit-scrollbar-thumb { 
-    background: linear-gradient(135deg, #FFD736, #e6c230); 
-    border-radius: 4px; 
+    background: var(--border-light); 
+    border-radius: 3px; 
 }
 
 .delivered-list::-webkit-scrollbar-thumb:hover {
-    background: linear-gradient(135deg, #e6c230, #d4b017);
+    background: var(--text-light);
 }
 
-@media (max-width: 768px) {
+@media (max-width: 968px) {
     .delivered-reviews-wrap {
-        padding: 0 15px;
+        padding: 0 10px;
     }
     
     .delivered-card .header {
-        padding: 15px 20px;
+        padding: 12px 16px;
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .delivered-card .title {
+        font-size: 16px;
     }
     
     .delivered-item { 
         flex-direction: column; 
         align-items: flex-start; 
-        gap: 15px;
-        padding: 15px 20px;
+        gap: 10px;
+        padding: 12px 16px;
     }
     
     .delivered-thumb {
-        width: 70px;
-        height: 70px;
+        width: 50px;
+        height: 50px;
+    }
+    
+    .delivered-name {
+        font-size: 13px;
     }
     
     .review-cta { 
@@ -1091,8 +1221,8 @@ body {
     }
     
     .btn-review {
-        padding: 10px 16px;
-        font-size: 13px;
+        padding: 8px 14px;
+        font-size: 12px;
     }
 }
 
@@ -1121,19 +1251,17 @@ body {
     background: var(--accent-yellow);
     color: var(--primary-dark);
     text-decoration: none;
-    border-radius: var(--radius-full);
+    border-radius: 8px;
     font-weight: 600;
-    transition: var(--transition-normal);
-    border: 2px solid var(--accent-yellow);
+    transition: all 0.2s ease;
+    border: none;
     position: relative;
     z-index: 1;
 }
 
 .user-info a:hover {
-    background: #e6c230;
-    border-color: #e6c230;
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px var(--shadow-medium);
+    background: #ffd020;
+    transform: translateY(-1px);
 }
 
 /* Orders section */
@@ -1153,18 +1281,12 @@ body {
     font-size: 1.4rem;
     font-weight: 800;
     margin-bottom: 14px;
-    border-bottom: 2px solid #FFD736;
+    border-bottom: 1px solid var(--border-light);
     padding-bottom: 8px;
 }
 
 .user-orders p { color:#d7d1e2; font-size: .98rem; text-align:center; margin-top: 40px; font-style: italic; }
 
-/* Order Card Styles */
-.order-card { background:#ffffff; border-radius:12px; padding:10px; margin-bottom:10px; box-shadow: 0 8px 22px rgba(0,0,0,0.35); border:2px solid #FFD736; transition: all 0.3s ease; }
-
-.order-card:hover { transform: translateY(-2px); box-shadow: 0 10px 26px rgba(0,0,0,0.4); }
-
-.order-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; padding-bottom:8px; border-bottom: 1px solid rgba(255,255,255,0.08); }
 
 /* New Clean Order Layout */
 .order-summary {
@@ -1634,8 +1756,8 @@ body {
 
 .cancel-modal-content {
     background: #ffffff;
-    margin: 12% auto;
-    padding: 20px;
+    margin: 10% auto;
+    padding: 16px 20px;
     border-radius: 12px;
     width: 92%;
     max-width: 420px;
@@ -1679,29 +1801,36 @@ body {
 }
 
 .cancel-modal-content h3 {
-    font-size: 16px;
+    font-size: 15px;
     font-weight: 800;
     margin: 0 0 8px 0;
     color: #130325;
 }
 
 .cancel-modal-content p {
-    margin-bottom: 12px;
+    margin-bottom: 10px;
     color: #4b5563;
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 600;
 }
 
 .cancel-modal-buttons {
     display: flex;
-    gap: 10px;
+    gap: 8px;
     justify-content: flex-end;
-    margin-top: 16px;
+    margin-top: 14px;
 }
 
 /* Make modal buttons compact */
-.cancel-modal-buttons .btn { padding: 8px 12px; font-weight: 700; }
-.cancel-modal-buttons .btn.btn-danger { padding: 8px 12px; }
+.cancel-modal-buttons .btn { 
+    padding: 8px 14px; 
+    font-weight: 600; 
+    font-size: 12px;
+}
+.cancel-modal-buttons .btn.btn-danger { 
+    padding: 8px 14px; 
+    font-size: 12px;
+}
 
 /* Responsive Design */
 @media (max-width: 768px) {
@@ -1953,41 +2082,41 @@ body {
     box-shadow: 0 5px 15px rgba(220, 53, 69, 0.4);
 }
 
-/* Product Selection Popup */
 .product-selection-popup {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.7);
+    background: rgba(0, 0, 0, 0.5);
     display: none;
     align-items: center;
     justify-content: center;
     z-index: 10001;
-    backdrop-filter: blur(5px);
+    backdrop-filter: blur(4px);
 }
 
 .product-selection-content {
-    background: #ffffff;
+    background: var(--bg-white);
+    border: 1px solid var(--border-light);
     border-radius: 12px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
     max-width: 500px;
     width: 90%;
     max-height: 80vh;
     overflow-y: auto;
-    animation: slideIn 0.3s ease;
+    animation: slideIn 0.2s ease;
 }
 
 @keyframes slideIn {
-    from { transform: translateY(-50px); opacity: 0; }
+    from { transform: translateY(-20px); opacity: 0; }
     to { transform: translateY(0); opacity: 1; }
 }
 
 .product-selection-header {
-    background: #130325;
+    background: var(--primary-dark);
     color: #ffffff;
-    padding: 20px;
+    padding: 16px 20px;
     border-radius: 12px 12px 0 0;
     display: flex;
     justify-content: space-between;
@@ -1996,137 +2125,144 @@ body {
 
 .product-selection-header h3 {
     margin: 0;
-    font-size: 1.3rem;
+    font-size: 18px;
     font-weight: 700;
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
+    letter-spacing: -0.3px;
 }
 
 .product-selection-header h3 i {
-    color: #FFD736;
+    color: var(--accent-yellow);
 }
 
 .close-popup {
     background: none;
     border: none;
     color: #ffffff;
-    font-size: 1.5rem;
+    font-size: 20px;
     cursor: pointer;
-    padding: 5px;
-    border-radius: 50%;
-    width: 35px;
-    height: 35px;
+    padding: 4px;
+    border-radius: 6px;
+    width: 32px;
+    height: 32px;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.3s ease;
+    transition: all 0.2s ease;
 }
 
 .close-popup:hover {
-    background: rgba(255, 255, 255, 0.2);
-    transform: scale(1.1);
+    background: rgba(255, 255, 255, 0.15);
 }
 
 .product-selection-body {
-    padding: 25px;
+    padding: 20px;
 }
 
 .product-selection-body p {
-    color: #495057;
-    font-size: 1rem;
-    margin-bottom: 20px;
+    color: var(--text-dark);
+    font-size: 14px;
+    margin-bottom: 16px;
     font-weight: 500;
+    line-height: 1.5;
 }
 
 .product-checkboxes {
     display: flex;
     flex-direction: column;
-    gap: 15px;
+    gap: 10px;
 }
 
 .product-checkbox-item {
     display: flex;
     align-items: center;
-    gap: 15px;
-    padding: 15px;
-    border: 2px solid #e9ecef;
+    gap: 12px;
+    padding: 12px;
+    border: 1px solid var(--border-light);
     border-radius: 8px;
-    transition: all 0.3s ease;
+    transition: all 0.2s ease;
     cursor: pointer;
+    background: var(--bg-white);
 }
 
 .product-checkbox-item:hover {
-    border-color: #130325;
-    background: #f8f9fa;
+    border-color: var(--primary-dark);
+    background: var(--bg-light);
 }
 
 .product-checkbox-item input[type="checkbox"] {
     width: 18px;
     height: 18px;
-    accent-color: #130325;
+    accent-color: var(--primary-dark);
     cursor: pointer;
 }
 
 .product-checkbox-item.selected {
-    border-color: #130325;
+    border-color: var(--primary-dark);
     background: rgba(19, 3, 37, 0.05);
 }
 
 .product-checkbox-info {
     flex: 1;
+    min-width: 0;
 }
 
 .product-checkbox-info h5 {
-    margin: 0 0 5px 0;
-    color: #130325;
-    font-size: 1rem;
+    margin: 0 0 4px 0;
+    color: var(--text-dark);
+    font-size: 14px;
     font-weight: 600;
+    line-height: 1.4;
 }
 
 .product-checkbox-info p {
     margin: 0;
-    color: #6c757d;
-    font-size: 0.9rem;
+    color: var(--text-light);
+    font-size: 12px;
 }
 
 .product-checkbox-image {
-    width: 60px;
-    height: 60px;
+    width: 50px;
+    height: 50px;
     object-fit: cover;
     border-radius: 8px;
-    border: 2px solid #e9ecef;
+    border: 1px solid var(--border-light);
+    flex-shrink: 0;
 }
 
 .product-selection-footer {
-    padding: 20px 25px;
-    border-top: 1px solid #e9ecef;
+    padding: 16px 20px;
+    border-top: 1px solid var(--border-light);
     display: flex;
-    gap: 15px;
+    gap: 10px;
     justify-content: flex-end;
+    background: var(--bg-light);
 }
 
 .product-selection-footer .btn {
-    padding: 10px 20px;
-    border-radius: 6px;
+    padding: 8px 16px;
+    border-radius: 8px;
     font-weight: 600;
     border: none;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.2s ease;
+    font-size: 13px;
 }
 
 .product-selection-footer .btn-secondary {
-    background: #6c757d;
+    background: var(--text-light);
     color: #ffffff;
 }
 
 .product-selection-footer .btn-secondary:hover {
-    background: #5a6268;
+    background: #4b5563;
     transform: translateY(-1px);
 }
 
 .product-selection-footer .btn-primary {
-    background: #130325;
+    background: var(--primary-dark);
     color: #ffffff;
 }
 
@@ -2180,37 +2316,36 @@ body {
     color: #28a745;
     border: 1px solid #28a745;
 }
-/* Custom confirmation dialog styling */
 .confirm-dialog {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.7);
+    background: rgba(0, 0, 0, 0.5);
     display: flex;
     align-items: center;
     justify-content: center;
     z-index: 10000;
-    backdrop-filter: blur(5px);
+    backdrop-filter: blur(4px);
 }
 
 .confirm-content {
-    background: linear-gradient(135deg, #130325 0%, #2a0a4a 100%);
-    border: 2px solid #FFD736;
-    border-radius: 15px;
-    padding: 30px;
+    background: var(--bg-white);
+    border: 1px solid var(--border-light);
+    border-radius: 12px;
+    padding: 24px;
     max-width: 400px;
     width: 90%;
     text-align: center;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-    animation: confirmSlideIn 0.3s ease;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    animation: confirmSlideIn 0.2s ease;
 }
 
 @keyframes confirmSlideIn {
     from {
         opacity: 0;
-        transform: translateY(-30px) scale(0.9);
+        transform: translateY(-20px) scale(0.95);
     }
     to {
         opacity: 1;
@@ -2219,137 +2354,139 @@ body {
 }
 
 .confirm-title {
-    color: #FFD736;
-    font-size: 1.3rem;
+    color: var(--text-dark);
+    font-size: 18px;
     font-weight: 700;
-    margin-bottom: 15px;
-    text-transform: uppercase;
-    letter-spacing: 1px;
+    margin-bottom: 12px;
+    letter-spacing: -0.3px;
 }
 
 .confirm-message {
-    color: #F9F9F9;
-    font-size: 1rem;
-    margin-bottom: 25px;
+    color: var(--text-light);
+    font-size: 14px;
+    margin-bottom: 20px;
     line-height: 1.5;
 }
 
 .confirm-buttons {
     display: flex;
-    gap: 15px;
+    gap: 10px;
     justify-content: center;
 }
 
 .confirm-btn {
-    padding: 12px 25px;
+    padding: 10px 20px;
     border: none;
     border-radius: 8px;
-    font-size: 0.9rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
+    font-size: 13px;
+    font-weight: 600;
     cursor: pointer;
-    transition: all 0.3s ease;
-    min-width: 100px;
+    transition: all 0.2s ease;
+    min-width: 90px;
 }
 
 .confirm-btn-yes {
-    background: #dc3545;
+    background: var(--error-red);
     color: white;
-    border: 2px solid #dc3545;
+    border: 1px solid var(--error-red);
 }
 
 .confirm-btn-yes:hover {
-    background: #c82333;
-    border-color: #c82333;
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(220, 53, 69, 0.4);
+    background: #dc2626;
+    border-color: #dc2626;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.2);
 }
 
 .confirm-btn-no {
-    background: #6c757d;
+    background: var(--text-light);
     color: white;
-    border: 2px solid #6c757d;
+    border: 1px solid var(--text-light);
 }
 
 
-/* Return Details Styling */
 .return-details-section {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 215, 54, 0.2);
-    border-radius: 8px;
-    padding: 15px;
-    margin: 10px 0;
+    background: var(--bg-light);
+    border: 1px solid var(--border-light);
+    border-radius: 10px;
+    padding: 14px;
+    margin: 12px 0;
 }
 
 .return-details-header {
     display: flex;
     align-items: center;
     gap: 8px;
-    margin-bottom: 10px;
-    padding-bottom: 8px;
-    border-bottom: 1px solid rgba(255, 215, 54, 0.2);
+    margin-bottom: 12px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border-light);
 }
 
 .return-details-header i {
-    color: #FFD736;
+    color: var(--accent-yellow);
+    font-size: 16px;
 }
 
 .return-details-header h4 {
     margin: 0;
-    color: #130325;
-    font-size: 1rem;
-    font-weight: 600;
+    color: var(--text-dark);
+    font-size: 14px;
+    font-weight: 700;
 }
 
 .return-info-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 12px;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 10px;
     margin-bottom: 10px;
 }
 
 .return-info-item {
-    background: rgba(255, 255, 255, 0.5);
+    background: var(--bg-white);
     padding: 10px;
-    border-radius: 6px;
+    border-radius: 8px;
+    border: 1px solid var(--border-light);
 }
 
 .return-info-label {
-    font-size: 0.75rem;
-    color: #666;
+    font-size: 11px;
+    color: var(--text-light);
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.3px;
     margin-bottom: 4px;
+    font-weight: 600;
 }
 
 .return-info-value {
-    font-size: 0.9rem;
-    color: #130325;
+    font-size: 13px;
+    color: var(--text-dark);
     font-weight: 600;
 }
 
 .return-action-notice {
-    padding: 12px;
-    border-radius: 6px;
+    padding: 10px 12px;
+    border-radius: 8px;
     margin-top: 10px;
-    font-size: 0.9rem;
+    font-size: 13px;
+    border-left: 4px solid;
 }
 
 .return-action-notice.approved {
-    background: rgba(40, 167, 69, 0.15);
-    border: 1px solid #28a745;
-    color: #155724;
+    background: #d1fae5;
+    border-left-color: var(--success-green);
+    border: 1px solid #a7f3d0;
+    color: #065f46;
 }
 
 .return-action-notice.rejected {
-    background: rgba(220, 53, 69, 0.15);
-    border: 1px solid #dc3545;
-    color: #721c24;
+    background: #fef2f2;
+    border-left-color: var(--error-red);
+    border: 1px solid #fecaca;
+    color: #991b1b;
 }
 
 .return-action-notice i {
-    margin-right: 8px;
+    margin-right: 6px;
 }
 .confirm-btn-no:hover {
     background: #5a6268;
@@ -2828,50 +2965,115 @@ function confirmProductSelection() {
     
     window.location.href = redirectUrl;
 }
-// Order Received Confirmation Modal and Function
-function confirmOrderReceived(orderId) {
-    // Create confirmation modal (matching logout modal design)
+// Order Received Confirmation with Rating Modal
+function confirmOrderReceived(orderId, productId) {
+    // Create rating modal first
     const modal = document.createElement('div');
     modal.id = 'orderReceivedModal';
     modal.style.cssText = 'display: flex; position: fixed; z-index: 10000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center;';
     
     const modalContent = document.createElement('div');
-    modalContent.style.cssText = 'background: #ffffff; border-radius: 12px; padding: 0; max-width: 400px; width: 90%; box-shadow: 0 10px 40px rgba(0,0,0,0.2); animation: slideDown 0.3s ease;';
+    modalContent.style.cssText = 'background: #ffffff; border-radius: 12px; padding: 0; max-width: 450px; width: 90%; box-shadow: 0 10px 40px rgba(0,0,0,0.2); animation: slideDown 0.3s ease;';
     
     const modalHeader = document.createElement('div');
     modalHeader.style.cssText = 'background: #130325; color: #ffffff; padding: 16px 20px; border-radius: 12px 12px 0 0; display: flex; align-items: center; gap: 10px;';
-    modalHeader.innerHTML = '<i class="fas fa-check-circle" style="font-size: 16px; color: #FFD736;"></i><h3 style="margin: 0; font-size: 14px; font-weight: 700;">Confirm Order Received</h3>';
+    modalHeader.innerHTML = '<i class="fas fa-star" style="font-size: 16px; color: #FFD736;"></i><h3 style="margin: 0; font-size: 14px; font-weight: 700;">Rate Your Product</h3>';
     
     const modalBody = document.createElement('div');
     modalBody.style.cssText = 'padding: 20px; color: #130325;';
-    modalBody.innerHTML = '<p style="margin: 0; font-size: 13px; line-height: 1.5; color: #130325;">Have you received your order? This will mark the order as completed.</p>';
+    
+    // Star rating HTML
+    let ratingHTML = '<p style="margin: 0 0 16px; font-size: 13px; line-height: 1.5; color: #130325;">How would you rate your experience with this product?</p>';
+    ratingHTML += '<div style="display: flex; justify-content: center; gap: 8px; margin-bottom: 20px; flex-wrap: wrap;">';
+    for (let i = 5; i >= 1; i--) {
+        ratingHTML += `<input type="radio" id="modalStar${i}" name="modalRating" value="${i}" style="display: none;">
+        <label for="modalStar${i}" class="modal-star-label" data-rating="${i}" style="font-size: 32px; color: #ddd; cursor: pointer; transition: all 0.2s ease; user-select: none;">★</label>`;
+    }
+    ratingHTML += '</div>';
+    ratingHTML += '<div id="ratingText" style="text-align: center; font-size: 12px; color: #6b7280; min-height: 20px; margin-bottom: 10px;"></div>';
+    
+    modalBody.innerHTML = ratingHTML;
     
     const modalFooter = document.createElement('div');
     modalFooter.style.cssText = 'padding: 16px 24px; border-top: 1px solid #e5e7eb; display: flex; gap: 10px; justify-content: flex-end;';
     
     const cancelBtn = document.createElement('button');
-    cancelBtn.textContent = 'Cancel';
+    cancelBtn.textContent = 'Skip';
     cancelBtn.style.cssText = 'padding: 8px 20px; background: #f3f4f6; color: #130325; border: 1px solid #e5e7eb; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px; transition: all 0.2s ease;';
     cancelBtn.onmouseover = function() { this.style.background = '#e5e7eb'; };
     cancelBtn.onmouseout = function() { this.style.background = '#f3f4f6'; };
     
     const confirmBtn = document.createElement('button');
-    confirmBtn.textContent = 'Confirm';
-    confirmBtn.style.cssText = 'padding: 8px 20px; background: #130325; color: #ffffff; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px; transition: all 0.2s ease;';
-    confirmBtn.onmouseover = function() { this.style.background = '#0a0218'; };
-    confirmBtn.onmouseout = function() { this.style.background = '#130325'; };
+    confirmBtn.textContent = 'Confirm Review';
+    confirmBtn.id = 'confirmReviewBtn';
+    confirmBtn.style.cssText = 'padding: 8px 20px; background: #130325; color: #ffffff; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px; transition: all 0.2s ease; opacity: 0.6; cursor: not-allowed;';
+    confirmBtn.disabled = true;
+    
+    let selectedRating = 0;
+    
+    // Star rating interaction
+    const starLabels = modalBody.querySelectorAll('.modal-star-label');
+    const ratingText = modalBody.querySelector('#ratingText');
+    const ratingMessages = {
+        1: 'Poor',
+        2: 'Fair',
+        3: 'Good',
+        4: 'Very Good',
+        5: 'Excellent'
+    };
+    
+    starLabels.forEach(label => {
+        label.addEventListener('mouseenter', function() {
+            const rating = parseInt(this.getAttribute('data-rating'));
+            highlightStars(rating);
+        });
+        
+        label.addEventListener('click', function() {
+            selectedRating = parseInt(this.getAttribute('data-rating'));
+            highlightStars(selectedRating);
+            ratingText.textContent = ratingMessages[selectedRating];
+            confirmBtn.disabled = false;
+            confirmBtn.style.opacity = '1';
+            confirmBtn.style.cursor = 'pointer';
+        });
+    });
+    
+    modalBody.addEventListener('mouseleave', function() {
+        if (selectedRating > 0) {
+            highlightStars(selectedRating);
+        } else {
+            highlightStars(0);
+        }
+    });
+    
+    function highlightStars(rating) {
+        starLabels.forEach((label, index) => {
+            const starRating = parseInt(label.getAttribute('data-rating'));
+            if (starRating <= rating) {
+                label.style.color = '#FFD736';
+            } else {
+                label.style.color = '#ddd';
+            }
+        });
+    }
     
     cancelBtn.onclick = function() {
+        // Skip rating, just confirm order received
+        confirmOrderReceivedDirect(orderId);
         document.body.removeChild(modal);
         document.body.style.overflow = '';
     };
     
     confirmBtn.onclick = function() {
-        // Disable button
+        if (selectedRating === 0) {
+            alert('Please select a rating before confirming.');
+            return;
+        }
+        
         confirmBtn.disabled = true;
         confirmBtn.textContent = 'Processing...';
         
-        // Make AJAX call
+        // First confirm order received
         fetch('ajax/confirm-order-received.php', {
             method: 'POST',
             headers: {
@@ -2884,28 +3086,26 @@ function confirmOrderReceived(orderId) {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                // Show success notification
-                showOrderReceivedSuccess(data.message);
-                
-                // Remove modal
                 document.body.removeChild(modal);
                 document.body.style.overflow = '';
                 
-                // Reload page after short delay to show updated status in COMPLETED section
-                setTimeout(() => {
+                // Redirect to rate product page
+                if (productId) {
+                    window.location.href = 'rate-order.php?id=' + orderId;
+                } else {
                     window.location.href = 'user-dashboard.php?status=completed';
-                }, 1500);
+                }
             } else {
                 alert('Error: ' + (data.message || 'Failed to confirm order'));
                 confirmBtn.disabled = false;
-                confirmBtn.textContent = 'Confirm';
+                confirmBtn.textContent = 'Confirm Review';
             }
         })
         .catch(error => {
             console.error('Error:', error);
             alert('Error confirming order. Please try again.');
             confirmBtn.disabled = false;
-            confirmBtn.textContent = 'Confirm';
+            confirmBtn.textContent = 'Confirm Review';
         });
     };
     
@@ -2932,9 +3132,45 @@ function confirmOrderReceived(orderId) {
     if (!document.getElementById('orderReceivedModalStyles')) {
         const style = document.createElement('style');
         style.id = 'orderReceivedModalStyles';
-        style.textContent = '@keyframes slideDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }';
+        style.textContent = `
+            @keyframes slideDown { 
+                from { opacity: 0; transform: translateY(-20px); } 
+                to { opacity: 1; transform: translateY(0); } 
+            }
+            .modal-star-label:hover {
+                transform: scale(1.2);
+            }
+        `;
         document.head.appendChild(style);
     }
+}
+
+// Direct order received confirmation (without rating)
+function confirmOrderReceivedDirect(orderId) {
+    fetch('ajax/confirm-order-received.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            order_id: orderId
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showOrderReceivedSuccess(data.message);
+            setTimeout(() => {
+                window.location.href = 'user-dashboard.php?status=completed';
+            }, 1500);
+        } else {
+            alert('Error: ' + (data.message || 'Failed to confirm order'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error confirming order. Please try again.');
+    });
 }
 
 // Show success notification
@@ -3022,7 +3258,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
 <div class="dashboard-layout">
     <div class="dashboard-main">
-        <h1 class="page-title">My Orders</h1>
+        <div class="page-header">
+            <h1 class="page-title">My Orders</h1>
+        </div>
         
         <!-- Filter Container -->
         <div class="filter-container">
@@ -3043,7 +3281,7 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>
         </div>
     
-        <div class="user-orders" style="margin: 0 60px; border-radius: 8px; max-height: 600px; overflow-y: auto;">
+        <div class="user-orders">
         <?php if (empty($orders)): ?>
             <div class="no-orders">
                 <p>You haven't placed any orders yet.</p>
@@ -3123,35 +3361,33 @@ document.addEventListener('DOMContentLoaded', function() {
                         }
                         ?>
                         <div class="seller-info"><?php echo htmlspecialchars($sellerName); ?></div>
-                        <div style="display: flex; align-items: center; gap: 12px;">
-                            <div class="order-number">Order #<?php echo str_pad($order['id'], 6, '0', STR_PAD_LEFT); ?></div>
-                            <div class="order-date-time" style="color: #666; font-size: 0.85rem; font-weight: 400;">
-                                <?php 
-                                $createdAt = $order['created_at'] ?? ($order['order_date'] ?? null);
-                                $updatedAt = $order['updated_at'] ?? null;
-                                $chosenDate = $createdAt;
-                                if (!empty($updatedAt) && strtotime($updatedAt) > strtotime((string)$createdAt)) {
-                                    $chosenDate = $updatedAt;
-                                }
-                                if ($chosenDate) {
-                                    $dateTime = new DateTime($chosenDate);
-                                    echo $dateTime->format('M d, Y h:i A');
-                                }
-                                ?>
-                            </div>
+                        <div class="order-number">Order #<?php echo str_pad($order['id'], 6, '0', STR_PAD_LEFT); ?></div>
+                        <div class="order-date">
+                            <?php 
+                            $createdAt = $order['created_at'] ?? ($order['order_date'] ?? null);
+                            $updatedAt = $order['updated_at'] ?? null;
+                            $chosenDate = $createdAt;
+                            if (!empty($updatedAt) && strtotime($updatedAt) > strtotime((string)$createdAt)) {
+                                $chosenDate = $updatedAt;
+                            }
+                            if ($chosenDate) {
+                                $dateTime = new DateTime($chosenDate);
+                                echo $dateTime->format('M d, Y h:i A');
+                            }
+                            ?>
                         </div>
                     </div>
-                    <div style="display: flex; flex-direction: column; gap: 5px; align-items: flex-end;">
-                    <span class="order-status status-<?php echo strtolower($order['status']); ?>">
-                        <?php echo ucfirst(str_replace('_', ' ', $order['status'])); ?>
-                    </span>
-                    <?php if ($filter === 'return_requested' && isset($order['return_status'])): ?>
-                        <span class="order-status status-return-<?php echo strtolower($order['return_status']); ?>" style="font-size: 0.75rem;">
-                            Return: <?php echo ucfirst(str_replace('_', ' ', $order['return_status'])); ?>
+                    <div class="order-status-wrapper">
+                        <span class="order-status status-<?php echo strtolower($order['status']); ?>">
+                            <?php echo ucfirst(str_replace('_', ' ', $order['status'])); ?>
                         </span>
-                    <?php endif; ?>
+                        <?php if ($filter === 'return_requested' && isset($order['return_status'])): ?>
+                            <span class="order-status status-return-<?php echo strtolower($order['return_status']); ?>" style="font-size: 10px; margin-top: 4px;">
+                                Return: <?php echo ucfirst(str_replace('_', ' ', $order['return_status'])); ?>
+                            </span>
+                        <?php endif; ?>
+                    </div>
                 </div>
-            </div>
                 
                 <!-- Items: PIC | NAME | QTY -->
                 <div class="order-items">
@@ -3163,13 +3399,14 @@ document.addEventListener('DOMContentLoaded', function() {
                                 <div class="order-item-info">
                                     <div class="order-item-name item-name"><?php echo htmlspecialchars($item['product_name']); ?></div>
                                     <div class="order-item-details">
-                                        <span class="item-qty">Qty: <?php echo $item['quantity']; ?></span>
+                                        <span>Qty: <?php echo $item['quantity']; ?></span>
+                                        <span>•</span>
                                         <span class="item-price-info">
                                             <?php if (isset($item['original_price']) && $item['original_price'] != $item['price']): ?>
-                                                <span style="text-decoration: line-through; color: #999; font-size: 0.85rem;">₱<?php echo number_format($item['original_price'], 2); ?></span>
-                                                <span style="color: #10b981; font-weight: 700;">₱<?php echo number_format($item['price'], 2); ?></span>
+                                                <span style="text-decoration: line-through; color: var(--text-light); font-size: 11px;">₱<?php echo number_format($item['original_price'], 2); ?></span>
+                                                <span style="color: var(--success-green); font-weight: 600;">₱<?php echo number_format($item['price'], 2); ?></span>
                                             <?php else: ?>
-                                                ₱<?php echo number_format($item['price'], 2); ?>
+                                                <span style="color: var(--text-dark); font-weight: 600;">₱<?php echo number_format($item['price'], 2); ?></span>
                                             <?php endif; ?>
                                         </span>
                                     </div>
@@ -3235,30 +3472,19 @@ document.addEventListener('DOMContentLoaded', function() {
         $hasReviewed = hasUserReviewedProduct($pdo, $userId, $order['id']);
         $showBuyAgain = false;
         
-        // DEBUG: Show values
-        error_log("Order #{$order['id']} - Status: {$order['status']}, completed_at: " . ($order['completed_at'] ?? 'NULL') . ", hasReviewed: " . ($hasReviewed ? 'YES' : 'NO'));
-        
         if ($hasReviewed) {
             // User already reviewed → Show Buy Again
             $showBuyAgain = true;
-            error_log("Order #{$order['id']} - Showing Buy Again (already reviewed)");
         } else if (!empty($order['completed_at'])) {
             // Check if 7 days have passed since order was marked completed
             $completedDate = new DateTime($order['completed_at']);
             $currentDate = new DateTime();
             $daysSinceCompleted = $currentDate->diff($completedDate)->days;
             
-            error_log("Order #{$order['id']} - Days since completed: {$daysSinceCompleted}");
-            
             if ($daysSinceCompleted >= 7) {
                 // 7 days passed → Show Buy Again
                 $showBuyAgain = true;
-                error_log("Order #{$order['id']} - Showing Buy Again (7+ days)");
-            } else {
-                error_log("Order #{$order['id']} - Showing Rate Product (within 7 days)");
             }
-        } else {
-            error_log("Order #{$order['id']} - completed_at is empty, showing Rate Product");
         }
         ?>
         <?php if ($showBuyAgain): ?>
@@ -3407,7 +3633,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
     <?php elseif (strtolower($order['status']) === 'delivered'): ?>
         <!-- DELIVERED ORDERS: Order Received button + View Details -->
-        <button type="button" class="btn btn-secondary" onclick="confirmOrderReceived(<?php echo $order['id']; ?>)">
+        <button type="button" class="btn btn-secondary" onclick="confirmOrderReceived(<?php echo $order['id']; ?>, <?php echo !empty($order['order_items']) && isset($order['order_items'][0]['product_id']) ? $order['order_items'][0]['product_id'] : 'null'; ?>)">
             <i class="fas fa-check-circle"></i> Order Received
         </button>
         <a href="order-details.php?id=<?php echo $order['id']; ?>" class="btn btn-primary">

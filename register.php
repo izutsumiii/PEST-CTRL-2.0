@@ -381,20 +381,20 @@ require_once 'includes/header.php';
         
         <div class="checkbox-group">
             <label class="checkbox-label">
-                <input type="checkbox" id="agree_terms" name="agree_terms" value="1" required>
+                <input type="checkbox" id="agree_terms" name="agree_terms" value="1" required disabled>
                 <span class="checkmark"></span>
                 <span class="checkbox-text">
-                    I agree to the <a href="terms-conditions.php" target="_blank" class="legal-link">Terms & Conditions</a>
+                    I agree to the <a href="#" class="legal-link" onclick="event.preventDefault(); openTermsModal();">Terms & Conditions</a>
                 </span>
             </label>
         </div>
         
         <div class="checkbox-group">
             <label class="checkbox-label">
-                <input type="checkbox" id="agree_privacy" name="agree_privacy" value="1" required>
+                <input type="checkbox" id="agree_privacy" name="agree_privacy" value="1" required disabled>
                 <span class="checkmark"></span>
                 <span class="checkbox-text">
-                    I agree to the <a href="privacy-policy.php" target="_blank" class="legal-link">Privacy Policy</a>
+                    I agree to the <a href="#" class="legal-link" onclick="event.preventDefault(); openPrivacyModal();">Privacy Policy</a>
                 </span>
             </label>
         </div>
@@ -414,6 +414,642 @@ require_once 'includes/header.php';
         <i class="fas fa-user-plus"></i> Create Account
     </button>
 </form>
+
+<!-- Terms & Conditions Modal -->
+<div id="termsModal" class="legal-modal">
+    <div class="legal-modal-content">
+        <div class="legal-modal-header">
+            <h2><i class="fas fa-file-contract"></i> Terms & Conditions</h2>
+            <span class="legal-modal-close" onclick="closeTermsModal()">&times;</span>
+        </div>
+        <div class="legal-modal-body" id="termsModalBody">
+            <div class="legal-scroll-content">
+                <div class="important-notice">
+                    <h3><i class="fas fa-exclamation-triangle"></i> Important Notice</h3>
+                    <p>These Terms & Conditions govern your use of PEST-CTRL and the purchase of pest control products. By accessing our website and making purchases, you agree to comply with these terms and all applicable laws and regulations regarding pesticide use.</p>
+                </div>
+
+                <section class="terms-section">
+                    <h2>1. Acceptance of Terms</h2>
+                    <p>By accessing and using the PEST-CTRL website ("Service"), you accept and agree to be bound by the terms and provision of this agreement. If you do not agree to abide by the above, please do not use this service.</p>
+                    
+                    <h3>1.1 Age Requirement</h3>
+                    <ul>
+                        <li>You must be at least 18 years old to create an account and purchase products</li>
+                        <li>If you are under 18, you must have explicit parental or guardian consent</li>
+                        <li>Some products may have additional age restrictions as required by law</li>
+                    </ul>
+                </section>
+
+                <section class="terms-section">
+                    <h2>2. Product Information & Restrictions</h2>
+                    
+                    <h3>2.1 Pesticide Products</h3>
+                    <ul>
+                        <li>All pesticide products sold are for professional or licensed applicator use unless otherwise specified</li>
+                        <li>Customers must verify local licensing requirements before purchasing restricted-use pesticides</li>
+                        <li>Product availability may be restricted based on your geographic location and local regulations</li>
+                        <li>We reserve the right to request proof of licensing or certification before processing orders</li>
+                    </ul>
+
+                    <h3>2.2 Product Safety & Liability</h3>
+                    <ul>
+                        <li>All products must be used strictly according to manufacturer label instructions</li>
+                        <li>PEST-CTRL is not responsible for improper use of products purchased through our platform</li>
+                        <li>Customers assume full responsibility for safe storage, handling, and application of all products</li>
+                        <li>Environmental and health impacts from product misuse are the sole responsibility of the purchaser</li>
+                    </ul>
+                </section>
+
+                <section class="terms-section">
+                    <h2>3. Account Registration & Responsibilities</h2>
+                    
+                    <h3>3.1 Account Creation</h3>
+                    <ul>
+                        <li>You must provide accurate and complete information during registration</li>
+                        <li>You are responsible for maintaining the confidentiality of your account credentials</li>
+                        <li>You must notify us immediately of any unauthorized use of your account</li>
+                        <li>One person may not maintain multiple accounts</li>
+                    </ul>
+
+                    <h3>3.2 Account Types</h3>
+                    <ul>
+                        <li><strong>Customer Accounts:</strong> For end-users purchasing pest control products</li>
+                        <li><strong>Seller/Supplier Accounts:</strong> For businesses selling products through our platform</li>
+                        <li>Different account types have different privileges and responsibilities</li>
+                    </ul>
+                </section>
+
+                <section class="terms-section">
+                    <h2>4. Orders & Payments</h2>
+                    
+                    <h3>4.1 Order Processing</h3>
+                    <ul>
+                        <li>All orders are subject to availability and acceptance</li>
+                        <li>We reserve the right to refuse or cancel any order at our discretion</li>
+                        <li>Orders for restricted products may require additional verification</li>
+                        <li>Pricing is subject to change without notice</li>
+                    </ul>
+
+                    <h3>4.2 Payment Terms</h3>
+                    <ul>
+                        <li>Payment is due at the time of order placement</li>
+                        <li>We accept major credit cards, PayPal, and other approved payment methods</li>
+                        <li>All transactions are processed in USD unless otherwise specified</li>
+                        <li>Sales tax will be applied where required by law</li>
+                    </ul>
+                </section>
+
+                <section class="terms-section">
+                    <h2>5. Shipping & Delivery</h2>
+                    
+                    <h3>5.1 Shipping Restrictions</h3>
+                    <ul>
+                        <li>Certain products may have shipping restrictions due to hazardous material classifications</li>
+                        <li>Some products can only be shipped to licensed facilities</li>
+                        <li>International shipping may be restricted for certain pesticide products</li>
+                        <li>Additional fees may apply for hazardous material shipping</li>
+                    </ul>
+
+                    <h3>5.2 Delivery & Risk of Loss</h3>
+                    <ul>
+                        <li>Risk of loss passes to the buyer upon delivery to the shipping carrier</li>
+                        <li>Delivery times are estimates and not guarantees</li>
+                        <li>Signature confirmation may be required for certain products</li>
+                    </ul>
+                </section>
+
+                <section class="terms-section">
+                    <h2>6. Returns & Refunds</h2>
+                    
+                    <h3>6.1 Return Policy</h3>
+                    <ul>
+                        <li>Pesticide products cannot be returned once opened due to safety and regulatory concerns</li>
+                        <li>Unopened products may be returned within 30 days in original packaging</li>
+                        <li>Custom or special-order items are non-returnable</li>
+                        <li>Return shipping costs are the responsibility of the customer unless the return is due to our error</li>
+                    </ul>
+
+                    <h3>6.2 Damaged or Defective Products</h3>
+                    <ul>
+                        <li>Report damaged or defective products within 48 hours of delivery</li>
+                        <li>Photo documentation may be required for damage claims</li>
+                        <li>We will replace or refund defective products at our discretion</li>
+                    </ul>
+                </section>
+
+                <section class="terms-section">
+                    <h2>7. Intellectual Property</h2>
+                    <ul>
+                        <li>All content on PEST-CTRL is protected by copyright and other intellectual property laws</li>
+                        <li>You may not reproduce, distribute, or create derivative works without written permission</li>
+                        <li>Product names and trademarks belong to their respective owners</li>
+                        <li>User-generated content may be used by PEST-CTRL for promotional purposes</li>
+                    </ul>
+                </section>
+
+                <section class="terms-section">
+                    <h2>8. Prohibited Uses</h2>
+                    <p>You agree not to use our service:</p>
+                    <ul>
+                        <li>For any unlawful purpose or to solicit others to perform unlawful acts</li>
+                        <li>To violate any international, federal, provincial, or state regulations or laws</li>
+                        <li>To transmit or procure harmful computer code, viruses, or other malicious software</li>
+                        <li>To purchase products for illegal pest control activities</li>
+                        <li>To resell restricted-use pesticides without proper licensing</li>
+                        <li>To interfere with the security or proper functioning of the website</li>
+                    </ul>
+                </section>
+
+                <section class="terms-section">
+                    <h2>9. Disclaimers & Limitation of Liability</h2>
+                    
+                    <h3>9.1 Service Disclaimer</h3>
+                    <ul>
+                        <li>Our service is provided "as is" without warranties of any kind</li>
+                        <li>We do not warrant that the service will be uninterrupted or error-free</li>
+                        <li>Product information is provided by manufacturers and suppliers</li>
+                        <li>We make no guarantees about the effectiveness of pest control products</li>
+                    </ul>
+
+                    <h3>9.2 Limitation of Liability</h3>
+                    <ul>
+                        <li>PEST-CTRL shall not be liable for any indirect, incidental, or consequential damages</li>
+                        <li>Our total liability shall not exceed the amount paid for the product or service</li>
+                        <li>We are not responsible for crop damage, environmental impact, or health issues resulting from product use</li>
+                        <li>Users assume all risks associated with pesticide use</li>
+                    </ul>
+                </section>
+
+                <section class="terms-section">
+                    <h2>10. Regulatory Compliance</h2>
+                    <ul>
+                        <li>Customers must comply with all federal, state, and local pesticide regulations</li>
+                        <li>EPA registration numbers must be verified before use</li>
+                        <li>Proper disposal of containers and unused products is the customer's responsibility</li>
+                        <li>Record-keeping requirements for pesticide use must be maintained by the customer</li>
+                        <li>We may report suspicious purchases to appropriate regulatory authorities</li>
+                    </ul>
+                </section>
+
+                <section class="terms-section">
+                    <h2>11. Privacy & Data Protection</h2>
+                    <ul>
+                        <li>Our Privacy Policy governs the collection and use of your personal information</li>
+                        <li>We may share information with regulatory authorities as required by law</li>
+                        <li>Purchase records may be maintained for regulatory compliance</li>
+                        <li>Marketing communications can be opted out of at any time</li>
+                    </ul>
+                </section>
+
+                <section class="terms-section">
+                    <h2>12. Termination</h2>
+                    <ul>
+                        <li>We may terminate or suspend accounts that violate these terms</li>
+                        <li>You may close your account at any time</li>
+                        <li>Termination does not affect pending orders or obligations</li>
+                        <li>Certain provisions of these terms survive termination</li>
+                    </ul>
+                </section>
+
+                <section class="terms-section">
+                    <h2>13. Modifications to Terms</h2>
+                    <ul>
+                        <li>We reserve the right to modify these terms at any time</li>
+                        <li>Changes will be posted on this page with an updated date</li>
+                        <li>Continued use of the service constitutes acceptance of modified terms</li>
+                        <li>Major changes may be communicated via email</li>
+                    </ul>
+                </section>
+
+                <section class="terms-section">
+                    <h2>14. Governing Law & Dispute Resolution</h2>
+                    <ul>
+                        <li>These terms are governed by the laws of [Your State/Country]</li>
+                        <li>Disputes will be resolved through binding arbitration</li>
+                        <li>Legal actions must be brought within one year of the cause of action</li>
+                        <li>If any provision is found unenforceable, the remainder shall remain in effect</li>
+                    </ul>
+                </section>
+
+                <section class="terms-section">
+                    <h2>15. Contact Information</h2>
+                    <p>For questions about these Terms & Conditions, contact us:</p>
+                    <div class="contact-info">
+                        <p><i class="fas fa-envelope"></i> <strong>Email:</strong> legal@pest-ctrl.com</p>
+                        <p><i class="fas fa-phone"></i> <strong>Phone:</strong> 1-800-PEST-CTRL</p>
+                        <p><i class="fas fa-map-marker-alt"></i> <strong>Address:</strong> [Your Business Address]</p>
+                    </div>
+                </section>
+
+                <div class="acknowledgment-box">
+                    <h3><i class="fas fa-handshake"></i> Acknowledgment</h3>
+                    <p>By creating an account and using our services, you acknowledge that you have read, understood, and agree to be bound by these Terms & Conditions. You also acknowledge the serious nature of pest control products and your responsibility to use them safely and legally.</p>
+                </div>
+            </div>
+        </div>
+        <div class="legal-modal-footer">
+            <div class="scroll-indicator" id="termsScrollIndicator">
+                <i class="fas fa-arrow-down"></i> Please scroll to the bottom to continue
+            </div>
+            <button type="button" class="btn-agree-terms" id="btnAgreeTerms" onclick="agreeToTerms()" disabled>
+                <i class="fas fa-check"></i> I Agree to Terms & Conditions
+            </button>
+            <button type="button" class="btn-close-modal" onclick="closeTermsModal()">
+                <i class="fas fa-times"></i> Close
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Privacy Policy Modal -->
+<div id="privacyModal" class="legal-modal">
+    <div class="legal-modal-content">
+        <div class="legal-modal-header">
+            <h2><i class="fas fa-shield-alt"></i> Privacy Policy</h2>
+            <span class="legal-modal-close" onclick="closePrivacyModal()">&times;</span>
+        </div>
+        <div class="legal-modal-body" id="privacyModalBody">
+            <div class="legal-scroll-content">
+                <div class="important-notice">
+                    <h3><i class="fas fa-user-shield"></i> Your Privacy Matters</h3>
+                    <p>At PEST-CTRL, we are committed to protecting your privacy and personal information. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you visit our website and use our services. Due to the regulated nature of pest control products, some information collection is required by law.</p>
+                </div>
+
+                <section class="privacy-section">
+                    <h2>1. Information We Collect</h2>
+                    
+                    <h3>1.1 Personal Information</h3>
+                    <p>We collect personal information that you voluntarily provide when:</p>
+                    <ul>
+                        <li><strong>Creating an Account:</strong> Name, email, username, password, address, phone number</li>
+                        <li><strong>Making Purchases:</strong> Billing information, shipping address, payment details</li>
+                        <li><strong>Professional Verification:</strong> License numbers, certification details, business information</li>
+                        <li><strong>Customer Support:</strong> Communication records, support tickets, feedback</li>
+                        <li><strong>Marketing:</strong> Subscription preferences, interests, product preferences</li>
+                    </ul>
+
+                    <h3>1.2 Automatically Collected Information</h3>
+                    <ul>
+                        <li><strong>Usage Data:</strong> IP address, browser type, device information, operating system</li>
+                        <li><strong>Website Activity:</strong> Pages visited, time spent, clicks, search queries</li>
+                        <li><strong>Cookies & Tracking:</strong> Session data, preferences, shopping cart contents</li>
+                        <li><strong>Location Data:</strong> General geographic location for shipping and regulatory compliance</li>
+                    </ul>
+
+                    <h3>1.3 Third-Party Information</h3>
+                    <ul>
+                        <li><strong>Payment Processors:</strong> Transaction verification and fraud prevention data</li>
+                        <li><strong>Shipping Partners:</strong> Delivery confirmation and tracking information</li>
+                        <li><strong>Regulatory Databases:</strong> License verification and compliance checks</li>
+                        <li><strong>Social Media:</strong> Information from connected social accounts (if applicable)</li>
+                    </ul>
+                </section>
+
+                <section class="privacy-section">
+                    <h2>2. How We Use Your Information</h2>
+                    
+                    <h3>2.1 Primary Uses</h3>
+                    <ul>
+                        <li><strong>Account Management:</strong> Creating and maintaining your account</li>
+                        <li><strong>Order Processing:</strong> Processing payments, fulfilling orders, shipping products</li>
+                        <li><strong>Customer Service:</strong> Responding to inquiries, resolving issues, providing support</li>
+                        <li><strong>Product Delivery:</strong> Coordinating shipping and delivery of purchased products</li>
+                    </ul>
+
+                    <h3>2.2 Legal & Regulatory Compliance</h3>
+                    <ul>
+                        <li><strong>License Verification:</strong> Confirming authorization to purchase restricted products</li>
+                        <li><strong>Age Verification:</strong> Ensuring compliance with age requirements</li>
+                        <li><strong>Regulatory Reporting:</strong> Reporting to EPA, state agencies as required by law</li>
+                        <li><strong>Record Keeping:</strong> Maintaining purchase records for regulatory audits</li>
+                        <li><strong>Safety Monitoring:</strong> Tracking product usage for safety compliance</li>
+                    </ul>
+
+                    <h3>2.3 Business Operations</h3>
+                    <ul>
+                        <li><strong>Website Improvement:</strong> Analyzing usage to enhance user experience</li>
+                        <li><strong>Product Development:</strong> Understanding customer needs and preferences</li>
+                        <li><strong>Marketing:</strong> Sending promotional emails, product recommendations</li>
+                        <li><strong>Security:</strong> Protecting against fraud, unauthorized access, and abuse</li>
+                    </ul>
+                </section>
+
+                <section class="privacy-section">
+                    <h2>3. Information Sharing & Disclosure</h2>
+                    
+                    <h3>3.1 We Share Information With:</h3>
+                    <ul>
+                        <li><strong>Service Providers:</strong> Payment processors, shipping companies, IT services</li>
+                        <li><strong>Business Partners:</strong> Manufacturers, suppliers, authorized distributors</li>
+                        <li><strong>Regulatory Agencies:</strong> EPA, state pesticide agencies, law enforcement (when required)</li>
+                        <li><strong>Legal Compliance:</strong> Courts, attorneys, regulatory bodies (as legally required)</li>
+                    </ul>
+
+                    <h3>3.2 We Do NOT Share Information For:</h3>
+                    <ul>
+                        <li>Sale to marketing companies or data brokers</li>
+                        <li>Unsolicited commercial purposes</li>
+                        <li>Sharing with competitors without consent</li>
+                        <li>Personal use by employees or contractors</li>
+                    </ul>
+
+                    <h3>3.3 Business Transfers</h3>
+                    <p>In the event of a merger, acquisition, or sale of assets, your information may be transferred to the acquiring entity, subject to the same privacy protections.</p>
+                </section>
+
+                <section class="privacy-section">
+                    <h2>4. Data Security & Protection</h2>
+                    
+                    <h3>4.1 Security Measures</h3>
+                    <ul>
+                        <li><strong>Encryption:</strong> SSL/TLS encryption for data transmission</li>
+                        <li><strong>Secure Storage:</strong> Encrypted databases with restricted access</li>
+                        <li><strong>Access Controls:</strong> Role-based permissions and multi-factor authentication</li>
+                        <li><strong>Regular Audits:</strong> Security assessments and vulnerability testing</li>
+                        <li><strong>Employee Training:</strong> Privacy and security awareness programs</li>
+                    </ul>
+
+                    <h3>4.2 Payment Security</h3>
+                    <ul>
+                        <li>PCI DSS compliant payment processing</li>
+                        <li>No storage of full credit card numbers</li>
+                        <li>Tokenization for recurring payments</li>
+                        <li>Fraud detection and prevention systems</li>
+                    </ul>
+
+                    <h3>4.3 Data Breach Response</h3>
+                    <ul>
+                        <li>Immediate containment and assessment procedures</li>
+                        <li>Notification to affected users within 72 hours</li>
+                        <li>Cooperation with law enforcement and regulatory agencies</li>
+                        <li>Remediation and prevention measures</li>
+                    </ul>
+                </section>
+
+                <section class="privacy-section">
+                    <h2>5. Your Privacy Rights</h2>
+                    
+                    <h3>5.1 Access & Control</h3>
+                    <ul>
+                        <li><strong>Access:</strong> Request copies of your personal information</li>
+                        <li><strong>Correction:</strong> Update or correct inaccurate information</li>
+                        <li><strong>Deletion:</strong> Request deletion of your data (subject to legal requirements)</li>
+                        <li><strong>Portability:</strong> Receive your data in a structured format</li>
+                        <li><strong>Restriction:</strong> Limit processing of your information</li>
+                    </ul>
+
+                    <h3>5.2 Marketing Preferences</h3>
+                    <ul>
+                        <li>Opt-out of marketing emails at any time</li>
+                        <li>Customize communication preferences</li>
+                        <li>Unsubscribe from promotional materials</li>
+                        <li>Control cookie and tracking preferences</li>
+                    </ul>
+
+                    <h3>5.3 Account Management</h3>
+                    <ul>
+                        <li>Update personal information in your account settings</li>
+                        <li>Change password and security settings</li>
+                        <li>View order history and purchase records</li>
+                        <li>Close your account (subject to regulatory retention requirements)</li>
+                    </ul>
+                </section>
+
+                <section class="privacy-section">
+                    <h2>6. Cookies & Tracking Technologies</h2>
+                    
+                    <h3>6.1 Types of Cookies We Use</h3>
+                    <ul>
+                        <li><strong>Essential Cookies:</strong> Required for website functionality and security</li>
+                        <li><strong>Performance Cookies:</strong> Analytics to improve website performance</li>
+                        <li><strong>Functional Cookies:</strong> Remember your preferences and settings</li>
+                        <li><strong>Marketing Cookies:</strong> Deliver relevant advertisements and content</li>
+                    </ul>
+
+                    <h3>6.2 Cookie Management</h3>
+                    <ul>
+                        <li>Configure cookie preferences in your browser settings</li>
+                        <li>Use our cookie consent manager to customize preferences</li>
+                        <li>Note: Disabling essential cookies may affect website functionality</li>
+                        <li>Third-party cookies from service providers may be present</li>
+                    </ul>
+                </section>
+
+                <section class="privacy-section">
+                    <h2>7. Data Retention</h2>
+                    
+                    <h3>7.1 Retention Periods</h3>
+                    <ul>
+                        <li><strong>Account Information:</strong> Retained while account is active plus 3 years</li>
+                        <li><strong>Purchase Records:</strong> 7 years (regulatory requirement for pesticide sales)</li>
+                        <li><strong>License Information:</strong> 5 years after license expiration</li>
+                        <li><strong>Marketing Data:</strong> Until you unsubscribe or request deletion</li>
+                        <li><strong>Website Analytics:</strong> 2 years for performance optimization</li>
+                    </ul>
+
+                    <h3>7.2 Legal Requirements</h3>
+                    <ul>
+                        <li>EPA requires pesticide sale records for 2 years minimum</li>
+                        <li>State regulations may require longer retention periods</li>
+                        <li>Tax and accounting records retained for 7 years</li>
+                        <li>Legal disputes may extend retention periods</li>
+                    </ul>
+                </section>
+
+                <section class="privacy-section">
+                    <h2>8. International Data Transfers</h2>
+                    <ul>
+                        <li>Data may be processed in countries outside your residence</li>
+                        <li>We ensure adequate protection through appropriate safeguards</li>
+                        <li>Standard Contractual Clauses or adequacy decisions govern transfers</li>
+                        <li>You consent to international transfers by using our services</li>
+                    </ul>
+                </section>
+
+                <section class="privacy-section">
+                    <h2>9. Children's Privacy</h2>
+                    <ul>
+                        <li>Our services are not intended for children under 18 years of age</li>
+                        <li>We do not knowingly collect information from children</li>
+                        <li>Parents should monitor their children's online activities</li>
+                        <li>If we discover we have collected information from a child, we will delete it immediately</li>
+                        <li>Contact us if you believe your child has provided information to us</li>
+                    </ul>
+                </section>
+
+                <section class="privacy-section">
+                    <h2>10. State-Specific Privacy Rights</h2>
+                    
+                    <h3>10.1 California Residents (CCPA/CPRA)</h3>
+                    <ul>
+                        <li><strong>Right to Know:</strong> Categories and specific pieces of personal information collected</li>
+                        <li><strong>Right to Delete:</strong> Request deletion of personal information</li>
+                        <li><strong>Right to Correct:</strong> Correct inaccurate personal information</li>
+                        <li><strong>Right to Opt-Out:</strong> Sale or sharing of personal information</li>
+                        <li><strong>Right to Limit:</strong> Use of sensitive personal information</li>
+                        <li><strong>Non-Discrimination:</strong> Equal service regardless of privacy choices</li>
+                    </ul>
+
+                    <h3>10.2 European Union (GDPR)</h3>
+                    <ul>
+                        <li>Legal basis for processing: Consent, contract performance, legal compliance</li>
+                        <li>Right to withdraw consent at any time</li>
+                        <li>Right to object to processing for marketing purposes</li>
+                        <li>Right to lodge complaints with supervisory authorities</li>
+                        <li>Data Protection Officer contact: dpo@pest-ctrl.com</li>
+                    </ul>
+
+                    <h3>10.3 Other State Laws</h3>
+                    <ul>
+                        <li>Virginia Consumer Data Protection Act (VCDPA)</li>
+                        <li>Colorado Privacy Act (CPA)</li>
+                        <li>Connecticut Data Privacy Act (CTDPA)</li>
+                        <li>Additional state laws may apply based on your location</li>
+                    </ul>
+                </section>
+
+                <section class="privacy-section">
+                    <h2>11. Third-Party Services & Links</h2>
+                    
+                    <h3>11.1 Integrated Services</h3>
+                    <ul>
+                        <li><strong>Payment Processors:</strong> PayPal, Stripe, credit card companies</li>
+                        <li><strong>Shipping Partners:</strong> FedEx, UPS, USPS tracking and delivery</li>
+                        <li><strong>Analytics:</strong> Google Analytics, website performance tools</li>
+                        <li><strong>Customer Support:</strong> Live chat, helpdesk platforms</li>
+                        <li><strong>Email Services:</strong> Marketing automation and transactional emails</li>
+                    </ul>
+
+                    <h3>11.2 External Links</h3>
+                    <ul>
+                        <li>Our website may contain links to third-party websites</li>
+                        <li>We are not responsible for the privacy practices of other sites</li>
+                        <li>Review privacy policies of linked websites before providing information</li>
+                        <li>Third-party services have their own terms and privacy policies</li>
+                    </ul>
+                </section>
+
+                <section class="privacy-section">
+                    <h2>12. Marketing & Communications</h2>
+                    
+                    <h3>12.1 Email Marketing</h3>
+                    <ul>
+                        <li>Product announcements and new arrivals</li>
+                        <li>Special offers and promotional discounts</li>
+                        <li>Educational content about pest control</li>
+                        <li>Safety alerts and product recalls</li>
+                        <li>Industry news and regulatory updates</li>
+                    </ul>
+
+                    <h3>12.2 Communication Preferences</h3>
+                    <ul>
+                        <li>Choose frequency and types of communications</li>
+                        <li>Separate preferences for promotional vs. transactional emails</li>
+                        <li>SMS/text message opt-in for order updates</li>
+                        <li>Push notifications for mobile app users</li>
+                    </ul>
+
+                    <h3>12.3 Opt-Out Options</h3>
+                    <ul>
+                        <li>Unsubscribe links in all marketing emails</li>
+                        <li>Account settings to manage preferences</li>
+                        <li>Contact customer service for assistance</li>
+                        <li>Note: You cannot opt-out of transactional/service emails</li>
+                    </ul>
+                </section>
+
+                <section class="privacy-section">
+                    <h2>13. Regulatory Compliance & Reporting</h2>
+                    
+                    <h3>13.1 Pesticide Regulations</h3>
+                    <ul>
+                        <li>Federal Insecticide, Fungicide, and Rodenticide Act (FIFRA) compliance</li>
+                        <li>EPA pesticide registration and usage reporting</li>
+                        <li>State pesticide licensing and certification verification</li>
+                        <li>Restricted Use Pesticide (RUP) purchase tracking</li>
+                        <li>Hazardous material shipping documentation</li>
+                    </ul>
+
+                    <h3>13.2 Required Disclosures</h3>
+                    <ul>
+                        <li>Suspicious purchase patterns to regulatory authorities</li>
+                        <li>Large quantity purchases requiring additional scrutiny</li>
+                        <li>License violations or expired certifications</li>
+                        <li>Safety incidents or product misuse reports</li>
+                        <li>Law enforcement requests with valid legal process</li>
+                    </ul>
+                </section>
+
+                <section class="privacy-section">
+                    <h2>14. Data Subject Requests</h2>
+                    
+                    <h3>14.1 How to Submit Requests</h3>
+                    <ul>
+                        <li><strong>Online:</strong> Privacy request form on our website</li>
+                        <li><strong>Email:</strong> privacy@pest-ctrl.com</li>
+                        <li><strong>Phone:</strong> 1-800-PEST-CTRL (privacy department)</li>
+                        <li><strong>Mail:</strong> PEST-CTRL Privacy Team, [Business Address]</li>
+                    </ul>
+
+                    <h3>14.2 Request Processing</h3>
+                    <ul>
+                        <li>Identity verification required for all requests</li>
+                        <li>Response within 30 days (may extend to 60 days if complex)</li>
+                        <li>No charge for reasonable requests</li>
+                        <li>Excessive or repetitive requests may incur fees</li>
+                        <li>Some information may be retained for legal compliance</li>
+                    </ul>
+                </section>
+
+                <section class="privacy-section">
+                    <h2>15. Privacy Policy Updates</h2>
+                    <ul>
+                        <li>We may update this policy to reflect changes in practices or regulations</li>
+                        <li>Material changes will be prominently posted on our website</li>
+                        <li>Email notification for significant changes affecting your rights</li>
+                        <li>Continued use of services constitutes acceptance of updates</li>
+                        <li>Previous versions available upon request</li>
+                    </ul>
+                </section>
+
+                <section class="privacy-section">
+                    <h2>16. Contact Information</h2>
+                    <p>For privacy-related questions, concerns, or requests:</p>
+                    <div class="contact-info">
+                        <p><i class="fas fa-envelope"></i> <strong>Privacy Team:</strong> privacy@pest-ctrl.com</p>
+                        <p><i class="fas fa-shield-alt"></i> <strong>Data Protection Officer:</strong> dpo@pest-ctrl.com</p>
+                        <p><i class="fas fa-phone"></i> <strong>Privacy Hotline:</strong> 1-800-PEST-CTRL (ext. 777)</p>
+                        <p><i class="fas fa-map-marker-alt"></i> <strong>Mailing Address:</strong></p>
+                        <div class="address-block">
+                            PEST-CTRL Privacy Team<br>
+                            [Your Business Address]<br>
+                            [City, State ZIP Code]<br>
+                            [Country]
+                        </div>
+                    </div>
+                </section>
+
+                <div class="acknowledgment-box">
+                    <h3><i class="fas fa-user-check"></i> Your Consent</h3>
+                    <p>By creating an account and using PEST-CTRL services, you acknowledge that you have read, understood, and consent to the collection, use, and disclosure of your personal information as described in this Privacy Policy. You understand that some information collection and sharing is required by law due to the regulated nature of pest control products.</p>
+                    <p><strong>Special Note:</strong> Due to the hazardous nature of pesticide products, certain information must be retained for regulatory compliance even if you request deletion. We will clearly explain any limitations when processing your privacy requests.</p>
+                </div>
+            </div>
+        </div>
+        <div class="legal-modal-footer">
+            <div class="scroll-indicator" id="privacyScrollIndicator">
+                <i class="fas fa-arrow-down"></i> Please scroll to the bottom to continue
+            </div>
+            <button type="button" class="btn-agree-privacy" id="btnAgreePrivacy" onclick="agreeToPrivacy()" disabled>
+                <i class="fas fa-check"></i> I Agree to Privacy Policy
+            </button>
+            <button type="button" class="btn-close-modal" onclick="closePrivacyModal()">
+                <i class="fas fa-times"></i> Close
+            </button>
+        </div>
+    </div>
+</div>
 
 <?php else: ?>
 <!-- OTP Verification Form -->
@@ -483,35 +1119,52 @@ body {
     background: rgba(19, 3, 37, 0.8) !important;
 }
 
+:root {
+    --primary-dark: #130325;
+    --accent-yellow: #FFD736;
+    --text-dark: #1a1a1a;
+    --text-light: #6b7280;
+    --border-light: #e5e7eb;
+    --bg-light: #f9fafb;
+    --bg-white: #ffffff;
+    --success-green: #10b981;
+    --error-red: #ef4444;
+}
+
+body {
+    background: linear-gradient(135deg, var(--primary-dark) 0%, rgba(19, 3, 37, 0.95) 50%, #0a0118 100%);
+}
+
 .register-container {
-    max-width: 800px;
-    margin: 60px auto 20px auto;
-    padding: 25px;
-    border-radius: 8px;
-    background: #ffffff;
-    color: #130325;
-    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+    max-width: 900px;
+    margin: 30px auto 20px auto;
+    padding: 20px;
+    border-radius: 12px;
+    background: var(--bg-white);
+    color: var(--text-dark);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--border-light);
     position: relative;
     overflow: hidden;
 }
 
 .register-header {
     text-align: center;
-    margin-bottom: 15px;
+    margin-bottom: 16px;
 }
 
 .register-header h1 {
     margin: 0;
-    font-size: 18px;
-    font-weight: 700;
-    color: #130325;
-    margin-bottom: 4px;
+    font-size: 1.35rem;
+    font-weight: 600;
+    color: var(--text-dark);
+    margin-bottom: 6px;
+    letter-spacing: -0.3px;
 }
 
 .register-header .subtitle {
-    font-size: 11px;
-    color: #130325;
-    opacity: 0.7;
+    font-size: 12px;
+    color: var(--text-light);
 }
 
 .form-group {
@@ -547,22 +1200,23 @@ body {
 .form-group input[type="password"],
 .form-group select {
     width: 100%;
-    padding: 8px 10px;
-    border: 2px solid rgba(19, 3, 37, 0.2);
-    border-radius: 6px;
-    font-size: 12px;
-    background: #ffffff;
-    color: #130325;
+    padding: 10px 14px;
+    border: 1.5px solid var(--primary-dark);
+    border-radius: 8px;
+    font-size: 13px;
+    background: var(--bg-white);
+    color: var(--text-dark);
     box-sizing: border-box;
-    transition: all 0.3s ease;
+    transition: all 0.2s ease;
 }
 
 .form-group input:focus,
 .form-group select:focus {
     outline: none;
-    background: #ffffff;
-    border-color: #FFD736;
-    box-shadow: 0 0 0 3px rgba(255, 215, 54, 0.2);
+    background: var(--bg-white);
+    border-color: var(--primary-dark);
+    box-shadow: 0 0 0 3px rgba(19, 3, 37, 0.1);
+    border-width: 2px;
 }
 
 .form-group input::placeholder {
@@ -625,21 +1279,21 @@ body {
 
 /* Legal Agreements Section */
 .legal-agreements {
-    background: rgba(255, 215, 54, 0.1);
-    border: 1px solid rgba(255, 215, 54, 0.3);
-    border-radius: 6px;
-    padding: 12px;
-    margin: 15px 0;
+    background: rgba(19, 3, 37, 0.04);
+    border: 1px solid var(--border-light);
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin: 12px 0;
 }
 
 .legal-agreements h3 {
-    color: #130325;
-    font-size: 14px;
+    color: var(--text-dark);
+    font-size: 13px;
     margin: 0 0 8px 0;
     display: flex;
     align-items: center;
     gap: 6px;
-    font-weight: 700;
+    font-weight: 600;
 }
 
 .legal-notice {
@@ -668,6 +1322,10 @@ body {
     cursor: pointer;
 }
 
+.checkbox-label input[type="checkbox"]:disabled {
+    cursor: not-allowed;
+}
+
 .checkmark {
     display: inline-block;
     width: 16px;
@@ -683,6 +1341,23 @@ body {
 
 .checkbox-label:hover .checkmark {
     background-color: rgba(255, 215, 54, 0.1);
+}
+
+.checkbox-label input[type="checkbox"]:disabled + .checkmark {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: var(--bg-light);
+    border-color: var(--border-light);
+    pointer-events: none;
+}
+
+.checkbox-label:hover input[type="checkbox"]:disabled + .checkmark {
+    background-color: var(--bg-light);
+}
+
+.checkbox-label input[type="checkbox"]:disabled ~ .checkbox-text {
+    opacity: 0.6;
+    cursor: not-allowed;
 }
 
 .checkbox-label input[type="checkbox"]:checked ~ .checkmark {
@@ -820,19 +1495,17 @@ body {
 button[type="submit"] {
     width: 100%;
     padding: 10px 16px;
-    background-color: #130325;
-    color: #F9F9F9;
-    border: 2px solid #130325;
-    border-radius: 6px;
+    background-color: var(--primary-dark);
+    color: var(--bg-white);
+    border: 1.5px solid var(--primary-dark);
+    border-radius: 8px;
     font-size: 13px;
-    font-weight: 700;
+    font-weight: 600;
     cursor: pointer;
     text-decoration: none;
     text-align: center;
-    transition: all 0.3s ease;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    margin-top: 6px;
+    transition: all 0.2s ease;
+    margin-top: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -840,11 +1513,11 @@ button[type="submit"] {
 }
 
 button[type="submit"]:hover:not(:disabled) {
-    background-color: #FFD736;
-    color: #130325;
-    border-color: #FFD736;
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(255, 215, 54, 0.4);
+    background-color: #0a0118;
+    color: var(--bg-white);
+    border-color: #0a0118;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(19, 3, 37, 0.15);
 }
 
 button[type="submit"]:disabled {
@@ -876,10 +1549,17 @@ button[type="submit"]:disabled {
 }
 
 /* Responsive Design */
+@media (max-width: 1024px) {
+    .register-container {
+        margin: 30px auto 20px auto;
+        max-width: 90%;
+    }
+}
+
 @media (max-width: 768px) {
     .register-container {
         max-width: 600px;
-        margin: 40px 15px 15px 15px;
+        margin: 40px auto 15px auto;
         padding: 20px;
     }
     
@@ -899,7 +1579,7 @@ button[type="submit"]:disabled {
 
 @media (max-width: 480px) {
     .register-container {
-        margin: 30px 10px 10px 10px;
+        margin: 30px auto 10px auto;
         padding: 15px;
         max-width: none;
     }
@@ -918,6 +1598,384 @@ button[type="submit"]:disabled {
     
     .register-header h1 {
         font-size: 16px;
+    }
+}
+
+/* Legal Modal Styles */
+.legal-modal {
+    display: none;
+    position: fixed;
+    z-index: 10000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(4px);
+    animation: fadeIn 0.3s ease;
+}
+
+.legal-modal.show {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.legal-modal-content {
+    background: var(--bg-white);
+    border-radius: 12px;
+    width: 90%;
+    max-width: 900px;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    animation: slideUp 0.3s ease;
+    overflow: hidden;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.legal-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border-light);
+    background: var(--bg-white);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.legal-modal-header h2 {
+    margin: 0;
+    font-size: 1.35rem;
+    font-weight: 600;
+    color: var(--text-dark);
+    letter-spacing: -0.3px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.legal-modal-close {
+    color: var(--text-light);
+    font-size: 28px;
+    font-weight: 300;
+    cursor: pointer;
+    line-height: 1;
+    transition: all 0.2s ease;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+}
+
+.legal-modal-close:hover {
+    color: var(--error-red);
+    background: rgba(239, 68, 68, 0.1);
+}
+
+.legal-modal-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0;
+    background: var(--bg-white);
+}
+
+.legal-scroll-content {
+    padding: 20px;
+    line-height: 1.6;
+}
+
+.legal-scroll-content .important-notice {
+    background: rgba(19, 3, 37, 0.04);
+    border: 1px solid var(--border-light);
+    border-radius: 8px;
+    padding: 14px 16px;
+    margin-bottom: 20px;
+}
+
+.legal-scroll-content .important-notice h3 {
+    color: var(--text-dark);
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 0 0 8px 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.legal-scroll-content .important-notice p {
+    color: var(--text-light);
+    font-size: 13px;
+    margin: 0;
+    line-height: 1.5;
+}
+
+.legal-scroll-content .terms-section,
+.legal-scroll-content .privacy-section {
+    margin-bottom: 24px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border-light);
+}
+
+.legal-scroll-content .terms-section:last-child,
+.legal-scroll-content .privacy-section:last-child {
+    border-bottom: none;
+}
+
+.legal-scroll-content .terms-section h2,
+.legal-scroll-content .privacy-section h2 {
+    color: var(--primary-dark);
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 0 0 12px 0;
+    padding: 6px 10px;
+    background: rgba(19, 3, 37, 0.04);
+    border-radius: 6px;
+    display: inline-block;
+}
+
+.legal-scroll-content .terms-section h3,
+.legal-scroll-content .privacy-section h3 {
+    color: var(--text-dark);
+    font-size: 0.95rem;
+    font-weight: 600;
+    margin: 16px 0 8px 0;
+}
+
+.legal-scroll-content .terms-section p,
+.legal-scroll-content .privacy-section p {
+    color: var(--text-light);
+    font-size: 13px;
+    margin-bottom: 12px;
+    line-height: 1.6;
+}
+
+.legal-scroll-content .terms-section ul,
+.legal-scroll-content .privacy-section ul {
+    padding-left: 20px;
+    margin-bottom: 12px;
+}
+
+.legal-scroll-content .terms-section li,
+.legal-scroll-content .privacy-section li {
+    color: var(--text-light);
+    font-size: 13px;
+    margin-bottom: 6px;
+    line-height: 1.5;
+}
+
+.legal-scroll-content .terms-section li strong,
+.legal-scroll-content .privacy-section li strong {
+    color: var(--text-dark);
+    font-weight: 600;
+}
+
+.legal-scroll-content .contact-info {
+    background: var(--bg-light);
+    border: 1px solid var(--border-light);
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin-top: 12px;
+}
+
+.legal-scroll-content .contact-info p {
+    margin: 6px 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+}
+
+.legal-scroll-content .contact-info i {
+    color: var(--primary-dark);
+    width: 18px;
+    font-size: 14px;
+}
+
+.legal-scroll-content .address-block {
+    margin-left: 26px;
+    line-height: 1.5;
+    color: var(--text-light);
+    font-size: 12px;
+}
+
+.legal-scroll-content .acknowledgment-box {
+    background: rgba(19, 3, 37, 0.04);
+    border: 1px solid var(--border-light);
+    border-radius: 8px;
+    padding: 14px 16px;
+    margin-top: 24px;
+}
+
+.legal-scroll-content .acknowledgment-box h3 {
+    color: var(--text-dark);
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 0 0 8px 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.legal-scroll-content .acknowledgment-box p {
+    color: var(--text-light);
+    font-size: 13px;
+    margin-bottom: 8px;
+}
+
+.legal-scroll-content .acknowledgment-box p:last-child {
+    margin-bottom: 0;
+}
+
+/* Custom Scrollbar for Modal */
+.legal-modal-body::-webkit-scrollbar {
+    width: 8px;
+}
+
+.legal-modal-body::-webkit-scrollbar-track {
+    background: var(--bg-light);
+}
+
+.legal-modal-body::-webkit-scrollbar-thumb {
+    background: var(--primary-dark);
+    border-radius: 4px;
+}
+
+.legal-modal-body::-webkit-scrollbar-thumb:hover {
+    background: #0a0118;
+}
+
+.legal-modal-footer {
+    padding: 14px 20px;
+    border-top: 1px solid var(--border-light);
+    background: var(--bg-white);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    position: sticky;
+    bottom: 0;
+    z-index: 10;
+}
+
+.scroll-indicator {
+    text-align: center;
+    color: var(--text-light);
+    font-size: 12px;
+    padding: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.scroll-indicator.hidden {
+    display: none;
+}
+
+.scroll-indicator i {
+    animation: bounce 1s infinite;
+}
+
+@keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-4px); }
+}
+
+.btn-agree-terms,
+.btn-agree-privacy {
+    background: var(--primary-dark);
+    color: var(--bg-white);
+    border: 1.5px solid var(--primary-dark);
+    padding: 10px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.btn-agree-terms:hover:not(:disabled),
+.btn-agree-privacy:hover:not(:disabled) {
+    background: #0a0118;
+    border-color: #0a0118;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(19, 3, 37, 0.15);
+}
+
+.btn-agree-terms:disabled,
+.btn-agree-privacy:disabled {
+    background: var(--bg-light);
+    color: var(--text-light);
+    border-color: var(--border-light);
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.btn-close-modal {
+    background: var(--bg-light);
+    color: var(--text-dark);
+    border: 1.5px solid var(--border-light);
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.btn-close-modal:hover {
+    background: var(--border-light);
+    border-color: var(--text-light);
+}
+
+@media (max-width: 768px) {
+    .legal-modal-content {
+        width: 95%;
+        max-height: 95vh;
+    }
+
+    .legal-modal-header {
+        padding: 12px 16px;
+    }
+
+    .legal-modal-header h2 {
+        font-size: 1.2rem;
+    }
+
+    .legal-scroll-content {
+        padding: 16px;
+    }
+
+    .legal-modal-footer {
+        padding: 12px 16px;
     }
 }
 </style>
@@ -1003,6 +2061,165 @@ function cancelRegistration() {
         window.location.href = 'register.php';
     }
 }
+
+// Modal Functions for Terms & Privacy Policy
+function openTermsModal() {
+    const modal = document.getElementById('termsModal');
+    if (modal) {
+        modal.classList.add('show');
+        document.body.style.overflow = 'hidden';
+        // Reset scroll position
+        const modalBody = document.getElementById('termsModalBody');
+        if (modalBody) {
+            modalBody.scrollTop = 0;
+        }
+        // Reset agree button
+        const agreeBtn = document.getElementById('btnAgreeTerms');
+        if (agreeBtn) {
+            agreeBtn.disabled = true;
+        }
+        // Show scroll indicator
+        const indicator = document.getElementById('termsScrollIndicator');
+        if (indicator) {
+            indicator.classList.remove('hidden');
+        }
+    }
+}
+
+function closeTermsModal() {
+    const modal = document.getElementById('termsModal');
+    if (modal) {
+        modal.classList.remove('show');
+        document.body.style.overflow = '';
+    }
+}
+
+function openPrivacyModal() {
+    const modal = document.getElementById('privacyModal');
+    if (modal) {
+        modal.classList.add('show');
+        document.body.style.overflow = 'hidden';
+        // Reset scroll position
+        const modalBody = document.getElementById('privacyModalBody');
+        if (modalBody) {
+            modalBody.scrollTop = 0;
+        }
+        // Reset agree button
+        const agreeBtn = document.getElementById('btnAgreePrivacy');
+        if (agreeBtn) {
+            agreeBtn.disabled = true;
+        }
+        // Show scroll indicator
+        const indicator = document.getElementById('privacyScrollIndicator');
+        if (indicator) {
+            indicator.classList.remove('hidden');
+        }
+    }
+}
+
+function closePrivacyModal() {
+    const modal = document.getElementById('privacyModal');
+    if (modal) {
+        modal.classList.remove('show');
+        document.body.style.overflow = '';
+    }
+}
+
+function agreeToTerms() {
+    const checkbox = document.getElementById('agree_terms');
+    if (checkbox) {
+        checkbox.disabled = false;
+        checkbox.checked = true;
+        closeTermsModal();
+        checkAgreements();
+    }
+}
+
+function agreeToPrivacy() {
+    const checkbox = document.getElementById('agree_privacy');
+    if (checkbox) {
+        checkbox.disabled = false;
+        checkbox.checked = true;
+        closePrivacyModal();
+        checkAgreements();
+    }
+}
+
+// Scroll tracking for modals
+document.addEventListener('DOMContentLoaded', function() {
+    // Terms Modal Scroll Tracking
+    const termsModalBody = document.getElementById('termsModalBody');
+    const termsAgreeBtn = document.getElementById('btnAgreeTerms');
+    const termsScrollIndicator = document.getElementById('termsScrollIndicator');
+    
+    if (termsModalBody && termsAgreeBtn) {
+        termsModalBody.addEventListener('scroll', function() {
+            const scrollTop = termsModalBody.scrollTop;
+            const scrollHeight = termsModalBody.scrollHeight;
+            const clientHeight = termsModalBody.clientHeight;
+            const scrolledToBottom = scrollTop + clientHeight >= scrollHeight - 10; // 10px threshold
+            
+            if (scrolledToBottom) {
+                termsAgreeBtn.disabled = false;
+                if (termsScrollIndicator) {
+                    termsScrollIndicator.classList.add('hidden');
+                }
+            } else {
+                termsAgreeBtn.disabled = true;
+                if (termsScrollIndicator) {
+                    termsScrollIndicator.classList.remove('hidden');
+                }
+            }
+        });
+    }
+    
+    // Privacy Modal Scroll Tracking
+    const privacyModalBody = document.getElementById('privacyModalBody');
+    const privacyAgreeBtn = document.getElementById('btnAgreePrivacy');
+    const privacyScrollIndicator = document.getElementById('privacyScrollIndicator');
+    
+    if (privacyModalBody && privacyAgreeBtn) {
+        privacyModalBody.addEventListener('scroll', function() {
+            const scrollTop = privacyModalBody.scrollTop;
+            const scrollHeight = privacyModalBody.scrollHeight;
+            const clientHeight = privacyModalBody.clientHeight;
+            const scrolledToBottom = scrollTop + clientHeight >= scrollHeight - 10; // 10px threshold
+            
+            if (scrolledToBottom) {
+                privacyAgreeBtn.disabled = false;
+                if (privacyScrollIndicator) {
+                    privacyScrollIndicator.classList.add('hidden');
+                }
+            } else {
+                privacyAgreeBtn.disabled = true;
+                if (privacyScrollIndicator) {
+                    privacyScrollIndicator.classList.remove('hidden');
+                }
+            }
+        });
+    }
+    
+    // Close modals when clicking outside
+    window.addEventListener('click', function(event) {
+        const termsModal = document.getElementById('termsModal');
+        const privacyModal = document.getElementById('privacyModal');
+        
+        if (event.target === termsModal) {
+            closeTermsModal();
+        }
+        if (event.target === privacyModal) {
+            closePrivacyModal();
+        }
+    });
+    
+    // Close modals with Escape key
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape') {
+            closeTermsModal();
+            closePrivacyModal();
+        }
+    });
+});
 
 // Form validation for registration
 document.addEventListener('DOMContentLoaded', function() {

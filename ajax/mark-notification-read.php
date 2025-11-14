@@ -9,9 +9,22 @@ if (!isset($_SESSION['user_id'])) {
 
 require_once '../config/database.php';
 
-$data = json_decode(file_get_contents('php://input'), true);
-$orderId = isset($data['order_id']) ? (int)$data['order_id'] : 0;
-$isCustom = isset($data['is_custom']) ? (bool)$data['is_custom'] : false;
+// Handle both JSON (from fetch) and FormData (from sendBeacon)
+$orderId = 0;
+$isCustom = false;
+
+$contentType = $_SERVER['CONTENT_TYPE'] ?? '';
+if (strpos($contentType, 'application/json') !== false) {
+    // JSON request
+    $data = json_decode(file_get_contents('php://input'), true);
+    $orderId = isset($data['order_id']) ? (int)$data['order_id'] : 0;
+    $isCustom = isset($data['is_custom']) ? (bool)$data['is_custom'] : false;
+} else {
+    // FormData request (from sendBeacon)
+    $orderId = isset($_POST['order_id']) ? (int)$_POST['order_id'] : 0;
+    $isCustom = isset($_POST['is_custom']) && $_POST['is_custom'] === '1';
+}
+
 $userId = $_SESSION['user_id'];
 
 if ($orderId <= 0) {

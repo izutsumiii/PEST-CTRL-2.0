@@ -1,10 +1,6 @@
 <?php
 require_once 'includes/header.php';
 require_once 'config/database.php';
-?>
-<?php
-
-// remove spacer; align content closer to fixed header
 
 requireLogin();
 
@@ -15,14 +11,131 @@ $stmt = $pdo->prepare("SELECT * FROM users WHERE id = ?");
 $stmt->execute([$userId]);
 $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
-// Handle form submission
+// Check if user_addresses table exists, if not create it
+try {
+    $pdo->exec("CREATE TABLE IF NOT EXISTS user_addresses (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL,
+        address_name VARCHAR(100) NOT NULL COMMENT 'e.g., Home, Work, Office',
+        full_name VARCHAR(255) NOT NULL,
+        phone VARCHAR(20) NOT NULL,
+        address TEXT NOT NULL,
+        is_default TINYINT(1) DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_user_id (user_id),
+        INDEX idx_is_default (is_default)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci");
+} catch (PDOException $e) {
+    // Table might already exist, continue
+}
+
+// Get user addresses
+$addressesStmt = $pdo->prepare("SELECT * FROM user_addresses WHERE user_id = ? ORDER BY is_default DESC, created_at DESC");
+$addressesStmt->execute([$userId]);
+$addresses = $addressesStmt->fetchAll(PDO::FETCH_ASSOC);
+
+// Handle address operations
+$message = '';
+$messageType = '';
+
+if (isset($_POST['add_address'])) {
+    $addressName = sanitizeInput($_POST['address_name']);
+    $fullName = sanitizeInput($_POST['full_name']);
+    $phone = sanitizeInput($_POST['phone']);
+    $address = sanitizeInput($_POST['address']);
+    $isDefault = isset($_POST['is_default']) ? 1 : 0;
+    
+    // If setting as default, unset other defaults
+    if ($isDefault) {
+        $pdo->prepare("UPDATE user_addresses SET is_default = 0 WHERE user_id = ?")->execute([$userId]);
+    }
+    
+    $stmt = $pdo->prepare("INSERT INTO user_addresses (user_id, address_name, full_name, phone, address, is_default) VALUES (?, ?, ?, ?, ?, ?)");
+    $stmt->execute([$userId, $addressName, $fullName, $phone, $address, $isDefault]);
+    
+    $message = 'Address added successfully!';
+    $messageType = 'success';
+    header("Location: edit-profile.php?msg=address_added");
+    exit();
+}
+
+if (isset($_POST['update_address'])) {
+    $addressId = (int)$_POST['address_id'];
+    $addressName = sanitizeInput($_POST['address_name']);
+    $fullName = sanitizeInput($_POST['full_name']);
+    $phone = sanitizeInput($_POST['phone']);
+    $address = sanitizeInput($_POST['address']);
+    $isDefault = isset($_POST['is_default']) ? 1 : 0;
+    
+    // Verify address belongs to user
+    $checkStmt = $pdo->prepare("SELECT user_id FROM user_addresses WHERE id = ?");
+    $checkStmt->execute([$addressId]);
+    $addr = $checkStmt->fetch(PDO::FETCH_ASSOC);
+    
+    if ($addr && $addr['user_id'] == $userId) {
+        // If setting as default, unset other defaults
+        if ($isDefault) {
+            $pdo->prepare("UPDATE user_addresses SET is_default = 0 WHERE user_id = ? AND id != ?")->execute([$userId, $addressId]);
+        }
+        
+        $stmt = $pdo->prepare("UPDATE user_addresses SET address_name = ?, full_name = ?, phone = ?, address = ?, is_default = ? WHERE id = ? AND user_id = ?");
+        $stmt->execute([$addressName, $fullName, $phone, $address, $isDefault, $addressId, $userId]);
+        
+        $message = 'Address updated successfully!';
+        $messageType = 'success';
+        header("Location: edit-profile.php?msg=address_updated");
+        exit();
+    }
+}
+
+if (isset($_POST['delete_address'])) {
+    $addressId = (int)$_POST['address_id'];
+    
+    // Verify address belongs to user
+    $checkStmt = $pdo->prepare("SELECT user_id FROM user_addresses WHERE id = ?");
+    $checkStmt->execute([$addressId]);
+    $addr = $checkStmt->fetch(PDO::FETCH_ASSOC);
+    
+    if ($addr && $addr['user_id'] == $userId) {
+        $stmt = $pdo->prepare("DELETE FROM user_addresses WHERE id = ? AND user_id = ?");
+        $stmt->execute([$addressId, $userId]);
+        
+        $message = 'Address deleted successfully!';
+        $messageType = 'success';
+        header("Location: edit-profile.php?msg=address_deleted");
+        exit();
+    }
+}
+
+if (isset($_POST['set_default_address'])) {
+    $addressId = (int)$_POST['address_id'];
+    
+    // Verify address belongs to user
+    $checkStmt = $pdo->prepare("SELECT user_id FROM user_addresses WHERE id = ?");
+    $checkStmt->execute([$addressId]);
+    $addr = $checkStmt->fetch(PDO::FETCH_ASSOC);
+    
+    if ($addr && $addr['user_id'] == $userId) {
+        // Unset all defaults
+        $pdo->prepare("UPDATE user_addresses SET is_default = 0 WHERE user_id = ?")->execute([$userId]);
+        // Set this as default
+        $pdo->prepare("UPDATE user_addresses SET is_default = 1 WHERE id = ? AND user_id = ?")->execute([$addressId, $userId]);
+        
+        $message = 'Default address updated!';
+        $messageType = 'success';
+        header("Location: edit-profile.php?msg=default_updated");
+        exit();
+    }
+}
+
+// Handle profile update
 if (isset($_POST['update_profile'])) {
     $username = sanitizeInput($_POST['username']);
     $firstName = sanitizeInput($_POST['first_name']);
     $lastName = sanitizeInput($_POST['last_name']);
     $email = sanitizeInput($_POST['email']);
     $phone = sanitizeInput($_POST['phone']);
-    $address = sanitizeInput($_POST['address']);
     
     // Check if email already exists (excluding current user)
     $stmt = $pdo->prepare("SELECT * FROM users WHERE email = ? AND id != ?");
@@ -35,18 +148,23 @@ if (isset($_POST['update_profile'])) {
     $existingUsername = $stmt->fetch(PDO::FETCH_ASSOC);
     
     if ($existingUser) {
-        echo "<p class=\"error-message\">Error: Email already exists.</p>";
+        $message = 'Error: Email already exists.';
+        $messageType = 'error';
     } elseif ($existingUsername) {
-        echo "<p class=\"error-message\">Error: Username already exists.</p>";
+        $message = 'Error: Username already exists.';
+        $messageType = 'error';
     } else {
-        $stmt = $pdo->prepare("UPDATE users SET username = ?, first_name = ?, last_name = ?, email = ?, phone = ?, address = ? WHERE id = ?");
-        $stmt->execute([$username, $firstName, $lastName, $email, $phone, $address, $userId]);
+        $stmt = $pdo->prepare("UPDATE users SET username = ?, first_name = ?, last_name = ?, email = ?, phone = ? WHERE id = ?");
+        $stmt->execute([$username, $firstName, $lastName, $email, $phone, $userId]);
         
-        echo "<p class=\"success-message\">Profile updated successfully!</p>";
-        header("Refresh:2");
+        $message = 'Profile updated successfully!';
+        $messageType = 'success';
+        header("Location: edit-profile.php?msg=profile_updated");
+        exit();
     }
 }
 
+// Handle password change
 if (isset($_POST['change_password'])) {
     $currentPassword = $_POST['current_password'];
     $newPassword = $_POST['new_password'];
@@ -59,606 +177,708 @@ if (isset($_POST['change_password'])) {
             $stmt = $pdo->prepare("UPDATE users SET password = ? WHERE id = ?");
             $stmt->execute([$hashedPassword, $userId]);
             
-            echo "<p class=\"success-message\">Password changed successfully!</p>";
+            $message = 'Password changed successfully!';
+            $messageType = 'success';
+            header("Location: edit-profile.php?msg=password_updated");
+            exit();
         } else {
-            echo "<p class=\"error-message\">Error: New passwords do not match.</p>";
+            $message = 'Error: New passwords do not match.';
+            $messageType = 'error';
         }
     } else {
-        echo "<p class=\"error-message\">Error: Current password is incorrect.</p>";
+        $message = 'Error: Current password is incorrect.';
+        $messageType = 'error';
+    }
+}
+
+// Get updated addresses after operations
+$addressesStmt = $pdo->prepare("SELECT * FROM user_addresses WHERE user_id = ? ORDER BY is_default DESC, created_at DESC");
+$addressesStmt->execute([$userId]);
+$addresses = $addressesStmt->fetchAll(PDO::FETCH_ASSOC);
+
+// Check for URL messages
+if (isset($_GET['msg'])) {
+    switch ($_GET['msg']) {
+        case 'address_added':
+        case 'address_updated':
+        case 'address_deleted':
+        case 'default_updated':
+        case 'profile_updated':
+        case 'password_updated':
+            $message = 'Operation completed successfully!';
+            $messageType = 'success';
+            break;
     }
 }
 ?>
 
 <style>
-/* Force body and html to have full background coverage */
-html, body {
-    margin: 0;
-    padding: 0;
-    min-height: 100vh;
-    background: #F9F9F9 !important; /* light background */
+:root {
+    --primary-dark: #130325;
+    --accent-yellow: #FFD736;
+    --text-dark: #1a1a1a;
+    --text-light: #6b7280;
+    --border-light: #e5e7eb;
+    --bg-light: #f9fafb;
+    --bg-white: #ffffff;
+    --success-green: #10b981;
+    --error-red: #ef4444;
 }
 
-/* Main container styling */
-main {
-    background: transparent !important;
-    margin: 0 !important;
-    padding: 5px 0 60px 0 !important;
-    min-height: calc(100vh - 60px) !important;
+body { 
+    background: var(--bg-light) !important; 
+    color: var(--text-dark); 
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
-/* Edit Profile Styles - aligned with multi-seller checkout design */
-
-.profile-header {
-    max-width: 1400px;
-    margin: 0 60px 15px 60px;
-    padding: 20px;
-    background: #ffffff;
-    border: 1px solid rgba(0, 0, 0, 0.1);
-    border-radius: 12px;
-    box-shadow: none;
-    display: flex;
-    align-items: center;
-    gap: 16px;
+.profile-container {
+    max-width: 1600px;
+    margin: 0 auto;
+    padding: 12px 20px;
 }
 
-.profile-avatar {
-    width: 64px;
-    height: 64px;
-    border-radius: 50%;
-    border: 3px solid #130325;
-    background: #F3F3F3;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #130325;
-    font-weight: 800;
-    font-size: 1.1rem;
-}
-
-.profile-meta {
-    display: flex;
-    flex-direction: column;
-}
-
-.profile-name {
-    color: #130325;
-    font-size: 1.1rem;
-    font-weight: 700;
+.page-title,
+h1.page-title {
+    color: var(--text-dark);
+    margin: 0 0 16px 0;
+    font-size: 1.35rem;
+    font-weight: 600;
+    letter-spacing: -0.3px;
     line-height: 1.2;
 }
 
-.profile-email {
-    color: #6b7280;
-    font-size: 0.9rem;
+.alert {
+    padding: 10px 14px;
+    border-radius: 8px;
+    margin-bottom: 14px;
+    border-left: 4px solid;
+    font-size: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
-/* Compact header action buttons */
-#editAccountBtn,
-#changePasswordBtn {
-    padding: 6px 12px !important;
-    font-size: 0.85rem !important;
-    border-radius: 6px !important;
+.alert-success {
+    background-color: #d1fae5;
+    border-left-color: var(--success-green);
+    border: 1px solid #a7f3d0;
+    color: #065f46;
 }
 
-/* Action toggle (single icon button) */
-.action-toggle-btn {
-    background: transparent;
-    color: #130325;
-    border: none;
-    border-radius: 0;
-    width: auto;
-    height: auto;
-    display: inline-flex;
+.alert-error {
+    background-color: #fef2f2;
+    border-left-color: var(--error-red);
+    border: 1px solid #fecaca;
+    color: #991b1b;
+}
+
+.profile-content {
+    display: grid;
+    grid-template-columns: 1fr 1.2fr;
+    gap: 16px;
+    margin-top: 12px;
+}
+
+.profile-section {
+    background-color: var(--bg-white);
+    border: 1px solid var(--border-light);
+    padding: 14px 16px;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.profile-section h2 {
+    color: var(--text-dark);
+    margin-bottom: 12px;
+    font-weight: 600;
+    font-size: 1.1rem;
+    letter-spacing: -0.3px;
+}
+
+.profile-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    background: var(--bg-white);
+    border: 1px solid var(--border-light);
+    border-radius: 10px;
+    margin-bottom: 14px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.profile-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: 2px solid var(--primary-dark);
+    background: rgba(19, 3, 37, 0.05);
+    display: flex;
     align-items: center;
     justify-content: center;
-    cursor: pointer;
-    padding: 0;
-    font-size: 18px;
-}
-
-.action-toggle-btn:hover {
-    color: #FFD736;
-}
-
-.profile-actions-menu {
-    position: absolute;
-    right: 0;
-    top: 42px;
-    background: #ffffff;
-    border: 1px solid rgba(0,0,0,0.1);
-    border-radius: 8px;
-    box-shadow: 0 8px 16px rgba(0,0,0,0.08);
-    padding: 6px;
-    min-width: 180px;
-    z-index: 1000;
-    display: none;
-}
-
-.profile-actions-menu button {
-    width: 100%;
-    background: transparent;
-    color: #130325;
-    border: none;
-    text-align: left;
-    padding: 8px 10px;
-    border-radius: 6px;
+    color: var(--primary-dark);
+    font-weight: 700;
     font-size: 0.9rem;
 }
 
-.profile-actions-menu button:hover {
-    background: #F0F2F5;
-}
-
-.profile-editor h1,
-.profile-editor h2,
-.profile-editor h3 {
-    color: var(--primary-light);
-    text-align: center;
-    margin: 10px 0;
-    font-size: 2rem;
-    text-shadow: none !important;
-}
-
-/* Main profile editor container */
-.profile-editor {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 40px;
-    max-width: 1400px;
-    margin: 0 60px 20px 60px;
-    padding: 0;
-}
-
-/* Section styling */
-.personal-info,
-.password-change {
-    background: #ffffff;
-    padding: 25px;
-    border-radius: 8px;
-    box-shadow: none; /* remove shadow */
-    border: 1px solid rgba(0,0,0,0.1);
-}
-
-.personal-info h2,
-.password-change h2 {
-    color: #130325;
-    margin-bottom: 20px;
-    text-shadow: none !important;
-    font-size: 1.2rem;
-    padding-bottom: 10px;
-    border-bottom: 2px solid #F0F2F5;
-}
-
-/* Form styling (scoped to profile editor to avoid affecting header search) */
-.profile-editor form {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-}
-
-.profile-editor form div {
-    display: flex;
-    flex-direction: column;
-}
-
-/* Label styling */
-.profile-editor label {
-    margin-bottom: 5px;
-    color: #130325;
-    font-weight: 500;
-    font-size: 0.875rem;
-}
-
-/* Input styling */
-.profile-editor input[type="text"],
-.profile-editor input[type="email"],
-.profile-editor input[type="tel"],
-.profile-editor input[type="password"],
-.profile-editor textarea {
-    padding: 10px;
-    border: 1px solid #ced4da;
-    border-radius: 4px;
-    font-size: 0.875rem;
-    transition: border-color 0.3s;
-    background: #ffffff;
-    color: #130325;
-}
-
-.profile-editor input:focus,
-.profile-editor textarea:focus {
-    outline: none;
-    border-color: var(--accent-yellow);
-    box-shadow: 0 0 0 3px rgba(255, 215, 54, 0.3);
-}
-
-/* Textarea specific styling */
-.profile-editor textarea {
-    min-height: 80px;
-    resize: vertical;
-    font-family: inherit;
-}
-
-/* Button container */
-.profile-editor form > div[style*="display:flex"] {
-    margin-top: 16px;
-    padding-top: 16px;
-    border-top: 1px solid #e5e7eb;
-    display: flex !important;
-    flex-direction: row !important;
-    gap: 10px !important;
-    justify-content: flex-start !important;
-}
-
-/* Button styling */
-.profile-editor button[type="submit"] {
-    background: linear-gradient(135deg, #FFD736 0%, #FFC107 100%);
-    color: #130325;
-    padding: 8px 16px;
-    border: none;
-    border-radius: 6px;
-    font-size: 0.8125rem;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    font-weight: 700;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-}
-
-.profile-editor button[type="submit"]:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(255, 215, 54, 0.3);
-}
-
-.profile-editor button[type="submit"]:active {
-    transform: translateY(0);
-}
-
-.btn-secondary {
-    background: #ef4444;
-    color: #ffffff;
-    border: none;
-    padding: 8px 16px;
-    border-radius: 6px;
-    font-size: 0.8125rem;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    font-weight: 700;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-}
-
-.btn-secondary:hover { 
-    background: #dc2626;
-    transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
-}
-
-.account-summary { 
-    display: grid; 
-    grid-template-columns: repeat(2, minmax(260px, 1fr));
-    gap: 12px 20px; 
-}
-
-.summary-row { 
-    display: flex; 
-    justify-content: space-between; 
-    gap: 10px; 
-    color: #130325; 
-    padding: 8px 0;
-    border-bottom: 1px solid #F0F2F5;
-    background: #ffffff;
-}
-
-.summary-row:last-child {
-    border-bottom: none;
-}
-
-.summary-row strong { 
-    color: #374151; 
-}
-
-.account-actions { 
-    display: flex; 
-    gap: 10px; 
-    margin-top: 15px; 
-}
-
-.account-actions button {
-    background: #FFD736;
-    color: #130325;
-    padding: 12px 24px;
-    border: none;
-    border-radius: 4px;
-    font-size: 1rem;
-    cursor: pointer;
-    transition: background-color 0.3s, transform 0.2s;
-    font-weight: 600;
+.profile-meta {
     flex: 1;
 }
 
-.account-actions button:hover {
-    background: #e6c230;
+.profile-name {
+    color: var(--text-dark);
+    font-size: 1rem;
+    font-weight: 600;
+    line-height: 1.3;
+}
+
+.profile-email {
+    color: var(--text-light);
+    font-size: 0.85rem;
+}
+
+.form-group {
+    margin-bottom: 14px;
+}
+
+.form-group label {
+    color: var(--text-dark);
+    font-weight: 600;
+    margin-bottom: 5px;
+    display: block;
+    font-size: 12px;
+}
+
+.form-group input,
+.form-group textarea,
+.form-group select {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1.5px solid var(--border-light);
+    border-radius: 8px;
+    font-size: 13px;
+    background: var(--bg-white);
+    color: var(--text-dark);
+    transition: all 0.2s ease;
+    font-family: inherit;
+    box-sizing: border-box;
+}
+
+.form-group input:focus,
+.form-group textarea:focus,
+.form-group select:focus {
+    outline: none;
+    border-color: var(--primary-dark);
+    box-shadow: 0 0 0 3px rgba(19, 3, 37, 0.1);
+}
+
+.form-group textarea {
+    min-height: 80px;
+    resize: vertical;
+}
+
+.btn {
+    padding: 8px 14px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 12px;
+    text-decoration: none;
+    text-align: center;
+    transition: all 0.2s ease;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    font-family: inherit;
+}
+
+.btn-primary {
+    background-color: var(--primary-dark);
+    color: white;
+}
+
+.btn-primary:hover {
+    background-color: #0a0118;
     transform: translateY(-1px);
 }
 
-.hint { 
-    color: #130325; /* dark purple text */
-    opacity: 1; 
-    font-size: 0.9rem; 
-    margin-top: 8px; 
-    text-align: center;
-    padding: 15px;
-    background: rgba(19, 3, 37, 0.08); /* transparent dark purple background */
-    border-radius: 4px;
+.btn-yellow {
+    background-color: var(--primary-dark);
+    color: var(--bg-white);
 }
 
-
-/* Success/Error message styling */
-.profile-editor p {
-    padding: 10px;
-    border-radius: 5px;
-    margin: 10px 0;
-    text-align: center;
-    font-weight: 500;
+.btn-yellow:hover {
+    background-color: #0a0118;
+    transform: translateY(-1px);
 }
 
-/* Success message (would need to be added via PHP class) */
-.success-message {
-    background: #d4edda;
-    color: #155724;
-    border: 1px solid #c3e6cb;
+.btn-secondary {
+    background-color: var(--text-light);
+    color: white;
 }
 
-/* Error message (would need to be added via PHP class) */
-.error-message {
-    background: #f8d7da;
-    color: #721c24;
-    border: 1px solid #f5c6cb;
+.btn-secondary:hover {
+    background-color: #4b5563;
+    transform: translateY(-1px);
 }
 
-/* Page title styling */
-h1 {
-    color: #130325 !important;
-    text-align: left;
-    margin: 0 60px 16px 60px !important;
-    font-size: 2.5rem;
+.btn-danger {
+    background-color: var(--error-red);
+    color: white;
+}
+
+.btn-danger:hover {
+    background-color: #dc2626;
+    transform: translateY(-1px);
+}
+
+.btn-sm {
+    padding: 6px 12px;
+    font-size: 11px;
+}
+
+.form-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 14px;
+}
+
+/* Address Cards */
+.addresses-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 16px;
+}
+
+.address-card {
+    border: 1.5px solid var(--border-light);
+    border-radius: 10px;
+    padding: 12px;
+    background: var(--bg-white);
+    transition: all 0.2s ease;
+    position: relative;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.address-card:hover {
+    border-color: var(--primary-dark);
+    background: rgba(19, 3, 37, 0.02);
+    box-shadow: 0 2px 6px rgba(19, 3, 37, 0.1);
+}
+
+.address-card.default {
+    border-color: var(--primary-dark);
+    background: rgba(19, 3, 37, 0.03);
+}
+
+.address-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 12px;
+}
+
+.address-name {
     font-weight: 700;
-    text-shadow: none !important;
+    font-size: 14px;
+    color: var(--text-dark);
+    display: flex;
+    align-items: center;
+    gap: 6px;
 }
 
-/* Responsive design */
-@media (max-width: 768px) {
-    .profile-editor {
+.default-badge {
+    background: var(--primary-dark);
+    color: var(--bg-white);
+    padding: 3px 8px;
+    border-radius: 999px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.address-details {
+    color: var(--text-light);
+    font-size: 13px;
+    line-height: 1.5;
+    margin-bottom: 10px;
+}
+
+.address-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+    flex-wrap: wrap;
+}
+
+.add-address-btn {
+    width: 100%;
+    padding: 10px;
+    border: 2px dashed var(--border-light);
+    border-radius: 10px;
+    background: var(--bg-white);
+    color: var(--text-dark);
+    font-weight: 600;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    margin-top: 12px;
+}
+
+.add-address-btn:hover {
+    border-color: var(--primary-dark);
+    background: rgba(19, 3, 37, 0.02);
+}
+
+/* Modal */
+.modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 10000;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.modal-content {
+    background: white;
+    border-radius: 12px;
+    width: 100%;
+    max-width: 600px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+    border-top: 3px solid var(--primary-dark);
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--border-light);
+    background: var(--bg-white);
+}
+
+.modal-header h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-dark);
+}
+
+.modal-close {
+    background: var(--bg-light);
+    border: none;
+    font-size: 24px;
+    color: var(--text-dark);
+    cursor: pointer;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.modal-close:hover {
+    background: var(--border-light);
+}
+
+.modal-body {
+    padding: 16px 18px;
+}
+
+.checkbox-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.checkbox-group input[type="checkbox"] {
+    width: auto;
+    accent-color: var(--primary-dark);
+}
+
+.checkbox-group label {
+    margin: 0;
+    font-weight: 500;
+    cursor: pointer;
+}
+
+@media (max-width: 968px) {
+    .profile-container {
+        padding: 10px 12px;
+        max-width: 100%;
+    }
+    
+    .profile-content {
         grid-template-columns: 1fr;
-        gap: 20px;
-        margin: 10px 20px;
-        padding: 0;
+        gap: 12px;
+    }
+    
+    .profile-section {
+        padding: 12px 14px;
+    }
+    
+    .form-actions {
+        flex-direction: column;
+        gap: 6px;
+    }
+    
+    .form-actions .btn {
+        width: 100%;
+    }
+    
+    .page-title,
+    h1.page-title {
+        font-size: 1.2rem;
+        margin-bottom: 12px;
+    }
+    
+    .profile-section h2 {
+        font-size: 1rem;
+        margin-bottom: 10px;
     }
     
     .profile-header {
-        margin: 0 20px 15px 20px;
+        padding: 10px 12px;
     }
     
-    .personal-info,
-    .password-change {
-        padding: 20px;
+    .profile-avatar {
+        width: 40px;
+        height: 40px;
+        font-size: 0.85rem;
     }
     
-    h1 {
-        font-size: 1.8rem !important;
-        margin: 0 20px 20px 20px !important;
+    .profile-name {
+        font-size: 0.95rem;
     }
     
-    .personal-info h2,
-    .password-change h2 {
-        font-size: 1.3rem;
-    }
-
-    .account-actions {
-        flex-direction: column;
-    }
-
-    .account-actions button {
-        flex: none;
-        width: 100%;
-    }
-}
-
-@media (max-width: 480px) {
-    .personal-info,
-    .password-change {
-        padding: 15px;
-    }
-    
-    .profile-editor input[type="text"],
-    .profile-editor input[type="email"],
-    .profile-editor input[type="tel"],
-    .profile-editor input[type="password"],
-    .profile-editor textarea {
-        padding: 10px;
-    }
-    
-    .profile-editor button[type="submit"],
-    .btn-secondary {
-        padding: 10px 20px;
-    }
-
-    h1 {
-        font-size: 1.5rem !important;
+    .profile-email {
+        font-size: 0.8rem;
     }
 }
 </style>
 
-<main>
-<div style="max-width: 1200px; margin: 0 auto; padding: 10px 20px;">
-<h1>My Account</h1>
+<main style="background: var(--bg-light); min-height: 100vh; padding: 0;">
+<div class="profile-container">
+    <h1 class="page-title">My Profile</h1>
 
-<div class="profile-header">
-    <div class="profile-avatar">
-        <?php 
-            $initials = strtoupper(substr($user['first_name'] ?? 'U', 0, 1) . substr($user['last_name'] ?? 'S', 0, 1));
-            echo htmlspecialchars($initials);
-        ?>
-    </div>
-    <div class="profile-meta">
-        <div class="profile-name"><?php echo htmlspecialchars(trim(($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? '')) ?: ($user['username'] ?? 'User')); ?></div>
-        <div class="profile-email"><?php echo htmlspecialchars($user['email'] ?? ''); ?></div>
-    </div>
-    <div style="margin-left:auto; position: relative;">
-        <button id="actionsToggle" type="button" class="action-toggle-btn" title="Actions">
-            <i class="fas fa-edit"></i>
-        </button>
-        <div id="actionsMenu" class="profile-actions-menu">
-            <button id="editAccountBtn" type="button"><i class="fas fa-user-cog" style="margin-right:8px;"></i>Edit Account</button>
-            <button id="changePasswordBtn" type="button"><i class="fas fa-key" style="margin-right:8px;"></i>Change Password</button>
+    <?php if ($message): ?>
+        <div class="alert alert-<?php echo $messageType; ?>">
+            <?php echo htmlspecialchars($message); ?>
+        </div>
+    <?php endif; ?>
+
+    <div class="profile-header">
+        <div class="profile-avatar">
+            <?php 
+                $initials = strtoupper(substr($user['first_name'] ?? 'U', 0, 1) . substr($user['last_name'] ?? 'S', 0, 1));
+                echo htmlspecialchars($initials);
+            ?>
+        </div>
+        <div class="profile-meta">
+            <div class="profile-name"><?php echo htmlspecialchars(trim(($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? '')) ?: ($user['username'] ?? 'User')); ?></div>
+            <div class="profile-email"><?php echo htmlspecialchars($user['email'] ?? ''); ?></div>
         </div>
     </div>
-</div>
 
-<div class="profile-editor">
-    <div class="personal-info">
-        <h2>Account Details</h2>
-        <div class="account-summary">
-            <div class="summary-row"><strong>Username:</strong> <span><?php echo htmlspecialchars($user['username'] ?? ''); ?></span></div>
-            <div class="summary-row"><strong>Name:</strong> <span><?php echo htmlspecialchars(trim(($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? ''))); ?></span></div>
-            <div class="summary-row"><strong>Email:</strong> <span><?php echo htmlspecialchars($user['email'] ?? ''); ?></span></div>
-            <div class="summary-row"><strong>Phone:</strong> <span><?php echo htmlspecialchars($user['phone'] ?? ''); ?></span></div>
-            <div class="summary-row"><strong>Address:</strong> <span><?php echo htmlspecialchars($user['address'] ?? ''); ?></span></div>
+    <div class="profile-content">
+        <!-- Personal Information -->
+        <div class="profile-section">
+            <h2>Personal Information</h2>
+            <form method="POST" action="">
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" name="username" value="<?php echo htmlspecialchars($user['username'] ?? ''); ?>" required>
+                </div>
+                <div class="form-group">
+                    <label for="first_name">First Name</label>
+                    <input type="text" id="first_name" name="first_name" value="<?php echo htmlspecialchars($user['first_name'] ?? ''); ?>" required>
+                </div>
+                <div class="form-group">
+                    <label for="last_name">Last Name</label>
+                    <input type="text" id="last_name" name="last_name" value="<?php echo htmlspecialchars($user['last_name'] ?? ''); ?>" required>
+                </div>
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" name="email" value="<?php echo htmlspecialchars($user['email'] ?? ''); ?>" required>
+                </div>
+                <div class="form-group">
+                    <label for="phone">Phone</label>
+                    <input type="tel" id="phone" name="phone" value="<?php echo htmlspecialchars($user['phone'] ?? ''); ?>">
+                </div>
+                <div class="form-actions">
+                    <button type="submit" name="update_profile" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Save Changes
+                    </button>
+                </div>
+            </form>
+
+            <h2 style="margin-top: 40px;">Change Password</h2>
+            <form method="POST" action="">
+                <div class="form-group">
+                    <label for="current_password">Current Password</label>
+                    <input type="password" id="current_password" name="current_password" required>
+                </div>
+                <div class="form-group">
+                    <label for="new_password">New Password</label>
+                    <input type="password" id="new_password" name="new_password" required>
+                </div>
+                <div class="form-group">
+                    <label for="confirm_password">Confirm New Password</label>
+                    <input type="password" id="confirm_password" name="confirm_password" required>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" name="change_password" class="btn btn-primary">
+                        <i class="fas fa-key"></i> Update Password
+                    </button>
+                </div>
+            </form>
         </div>
-        <div class="account-actions" style="display:none;">
-            <button id="editAccountBtn" type="button">Edit Account</button>
-            <button id="changePasswordBtn" type="button">Change Password</button>
+
+        <!-- Addresses -->
+        <div class="profile-section">
+            <h2>My Addresses</h2>
+            <div class="addresses-list">
+                <?php if (empty($addresses)): ?>
+                    <p style="color: var(--text-light); text-align: center; padding: 40px 0;">No addresses saved yet. Add your first address below.</p>
+                <?php else: ?>
+                    <?php foreach ($addresses as $addr): ?>
+                        <div class="address-card <?php echo $addr['is_default'] ? 'default' : ''; ?>">
+                            <div class="address-header">
+                                <div class="address-name">
+                                    <i class="fas fa-map-marker-alt"></i>
+                                    <?php echo htmlspecialchars($addr['address_name']); ?>
+                                    <?php if ($addr['is_default']): ?>
+                                        <span class="default-badge">Default</span>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                            <div class="address-details">
+                                <div><strong><?php echo htmlspecialchars($addr['full_name']); ?></strong></div>
+                                <div><?php echo htmlspecialchars($addr['phone']); ?></div>
+                                <div style="margin-top: 8px;"><?php echo nl2br(htmlspecialchars($addr['address'])); ?></div>
+                            </div>
+                            <div class="address-actions">
+                                <?php if (!$addr['is_default']): ?>
+                                    <form method="POST" action="" style="display: inline;">
+                                        <input type="hidden" name="address_id" value="<?php echo $addr['id']; ?>">
+                                        <button type="submit" name="set_default_address" class="btn btn-yellow btn-sm">
+                                            <i class="fas fa-star"></i> Set as Default
+                                        </button>
+                                    </form>
+                                <?php endif; ?>
+                                <button type="button" onclick="editAddress(<?php echo htmlspecialchars(json_encode($addr)); ?>)" class="btn btn-primary btn-sm">
+                                    <i class="fas fa-edit"></i> Edit
+                                </button>
+                                <form method="POST" action="" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this address?');">
+                                    <input type="hidden" name="address_id" value="<?php echo $addr['id']; ?>">
+                                    <button type="submit" name="delete_address" class="btn btn-danger btn-sm">
+                                        <i class="fas fa-trash"></i> Delete
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+                
+                <button type="button" onclick="showAddAddressModal()" class="add-address-btn">
+                    <i class="fas fa-plus"></i> Add New Address
+                </button>
+            </div>
         </div>
-
-        <!-- Hidden Edit Form -->
-        <form id="editAccountForm" method="POST" action="" style="display:none; margin-top:20px;">
-            <div>
-                <label for="username">Username:</label>
-                <input type="text" id="username" name="username" value="<?php echo htmlspecialchars($user['username'] ?? ''); ?>" required>
-            </div>
-            <div>
-                <label for="first_name">First Name:</label>
-                <input type="text" id="first_name" name="first_name" value="<?php echo htmlspecialchars($user['first_name'] ?? ''); ?>" required>
-            </div>
-            <div>
-                <label for="last_name">Last Name:</label>
-                <input type="text" id="last_name" name="last_name" value="<?php echo htmlspecialchars($user['last_name'] ?? ''); ?>" required>
-            </div>
-            <div>
-                <label for="email">Email:</label>
-                <input type="email" id="email" name="email" value="<?php echo htmlspecialchars($user['email'] ?? ''); ?>" required>
-            </div>
-            <div>
-                <label for="phone">Phone:</label>
-                <input type="tel" id="phone" name="phone" value="<?php echo htmlspecialchars($user['phone'] ?? ''); ?>">
-            </div>
-            <div>
-                <label for="address">Address:</label>
-                <textarea id="address" name="address"><?php echo htmlspecialchars($user['address'] ?? ''); ?></textarea>
-            </div>
-            <div style="display:flex; gap:10px; justify-content: flex-start;">
-                <button type="submit" name="update_profile">
-                    <i class="fas fa-check"></i> Save Changes
-                </button>
-                <button type="button" id="cancelEditBtn" class="btn-secondary">
-                    <i class="fas fa-times"></i> Cancel
-                </button>
-            </div>
-        </form>
     </div>
-    
-    <div class="password-change">
-        <h2>Change Password</h2>
-        <div id="passwordHint" class="hint">Click "Change Password" button on the left to update your password.</div>
-        <form id="changePasswordForm" method="POST" action="" style="display:none; margin-top: 20px;">
-            <div>
-                <label for="current_password">Current Password:</label>
-                <input type="password" id="current_password" name="current_password" required>
-            </div>
-            <div>
-                <label for="new_password">New Password:</label>
-                <input type="password" id="new_password" name="new_password" required>
-            </div>
-            <div>
-                <label for="confirm_password">Confirm New Password:</label>
-                <input type="password" id="confirm_password" name="confirm_password" required>
-            </div>
-            <div style="display:flex; gap:10px; justify-content: flex-start;">
-                <button type="submit" name="change_password">
-                    <i class="fas fa-check"></i> Update Password
-                </button>
-                <button type="button" id="cancelPwBtn" class="btn-secondary">
-                    <i class="fas fa-times"></i> Cancel
-                </button>
-            </div>
-        </form>
-    </div>
-
- </div>
 </div>
 </main>
 
+<!-- Add/Edit Address Modal -->
+<div id="addressModal" class="modal-overlay" onclick="if(event.target === this) closeAddressModal()">
+    <div class="modal-content" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <h3 id="modalTitle">Add New Address</h3>
+            <button type="button" class="modal-close" onclick="closeAddressModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <form method="POST" action="" id="addressForm">
+                <input type="hidden" name="address_id" id="address_id">
+                <div class="form-group">
+                    <label for="address_name">Address Name *</label>
+                    <select id="address_name" name="address_name" required>
+                        <option value="">Select...</option>
+                        <option value="Home">Home</option>
+                        <option value="Work">Work</option>
+                        <option value="Office">Office</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="full_name">Full Name *</label>
+                    <input type="text" id="full_name" name="full_name" required>
+                </div>
+                <div class="form-group">
+                    <label for="phone">Phone Number *</label>
+                    <input type="tel" id="phone" name="phone" required>
+                </div>
+                <div class="form-group">
+                    <label for="address">Address *</label>
+                    <textarea id="address" name="address" required></textarea>
+                </div>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="is_default" name="is_default">
+                    <label for="is_default">Set as default address</label>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" name="add_address" id="submitBtn" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Save Address
+                    </button>
+                    <button type="button" onclick="closeAddressModal()" class="btn btn-secondary">
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const editBtn = document.getElementById('editAccountBtn');
-    const changePwBtn = document.getElementById('changePasswordBtn');
-    const editForm = document.getElementById('editAccountForm');
-    const pwForm = document.getElementById('changePasswordForm');
-    const cancelEdit = document.getElementById('cancelEditBtn');
-    const cancelPw = document.getElementById('cancelPwBtn');
-    const pwHint = document.getElementById('passwordHint');
-    const actionsToggle = document.getElementById('actionsToggle');
-    const actionsMenu = document.getElementById('actionsMenu');
+function showAddAddressModal() {
+    document.getElementById('modalTitle').textContent = 'Add New Address';
+    document.getElementById('addressForm').reset();
+    document.getElementById('address_id').value = '';
+    document.getElementById('submitBtn').name = 'add_address';
+    document.getElementById('addressModal').style.display = 'flex';
+}
 
-    if (editBtn && editForm) {
-        editBtn.addEventListener('click', function() {
-            editForm.style.display = (editForm.style.display !== 'none') ? 'none' : 'block';
-            pwForm.style.display = 'none';
-            if (pwHint) pwHint.style.display = 'block';
-            if (actionsMenu) actionsMenu.style.display = 'none';
-        });
-    }
-    
-    if (changePwBtn && pwForm && pwHint) {
-        changePwBtn.addEventListener('click', function() {
-            const show = pwForm.style.display === 'none';
-            pwForm.style.display = show ? 'block' : 'none';
-            pwHint.style.display = show ? 'none' : 'block';
-            editForm.style.display = 'none';
-            if (actionsMenu) actionsMenu.style.display = 'none';
-        });
-    }
-    
-    if (cancelEdit && editForm) {
-        cancelEdit.addEventListener('click', function(){ 
-            editForm.style.display = 'none'; 
-        });
-    }
-    
-    if (cancelPw && pwForm && pwHint) {
-        cancelPw.addEventListener('click', function(){ 
-            pwForm.style.display = 'none'; 
-            pwHint.style.display = 'block'; 
-        });
-    }
+function editAddress(address) {
+    document.getElementById('modalTitle').textContent = 'Edit Address';
+    document.getElementById('address_id').value = address.id;
+    document.getElementById('address_name').value = address.address_name;
+    document.getElementById('full_name').value = address.full_name;
+    document.getElementById('phone').value = address.phone;
+    document.getElementById('address').value = address.address;
+    document.getElementById('is_default').checked = address.is_default == 1;
+    document.getElementById('submitBtn').name = 'update_address';
+    document.getElementById('addressModal').style.display = 'flex';
+}
 
-    // Toggle actions menu
-    if (actionsToggle && actionsMenu) {
-        actionsToggle.addEventListener('click', function(e) {
-            e.stopPropagation();
-            actionsMenu.style.display = (actionsMenu.style.display === 'block') ? 'none' : 'block';
-        });
-        document.addEventListener('click', function(e) {
-            if (!actionsMenu.contains(e.target) && e.target !== actionsToggle) {
-                actionsMenu.style.display = 'none';
-            }
-        });
-    }
-
-});
+function closeAddressModal() {
+    document.getElementById('addressModal').style.display = 'none';
+    document.getElementById('addressForm').reset();
+}
 </script>
-
 
 <?php require_once 'includes/footer.php'; ?>

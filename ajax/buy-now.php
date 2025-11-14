@@ -139,10 +139,44 @@ try {
     
     error_log('Buy Now - Session data stored: ' . json_encode($_SESSION['buy_now_data']));
     
-    // Prepare response - default to cart.php so user can see items, then proceed to checkout
-    $redirectTo = isset($data['redirect_to']) && $data['redirect_to'] === 'checkout'
-        ? 'paymongo/multi-seller-checkout.php?buy_now=1'
-        : 'cart.php';
+    // Check if user wants to include cart items
+    $includeCartItems = isset($data['include_cart']) && $data['include_cart'] === true;
+    
+    // If including cart items, add buy_now item to cart temporarily for checkout
+    if ($includeCartItems) {
+        // Add buy_now product to cart so it appears in checkout with other items
+        try {
+            // Check if product already in cart
+            $checkCart = $pdo->prepare("SELECT id, quantity FROM cart WHERE user_id = ? AND product_id = ?");
+            $checkCart->execute([$userId, $productId]);
+            $existingCartItem = $checkCart->fetch(PDO::FETCH_ASSOC);
+            
+            if ($existingCartItem) {
+                // Update quantity
+                $newQty = (int)$existingCartItem['quantity'] + $quantity;
+                $updateCart = $pdo->prepare("UPDATE cart SET quantity = ? WHERE id = ?");
+                $updateCart->execute([$newQty, $existingCartItem['id']]);
+                error_log('Buy Now - Updated existing cart item quantity to ' . $newQty);
+            } else {
+                // Add new cart item
+                $addCart = $pdo->prepare("INSERT INTO cart (user_id, product_id, quantity) VALUES (?, ?, ?)");
+                $addCart->execute([$userId, $productId, $quantity]);
+                error_log('Buy Now - Added product to cart for checkout');
+            }
+            
+            // Set flag to indicate buy_now was used but items are in cart
+            $_SESSION['buy_now_include_cart'] = true;
+            $_SESSION['buy_now_product_id'] = $productId;
+        } catch (Exception $e) {
+            error_log('Buy Now - Error adding to cart: ' . $e->getMessage());
+        }
+    } else {
+        // Store buy_now in session only (original behavior)
+        $_SESSION['buy_now_include_cart'] = false;
+    }
+    
+    // Prepare response - always redirect to checkout when buy now is used
+    $redirectTo = 'paymongo/multi-seller-checkout.php' . ($includeCartItems ? '' : '?buy_now=1');
     
     // Prepare response - note: buy_now items are NOT in cart, so cart_count is from regular cart only
     // CRITICAL: Cart count should NOT include buy_now items - only count from cart table

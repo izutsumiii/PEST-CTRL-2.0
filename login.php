@@ -33,6 +33,13 @@ if (isLoggedIn()) {
             --primary-dark: #130325;
             --primary-light: #F9F9F9;
             --accent-yellow: #FFD736;
+            --text-dark: #1a1a1a;
+            --text-light: #6b7280;
+            --border-light: #e5e7eb;
+            --bg-light: #f9fafb;
+            --bg-white: #ffffff;
+            --success-green: #10b981;
+            --error-red: #ef4444;
             --border-secondary: rgba(249, 249, 249, 0.3);
             --shadow-dark: rgba(0, 0, 0, 0.3);
             --font-primary: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -45,7 +52,7 @@ if (isLoggedIn()) {
         }
 
         body {
-            background: linear-gradient(135deg, var(--primary-dark) 0%, rgba(19, 3, 37, 0.9) 100%);
+            background: linear-gradient(135deg, var(--primary-dark) 0%, rgba(19, 3, 37, 0.95) 50%, #0a0118 100%);
             min-height: 100vh;
             font-family: var(--font-primary);
             overflow-x: hidden;
@@ -53,12 +60,13 @@ if (isLoggedIn()) {
 
         /* Header Styling */
         .simple-header {
-            background: #ffffff;
-            padding: 15px 40px;
+            background: var(--bg-white);
+            padding: 12px 20px;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            box-shadow: 0 2px 10px rgba(19, 3, 37, 0.1);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+            border-bottom: 1px solid var(--border-light);
         }
 
         .header-left {
@@ -70,63 +78,67 @@ if (isLoggedIn()) {
             display: flex;
             align-items: center;
             justify-content: center;
-            color: #130325;
-            font-size: 32px;
+            color: var(--primary-dark);
+            font-size: 24px;
             font-family: 'Libre Barcode 128 Text', monospace;
             font-weight: 400;
             text-decoration: none;
         }
 
         .header-login {
-            font-size: 22px;
-            font-weight: 700;
-            color: #130325;
+            font-size: 1.35rem;
+            font-weight: 600;
+            color: var(--primary-dark);
+            letter-spacing: -0.3px;
         }
 
         /* Main wrapper */
         .main-wrapper {
             display: flex;
-            justify-content: space-between;
+            justify-content: flex-end;
             align-items: center;
-            min-height: calc(100vh - 70px);
-            padding: 40px 80px;
-            gap: 60px;
-            max-width: 1400px;
+            min-height: calc(100vh - 60px);
+            padding: 30px 60px 30px 20px;
+            gap: 40px;
+            max-width: 1600px;
             margin: 0 auto;
         }
 
-        /* Left Side Branding */
+        /* Left Side Branding - More to the left */
         .branding-section {
-            flex: 1;
+            position: absolute;
+            left: 36%;
+            top: 50%;
+            transform: translate(-50%, -50%);
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             text-align: center;
+            width: 100%;
+            max-width: 600px;
         }
 
         .main-logo {
-            font-size: 80px;
+            font-size: 56px;
             font-family: 'Libre Barcode 128 Text', monospace;
             font-weight: 400;
-            color: #FFD736;
-            margin-bottom: 25px;
+            color: var(--accent-yellow);
+            margin-bottom: 16px;
             text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
         }
 
         .tagline {
-            font-size: 26px;
-            color: #FFD736;
-            font-weight: 700;
-            margin-bottom: 12px;
-            opacity: 0.95;
-            letter-spacing: 0.5px;
+            font-size: 1.35rem;
+            color: var(--accent-yellow);
+            font-weight: 600;
+            margin-bottom: 8px;
+            letter-spacing: -0.3px;
         }
 
         .subtagline {
-            font-size: 18px;
-            color: #FFD736;
-            opacity: 0.75;
+            font-size: 13px;
+            color: rgba(255, 215, 54, 0.85);
             font-weight: 400;
             max-width: 400px;
             line-height: 1.5;
@@ -134,83 +146,88 @@ if (isLoggedIn()) {
 
         /* LOGIN CONTAINER */
         .selector-container {
-            max-width: 400px;
+            max-width: 420px;
             width: 100%;
-            padding: 30px;
+            padding: 20px;
             border-radius: 12px;
-            background: #ffffff;
-            color: #130325;
-            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+            background: var(--bg-white);
+            color: var(--text-dark);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border-light);
             position: relative;
             overflow: hidden;
             text-align: center;
+            margin-right: 40px;
+            z-index: 10;
         }
         
         .selector-header h1 {
-            color: #130325;
-            font-size: 24px;
-            font-weight: 700;
-            margin-bottom: 12px;
+            color: var(--text-dark);
+            font-size: 1.35rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+            letter-spacing: -0.3px;
         }
         
         .selector-header p {
-            color: #130325;
-            font-size: 14px;
-            opacity: 0.8;
-            margin-bottom: 30px;
+            color: var(--text-light);
+            font-size: 12px;
+            margin-bottom: 20px;
             font-weight: 400;
-            line-height: 1.6;
+            line-height: 1.5;
         }
         
         .login-options {
             display: flex;
             flex-direction: column;
-            gap: 15px;
-            margin-bottom: 30px;
+            gap: 12px;
+            margin-bottom: 20px;
         }
         
         .login-card {
-            background: #130325;
+            background: var(--bg-white);
             border-radius: 8px;
-            padding: 15px 20px;
+            padding: 12px 16px;
             text-decoration: none;
-            color: #FFD736;
-            border: 2px solid #130325;
+            color: var(--text-dark);
+            border: 1.5px solid var(--primary-dark);
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: all 0.2s ease;
             display: flex;
             align-items: center;
-            gap: 15px;
-            min-height: 60px;
+            gap: 12px;
+            min-height: 56px;
         }
 
         .login-card:hover {
-            background: #FFD736;
-            color: #130325;
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(255, 215, 54, 0.4);
+            background: var(--primary-dark);
+            color: var(--bg-white);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(19, 3, 37, 0.15);
+            border-color: var(--primary-dark);
         }
 
         .login-card i {
-            font-size: 24px;
-            color: #FFD736;
-            transition: color 0.3s ease;
+            font-size: 20px;
+            color: var(--primary-dark);
+            transition: color 0.2s ease;
         }
 
         .login-card:hover i {
-            color: #130325;
+            color: var(--bg-white);
         }
         
         .login-card h3 {
-            font-size: 16px;
+            font-size: 14px;
             margin: 0;
             font-weight: 600;
         }
         
         .login-card p {
-            font-size: 12px;
+            font-size: 11px;
             margin: 0;
             opacity: 0.8;
+            line-height: 1.4;
         }
 
         .login-card.admin {
@@ -235,27 +252,34 @@ if (isLoggedIn()) {
 
         .register-section {
             text-align: center;
-            margin-top: 20px;
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid var(--border-light);
         }
 
         .register-section h4 {
-            font-size: 14px;
-            font-weight: 700;
-            margin-bottom: 5px;
-            color: #130325;
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 4px;
+            color: var(--text-dark);
         }
 
         .register-section p {
-            font-size: 12px;
-            margin-bottom: 10px;
-            color: #130325;
-            opacity: 0.8;
+            font-size: 11px;
+            margin-bottom: 8px;
+            color: var(--text-light);
         }
 
         .register-btn {
-            color: #130325;
-            font-weight: 500;
+            color: var(--primary-dark);
+            font-weight: 600;
             text-decoration: none;
+            font-size: 12px;
+            transition: color 0.2s ease;
+        }
+
+        .register-btn:hover {
+            color: var(--accent-yellow);
         }
 
         /* BUG LOGO */
@@ -470,63 +494,61 @@ if (isLoggedIn()) {
         /* Responsive */
         @media (max-width: 1024px) {
             .main-wrapper {
-                flex-direction: column;
-                padding: 40px;
-                gap: 40px;
+                justify-content: center;
+                padding: 20px;
+                gap: 30px;
             }
 
             .branding-section {
-                order: 1;
+                display: none;
             }
 
             .selector-container {
-                order: 2;
-                max-width: 450px;
+                max-width: 100%;
+                margin-right: 0;
+            }
+
+            .main-logo {
+                font-size: 48px;
+            }
+
+            .tagline {
+                font-size: 1.2rem;
             }
         }
 
         @media (max-width: 768px) {
             .simple-header {
-                padding: 15px 20px;
+                padding: 10px 16px;
             }
 
             .brand-logo {
-                font-size: 26px;
-            }
-
-            .header-login {
-                font-size: 18px;
-            }
-
-            .main-wrapper {
-                padding: 30px 20px;
-            }
-
-            .main-logo {
-                font-size: 60px;
-            }
-
-            .tagline {
-                font-size: 22px;
-            }
-
-            .subtagline {
-                font-size: 16px;
-            }
-
-            .selector-container {
-                max-width: 100%;
-            }
-
-            .store-logo {
-                width: 35px;
-                height: 35px;
                 font-size: 20px;
             }
 
-            .hidden-admin-trigger {
-                width: 35px;
-                height: 35px;
+            .header-login {
+                font-size: 1.2rem;
+            }
+
+            .main-wrapper {
+                padding: 16px;
+            }
+
+            .main-logo {
+                font-size: 40px;
+            }
+
+            .tagline {
+                font-size: 1.1rem;
+            }
+
+            .subtagline {
+                font-size: 12px;
+            }
+
+            .selector-container {
+                padding: 16px;
+                margin-right: 0;
             }
         }
   
