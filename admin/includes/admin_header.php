@@ -1370,18 +1370,27 @@ require_once $rootPath . '/includes/functions.php';
                     <a href="admin-products.php" data-tooltip="Products"><i class="fas fa-boxes"></i><span class="hide-on-collapse"> Products</span></a>
                     <a href="admin-categories.php" data-tooltip="Categories"><i class="fas fa-tags"></i><span class="hide-on-collapse"> Categories</span></a>
                 </div>
-
+                <div class="section-title hide-on-collapse">Reviews</div>
+                <div class="nav-links">
+                    <a href="admin-reviews.php" data-tooltip="Reviews"><i class="fas fa-star"></i><span class="hide-on-collapse"> Reviews</span></a>
+                </div>
                 <div class="section-title hide-on-collapse">System</div>
+                
                 <div class="nav-links">
                     <div class="nav-dropdown">
+
                         <button class="nav-dropdown-toggle" onclick="toggleNavDropdown(this)" data-tooltip="Settings">
-                            <div class="nav-dropdown-toggle-content">
+                            
+                        
+                        
+                        <div class="nav-dropdown-toggle-content">
                                 <i class="fas fa-cogs"></i>
                                 <span class="hide-on-collapse">Settings</span>
                             </div>
                             <i class="fas fa-chevron-right nav-dropdown-arrow hide-on-collapse"></i>
                         </button>
                         <div class="nav-dropdown-content">
+                        
                             <a href="admin-settings.php?section=order"><i class="fas fa-clock"></i> Order Settings</a>
                             <a href="admin-settings.php?section=maintenance"><i class="fas fa-tools"></i> Maintenance Mode</a>
                             <a href="admin-settings.php?section=site"><i class="fas fa-cog"></i> Site Settings</a>
