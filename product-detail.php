@@ -1038,26 +1038,30 @@ main h3 {
     opacity: 0.6;
     background: rgba(108, 117, 125, 0.05);
 }
-
 .hidden-review-message {
     padding: 12px 16px;
     background: rgba(108, 117, 125, 0.1);
     border-left: 3px solid #6c757d;
     border-radius: 4px;
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 10px;
     color: rgba(19, 3, 37, 0.5);
+    margin-bottom: 12px;
 }
 
 .hidden-review-message i {
     font-size: 16px;
     color: #6c757d;
+    margin-top: 2px;
+    flex-shrink: 0;
 }
 
 .hidden-review-message em {
     font-size: 14px;
     font-style: italic;
+    font-weight: 600;
+    color: rgba(19, 3, 37, 0.6);
 }
 
 /* Seller Reply Styling */
@@ -1765,11 +1769,19 @@ main h3 {
                             </div>
                             
                             <?php if ($review['is_hidden']): ?>
-                                <div class="hidden-review-message">
-                                    <i class="fas fa-eye-slash"></i>
-                                    <em>This review is hidden by the admin.</em>
+                            <div class="hidden-review-message">
+                                <i class="fas fa-eye-slash"></i>
+                                <div style="flex: 1;">
+                                    <em>This review has been hidden by admin.</em>
+                                    <?php if (!empty($review['hidden_reason'])): ?>
+                                        <div class="hidden-reason" style="margin-top: 8px; padding: 8px 12px; background: rgba(108, 117, 125, 0.08); border-radius: 4px; border: 1px solid rgba(108, 117, 125, 0.15);">
+                                            <strong style="color: #6c757d; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 4px;">Admin's Reason:</strong>
+                                            <div style="color: rgba(19, 3, 37, 0.8); font-size: 13px; line-height: 1.5;"><?php echo nl2br(htmlspecialchars($review['hidden_reason'])); ?></div>
+                                        </div>
+                                    <?php endif; ?>
                                 </div>
-                            <?php else: ?>
+                            </div>
+                        <?php else: ?>
                                 <div class="review-text"><?php echo nl2br(htmlspecialchars($review['review_text'])); ?></div>
                                 
                                 <?php if (!empty($review['seller_reply'])): ?>
@@ -1934,31 +1946,6 @@ function addToCart() {
 document.addEventListener('DOMContentLoaded', function() {
     const reviewForm = document.getElementById('reviewForm');
     if (reviewForm) {
-        // Pre-select rating from URL parameter if present
-        const urlParams = new URLSearchParams(window.location.search);
-        const ratingParam = urlParams.get('rating');
-        if (ratingParam) {
-            const rating = parseInt(ratingParam);
-            if (rating >= 1 && rating <= 5) {
-                const ratingInput = reviewForm.querySelector('input[name="rating"][value="' + rating + '"]');
-                if (ratingInput) {
-                    ratingInput.checked = true;
-                    // Update visual state of stars
-                    const allLabels = reviewForm.querySelectorAll('.star-rating label');
-                    allLabels.forEach((label, index) => {
-                        const labelRating = parseInt(label.getAttribute('for').replace('star', ''));
-                        if (labelRating <= rating) {
-                            label.style.color = '#FFD736';
-                            label.style.textShadow = '0 0 10px rgba(255, 215, 54, 0.8)';
-                        } else {
-                            label.style.color = 'rgba(255, 215, 54, 0.3)';
-                            label.style.textShadow = 'none';
-                        }
-                    });
-                }
-            }
-        }
-        
         reviewForm.addEventListener('submit', function(e) {
             const ratingInputs = reviewForm.querySelectorAll('input[name="rating"]');
             let ratingSelected = false;
