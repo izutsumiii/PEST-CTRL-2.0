@@ -56,6 +56,28 @@ require_once __DIR__ . '/maintenance_check.php';
             z-index: 100;
             transition: all 0.3s ease;
             overflow-y: auto;
+            overflow-x: hidden;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255, 215, 54, 0.15) transparent;
+        }
+        
+        /* Sidebar scrollbar styling - Chrome/Edge/Safari */
+        .sidebar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .sidebar::-webkit-scrollbar-track {
+            background: transparent;
+            border-radius: 3px;
+        }
+        .sidebar::-webkit-scrollbar-thumb {
+            background: rgba(255, 215, 54, 0.15);
+            border-radius: 3px;
+            border: 1px solid rgba(255, 215, 54, 0.05);
+            transition: background 0.2s ease;
+        }
+        .sidebar::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 215, 54, 0.3);
+            border: 1px solid rgba(255, 215, 54, 0.1);
         }
 
         /* Normalize seller notifications footer and See All */
@@ -249,6 +271,28 @@ require_once __DIR__ . '/maintenance_check.php';
         .nav-dropdown-content.show {
             max-height: 300px;
             padding: 4px 0;
+            overflow-y: auto;
+            overflow-x: hidden;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255, 215, 54, 0.2) transparent;
+        }
+        
+        /* Dropdown scrollbar styling - Chrome/Edge/Safari */
+        .nav-dropdown-content.show::-webkit-scrollbar {
+            width: 6px;
+        }
+        .nav-dropdown-content.show::-webkit-scrollbar-track {
+            background: transparent;
+            border-radius: 3px;
+        }
+        .nav-dropdown-content.show::-webkit-scrollbar-thumb {
+            background: rgba(255, 215, 54, 0.2);
+            border-radius: 3px;
+            border: 1px solid rgba(255, 215, 54, 0.1);
+        }
+        .nav-dropdown-content.show::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 215, 54, 0.4);
+            border: 1px solid rgba(255, 215, 54, 0.2);
         }
         
         .nav-dropdown-content a {
@@ -348,6 +392,7 @@ require_once __DIR__ . '/maintenance_check.php';
         }
         
         .header-hamburger {
+            display: block;
             background: transparent;
             border: none;
             color: #FFD736;
@@ -676,18 +721,235 @@ require_once __DIR__ . '/maintenance_check.php';
             transition: all 0.3s ease;
         }
 
+        /* Mobile Drawer Styles */
+        .mobile-drawer {
+            position: fixed;
+            top: 0;
+            left: -280px;
+            width: 280px;
+            height: 100vh;
+            background: #130325;
+            box-shadow: 6px 0 30px rgba(0,0,0,0.3);
+            transition: all 0.3s ease;
+            z-index: 2000;
+            padding: 0 !important;
+            margin: 0 !important;
+            overflow: hidden;
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: stretch !important;
+            justify-content: flex-start !important;
+        }
+        
+        /* Mobile drawer scrollbar styling - Chrome/Edge/Safari */
+        .mobile-drawer::-webkit-scrollbar {
+            width: 6px;
+        }
+        .mobile-drawer::-webkit-scrollbar-track {
+            background: transparent;
+            border-radius: 3px;
+        }
+        .mobile-drawer::-webkit-scrollbar-thumb {
+            background: rgba(255, 215, 54, 0.15);
+            border-radius: 3px;
+            border: 1px solid rgba(255, 215, 54, 0.05);
+            transition: background 0.2s ease;
+        }
+        .mobile-drawer::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 215, 54, 0.3);
+            border: 1px solid rgba(255, 215, 54, 0.1);
+        }
+        
+        .mobile-drawer.show {
+            left: 0;
+        }
+        
+        .mobile-drawer-header {
+            background: linear-gradient(135deg, #130325 0%, #1a0a33 100%);
+            padding: 12px 15px;
+            border-bottom: 2px solid #FFD736;
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            flex-shrink: 0;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            width: 100%;
+        }
+        
+        .mobile-drawer .close-btn {
+            background: transparent;
+            border: none;
+            color: #FFD736;
+            font-size: 26px;
+            cursor: pointer;
+            padding: 0;
+            margin: 0;
+            transition: all 0.3s ease;
+        }
+        
+        .mobile-drawer .close-btn:hover {
+            color: #FFF;
+            transform: rotate(90deg);
+        }
+        
+        .mobile-drawer .links {
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 0 !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            align-items: flex-start !important;
+            justify-content: flex-start !important;
+            flex: 1 1 auto !important;
+            width: 100% !important;
+            overflow-y: auto;
+            overflow-x: hidden;
+            min-height: 0;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255, 215, 54, 0.15) transparent;
+        }
+        
+        /* Links container scrollbar styling */
+        .mobile-drawer .links::-webkit-scrollbar {
+            width: 6px;
+        }
+        .mobile-drawer .links::-webkit-scrollbar-track {
+            background: transparent;
+            border-radius: 3px;
+        }
+        .mobile-drawer .links::-webkit-scrollbar-thumb {
+            background: rgba(255, 215, 54, 0.15);
+            border-radius: 3px;
+            border: 1px solid rgba(255, 215, 54, 0.05);
+            transition: background 0.2s ease;
+        }
+        .mobile-drawer .links::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 215, 54, 0.3);
+            border: 1px solid rgba(255, 215, 54, 0.1);
+        }
+        
+        .mobile-drawer .links a {
+            color: #F9F9F9;
+            padding: 15px 20px !important;
+            text-decoration: none;
+            font-size: 15px;
+            font-weight: 500;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.3s ease;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: flex-start !important;
+            gap: 15px;
+            text-align: left !important;
+            width: 100% !important;
+            box-sizing: border-box;
+            margin: 0 !important;
+        }
+        
+        .mobile-drawer .links a:first-child {
+            border-top: none;
+        }
+        
+        .mobile-drawer .links a:hover {
+            background: rgba(255, 215, 54, 0.15);
+            color: #FFD736;
+            padding-left: 25px !important;
+        }
+        
+        .mobile-drawer .links a i {
+            font-size: 18px;
+            width: 22px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+        
+        .mobile-drawer .section-divider {
+            padding: 10px 20px;
+            color: rgba(255, 215, 54, 0.6);
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-bottom: 1px solid rgba(255, 215, 54, 0.1);
+            margin-top: 5px;
+        }
+        
+        /* Mobile Drawer Overlay */
+        .mobile-drawer-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1999;
+            display: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .mobile-drawer-overlay.show {
+            display: block;
+            opacity: 1;
+        }
+        
+        /* Header Logo for Mobile */
+        .header-logo {
+            display: none;
+        }
+        
+        .header-logo a {
+            color: #FFD736;
+            text-decoration: none;
+            font-family: 'Libre Barcode 128 Text', monospace;
+            font-size: 20px;
+            font-weight: 400;
+        }
+        
+        .header-logo a:hover {
+            color: #F9F9F9;
+        }
+
         @media (max-width: 768px) {
-            main { margin-left: 0; }
-            .sidebar { width: 100%; position: static; border-right: none; }
+            main { margin-left: 0 !important; }
+            .sidebar { 
+                display: none !important; 
+            }
+            
+            .header-logo {
+                display: block;
+            }
+            
+            .header-hamburger {
+                display: block !important;
+            }
+            
+            .invisible-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 0 12px;
+            }
+            
+            .header-left {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+            }
         }
     </style>
 </head>
 <body>
     <div class="invisible-header">
         <div class="header-left">
-            <button class="header-hamburger" onclick="toggleSellerSidebar()">
+            <button class="header-hamburger" id="sellerHamburgerBtn" onclick="toggleSellerMobileDrawer()">
                 <i class="fas fa-bars"></i>
             </button>
+            <div class="header-logo">
+                <a href="seller-dashboard.php">PEST-CTRL</a>
+            </div>
         </div>
         
         <?php if (isLoggedIn() && isSeller()): ?>
@@ -795,6 +1057,14 @@ require_once __DIR__ . '/maintenance_check.php';
                     </a>
                 </div>
 
+                <div class="section-title hide-on-collapse">Notifications</div>
+                <div class="nav-links">
+                    <a href="seller-notifications.php" data-tooltip="Notifications">
+                        <i class="fas fa-bell"></i>
+                        <span class="hide-on-collapse">Notifications</span>
+                    </a>
+                </div>
+
                 <div class="section-title hide-on-collapse">Orders</div>
                 <div class="nav-links">
                     <a href="view-orders.php" data-tooltip="View Orders">
@@ -845,17 +1115,115 @@ require_once __DIR__ . '/maintenance_check.php';
         </aside>
     </div>
     
+    <!-- Mobile Drawer Overlay -->
+    <div class="mobile-drawer-overlay" id="sellerMobileDrawerOverlay"></div>
+    
+    <!-- Mobile Drawer -->
+    <nav class="mobile-drawer" id="sellerMobileDrawer">
+        <div class="mobile-drawer-header">
+            <button class="close-btn" id="sellerDrawerClose"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="links">
+            <?php if (isLoggedIn() && isSeller()): ?>
+                <div class="section-divider">Overview</div>
+                <a href="seller-dashboard.php"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+                <a href="sales-analytics.php"><i class="fas fa-chart-bar"></i> Sales Analytics</a>
+                
+                <div class="section-divider">Notifications</div>
+                <a href="seller-notifications.php"><i class="fas fa-bell"></i> Notifications</a>
+                
+                <div class="section-divider">Orders</div>
+                <a href="view-orders.php"><i class="fas fa-clipboard-list"></i> View Orders</a>
+                
+                <div class="section-divider">Return/Refund Request</div>
+                <a href="seller-returns.php"><i class="fas fa-undo-alt"></i> View Return/Refund</a>
+                
+                <div class="section-divider">Catalog</div>
+                <a href="manage-products.php"><i class="fas fa-plus"></i> Add Product</a>
+                <a href="view-products.php"><i class="fas fa-list"></i> View Products</a>
+                <a href="manage-categories.php"><i class="fas fa-tags"></i> Manage Categories</a>
+                
+                <div class="section-divider">Account</div>
+                <a href="seller-edit-profile.php"><i class="fas fa-user"></i> My Account</a>
+                <a href="logout.php"><i class="fas fa-sign-out-alt"></i> Logout</a>
+            <?php else: ?>
+                <a href="login_seller.php"><i class="fas fa-sign-in-alt"></i> Seller Login</a>
+            <?php endif; ?>
+        </div>
+    </nav>
+    
     <script>
+        // Mobile drawer functionality
+        function toggleSellerMobileDrawer() {
+            const drawer = document.getElementById('sellerMobileDrawer');
+            const overlay = document.getElementById('sellerMobileDrawerOverlay');
+            const isMobile = window.innerWidth <= 768;
+            
+            if (isMobile) {
+                // Mobile: open/close drawer
+                if (drawer && overlay) {
+                    const isOpen = drawer.classList.contains('show');
+                    if (isOpen) {
+                        drawer.classList.remove('show');
+                        overlay.classList.remove('show');
+                        document.body.style.overflow = '';
+                    } else {
+                        drawer.classList.add('show');
+                        overlay.classList.add('show');
+                        document.body.style.overflow = 'hidden';
+                    }
+                }
+            } else {
+                // Desktop: toggle sidebar
+                toggleSellerSidebar();
+            }
+        }
+        
+        // Close drawer when clicking overlay
+        const sellerOverlay = document.getElementById('sellerMobileDrawerOverlay');
+        const sellerDrawer = document.getElementById('sellerMobileDrawer');
+        const sellerCloseBtn = document.getElementById('sellerDrawerClose');
+        
+        if (sellerOverlay) {
+            sellerOverlay.addEventListener('click', function() {
+                if (sellerDrawer) sellerDrawer.classList.remove('show');
+                sellerOverlay.classList.remove('show');
+                document.body.style.overflow = '';
+            });
+        }
+        
+        if (sellerCloseBtn) {
+            sellerCloseBtn.addEventListener('click', function() {
+                if (sellerDrawer) sellerDrawer.classList.remove('show');
+                if (sellerOverlay) sellerOverlay.classList.remove('show');
+                document.body.style.overflow = '';
+            });
+        }
+        
+        // Close drawer when clicking a link
+        if (sellerDrawer) {
+            const drawerLinks = sellerDrawer.querySelectorAll('.links a');
+            drawerLinks.forEach(link => {
+                link.addEventListener('click', function() {
+                    sellerDrawer.classList.remove('show');
+                    if (sellerOverlay) sellerOverlay.classList.remove('show');
+                    document.body.style.overflow = '';
+                });
+            });
+        }
+        
         function toggleSellerSidebar() {
             const sidebar = document.getElementById('sellerSidebar');
             const main = document.querySelector('main');
             
+            if (!sidebar) return;
+            
             sidebar.classList.toggle('collapsed');
             
             if (sidebar.classList.contains('collapsed')) {
-                main.style.marginLeft = '70px';
+                if (main) main.style.marginLeft = '70px';
             } else {
-                main.style.marginLeft = '240px';
+                if (main) main.style.marginLeft = '240px';
             }
             
             localStorage.setItem('sellerSidebarCollapsed', sidebar.classList.contains('collapsed'));

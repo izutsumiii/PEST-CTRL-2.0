@@ -2973,40 +2973,40 @@ function confirmOrderReceived(orderId, productId) {
     modal.style.cssText = 'display: flex; position: fixed; z-index: 10000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center;';
     
     const modalContent = document.createElement('div');
-    modalContent.style.cssText = 'background: #ffffff; border-radius: 12px; padding: 0; max-width: 450px; width: 90%; box-shadow: 0 10px 40px rgba(0,0,0,0.2); animation: slideDown 0.3s ease;';
+    modalContent.style.cssText = 'background: #ffffff; border-radius: 8px; padding: 0; max-width: 320px; width: 85%; box-shadow: 0 10px 40px rgba(0,0,0,0.2); animation: slideDown 0.3s ease;';
     
     const modalHeader = document.createElement('div');
-    modalHeader.style.cssText = 'background: #130325; color: #ffffff; padding: 16px 20px; border-radius: 12px 12px 0 0; display: flex; align-items: center; gap: 10px;';
-    modalHeader.innerHTML = '<i class="fas fa-star" style="font-size: 16px; color: #FFD736;"></i><h3 style="margin: 0; font-size: 14px; font-weight: 700;">Rate Your Product</h3>';
+    modalHeader.style.cssText = 'background: #130325; color: #ffffff; padding: 10px 14px; border-radius: 8px 8px 0 0; display: flex; align-items: center; gap: 8px;';
+    modalHeader.innerHTML = '<i class="fas fa-star" style="font-size: 14px; color: #FFD736;"></i><h3 style="margin: 0; font-size: 13px; font-weight: 600;">Rate Your Product</h3>';
     
     const modalBody = document.createElement('div');
-    modalBody.style.cssText = 'padding: 20px; color: #130325;';
+    modalBody.style.cssText = 'padding: 14px; color: #130325;';
     
     // Star rating HTML
-    let ratingHTML = '<p style="margin: 0 0 16px; font-size: 13px; line-height: 1.5; color: #130325;">How would you rate your experience with this product?</p>';
-    ratingHTML += '<div style="display: flex; justify-content: center; gap: 8px; margin-bottom: 20px; flex-wrap: wrap;">';
-    for (let i = 5; i >= 1; i--) {
+    let ratingHTML = '<p style="margin: 0 0 12px; font-size: 12px; line-height: 1.4; color: #130325;">How would you rate your experience with this product?</p>';
+    ratingHTML += '<div style="display: flex; justify-content: center; gap: 6px; margin-bottom: 12px; flex-wrap: wrap;">';
+    for (let i = 1; i <= 5; i++) {
         ratingHTML += `<input type="radio" id="modalStar${i}" name="modalRating" value="${i}" style="display: none;">
-        <label for="modalStar${i}" class="modal-star-label" data-rating="${i}" style="font-size: 32px; color: #ddd; cursor: pointer; transition: all 0.2s ease; user-select: none;">★</label>`;
+        <label for="modalStar${i}" class="modal-star-label" data-rating="${i}" style="font-size: 24px; color: #ddd; cursor: pointer; transition: all 0.2s ease; user-select: none;">★</label>`;
     }
     ratingHTML += '</div>';
-    ratingHTML += '<div id="ratingText" style="text-align: center; font-size: 12px; color: #6b7280; min-height: 20px; margin-bottom: 10px;"></div>';
+    ratingHTML += '<div id="ratingText" style="text-align: center; font-size: 11px; color: #6b7280; min-height: 16px; margin-bottom: 8px;"></div>';
     
     modalBody.innerHTML = ratingHTML;
     
     const modalFooter = document.createElement('div');
-    modalFooter.style.cssText = 'padding: 16px 24px; border-top: 1px solid #e5e7eb; display: flex; gap: 10px; justify-content: flex-end;';
+    modalFooter.style.cssText = 'padding: 10px 14px; border-top: 1px solid #e5e7eb; display: flex; gap: 8px; justify-content: flex-end;';
     
     const cancelBtn = document.createElement('button');
     cancelBtn.textContent = 'Skip';
-    cancelBtn.style.cssText = 'padding: 8px 20px; background: #f3f4f6; color: #130325; border: 1px solid #e5e7eb; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px; transition: all 0.2s ease;';
+    cancelBtn.style.cssText = 'padding: 6px 14px; background: #f3f4f6; color: #130325; border: 1px solid #e5e7eb; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 12px; transition: all 0.2s ease;';
     cancelBtn.onmouseover = function() { this.style.background = '#e5e7eb'; };
     cancelBtn.onmouseout = function() { this.style.background = '#f3f4f6'; };
     
     const confirmBtn = document.createElement('button');
     confirmBtn.textContent = 'Confirm Review';
     confirmBtn.id = 'confirmReviewBtn';
-    confirmBtn.style.cssText = 'padding: 8px 20px; background: #130325; color: #ffffff; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px; transition: all 0.2s ease; opacity: 0.6; cursor: not-allowed;';
+    confirmBtn.style.cssText = 'padding: 6px 14px; background: #130325; color: #ffffff; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 12px; transition: all 0.2s ease; opacity: 0.6; cursor: not-allowed;';
     confirmBtn.disabled = true;
     
     let selectedRating = 0;
@@ -3089,9 +3089,9 @@ function confirmOrderReceived(orderId, productId) {
                 document.body.removeChild(modal);
                 document.body.style.overflow = '';
                 
-                // Redirect to rate product page
+                // Redirect to rate product page with rating
                 if (productId) {
-                    window.location.href = 'rate-order.php?id=' + orderId;
+                    window.location.href = 'rate-order.php?id=' + orderId + '&rating=' + selectedRating;
                 } else {
                     window.location.href = 'user-dashboard.php?status=completed';
                 }

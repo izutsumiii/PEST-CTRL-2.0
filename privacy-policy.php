@@ -337,7 +337,7 @@ require_once 'includes/header.php';
                 <li><strong>Online:</strong> Privacy request form on our website</li>
                 <li><strong>Email:</strong> privacy@pest-ctrl.com</li>
                 <li><strong>Phone:</strong> 1-800-PEST-CTRL (privacy department)</li>
-                <li><strong>Mail:</strong> PEST-CTRL Privacy Team, [Business Address]</li>
+                <li><strong>Mail:</strong> PEST-CTRL Privacy Team, 123 Rizal Street, Poblacion District, Davao City 8000, Davao del Sur, Philippines</li>
             </ul>
 
             <h3>14.2 Request Processing</h3>
@@ -371,9 +371,9 @@ require_once 'includes/header.php';
                 <p><i class="fas fa-map-marker-alt"></i> <strong>Mailing Address:</strong></p>
                 <div class="address-block">
                     PEST-CTRL Privacy Team<br>
-                    [Your Business Address]<br>
-                    [City, State ZIP Code]<br>
-                    [Country]
+                    123 Rizal Street, Poblacion District<br>
+                    Davao City 8000, Davao del Sur<br>
+                    Philippines
                 </div>
             </div>
         </section>

@@ -2563,7 +2563,28 @@ function createPayMongoCheckoutSession($transactionId, $customerName, $customerE
         
         $paymentMethodTypes = $paymentMethodMap[$paymentMethod] ?? ['card'];
         
-        $successUrl = getSuccessUrl($transactionId);
+        // CRITICAL: Generate session restoration token to prevent logout after PayMongo redirect
+        // This works even when cookies fail due to ngrok URL changes
+        $sessionToken = null;
+        if (isset($_SESSION['user_id'])) {
+            $sessionToken = bin2hex(random_bytes(32)); // 64 character token
+            $expiry = time() + (15 * 60); // 15 minutes expiry
+            
+            // Store token in payment_transactions table for session restoration
+            try {
+                // Check if session_token column exists, if not we'll handle it gracefully
+                $stmt = $pdo->prepare("UPDATE payment_transactions SET session_token = ?, session_token_expiry = FROM_UNIXTIME(?) WHERE id = ?");
+                $stmt->execute([$sessionToken, $expiry, $transactionId]);
+                error_log('PayMongo Checkout - Session token stored for transaction: ' . $transactionId);
+            } catch (PDOException $e) {
+                // If column doesn't exist, log but continue (we'll add column later)
+                error_log('PayMongo Checkout - Could not store session token (column may not exist): ' . $e->getMessage());
+                // Try alternative: store in a separate table or use existing column
+                // For now, we'll still pass it in URL and handle in order-success.php
+            }
+        }
+        
+        $successUrl = getSuccessUrl($transactionId, $sessionToken);
         $cancelUrl = getCancelUrl($transactionId);
         
         // Log URLs being sent to PayMongo

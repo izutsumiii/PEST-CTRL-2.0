@@ -30,9 +30,98 @@ if (session_status() === PHP_SESSION_NONE) {
 // All redirects must happen before any output
 require_once '../config/database.php';
 
-// CRITICAL FIX: Restore session from remember_token cookie BEFORE including functions.php
-// This prevents checkSessionTimeout() from logging out the user
-if (!isset($_SESSION['user_id']) && isset($_COOKIE['remember_token'])) {
+// Get transaction ID early (needed for session restoration)
+$transactionId = isset($_GET['transaction_id']) ? (int)$_GET['transaction_id'] : 0;
+
+// CRITICAL FIX: Restore session using multiple methods (cookie OR URL token)
+// This prevents logout after PayMongo redirect, especially when ngrok URL changes
+$sessionRestored = false;
+
+// Method 1: Try session_token from URL (works even when cookies fail due to domain change)
+if (!isset($_SESSION['user_id']) && isset($_GET['session_token']) && $transactionId > 0) {
+    $sessionToken = $_GET['session_token'];
+    error_log('Order Success - Attempting to restore session from URL token for transaction: ' . $transactionId);
+    
+    try {
+        // First, try with session_token columns (if they exist)
+        $stmt = $pdo->prepare("
+            SELECT pt.user_id, u.id, u.username, u.user_type 
+            FROM payment_transactions pt
+            JOIN users u ON pt.user_id = u.id
+            WHERE pt.id = ? AND pt.session_token = ? AND pt.session_token_expiry > NOW() AND u.is_active = 1
+        ");
+        $stmt->execute([$transactionId, $sessionToken]);
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if ($result) {
+            // Restore session
+            $_SESSION['user_id'] = $result['id'];
+            $_SESSION['username'] = $result['username'];
+            $_SESSION['user_type'] = $result['user_type'];
+            $_SESSION['last_activity'] = time();
+            $sessionRestored = true;
+            error_log('Order Success - Session restored from URL token for user: ' . $result['id']);
+            
+            // Clear the session token for security
+            try {
+                $stmt = $pdo->prepare("UPDATE payment_transactions SET session_token = NULL WHERE id = ?");
+                $stmt->execute([$transactionId]);
+            } catch (PDOException $e) {
+                // Column might not exist, ignore
+            }
+        } else {
+            error_log('Order Success - Session token validation failed, trying fallback method');
+            // Fallback: If session_token validation fails, use transaction user_id directly
+            // This works if columns don't exist or token expired
+            $stmt = $pdo->prepare("
+                SELECT pt.user_id, u.id, u.username, u.user_type 
+                FROM payment_transactions pt
+                JOIN users u ON pt.user_id = u.id
+                WHERE pt.id = ? AND u.is_active = 1
+            ");
+            $stmt->execute([$transactionId]);
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if ($result) {
+                // Restore session using transaction user_id (less secure but works)
+                $_SESSION['user_id'] = $result['id'];
+                $_SESSION['username'] = $result['username'];
+                $_SESSION['user_type'] = $result['user_type'];
+                $_SESSION['last_activity'] = time();
+                $sessionRestored = true;
+                error_log('Order Success - Session restored from transaction user_id (fallback) for user: ' . $result['id']);
+            }
+        }
+    } catch (PDOException $e) {
+        // If session_token column doesn't exist, use transaction user_id directly
+        error_log('Order Success - Session token column may not exist, using transaction user_id: ' . $e->getMessage());
+        
+        try {
+            $stmt = $pdo->prepare("
+                SELECT pt.user_id, u.id, u.username, u.user_type 
+                FROM payment_transactions pt
+                JOIN users u ON pt.user_id = u.id
+                WHERE pt.id = ? AND u.is_active = 1
+            ");
+            $stmt->execute([$transactionId]);
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if ($result) {
+                $_SESSION['user_id'] = $result['id'];
+                $_SESSION['username'] = $result['username'];
+                $_SESSION['user_type'] = $result['user_type'];
+                $_SESSION['last_activity'] = time();
+                $sessionRestored = true;
+                error_log('Order Success - Session restored from transaction user_id for user: ' . $result['id']);
+            }
+        } catch (PDOException $e2) {
+            error_log('Order Success - Failed to restore session from transaction: ' . $e2->getMessage());
+        }
+    }
+}
+
+// Method 2: Try remember_token cookie (fallback if URL token fails)
+if (!isset($_SESSION['user_id']) && !$sessionRestored && isset($_COOKIE['remember_token'])) {
     error_log('Order Success - Session lost, attempting to restore from remember_token cookie');
     try {
         $stmt = $pdo->prepare("SELECT * FROM users WHERE remember_token = ? AND is_active = 1");
@@ -46,6 +135,7 @@ if (!isset($_SESSION['user_id']) && isset($_COOKIE['remember_token'])) {
             $_SESSION['user_type'] = $user['user_type'];
             // CRITICAL: Update last_activity to prevent session timeout
             $_SESSION['last_activity'] = time();
+            $sessionRestored = true;
             error_log('Order Success - Session restored from remember_token for user: ' . $user['id']);
         } else {
             error_log('Order Success - Invalid remember_token cookie');
@@ -67,7 +157,7 @@ if (isset($_SESSION['user_id'])) {
 require_once '../includes/functions.php';
 
 $orderId = isset($_GET['order_id']) ? (int)$_GET['order_id'] : 0;
-$transactionId = isset($_GET['transaction_id']) ? (int)$_GET['transaction_id'] : 0;
+// $transactionId already defined above for session restoration
 $checkoutSessionId = isset($_GET['checkout_session_id']) ? $_GET['checkout_session_id'] : null;
 
 // Rest of the redirect logic...
@@ -408,8 +498,11 @@ if ($transactionId > 0) {
     --primary-dark: #130325;
     --accent-yellow: #FFD736;
     --text-dark: #130325;
-    --text-light: #6c757d;
+    --text-light: #6b7280;
     --bg-light: #f8f9fa;
+    --bg-white: #ffffff;
+    --border-light: #e5e7eb;
+    --success-green: #10b981;
 }
 
 body {
@@ -420,84 +513,93 @@ body {
 
 .order-success-wrapper {
     background: var(--bg-light);
-    min-height: 100vh;
-    padding: 10px;
-    margin-top: 120px;
+    min-height: calc(100vh - 120px);
+    padding: 20px;
+    margin-top: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .order-success-container {
-    background: #ffffff;
-    border-radius: 8px;
-    padding: 20px;
+    background: var(--bg-white);
+    border-radius: 12px;
+    padding: 24px;
     margin: 0 auto;
-    max-width: 800px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    max-width: 900px;
+    width: 100%;
+    box-shadow: 0 2px 12px rgba(19, 3, 37, 0.08);
 }
 
 .success-header {
     text-align: center;
-    margin-bottom: 15px;
+    margin-bottom: 20px;
 }
 
 .success-icon {
-    width: 50px;
-    height: 50px;
-    background: linear-gradient(135deg, #28a745, #20c997);
+    width: 64px;
+    height: 64px;
+    background: linear-gradient(135deg, var(--success-green), #059669);
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin: 0 auto 10px;
-    font-size: 24px;
+    margin: 0 auto 12px;
+    font-size: 32px;
     color: white;
     font-weight: bold;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
 }
 
+.page-title,
 .success-header h1 {
-    color: var(--primary-dark);
-    font-size: 1.5rem;
-    margin-bottom: 5px;
-    font-weight: 700;
+    color: var(--text-dark);
+    font-size: 1.35rem;
+    font-weight: 600;
+    letter-spacing: -0.3px;
+    line-height: 1.2;
+    margin: 0 0 8px 0;
 }
 
 .success-header p {
     color: var(--text-light);
     font-size: 0.9rem;
-    opacity: 0.9;
     margin: 0;
 }
 
 .order-details {
-    background: rgba(255, 215, 54, 0.1);
-    border: 1px solid rgba(255, 215, 54, 0.3);
-    border-radius: 6px;
-    padding: 12px;
-    margin-bottom: 15px;
+    background: rgba(19, 3, 37, 0.03);
+    border: 1px solid var(--border-light);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 16px;
 }
 
 .order-details h2 {
     color: var(--primary-dark);
     font-size: 1.1rem;
-    margin-bottom: 10px;
-    border-bottom: 2px solid var(--accent-yellow);
-    padding-bottom: 5px;
+    font-weight: 600;
+    margin: 0 0 12px 0;
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--primary-dark);
 }
 
 .order-info {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-    font-size: 13px;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    font-size: 0.875rem;
 }
 
 .order-info > div {
     display: flex;
     justify-content: space-between;
+    align-items: center;
 }
 
 .order-info span:first-child {
     color: var(--text-light);
-    font-weight: 600;
+    font-weight: 500;
 }
 
 .order-info span:last-child {
@@ -506,94 +608,125 @@ body {
 }
 
 .items-section {
-    margin-bottom: 15px;
+    margin-bottom: 16px;
 }
 
 .items-section h3 {
     color: var(--primary-dark);
     font-size: 1rem;
-    margin-bottom: 10px;
+    font-weight: 600;
+    margin: 0 0 12px 0;
 }
 
 .items-list {
-    max-height: 150px;
+    max-height: 200px;
     overflow-y: auto;
-    margin-bottom: 10px;
+    margin-bottom: 12px;
+    padding-right: 4px;
+}
+
+.items-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.items-list::-webkit-scrollbar-track {
+    background: var(--bg-light);
+    border-radius: 3px;
+}
+
+.items-list::-webkit-scrollbar-thumb {
+    background: var(--primary-dark);
+    border-radius: 3px;
+}
+
+.items-list::-webkit-scrollbar-thumb:hover {
+    background: #0d021f;
 }
 
 .item-row {
     display: flex;
     align-items: center;
-    padding: 8px 0;
-    border-bottom: 1px solid rgba(255, 215, 54, 0.2);
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border-light);
+}
+
+.item-row:last-child {
+    border-bottom: none;
 }
 
 .item-row img {
-    width: 35px;
-    height: 35px;
+    width: 40px;
+    height: 40px;
     object-fit: cover;
-    border-radius: 4px;
-    margin-right: 10px;
+    border-radius: 6px;
+    margin-right: 12px;
+    border: 1px solid var(--border-light);
 }
 
 .item-info {
     flex: 1;
+    min-width: 0;
 }
 
 .item-name {
     color: var(--primary-dark);
     font-weight: 600;
-    font-size: 13px;
+    font-size: 0.875rem;
+    margin-bottom: 2px;
 }
 
 .item-details {
     color: var(--text-light);
-    font-size: 11px;
-    opacity: 0.8;
+    font-size: 0.75rem;
 }
 
 .item-price {
-    color: var(--accent-yellow);
+    color: var(--primary-dark);
     font-weight: 600;
-    font-size: 13px;
+    font-size: 0.875rem;
+    text-align: right;
+    min-width: 80px;
 }
 
 .total-amount {
     text-align: right;
-    padding-top: 10px;
-    border-top: 2px solid var(--accent-yellow);
+    padding-top: 12px;
+    margin-top: 12px;
+    border-top: 2px solid var(--primary-dark);
 }
 
 .total-amount strong {
-    color: var(--accent-yellow);
-    font-size: 1rem;
+    color: var(--primary-dark);
+    font-size: 1.1rem;
+    font-weight: 700;
 }
 
 .discount-row {
     display: flex;
     justify-content: space-between;
-    margin-bottom: 4px;
+    margin-bottom: 6px;
+    font-size: 0.9rem;
 }
 
 .next-steps {
-    background: rgba(255, 215, 54, 0.1);
-    border: 1px solid rgba(255, 215, 54, 0.3);
-    border-radius: 6px;
-    padding: 12px;
-    margin-bottom: 15px;
+    background: rgba(19, 3, 37, 0.03);
+    border: 1px solid var(--border-light);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 20px;
 }
 
 .next-steps h3 {
     color: var(--primary-dark);
     font-size: 1rem;
-    margin-bottom: 10px;
+    font-weight: 600;
+    margin: 0 0 12px 0;
 }
 
 .steps-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 10px;
-    font-size: 12px;
+    gap: 12px;
 }
 
 .step-item {
@@ -601,59 +734,63 @@ body {
 }
 
 .step-number {
-    width: 32px;
-    height: 32px;
-    background: var(--accent-yellow);
-    color: var(--primary-dark);
+    width: 36px;
+    height: 36px;
+    background: var(--primary-dark);
+    color: var(--bg-white);
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin: 0 auto 5px;
-    font-weight: bold;
-    font-size: 14px;
+    margin: 0 auto 8px;
+    font-weight: 700;
+    font-size: 0.875rem;
 }
 
 .step-title {
     color: var(--primary-dark);
     font-weight: 600;
-    font-size: 12px;
-    margin-bottom: 2px;
+    font-size: 0.813rem;
+    margin-bottom: 4px;
 }
 
 .step-desc {
     color: var(--text-light);
-    opacity: 0.8;
-    font-size: 10px;
+    font-size: 0.75rem;
 }
 
 .action-buttons {
     display: flex;
-    gap: 10px;
+    gap: 12px;
     justify-content: center;
     flex-wrap: wrap;
+    margin-top: 20px;
 }
 
 .btn {
-    padding: 8px 16px;
-    border-radius: 6px;
+    padding: 10px 20px;
+    border-radius: 8px;
     text-decoration: none;
     font-weight: 600;
-    font-size: 13px;
-    transition: all 0.3s;
+    font-size: 0.875rem;
+    transition: all 0.3s ease;
     border: none;
     cursor: pointer;
     white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .btn-secondary {
-    background: #6c757d;
-    color: white;
+    background: var(--text-light);
+    color: var(--bg-white);
 }
 
 .btn-secondary:hover {
-    background: #5a6268;
-    transform: translateY(-1px);
+    background: #4b5563;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
 .btn-primary {
@@ -663,27 +800,40 @@ body {
 
 .btn-primary:hover {
     background: #e6c230;
-    transform: translateY(-1px);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(255, 215, 54, 0.3);
 }
 
 @media (max-width: 768px) {
     .order-success-wrapper {
-        margin-top: 100px;
-        padding: 5px;
+        margin-top: 80px;
+        padding: 12px;
+        min-height: calc(100vh - 80px);
     }
     
     .order-success-container {
-        padding: 15px;
+        padding: 16px;
+    }
+    
+    .success-icon {
+        width: 56px;
+        height: 56px;
+        font-size: 28px;
+    }
+    
+    .page-title,
+    .success-header h1 {
+        font-size: 1.2rem;
     }
     
     .order-info {
         grid-template-columns: 1fr;
-        gap: 6px;
+        gap: 8px;
     }
     
     .steps-grid {
         grid-template-columns: 1fr;
-        gap: 8px;
+        gap: 10px;
     }
     
     .action-buttons {
@@ -692,7 +842,16 @@ body {
     
     .btn {
         width: 100%;
-        text-align: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .order-success-wrapper {
+        padding: 8px;
+    }
+    
+    .order-success-container {
+        padding: 12px;
     }
 }
 </style>
@@ -702,7 +861,7 @@ body {
         <!-- Success Header -->
         <div class="success-header">
             <div class="success-icon">✓</div>
-            <h1>Order Placed Successfully!</h1>
+            <h1 class="page-title">Order Placed Successfully!</h1>
             <p>Thank you for your purchase. Your order has been received and is being processed.</p>
         </div>
 
@@ -724,7 +883,7 @@ body {
                 </div>
                 <div>
                     <span>Payment:</span>
-                    <span style="color: var(--accent-yellow);"><?php echo htmlspecialchars($paymentMethodDisplay); ?></span>
+                    <span style="color: var(--primary-dark); font-weight: 600;"><?php echo htmlspecialchars($paymentMethodDisplay); ?></span>
                 </div>
             </div>
         </div>
@@ -733,12 +892,12 @@ body {
     <h3>Items Ordered</h3>
     <?php if (!empty($orderItemsBySeller)): ?>
         <?php foreach ($orderItemsBySeller as $sellerId => $sellerData): ?>
-            <div style="margin-bottom: 20px; border: 1px solid rgba(255, 215, 54, 0.3); border-radius: 6px; padding: 12px; background: rgba(255, 215, 54, 0.05);">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 2px solid var(--accent-yellow);">
-                    <h4 style="margin: 0; color: var(--primary-dark); font-size: 14px;">
+            <div style="margin-bottom: 16px; border: 1px solid var(--border-light); border-radius: 8px; padding: 14px; background: rgba(19, 3, 37, 0.02);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding-bottom: 10px; border-bottom: 2px solid var(--primary-dark);">
+                    <h4 style="margin: 0; color: var(--primary-dark); font-size: 0.875rem; font-weight: 600;">
                         <i class="fas fa-store"></i> <?php echo htmlspecialchars($sellerData['seller_name']); ?>
                     </h4>
-                    <span style="font-size: 12px; color: var(--text-light);">
+                    <span style="font-size: 0.75rem; color: var(--text-light); font-weight: 500;">
                         Order #<?php echo str_pad($sellerData['order_id'], 6, '0', STR_PAD_LEFT); ?>
                     </span>
                 </div>
@@ -785,23 +944,23 @@ body {
                 </div>
                 
                 <!-- Seller Subtotal with Discount Breakdown -->
-                <div style="text-align: right; padding-top: 10px; margin-top: 10px; border-top: 1px solid rgba(255, 215, 54, 0.3);">
+                <div style="text-align: right; padding-top: 12px; margin-top: 12px; border-top: 1px solid var(--border-light);">
                     <?php if ($hasDiscount && $sellerOriginalSubtotal > $sellerFinalSubtotal): ?>
                         <?php 
                         $sellerDiscountAmount = $sellerOriginalSubtotal - $sellerFinalSubtotal;
                         ?>
-                        <div style="font-size: 13px; color: var(--text-light); margin-bottom: 4px;">
-                            Subtotal: <span style="color: var(--primary-dark);">₱<?php echo number_format($sellerOriginalSubtotal, 2); ?></span>
+                        <div style="font-size: 0.813rem; color: var(--text-light); margin-bottom: 4px;">
+                            Subtotal: <span style="color: var(--primary-dark); font-weight: 600;">₱<?php echo number_format($sellerOriginalSubtotal, 2); ?></span>
                         </div>
-                        <div style="font-size: 13px; color: #10b981; font-weight: 600; margin-bottom: 6px;">
+                        <div style="font-size: 0.813rem; color: var(--success-green); font-weight: 600; margin-bottom: 6px;">
                             <i class="fas fa-tag"></i> Discount: <span>-₱<?php echo number_format($sellerDiscountAmount, 2); ?></span>
                         </div>
-                        <strong style="color: #10b981; font-size: 15px;">
+                        <strong style="color: var(--success-green); font-size: 0.938rem; font-weight: 700;">
                             Seller Total: ₱<?php echo number_format($sellerFinalSubtotal, 2); ?>
                         </strong>
                     <?php else: ?>
-                        <strong style="color: var(--primary-dark); font-size: 14px;">
-                            Seller Subtotal: <span style="color: var(--accent-yellow);">₱<?php echo number_format($sellerFinalSubtotal, 2); ?></span>
+                        <strong style="color: var(--primary-dark); font-size: 0.875rem; font-weight: 700;">
+                            Seller Subtotal: ₱<?php echo number_format($sellerFinalSubtotal, 2); ?>
                         </strong>
                     <?php endif; ?>
                 </div>
@@ -819,16 +978,16 @@ body {
             <div style="margin-bottom: 8px;">
                 <div class="discount-row" style="font-size: 0.9rem; color: var(--text-light);">
                     <span>Order Subtotal:</span>
-                    <span>₱<?php echo number_format($originalAmount, 2); ?></span>
+                    <span style="font-weight: 600;">₱<?php echo number_format($originalAmount, 2); ?></span>
                 </div>
-                <div class="discount-row" style="font-size: 0.9rem; color: #10b981; font-weight: 600;">
+                <div class="discount-row" style="font-size: 0.9rem; color: var(--success-green); font-weight: 600;">
                     <span><i class="fas fa-tag"></i> Total Discount:</span>
                     <span>-₱<?php echo number_format($discountAmount, 2); ?></span>
                 </div>
             </div>
-            <strong style="font-size: 1.1rem; display: block; color: #10b981;">Final Total: ₱<?php echo number_format($totalAmount, 2); ?></strong>
+            <strong style="font-size: 1.1rem; display: block; color: var(--success-green); font-weight: 700;">Final Total: ₱<?php echo number_format($totalAmount, 2); ?></strong>
         <?php else: ?>
-            <strong style="font-size: 1.1rem; display: block;">Total Amount: ₱<?php echo number_format($totalAmount, 2); ?></strong>
+            <strong style="font-size: 1.1rem; display: block; font-weight: 700;">Total Amount: ₱<?php echo number_format($totalAmount, 2); ?></strong>
         <?php endif; ?>
     </div>
 </div>

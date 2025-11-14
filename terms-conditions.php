@@ -233,7 +233,7 @@ require_once 'includes/header.php';
             <div class="contact-info">
                 <p><i class="fas fa-envelope"></i> <strong>Email:</strong> legal@pest-ctrl.com</p>
                 <p><i class="fas fa-phone"></i> <strong>Phone:</strong> 1-800-PEST-CTRL</p>
-                <p><i class="fas fa-map-marker-alt"></i> <strong>Address:</strong> [Your Business Address]</p>
+                <p><i class="fas fa-map-marker-alt"></i> <strong>Address:</strong> 123 Rizal Street, Poblacion District, Davao City 8000, Davao del Sur, Philippines</p>
             </div>
         </section>
 

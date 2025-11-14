@@ -279,7 +279,7 @@ if (isLoggedIn()) {
         }
 
         .register-btn:hover {
-            color: var(--accent-yellow);
+            color: var(--primary-dark);
         }
 
         /* BUG LOGO */

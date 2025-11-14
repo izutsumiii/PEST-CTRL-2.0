@@ -97,6 +97,7 @@ $pathPrefix = ($currentDir === 'paymongo') ? '../' : '';
         .search-box select {
             padding: 7px 10px !important;
             height: 34px !important;
+            line-height: 34px !important;
             border-radius: 6px 0 0 6px !important;
             border: 1px solid rgba(249, 249, 249, 0.3) !important;
             border-right: 1px solid rgba(249, 249, 249, 0.3) !important;
@@ -105,9 +106,10 @@ $pathPrefix = ($currentDir === 'paymongo') ? '../' : '';
             font-size: 13.5px !important;
             cursor: pointer !important;
             outline: none !important;
-            margin-right: 0 !important;
+            margin: 0 !important;
             width: auto !important;
             min-width: 96px !important;
+            box-sizing: border-box !important;
         }
         
         .search-box select option {
@@ -120,6 +122,7 @@ $pathPrefix = ($currentDir === 'paymongo') ? '../' : '';
             padding: 7px 11px !important;
             height: 34px !important;
             max-height: 34px !important;
+            line-height: 1.2 !important;
             border-radius: 0 !important;
             border: 1px solid rgba(249, 249, 249, 0.3) !important;
             border-left: none !important;
@@ -127,8 +130,9 @@ $pathPrefix = ($currentDir === 'paymongo') ? '../' : '';
             background: rgba(249, 249, 249, 0.1) !important;
             color: #F9F9F9 !important;
             min-width: 0;
-            margin-left: 0 !important;
+            margin: 0 !important;
             font-size: 13.5px !important;
+            box-sizing: border-box !important;
         }
 
         .site-header .search-box { max-width: 600px; }
@@ -143,15 +147,22 @@ $pathPrefix = ($currentDir === 'paymongo') ? '../' : '';
         .search-box button {
             padding: 0 12px !important;
             border-radius: 0 6px 6px 0 !important;
-            background: #FFD736;
-            color: #130325;
-            border: none;
+            background: #FFD736 !important;
+            color: #130325 !important;
+            border: none !important;
             border-left: 1px solid rgba(249, 249, 249, 0.3) !important;
-            height: 34px;
+            height: 34px !important;
+            line-height: 1 !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
             flex: 0 0 auto !important;
             width: auto !important;
-            margin-left: 0 !important;
+            margin: 0 !important;
             font-size: 13.5px !important;
+            box-sizing: border-box !important;
+            cursor: pointer !important;
+            vertical-align: middle !important;
         }
         
         .header-actions {
@@ -818,21 +829,46 @@ $pathPrefix = ($currentDir === 'paymongo') ? '../' : '';
     
     .search-box form {
         width: 100%;
+        display: flex !important;
+        align-items: center !important;
+        gap: 0 !important;
     }
     
     .search-box select {
         min-width: 70px !important;
         font-size: 12px !important;
+        height: 34px !important;
+        line-height: 34px !important;
+        box-sizing: border-box !important;
     }
     
     .search-box input {
         font-size: 12px !important;
         padding: 6px 8px !important;
+        height: 34px !important;
+        line-height: 1.2 !important;
+        box-sizing: border-box !important;
+        margin: 0 !important;
     }
     
     .search-box button {
         font-size: 12px !important;
         padding: 0 10px !important;
+        background: #FFD736 !important;
+        color: #130325 !important;
+        border: none !important;
+        border-radius: 0 6px 6px 0 !important;
+        height: 34px !important;
+        line-height: 1 !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        flex: 0 0 auto !important;
+        width: auto !important;
+        cursor: pointer !important;
+        margin: 0 !important;
+        box-sizing: border-box !important;
+        vertical-align: middle !important;
     }
     
     .header-right {
@@ -947,6 +983,14 @@ $pathPrefix = ($currentDir === 'paymongo') ? '../' : '';
     .search-box button {
         font-size: 11px !important;
         padding: 0 8px !important;
+        background: #FFD736 !important;
+        color: #130325 !important;
+        height: 34px !important;
+        line-height: 1 !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        box-sizing: border-box !important;
     }
 }
 

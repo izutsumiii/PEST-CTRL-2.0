@@ -212,8 +212,10 @@ require_once '../includes/header.php';
     --primary-dark: #130325;
     --accent-yellow: #FFD736;
     --text-dark: #130325;
-    --text-light: #6c757d;
+    --text-light: #6b7280;
     --bg-light: #f8f9fa;
+    --bg-white: #ffffff;
+    --border-light: #e5e7eb;
     --error-red: #dc3545;
 }
 
@@ -225,84 +227,93 @@ body {
 
 .order-failure-wrapper {
     background: var(--bg-light);
-    min-height: 100vh;
-    padding: 10px;
-    margin-top: 120px;
+    min-height: calc(100vh - 120px);
+    padding: 20px;
+    margin-top: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .order-failure-container {
-    background: #ffffff;
-    border-radius: 8px;
-    padding: 20px;
+    background: var(--bg-white);
+    border-radius: 12px;
+    padding: 24px;
     margin: 0 auto;
-    max-width: 800px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    max-width: 900px;
+    width: 100%;
+    box-shadow: 0 2px 12px rgba(19, 3, 37, 0.08);
 }
 
 .failure-header {
     text-align: center;
-    margin-bottom: 15px;
+    margin-bottom: 20px;
 }
 
 .failure-icon {
-    width: 50px;
-    height: 50px;
+    width: 64px;
+    height: 64px;
     background: linear-gradient(135deg, var(--error-red), #c82333);
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin: 0 auto 10px;
-    font-size: 24px;
+    margin: 0 auto 12px;
+    font-size: 32px;
     color: white;
     font-weight: bold;
+    box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
 }
 
+.page-title,
 .failure-header h1 {
     color: var(--error-red);
-    font-size: 1.5rem;
-    margin-bottom: 5px;
-    font-weight: 700;
+    font-size: 1.35rem;
+    font-weight: 600;
+    letter-spacing: -0.3px;
+    line-height: 1.2;
+    margin: 0 0 8px 0;
 }
 
 .failure-header p {
     color: var(--text-light);
     font-size: 0.9rem;
-    opacity: 0.9;
     margin: 0;
 }
 
 .transaction-details {
-    background: rgba(220, 53, 69, 0.1);
-    border: 1px solid rgba(220, 53, 69, 0.3);
-    border-radius: 6px;
-    padding: 12px;
-    margin-bottom: 15px;
+    background: rgba(220, 53, 69, 0.05);
+    border: 1px solid rgba(220, 53, 69, 0.2);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 16px;
 }
 
 .transaction-details h2 {
     color: var(--primary-dark);
     font-size: 1.1rem;
-    margin-bottom: 10px;
+    font-weight: 600;
+    margin: 0 0 12px 0;
+    padding-bottom: 8px;
     border-bottom: 2px solid var(--error-red);
-    padding-bottom: 5px;
 }
 
 .transaction-info {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-    font-size: 13px;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    font-size: 0.875rem;
 }
 
 .transaction-info > div {
     display: flex;
     justify-content: space-between;
+    align-items: center;
 }
 
 .transaction-info span:first-child {
     color: var(--text-light);
-    font-weight: 600;
+    font-weight: 500;
 }
 
 .transaction-info span:last-child {
@@ -313,32 +324,32 @@ body {
 .status-badge {
     color: var(--error-red);
     font-weight: 600;
-    background: rgba(220, 53, 69, 0.2);
+    background: rgba(220, 53, 69, 0.15);
     padding: 4px 12px;
     border-radius: 20px;
     border: 1px solid var(--error-red);
-    font-size: 12px;
+    font-size: 0.75rem;
 }
 
 .help-section {
-    background: rgba(255, 215, 54, 0.1);
-    border: 1px solid rgba(255, 215, 54, 0.3);
-    border-radius: 6px;
-    padding: 12px;
-    margin-bottom: 15px;
+    background: rgba(19, 3, 37, 0.03);
+    border: 1px solid var(--border-light);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 20px;
 }
 
 .help-section h3 {
-    color: var(--accent-yellow);
+    color: var(--primary-dark);
     font-size: 1rem;
-    margin-bottom: 10px;
+    font-weight: 600;
+    margin: 0 0 12px 0;
 }
 
 .steps-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 10px;
-    font-size: 12px;
+    gap: 12px;
 }
 
 .step-item {
@@ -346,59 +357,63 @@ body {
 }
 
 .step-number {
-    width: 32px;
-    height: 32px;
-    background: var(--accent-yellow);
-    color: var(--primary-dark);
+    width: 36px;
+    height: 36px;
+    background: var(--primary-dark);
+    color: var(--bg-white);
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin: 0 auto 5px;
-    font-weight: bold;
-    font-size: 14px;
+    margin: 0 auto 8px;
+    font-weight: 700;
+    font-size: 0.875rem;
 }
 
 .step-title {
     color: var(--primary-dark);
     font-weight: 600;
-    font-size: 12px;
-    margin-bottom: 2px;
+    font-size: 0.813rem;
+    margin-bottom: 4px;
 }
 
 .step-desc {
     color: var(--text-light);
-    opacity: 0.8;
-    font-size: 10px;
+    font-size: 0.75rem;
 }
 
 .action-buttons {
     display: flex;
-    gap: 10px;
+    gap: 12px;
     justify-content: center;
     flex-wrap: wrap;
+    margin-top: 20px;
 }
 
 .btn {
-    padding: 8px 16px;
-    border-radius: 6px;
+    padding: 10px 20px;
+    border-radius: 8px;
     text-decoration: none;
     font-weight: 600;
-    font-size: 13px;
-    transition: all 0.3s;
+    font-size: 0.875rem;
+    transition: all 0.3s ease;
     border: none;
     cursor: pointer;
     white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .btn-secondary {
-    background: #6c757d;
-    color: white;
+    background: var(--text-light);
+    color: var(--bg-white);
 }
 
 .btn-secondary:hover {
-    background: #5a6268;
-    transform: translateY(-1px);
+    background: #4b5563;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
 .btn-primary {
@@ -408,37 +423,51 @@ body {
 
 .btn-primary:hover {
     background: #e6c230;
-    transform: translateY(-1px);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(255, 215, 54, 0.3);
 }
 
 .btn-info {
-    background: #007bff;
-    color: white;
+    background: var(--primary-dark);
+    color: var(--bg-white);
 }
 
 .btn-info:hover {
-    background: #0056b3;
-    transform: translateY(-1px);
+    background: #0d021f;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(19, 3, 37, 0.3);
 }
 
 @media (max-width: 768px) {
     .order-failure-wrapper {
-        margin-top: 100px;
-        padding: 5px;
+        margin-top: 80px;
+        padding: 12px;
+        min-height: calc(100vh - 80px);
     }
     
     .order-failure-container {
-        padding: 15px;
+        padding: 16px;
+    }
+    
+    .failure-icon {
+        width: 56px;
+        height: 56px;
+        font-size: 28px;
+    }
+    
+    .page-title,
+    .failure-header h1 {
+        font-size: 1.2rem;
     }
     
     .transaction-info {
         grid-template-columns: 1fr;
-        gap: 6px;
+        gap: 8px;
     }
     
     .steps-grid {
         grid-template-columns: 1fr;
-        gap: 8px;
+        gap: 10px;
     }
     
     .action-buttons {
@@ -447,7 +476,16 @@ body {
     
     .btn {
         width: 100%;
-        text-align: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .order-failure-wrapper {
+        padding: 8px;
+    }
+    
+    .order-failure-container {
+        padding: 12px;
     }
 }
 </style>
@@ -457,7 +495,7 @@ body {
         <!-- Failure Header -->
         <div class="failure-header">
             <div class="failure-icon">✗</div>
-            <h1>Payment Failed</h1>
+            <h1 class="page-title">Payment Failed</h1>
             <?php if ($paymongoError): ?>
                 <p style="color: var(--error-red); font-weight: 600; margin-bottom: 8px;"><?php echo htmlspecialchars($paymongoError); ?></p>
                 <?php if ($errorMessage !== 'Payment was cancelled or failed'): ?>
@@ -471,14 +509,14 @@ body {
             // Handle specific PayMongo error messages
             $displayMessage = $paymongoError ? $paymongoError : $errorMessage;
             if (stripos($displayMessage, 'expired') !== false || stripos($displayMessage, 'expired status') !== false): ?>
-                <div style="background: rgba(255, 193, 7, 0.1); border: 1px solid rgba(255, 193, 7, 0.3); border-radius: 6px; padding: 10px; margin-top: 10px; font-size: 0.85rem; color: var(--text-dark);">
-                    <strong>💡 What this means:</strong> The payment source expired before the payment could be completed. Please try again with a fresh payment method.
+                <div style="background: rgba(19, 3, 37, 0.05); border: 1px solid var(--border-light); border-radius: 8px; padding: 12px; margin-top: 12px; font-size: 0.875rem; color: var(--text-dark);">
+                    <strong style="color: var(--primary-dark);">💡 What this means:</strong> The payment source expired before the payment could be completed. Please try again with a fresh payment method.
                 </div>
             <?php endif; ?>
             
             <?php if (!$checkoutSessionId && !$transactionId): ?>
-                <div style="background: rgba(255, 193, 7, 0.1); border: 1px solid rgba(255, 193, 7, 0.3); border-radius: 6px; padding: 10px; margin-top: 10px; font-size: 0.85rem; color: var(--text-dark);">
-                    <strong>ℹ️ Note:</strong> If you saw an "expired source" error on PayMongo's page, the payment was cancelled. You can try again from your cart.
+                <div style="background: rgba(19, 3, 37, 0.05); border: 1px solid var(--border-light); border-radius: 8px; padding: 12px; margin-top: 12px; font-size: 0.875rem; color: var(--text-dark);">
+                    <strong style="color: var(--primary-dark);">ℹ️ Note:</strong> If you saw an "expired source" error on PayMongo's page, the payment was cancelled. You can try again from your cart.
                 </div>
             <?php endif; ?>
         </div>

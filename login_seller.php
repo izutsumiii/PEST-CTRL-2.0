@@ -374,7 +374,7 @@ require_once 'includes/header.php';
     }
     
     .login-links a:hover {
-        color: #FFD736;
+        color: #130325;
         text-decoration: underline;
     }
     

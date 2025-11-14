@@ -1934,6 +1934,31 @@ function addToCart() {
 document.addEventListener('DOMContentLoaded', function() {
     const reviewForm = document.getElementById('reviewForm');
     if (reviewForm) {
+        // Pre-select rating from URL parameter if present
+        const urlParams = new URLSearchParams(window.location.search);
+        const ratingParam = urlParams.get('rating');
+        if (ratingParam) {
+            const rating = parseInt(ratingParam);
+            if (rating >= 1 && rating <= 5) {
+                const ratingInput = reviewForm.querySelector('input[name="rating"][value="' + rating + '"]');
+                if (ratingInput) {
+                    ratingInput.checked = true;
+                    // Update visual state of stars
+                    const allLabels = reviewForm.querySelectorAll('.star-rating label');
+                    allLabels.forEach((label, index) => {
+                        const labelRating = parseInt(label.getAttribute('for').replace('star', ''));
+                        if (labelRating <= rating) {
+                            label.style.color = '#FFD736';
+                            label.style.textShadow = '0 0 10px rgba(255, 215, 54, 0.8)';
+                        } else {
+                            label.style.color = 'rgba(255, 215, 54, 0.3)';
+                            label.style.textShadow = 'none';
+                        }
+                    });
+                }
+            }
+        }
+        
         reviewForm.addEventListener('submit', function(e) {
             const ratingInputs = reviewForm.querySelectorAll('input[name="rating"]');
             let ratingSelected = false;

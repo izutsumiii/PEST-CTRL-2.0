@@ -10,6 +10,7 @@ if (!isLoggedIn()) {
 }
 
 $orderId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+$rating = isset($_GET['rating']) ? (int)$_GET['rating'] : 0;
 
 if (!$orderId) {
     header('Location: user-dashboard.php?error=invalid_order');
@@ -29,8 +30,12 @@ try {
     $result = $stmt->fetch(PDO::FETCH_ASSOC);
     
     if ($result) {
-        // Redirect to product page with review anchor to scroll to reviews section
-        header("Location: product-detail.php?id=" . $result['product_id'] . "#reviews-tab");
+        // Redirect to product page with review anchor and rating parameter
+        $redirectUrl = "product-detail.php?id=" . $result['product_id'] . "#reviews-tab";
+        if ($rating > 0 && $rating <= 5) {
+            $redirectUrl = "product-detail.php?id=" . $result['product_id'] . "&rating=" . $rating . "#reviews-tab";
+        }
+        header("Location: " . $redirectUrl);
         exit();
     } else {
         header('Location: user-dashboard.php?error=order_not_found');
