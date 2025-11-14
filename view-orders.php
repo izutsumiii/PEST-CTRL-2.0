@@ -26,7 +26,14 @@ try {
 if (isset($_POST['update_status'])) {
     $orderId = intval($_POST['order_id']);
     $newStatus = sanitizeInput($_POST['status']);
-    $cancellationReason = isset($_POST['cancellation_reason']) ? sanitizeInput($_POST['cancellation_reason']) : '';
+    $cancellationReason = isset($_POST['cancellation_reason']) ? trim(sanitizeInput($_POST['cancellation_reason'])) : '';
+    
+    // Validate cancellation reason is required when canceling
+    if ($newStatus === 'cancelled' && empty($cancellationReason)) {
+        $_SESSION['order_message'] = ['type' => 'error', 'text' => 'Please provide a reason for cancellation.'];
+        header("Location: view-orders.php");
+        exit();
+    }
     
     // CRITICAL FIX: Check BOTH o.seller_id (new multi-seller orders) AND p.seller_id (legacy compatibility)
     $stmt = $pdo->prepare("SELECT o.* FROM orders o LEFT JOIN order_items oi ON o.id = oi.order_id LEFT JOIN products p ON oi.product_id = p.id WHERE o.id = ? AND (o.seller_id = ? OR p.seller_id = ?) GROUP BY o.id");
@@ -36,13 +43,19 @@ if (isset($_POST['update_status'])) {
     // Update order status and set delivery_date if status is 'delivered'
     if ($newStatus === 'delivered') {
         $stmt = $pdo->prepare("UPDATE orders SET status = ?, delivery_date = NOW(), updated_at = NOW() WHERE id = ?");
+        $result = $stmt->execute([$newStatus, $orderId]);
     } elseif ($newStatus === 'completed') {
         // For completed status, ensure delivery_date is set if not already
         $stmt = $pdo->prepare("UPDATE orders SET status = ?, delivery_date = COALESCE(delivery_date, NOW()), updated_at = NOW() WHERE id = ?");
+        $result = $stmt->execute([$newStatus, $orderId]);
+    } elseif ($newStatus === 'cancelled') {
+        // For cancelled status, save cancellation reason and cancelled_at
+        $stmt = $pdo->prepare("UPDATE orders SET status = ?, cancellation_reason = ?, cancelled_at = NOW(), updated_at = NOW() WHERE id = ?");
+        $result = $stmt->execute([$newStatus, $cancellationReason, $orderId]);
     } else {
         $stmt = $pdo->prepare("UPDATE orders SET status = ?, updated_at = NOW() WHERE id = ?");
+        $result = $stmt->execute([$newStatus, $orderId]);
     }
-    $result = $stmt->execute([$newStatus, $orderId]);
     
     // Verify the update actually worked by checking the status
     if ($result && $newStatus === 'completed') {
@@ -75,7 +88,7 @@ if ($result) {
                 'shipped' => 'Great news! Your order has been shipped.',
                 'delivered' => 'Your order has been delivered by the courier. Please confirm when you receive it.',
                 'completed' => '✅ Order #' . str_pad($orderId, 6, '0', STR_PAD_LEFT) . ' has been completed! Thank you for your purchase.',
-                'cancelled' => 'Your order has been cancelled.',
+                'cancelled' => 'Your order has been cancelled.' . (!empty($cancellationReason) ? ' Reason: ' . htmlspecialchars($cancellationReason) : ''),
                 'refunded' => 'Your order has been refunded.'
             ];
             
@@ -89,6 +102,45 @@ if ($result) {
     } catch (Exception $e) {
         // Log error but don't stop execution
         error_log("Failed to create customer notification: " . $e->getMessage());
+    }
+
+    // Send email notification for cancelled orders
+    if ($result && $newStatus === 'cancelled') {
+        try {
+            // Get customer email and order details
+            $stmt = $pdo->prepare("SELECT o.*, u.email, u.first_name, u.last_name, COALESCE(CONCAT(u.first_name, ' ', u.last_name), u.username, 'Customer') as customer_name 
+                                  FROM orders o 
+                                  LEFT JOIN users u ON o.user_id = u.id 
+                                  WHERE o.id = ?");
+            $stmt->execute([$orderId]);
+            $orderData = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if ($orderData && !empty($orderData['email'])) {
+                // Get order items
+                $stmt = $pdo->prepare("SELECT oi.quantity, oi.price as item_price, p.name as product_name 
+                                      FROM order_items oi 
+                                      JOIN products p ON oi.product_id = p.id 
+                                      WHERE oi.order_id = ?");
+                $stmt->execute([$orderId]);
+                $orderItems = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                
+                // Send email
+                sendOrderStatusUpdateEmail(
+                    $orderData['email'],
+                    $orderData['customer_name'],
+                    $orderId,
+                    $newStatus,
+                    $order['status'] ?? 'pending',
+                    $orderItems,
+                    $orderData['total_amount'],
+                    $pdo,
+                    $cancellationReason
+                );
+            }
+        } catch (Exception $e) {
+            // Log error but don't stop execution
+            error_log("Failed to send cancellation email: " . $e->getMessage());
+        }
     }
 
 if ($result && in_array($newStatus, ['processing', 'shipped', 'delivered', 'completed'])) {
@@ -200,6 +252,11 @@ function sendOrderStatusUpdateEmail($customerEmail, $customerName, $orderId, $ne
         ];
 
         $config = $statusConfig[$newStatus] ?? ['emoji' => '📋', 'title' => 'Order Status Updated', 'color' => '#6c757d', 'message' => 'Your order status has been updated.', 'next_step' => 'We\'ll keep you informed of any further updates.'];
+
+        // Add cancellation reason to message if cancelled
+        if ($newStatus === 'cancelled' && !empty($cancellationReason)) {
+            $config['message'] .= '<br><br><strong>Reason for cancellation:</strong><br><em style="color: #666; font-size: 14px;">' . htmlspecialchars($cancellationReason) . '</em>';
+        }
 
         $itemsList = '';
         foreach ($orderItems as $item) {
@@ -787,6 +844,123 @@ h1 {
 .custom-confirm-btn.cancel:hover { background: #5a6268; }
 .custom-confirm-btn.confirm:hover { background: #c82333; }
 
+/* Cancellation Reason Modal */
+.cancel-reason-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10001;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.25s ease;
+}
+
+.cancel-reason-overlay.show { 
+    opacity: 1; 
+    visibility: visible; 
+}
+
+.cancel-reason-dialog {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 24px;
+    width: 92%;
+    max-width: 500px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+}
+
+.cancel-reason-title { 
+    color: #111827; 
+    font-weight: 700; 
+    font-size: 1.2rem; 
+    margin: 0 0 8px 0; 
+    text-transform: none; 
+    letter-spacing: normal; 
+}
+
+.cancel-reason-subtitle {
+    color: #6b7280;
+    font-size: 0.9rem;
+    margin: 0 0 20px 0;
+}
+
+.cancel-reason-label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #374151;
+    font-size: 0.9rem;
+}
+
+.cancel-reason-textarea {
+    width: 100%;
+    min-height: 120px;
+    padding: 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-family: inherit;
+    color: #130325;
+    resize: vertical;
+    transition: all 0.2s ease;
+    box-sizing: border-box;
+}
+
+.cancel-reason-textarea:focus {
+    outline: none;
+    border-color: #FFD736;
+    box-shadow: 0 0 0 3px rgba(255, 215, 54, 0.1);
+}
+
+.cancel-reason-textarea::placeholder {
+    color: #9ca3af;
+}
+
+.cancel-reason-buttons { 
+    display: flex; 
+    gap: 10px; 
+    justify-content: flex-end; 
+    margin-top: 20px; 
+}
+
+.cancel-reason-btn { 
+    padding: 10px 20px; 
+    border-radius: 6px; 
+    font-size: 0.9rem; 
+    font-weight: 600; 
+    text-transform: none; 
+    letter-spacing: normal; 
+    border: none; 
+    cursor: pointer; 
+    transition: all 0.2s ease;
+}
+
+.cancel-reason-btn.cancel { 
+    background: #6c757d; 
+    color: white; 
+}
+
+.cancel-reason-btn.cancel:hover { 
+    background: #5a6268; 
+}
+
+.cancel-reason-btn.submit { 
+    background: #dc3545; 
+    color: white; 
+}
+
+.cancel-reason-btn.submit:hover { 
+    background: #c82333; 
+}
+
+.cancel-reason-btn.submit:disabled {
+    background: #d1d5db;
+    color: #9ca3af;
+    cursor: not-allowed;
+}
 
 .no-orders-message {
     text-align: center;
@@ -940,15 +1114,10 @@ h1 {
                                                     <span>Process</span>
                                                 </button>
                                             </form>
-                                            <form method="POST" onsubmit="return confirmStatusChange('cancelled');">
-                                                <input type="hidden" name="order_id" value="<?php echo $order['order_id']; ?>">
-                                                <input type="hidden" name="status" value="cancelled">
-                                                <input type="hidden" name="update_status" value="1">
-                                                <button type="submit" class="action-btn btn-cancel">
-                                                    <i class="fas fa-times"></i>
-                                                    <span>Cancel</span>
-                                                </button>
-                                            </form>
+                                            <button type="button" class="action-btn btn-cancel" onclick="showCancelReasonModal(<?php echo $order['order_id']; ?>)">
+                                                <i class="fas fa-times"></i>
+                                                <span>Cancel</span>
+                                            </button>
                                         </div>
         <?php endif; ?>
                                 <?php elseif ($order['status'] === 'processing'): ?>
@@ -962,15 +1131,10 @@ h1 {
                                                 <span>Ship</span>
                                             </button>
                                         </form>
-                                        <form method="POST" onsubmit="return confirmStatusChange('cancelled');">
-                                            <input type="hidden" name="order_id" value="<?php echo $order['order_id']; ?>">
-                                            <input type="hidden" name="status" value="cancelled">
-                                            <input type="hidden" name="update_status" value="1">
-                                            <button type="submit" class="action-btn btn-cancel">
-                                                <i class="fas fa-times"></i>
-                                                <span>Cancel</span>
-                                            </button>
-                                        </form>
+                                        <button type="button" class="action-btn btn-cancel" onclick="showCancelReasonModal(<?php echo $order['order_id']; ?>)">
+                                            <i class="fas fa-times"></i>
+                                            <span>Cancel</span>
+                                        </button>
                                     </div>
                                 <?php elseif ($order['status'] === 'shipped'): ?>
                                     <div class="action-buttons">
@@ -1084,6 +1248,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Remove inline onsubmit from status update forms to avoid double prompts
+    // Remove inline onsubmit from status update forms to avoid double prompts
     document.querySelectorAll('form[onsubmit]').forEach(function(form){
         const hasStatus = form.querySelector('input[name="status"], select[name="status"]');
         const hasFlag = form.querySelector('input[name="update_status"]');
@@ -1102,6 +1267,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const nextStatus = statusField.value;
         if (!nextStatus) return; // allow native validation/no-op
+
+        // CRITICAL FIX: Skip confirmation for cancel status - it has its own modal
+        if (nextStatus === 'cancelled') {
+            return true; // Allow form to submit normally (from cancel reason modal)
+        }
 
         e.preventDefault();
         Promise.resolve(confirmStatusChange(nextStatus)).then(function(ok){
@@ -1322,4 +1492,71 @@ function showSellerOrderDetails(orderId) {
     modal.style.display = 'flex';
 }
 function escapeHtml(t){ const d=document.createElement('div'); d.textContent=t==null?'':String(t); return d.innerHTML; }
+
+// Cancellation Reason Modal
+function showCancelReasonModal(orderId) {
+    const overlay = document.createElement('div');
+    overlay.className = 'cancel-reason-overlay';
+    overlay.innerHTML = `
+        <div class="cancel-reason-dialog">
+            <div class="cancel-reason-title">Cancel Order #${String(orderId).padStart(6, '0')}</div>
+            <div class="cancel-reason-subtitle">Please provide a reason for cancellation. This will be sent to the customer.</div>
+            <form id="cancelOrderForm" method="POST">
+                <input type="hidden" name="order_id" value="${orderId}">
+                <input type="hidden" name="status" value="cancelled">
+                <input type="hidden" name="update_status" value="1">
+                <label for="cancellation_reason" class="cancel-reason-label">
+                    Cancellation Reason / Remarks <span style="color: #dc3545;">*</span>
+                </label>
+                <textarea 
+                    name="cancellation_reason" 
+                    id="cancellation_reason" 
+                    class="cancel-reason-textarea" 
+                    placeholder="Please explain why this order is being cancelled (e.g., Out of stock, Customer request, Payment issue, etc.)"
+                    required
+                    minlength="10"
+                ></textarea>
+                <div class="cancel-reason-buttons">
+                    <button type="button" class="cancel-reason-btn cancel" onclick="closeCancelReasonModal()">Cancel</button>
+                    <button type="submit" class="cancel-reason-btn submit">Confirm Cancellation</button>
+                </div>
+            </form>
+        </div>
+    `;
+    document.body.appendChild(overlay);
+    requestAnimationFrame(() => overlay.classList.add('show'));
+    
+    // Focus on textarea
+    const textarea = overlay.querySelector('#cancellation_reason');
+    if (textarea) {
+        setTimeout(() => textarea.focus(), 100);
+    }
+    
+    // Handle form submission
+    const form = overlay.querySelector('#cancelOrderForm');
+    form.addEventListener('submit', function(e) {
+        const reason = textarea.value.trim();
+        if (reason.length < 10) {
+            e.preventDefault();
+            alert('Please provide a detailed reason (at least 10 characters).');
+            textarea.focus();
+            return false;
+        }
+    });
+    
+    // Close on overlay click
+    overlay.addEventListener('click', function(e) {
+        if (e.target === overlay) {
+            closeCancelReasonModal();
+        }
+    });
+}
+
+function closeCancelReasonModal() {
+    const overlay = document.querySelector('.cancel-reason-overlay');
+    if (overlay) {
+        overlay.classList.remove('show');
+        setTimeout(() => overlay.remove(), 250);
+    }
+}
 </script>
