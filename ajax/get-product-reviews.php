@@ -66,11 +66,11 @@ try {
             'review_text' => $review['review_text'],
             'seller_reply' => $review['seller_reply'],
             'seller_replied_at' => $review['seller_replied_at'],
-            'is_hidden' => (bool)$review['is_hidden'],
+            'is_hidden' => (bool)$review['is_hidden'], // this is key: use as boolean
             'hidden_reason' => $review['hidden_reason'],
             'created_at' => $review['created_at'],
             'created_at_formatted' => date('F j, Y', strtotime($review['created_at'])),
-            'created_at_time' => date('g:i A', strtotime($review['created_at']))
+            'created_at_time' => date('g:i A', strtotime($review['created_at'])),
         ];
     }, $reviews);
     
