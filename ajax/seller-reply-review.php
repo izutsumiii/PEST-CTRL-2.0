@@ -75,14 +75,26 @@ try {
     ");
     
     if ($updateStmt->execute([$replyText, $reviewId])) {
-        // Send notification to customer
+        // Send notification to customer with product_id link
         try {
             $customerMessage = "The seller has responded to your review on '" . $review['product_name'] . "'";
-            createCustomerNotification(
+            
+            // Create notification with product_id so it links to the product page
+            $notifStmt = $pdo->prepare("
+                INSERT INTO notifications (user_id, order_id, message, type, product_id, created_at)
+                VALUES (?, ?, ?, ?, ?, NOW())
+            ");
+            $notifStmt->execute([
                 $review['customer_id'],
+                $review['order_id'],
                 $customerMessage,
-                'seller_reply'
-            );
+                'seller_reply',
+                $review['product_id']
+            ]);
+            
+            // Log for debugging
+            error_log("Seller reply notification created for customer ID: " . $review['customer_id'] . " on product ID: " . $review['product_id']);
+            
         } catch (Exception $e) {
             error_log("Error creating customer notification for seller reply: " . $e->getMessage());
         }
@@ -104,4 +116,3 @@ try {
     echo json_encode(['success' => false, 'message' => 'Server error: ' . $e->getMessage()]);
 }
 ?>
-
