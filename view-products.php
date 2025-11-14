@@ -1354,13 +1354,13 @@ h1 {
 }
 
 .review-hidden-message {
-    padding: 10px 14px;
+    padding: 12px 16px;
     background: rgba(108, 117, 125, 0.1);
     border-left: 3px solid #6c757d;
     border-radius: 4px;
     display: flex;
-    align-items: center;
-    gap: 8px;
+    align-items: flex-start;
+    gap: 10px;
     color: rgba(19, 3, 37, 0.5);
 }
 
@@ -2071,11 +2071,19 @@ function displayReviews(reviews) {
                 </div>
                 
                 ${isHidden ? `
-                    <div class="review-hidden-message">
-                        <i class="fas fa-eye-slash"></i>
-                        <em>This review is hidden by the admin</em>
-                    </div>
-                ` : `
+    <div class="review-hidden-message">
+        <i class="fas fa-eye-slash"></i>
+        <div style="flex: 1;">
+            <em>This review has been hidden by admin.</em>
+            ${review.hidden_reason ? `
+                <div class="hidden-reason" style="margin-top: 8px; padding: 8px 12px; background: rgba(108, 117, 125, 0.08); border-radius: 4px; border: 1px solid rgba(108, 117, 125, 0.15);">
+                    <strong style="color: #6c757d; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 4px;">Admin's Reason:</strong>
+                    <div style="color: rgba(19, 3, 37, 0.8); font-size: 13px; line-height: 1.5;">${escapeHtml(review.hidden_reason).replace(/\n/g, '<br>')}</div>
+                </div>
+            ` : ''}
+        </div>
+    </div>
+` : `
                     <div class="review-text-modal">${escapeHtml(review.review_text).replace(/\n/g, '<br>')}</div>
                     
                     ${hasReply ? `
