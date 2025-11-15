@@ -1238,6 +1238,32 @@ document.addEventListener('keydown', function(e) {
         </div>
     </div>
 </div>
-
+<script>
+// Mark all reviews as viewed when admin visits the reviews page
+document.addEventListener('DOMContentLoaded', function() {
+    // Wait a bit to ensure the page has loaded
+    setTimeout(function() {
+        fetch('../ajax/mark-reviews-viewed.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                console.log('Reviews marked as viewed');
+                // Update the badge count in the header if the function exists
+                if (typeof loadReviewCount === 'function') {
+                    loadReviewCount();
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Error marking reviews as viewed:', error);
+        });
+    }, 1000); // Wait 1 second after page load
+});
+</script>
 </body>
 </html>
