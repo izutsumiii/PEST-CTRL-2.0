@@ -1717,14 +1717,14 @@ main h3 {
 
         <!-- Product Details Section -->
         <div class="product-details-section">
-            <div class="product-category">
-                <h3>Product Category</h3>
-                <p><?php echo htmlspecialchars($categoryPath[count($categoryPath) - 1] ?? 'General'); ?></p>
-            </div>
+        <div class="product-category">
+            <h3>Product Category</h3>
+            <p><?php echo html_entity_decode($categoryPath[count($categoryPath) - 1] ?? 'General', ENT_QUOTES, 'UTF-8'); ?></p>
+        </div>
             <div class="product-description">
                 <h3>Product Description</h3>
                 <div class="description-content" id="description-content">
-                    <?php echo nl2br(htmlspecialchars($product['description'])); ?>
+                <?php echo nl2br(html_entity_decode($product['description'], ENT_QUOTES, 'UTF-8')); ?>
                 </div>
                 <button class="read-more-btn" onclick="toggleDescription()" id="read-more-btn">Read More</button>
             </div>
