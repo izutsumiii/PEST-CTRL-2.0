@@ -217,28 +217,44 @@ require_once 'includes/admin_header.php';
     }
 
     /* Page Header */
-    .page-header {
-        font-size: 18px !important;
-        font-weight: 800 !important;
-        color: #130325 !important;
-        margin: -60px auto 12px auto !important;
-        padding: 0 20px !important;
-        display: flex !important;
-        align-items: center !important;
-        gap: 12px !important;
-        flex-wrap: wrap !important;
-        max-width: 1400px !important;
-        text-shadow: none !important;
-        position: relative !important;
-        z-index: 1 !important;
-    }
-    .page-header h1 {
-        font-size: 20px !important;
-        font-weight: 800 !important;
-        color: #130325 !important;
-        margin: 0 !important;
-        text-shadow: none !important;
-    }
+    /* Page Header - Adjusted for better visibility */
+.page-header {
+    font-size: 18px !important;
+    font-weight: 800 !important;
+    color: #130325 !important;
+    margin: -40px auto 20px auto !important;  /* Changed from -60px to -40px and bottom from 12px to 20px */
+    margin-top: -40px !important;  /* Changed from -60px to -40px */
+    padding: 0 20px !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+    flex-wrap: wrap !important;
+    max-width: 1400px !important;
+    text-shadow: none !important;
+    position: relative !important;
+    z-index: 1 !important;
+}
+
+.page-header h1 {
+    font-size: 22px !important;  /* Increased from 20px to 22px for better visibility */
+    font-weight: 800 !important;
+    color: #130325 !important;
+    margin: 0 !important;
+    text-shadow: none !important;
+    letter-spacing: 0.3px !important;  /* Added for better readability */
+}
+
+.page-header h1 i {
+    font-size: 20px;  /* Icon size */
+    color: #FFD736;  /* Added yellow color to icon for visibility */
+}
+
+/* Container - Adjusted top margin */
+.container {
+    max-width: 1400px;
+    margin: 0 auto 30px auto;  /* Changed from -20px to 0 */
+    padding: 0 20px;
+}
 
     /* Container */
     .container {
@@ -723,6 +739,399 @@ require_once 'includes/admin_header.php';
             max-width: 100%;
         }
     }
+    
+
+
+
+/* Enhanced Mobile Responsive Styles */
+@media (max-width: 768px) {
+    /* Container adjustments */
+    .container {
+        padding: 0 12px;
+        margin-top: -10px;
+    }
+    
+    /* Page header adjustments */
+    @media (max-width: 768px) {
+    /* Page header adjustments */
+    .page-header {
+        margin: -30px auto 16px auto !important;  /* Changed from -50px to -30px */
+        padding: 0 12px !important;
+    }
+    
+    .page-header h1 {
+        font-size: 20px !important;  /* Slightly larger on mobile */
+        margin-top: -30px !important;  /* Changed from -50px to -30px */
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .page-header h1 i {
+        font-size: 18px;  /* Larger icon on mobile */
+        color: #FFD736;
+    }
+}
+    
+    /* Stats grid - 2 columns on mobile */
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 12px;
+        margin-bottom: 16px;
+    }
+    
+    .stat-card {
+        padding: 16px 12px;
+    }
+    
+    .stat-number {
+        font-size: 24px;
+        margin-bottom: 6px;
+    }
+    
+    .stat-label {
+        font-size: 11px;
+    }
+    
+    /* Filter section adjustments */
+    .filter-section {
+        padding: 16px !important;
+    }
+    
+    .filter-row {
+        flex-direction: column !important;
+        gap: 12px;
+        align-items: stretch !important;
+    }
+    
+    .status-filters {
+        flex-direction: row;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        gap: 6px;
+        padding-bottom: 4px;
+    }
+    
+    .status-filters::-webkit-scrollbar {
+        height: 4px;
+    }
+    
+    .status-filters::-webkit-scrollbar-track {
+        background: #f1f1f1;
+    }
+    
+    .status-filters::-webkit-scrollbar-thumb {
+        background: #adb5bd;
+        border-radius: 2px;
+    }
+    
+    .status-filters a {
+        padding: 6px 12px;
+        font-size: 12px;
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
+    
+    /* Search form adjustments */
+    .search-form {
+        flex-direction: column !important;
+        gap: 10px;
+    }
+    
+    .search-input {
+        min-width: 100% !important;
+        max-width: 100% !important;
+        width: 100% !important;
+    }
+    
+    .btn-search {
+        width: 100% !important;
+        height: 44px !important;
+        font-size: 14px;
+        justify-content: center;
+        gap: 8px;
+    }
+    
+    .btn-search::after {
+        content: 'Search Reviews';
+        margin-left: 4px;
+    }
+    
+    .btn-clear {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    /* Toast notifications - adjust for mobile */
+    .toast-notification {
+        top: 60px;
+        min-width: calc(100% - 24px);
+        max-width: calc(100% - 24px);
+        left: 12px;
+        transform: none;
+        font-size: 13px;
+        padding: 12px 16px;
+    }
+    
+    @keyframes toastSlideIn {
+        from {
+            opacity: 0;
+            transform: translateY(-20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    @keyframes toastSlideOut {
+        from {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        to {
+            opacity: 0;
+            transform: translateY(-20px);
+        }
+    }
+    
+    /* Reviews container adjustments */
+    .reviews-container {
+        padding: 0 !important;
+        border: none !important;
+        background: transparent !important;
+        box-shadow: none !important;
+    }
+    
+    /* Review item - card style on mobile */
+    .review-item {
+        background: #ffffff;
+        border: 1px solid rgba(0,0,0,0.1);
+        border-radius: 12px;
+        padding: 16px;
+        margin-bottom: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    
+    .review-item:last-child {
+        margin-bottom: 0;
+    }
+    
+    /* Review header adjustments */
+    .review-header {
+        flex-direction: column;
+        gap: 12px;
+        margin-bottom: 12px;
+    }
+    
+    .review-user-info {
+        width: 100%;
+    }
+    
+    .review-username {
+        font-size: 16px;
+        margin-bottom: 6px;
+    }
+    
+    .review-meta {
+        flex-direction: column;
+        gap: 6px;
+        align-items: flex-start;
+    }
+    
+    .review-meta-item {
+        font-size: 11px;
+    }
+    
+    .review-rating {
+        font-size: 18px;
+        align-self: flex-start;
+    }
+    
+    /* Review text adjustments */
+    .review-text {
+        font-size: 13px;
+        margin-bottom: 12px;
+    }
+    
+    /* Hidden message adjustments */
+    .review-hidden-message {
+        padding: 10px 12px;
+        margin-bottom: 10px;
+    }
+    
+    .review-hidden-message i {
+        font-size: 14px;
+    }
+    
+    .review-hidden-message em {
+        font-size: 12px;
+    }
+    
+    .hidden-reason {
+        font-size: 11px;
+    }
+    
+    /* Seller reply adjustments */
+    .seller-reply {
+        padding: 12px 14px;
+        margin-top: 10px;
+        margin-bottom: 10px;
+    }
+    
+    .reply-header {
+        margin-bottom: 8px;
+    }
+    
+    .reply-header i {
+        font-size: 13px;
+    }
+    
+    .reply-label {
+        font-size: 12px;
+    }
+    
+    .reply-date {
+        font-size: 10px;
+    }
+    
+    .reply-text {
+        font-size: 12px;
+    }
+    
+    /* Review actions adjustments */
+    .review-actions {
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .btn-hide-review,
+    .btn-unhide-review,
+    .btn-view-product {
+        width: 100%;
+        justify-content: center;
+        padding: 10px 14px;
+        font-size: 14px;
+    }
+    
+    .btn-hide-review i,
+    .btn-unhide-review i,
+    .btn-view-product i {
+        font-size: 14px;
+    }
+    
+    /* Empty state adjustments */
+    .empty-state {
+        padding: 40px 20px;
+    }
+    
+    .empty-state i {
+        font-size: 36px;
+    }
+    
+    .empty-state h3 {
+        font-size: 16px;
+    }
+    
+    .empty-state p {
+        font-size: 13px;
+    }
+    
+    /* Pagination adjustments */
+    .pagination {
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+    
+    .page-link {
+        padding: 6px 10px;
+        font-size: 12px;
+    }
+    
+    /* Modal adjustments for mobile */
+    .modal-dialog {
+        width: calc(100% - 24px);
+        max-width: calc(100% - 24px);
+    }
+    
+    .modal-body {
+        padding: 16px;
+    }
+    
+    .modal-body p {
+        font-size: 13px !important;
+    }
+    
+    .modal-body textarea {
+        font-size: 14px !important;
+        padding: 10px 12px !important;
+    }
+    
+    .modal-actions {
+        padding: 12px 16px 16px 16px;
+        flex-wrap: wrap;
+    }
+    
+    .btn-outline,
+    .btn-primary-y {
+        flex: 1;
+        min-width: 100px;
+        justify-content: center;
+        padding: 10px 14px;
+        font-size: 13px;
+    }
+    
+    /* Success/Error modal adjustments */
+    #hideSuccessModal .modal-body,
+    #hideErrorModal .modal-body {
+        padding: 20px 16px;
+    }
+    
+    #hideSuccessModal i,
+    #hideErrorModal i {
+        font-size: 40px !important;
+        margin-bottom: 10px !important;
+    }
+    
+    #hideSuccessMessage,
+    #hideErrorMessage {
+        font-size: 13px !important;
+    }
+}
+
+/* Tablet adjustments */
+@media (min-width: 769px) and (max-width: 1024px) {
+    .container {
+        max-width: 100%;
+        padding: 0 16px;
+    }
+    
+    .stats-grid {
+        grid-template-columns: repeat(5, 1fr);
+        gap: 14px;
+    }
+    
+    .search-input {
+        min-width: 200px !important;
+        max-width: 280px !important;
+    }
+}
+
+/* Very small screens */
+@media (max-width: 375px) {
+    .stats-grid {
+        grid-template-columns: 1fr !important;
+    }
+    
+    .review-username {
+        font-size: 15px;
+    }
+    
+    .review-text {
+        font-size: 12px;
+    }
+}
+
 </style>
 
 <?php if ($message): ?>
