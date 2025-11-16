@@ -446,17 +446,50 @@ if ($selectedPeriod === 'weekly') {
             z-index: 1;
         }
         .csv-export-btn, .import-btn {
-            position: absolute;
-            right: 10px;
-            top: 8px;
-            color: #130325;
-            text-decoration: none;
-            background: transparent;
-            border: none;
-            font-size: 18px;
-            line-height: 1;
-        }
-        .csv-export-btn:hover, .import-btn:hover { color: #FFD736; }
+    position: absolute;
+    right: 10px;
+    top: 8px;
+    color: #130325;
+    text-decoration: none;
+    background: transparent;
+    border: none;
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+}
+.csv-export-btn:hover, .import-btn:hover { color: #FFD736; }
+
+/* Desktop: Show in header */
+@media (min-width: 769px) {
+    .page-heading {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+    }
+    
+    .analytics-filter .import-btn {
+        display: none !important;
+    }
+    
+    .desktop-export-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: #130325;
+        text-decoration: none;
+        background: transparent;
+        border: none;
+        font-size: 20px;
+        line-height: 1;
+        cursor: pointer;
+        margin-left: 15px;
+    }
+    
+    .desktop-export-btn:hover {
+        color: #FFD736;
+    }
+}
 
         /* Import/Export Modal */
         .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.35); display: none; align-items: center; justify-content: center; z-index: 9999; }
@@ -668,59 +701,310 @@ if ($selectedPeriod === 'weekly') {
         }
         
         @media (max-width: 768px) {
-            .analytics-tabs {
-                gap: 30px;
-                padding: 12px 16px;
-            }
-            
-            .tab-btn {
-                font-size: 11px;
-                padding: 6px 14px;
-            }
-            
-            .analytics-filter {
-                padding: 14px 16px;
-            }
-            
-            .filter-row {
-                gap: 8px;
-            }
-            
-            .filter-field input,
-            .filter-field select {
-                min-width: 110px;
-                font-size: 11px;
-                padding: 6px 9px;
-                height: 30px;
-            }
-            
-            .btn-apply,
-            .btn-clear {
-                height: 30px;
-                width: 30px;
-                font-size: 11px;
-            }
-            
-            .quick-range a {
-                font-size: 9px;
-                padding: 4px 9px;
-            }
-            
-            .stats-grid { grid-template-columns: 1fr; gap: 12px; }
-            
-            .stat-card {
-                min-height: 80px;
-                padding: 14px 12px;
-            }
-            
-            .stat-card h3 {
-                font-size: 10px;
-            }
-            
-            .stat-card .value {
-                font-size: 20px;
-            }
-        }
+    body {
+        font-size: 13px;
+    }
+
+    .dashboard-container {
+        padding: 0 12px;
+    }
+
+    /* Page Header */
+    .page-heading {
+        font-size: 24px;
+        margin: 0 0 12px 0;
+    }
+    
+    .page-heading-title {
+        font-size: 24px;
+    }
+
+   /* Analytics Tabs */
+.analytics-tabs {
+    gap: 8px;
+    padding: 8px 10px;
+    flex-wrap: nowrap;
+    max-width: 100%;
+    justify-content: space-between;
+    border: 2px solid #e5e7eb !important;
+    box-shadow: none !important;
+}
+
+.tab-btn {
+    font-size: 11px;
+    padding: 8px 12px;
+    flex: 1;
+    min-width: 0;
+    white-space: nowrap;
+}
+
+.tab-close {
+    display: none !important; /* Hide close button on mobile */
+}
+
+    /* Filter Container */
+    .analytics-filter {
+        padding: 12px;
+    }
+
+   /* Mobile: Show in header */
+.page-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}
+
+.analytics-filter .import-btn {
+    display: none !important;
+}
+
+.mobile-export-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #130325;
+    text-decoration: none;
+    background: transparent;
+    border: none;
+    font-size: 20px;
+    line-height: 1;
+    cursor: pointer;
+}
+/* Filter container adjustments */
+.analytics-filter {
+    padding: 10px;
+}
+
+.analytics-filter .analytics-tabs {
+    margin: 0 0 12px 0;
+    padding: 6px;
+}
+.mobile-export-btn:hover {
+    color: #FFD736;
+}
+    
+    .filter-row {
+        flex-direction: column;
+        gap: 10px;
+        width: 100%;
+    }
+    
+    .filter-field {
+        width: 100%;
+    }
+    
+    .filter-field label {
+        font-size: 10px;
+    }
+    
+    .filter-field input[type="date"],
+    .filter-field select {
+        width: 100%;
+        min-width: auto;
+        font-size: 13px;
+        padding: 8px 10px;
+        height: 36px;
+    }
+    
+    .filter-actions {
+        width: 100%;
+        justify-content: center;
+        gap: 10px;
+    }
+    
+    .btn-apply,
+    .btn-clear {
+        height: 36px;
+        width: 36px;
+        font-size: 14px;
+    }
+    
+    .quick-range {
+        flex-wrap: wrap;
+        gap: 8px;
+        justify-content: center;
+    }
+    
+    .quick-range a {
+        font-size: 11px;
+        padding: 6px 12px;
+        flex: 1;
+        min-width: 80px;
+        text-align: center;
+    }
+    
+    .period-badge {
+        font-size: 11px;
+        padding: 5px 12px;
+    }
+
+    /* Modal */
+    .modal-dialog {
+        width: 90vw;
+        margin: 0 16px;
+    }
+    
+    .modal-header {
+        padding: 12px 16px;
+    }
+    
+    .modal-title {
+        font-size: 14px;
+    }
+    
+    .modal-body {
+        padding: 16px;
+        font-size: 14px;
+    }
+    
+    .modal-actions {
+        padding: 0 16px 16px 16px;
+        flex-direction: column;
+    }
+    
+    .btn-outline,
+    .btn-primary-y {
+        width: 100%;
+        padding: 10px;
+        font-size: 14px;
+    }
+
+    /* Stats Grid */
+    .stats-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+    
+    .stat-card {
+        min-height: 90px;
+        padding: 16px 14px;
+    }
+    
+    .stat-card h3 {
+        font-size: 11px;
+        margin-bottom: 10px;
+    }
+    
+    .stat-icon {
+        font-size: 16px;
+    }
+    
+    .stat-card .value {
+        font-size: 24px;
+    }
+
+    /* Charts */
+    .chart-container {
+        padding: 16px;
+        margin-bottom: 16px;
+    }
+    
+    .chart-container h2 {
+        font-size: 14px;
+        margin-bottom: 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        align-items: flex-start;
+    }
+    
+    .chart-container h2 .period-badge {
+        margin-left: 0 !important;
+    }
+    
+    .chart-wrapper {
+        height: 250px;
+    }
+    
+    /* Chart Grid */
+    div[style*="grid-template-columns"] {
+        grid-template-columns: 1fr !important;
+        gap: 16px !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .page-heading {
+        font-size: 20px;
+    }
+    
+    .page-heading-title {
+        font-size: 20px;
+    }
+    
+    .tab-btn {
+        font-size: 10px;
+        padding: 5px 10px;
+    }
+    
+    .analytics-tabs {
+        padding: 8px;
+        gap: 8px;
+    }
+    
+    .filter-field input[type="date"],
+    .filter-field select {
+        font-size: 12px;
+        padding: 6px 8px;
+        height: 34px;
+    }
+    
+    .btn-apply,
+    .btn-clear {
+        height: 34px;
+        width: 34px;
+    }
+    
+    .quick-range a {
+        font-size: 10px;
+        padding: 5px 10px;
+    }
+    
+    .stat-card {
+        min-height: 80px;
+        padding: 14px 12px;
+    }
+    
+    .stat-card .value {
+        font-size: 20px;
+    }
+    
+    .chart-wrapper {
+        height: 220px;
+    }
+}
+/* Add this inside the @media (max-width: 768px) block, after the .dashboard-container styles */
+
+/* Move export button next to page heading on mobile */
+.page-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}
+
+.analytics-filter .import-btn {
+    display: none !important; /* Hide from filter area */
+}
+
+/* Create new export button container in header */
+.mobile-export-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #130325;
+    text-decoration: none;
+    background: transparent;
+    border: none;
+    font-size: 20px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.mobile-export-btn:hover {
+    color: #FFD736;
+}
     </style>
 </head>
 
@@ -847,7 +1131,7 @@ if ($selectedPeriod === 'weekly') {
         </div>
 
         <!-- Charts Section -->
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(500px, 1fr)); gap: 24px;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px;">
             <div class="chart-container" data-aos="fade-up" data-aos-delay="200">
                 <h2>
                     <?php echo $filterEntity==='customers' ? 'Customers' : ($filterEntity==='sellers' ? 'Sellers' : 'Users'); ?> Growth
@@ -1051,6 +1335,44 @@ if ($selectedPeriod === 'weekly') {
                 this.style.transform = 'translateY(0) scale(1)';
             });
         });
+        // Move export button to header on mobile
+// Move export button to header for both mobile and desktop
+function handleExportButtonPosition() {
+    const pageHeading = document.querySelector('.page-heading');
+    const importBtn = document.querySelector('.import-btn');
+    
+    if (!pageHeading || !importBtn) return;
+    
+    const isMobile = window.innerWidth <= 768;
+    const className = isMobile ? 'mobile-export-btn' : 'desktop-export-btn';
+    const otherClassName = isMobile ? 'desktop-export-btn' : 'mobile-export-btn';
+    
+    // Remove other button if exists
+    const otherBtn = document.querySelector('.' + otherClassName);
+    if (otherBtn) {
+        otherBtn.remove();
+    }
+    
+    // Check if current button already exists
+    let currentBtn = document.querySelector('.' + className);
+    
+    if (!currentBtn) {
+        // Create export button
+        currentBtn = document.createElement('button');
+        currentBtn.className = className;
+        currentBtn.innerHTML = '<i class="fas fa-file-export" aria-hidden="true"></i>';
+        currentBtn.onclick = openFormatModal;
+        currentBtn.type = 'button';
+        currentBtn.title = 'Export/Import Options';
+        
+        // Add to page heading
+        pageHeading.appendChild(currentBtn);
+    }
+}
+
+// Run on page load and resize
+handleExportButtonPosition();
+window.addEventListener('resize', handleExportButtonPosition);
     </script>
 </body>
 </html>
