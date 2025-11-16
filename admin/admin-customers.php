@@ -738,9 +738,355 @@ function getCustomerOrderCount($pdo, $customerId) {
     }
 
     /* (Removed legacy status modal styles; using logout-style confirm instead) */
+
+
+    /* Enhanced Mobile Responsive Styles */
+@media (max-width: 768px) {
+    /* Container adjustments */
+    .container {
+        padding: 0 12px;
+        margin-top: 0;
+    }
+    
+    /* Page heading - stack vertically */
+    .page-heading {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 8px !important;
+        padding: 0 12px !important;
+    }
+    
+    .page-heading-title {
+        margin-top: 40px !important;
+        font-size: 18px !important;
+    }
+    
+    .total-count-badge {
+        margin-top: 0 !important;
+        font-size: 13px;
+        padding: 5px 12px;
+    }
+    
+    /* Search section - stack inputs */
+    .search-section {
+        padding: 16px !important;
+    }
+    
+    .search-form {
+        flex-direction: column !important;
+        gap: 10px !important;
+    }
+    
+    .search-input,
+    .filter-select {
+        min-width: 100% !important;
+        max-width: 100% !important;
+        width: 100% !important;
+    }
+    
+    .btn-search,
+    .btn-clear {
+        width: 100% !important;
+        height: 44px !important;
+        font-size: 14px;
+    }
+    
+    .btn-search {
+        justify-content: center;
+        gap: 8px;
+    }
+    
+    .btn-search::after {
+        content: 'Search';
+        margin-left: 4px;
+    }
+    
+    /* Table container - card style on mobile */
+    .table-container {
+        padding: 0 !important;
+        border: none !important;
+        background: transparent !important;
+        box-shadow: none !important;
+    }
+    
+    .table-wrapper {
+        overflow-x: visible !important;
+    }
+    
+    /* Hide table, show cards */
+    table {
+        display: none;
+    }
+    
+    /* Mobile card layout */
+    .mobile-card-container {
+        display: block;
+    }
+    
+    .customer-card {
+        background: #ffffff;
+        border: 1px solid rgba(0,0,0,0.1);
+        border-radius: 12px;
+        padding: 16px;
+        margin-bottom: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    
+    .customer-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 12px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid #f0f0f0;
+    }
+    
+    .customer-card-id {
+        font-size: 16px;
+        font-weight: 700;
+        color: #130325;
+    }
+    
+    .customer-card-status {
+        /* Status badge styles already defined */
+    }
+    
+    .customer-card-body {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .customer-card-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 6px 0;
+    }
+    
+    .customer-card-label {
+        font-size: 12px;
+        font-weight: 600;
+        color: #6b7280;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .customer-card-value {
+        font-size: 14px;
+        font-weight: 500;
+        color: #130325;
+        text-align: right;
+        max-width: 60%;
+        word-break: break-word;
+    }
+    
+    .customer-card-actions {
+        display: flex;
+        gap: 8px;
+        margin-top: 12px;
+        padding-top: 12px;
+        border-top: 1px solid #f0f0f0;
+    }
+    
+    .customer-card-actions .action-btn {
+        flex: 1;
+        width: auto;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        font-size: 13px;
+        font-weight: 600;
+    }
+    
+    .customer-card-actions .action-btn i {
+        position: static;
+        transform: none;
+    }
+    
+    .customer-card-actions .btn-view::after {
+        content: 'View';
+    }
+    
+    .customer-card-actions .btn-change-status::after {
+        content: attr(data-action-label);
+    }
+    
+    /* Pagination adjustments */
+    .pagination {
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+    
+    .page-link {
+        padding: 6px 10px;
+        font-size: 12px;
+    }
+    
+    .pagination-info {
+        font-size: 12px;
+        margin-top: 10px;
+    }
+    
+    /* Alert adjustments */
+    .alert {
+        margin: 12px;
+        padding: 12px 16px;
+        font-size: 13px;
+    }
+}
+
+/* Tablet adjustments */
+@media (min-width: 769px) and (max-width: 1024px) {
+    .container {
+        max-width: 100%;
+        padding: 0 16px;
+    }
+    
+    .search-input {
+        min-width: 200px !important;
+        max-width: 280px !important;
+    }
+    
+    table {
+        font-size: 13px;
+    }
+    
+    th, td {
+        padding: 10px 12px;
+    }
+}
+
+/* Hide mobile cards on desktop */
+@media (min-width: 769px) {
+    .mobile-card-container {
+        display: none;
+    }
+}
 </style>
 
 <script>
+
+// Generate mobile-friendly cards from table data
+function generateMobileCards() {
+    if (window.innerWidth > 768) return;
+    
+    const table = document.getElementById('customersTable');
+    if (!table) return;
+    
+    const tbody = table.querySelector('tbody');
+    if (!tbody) return;
+    
+    let container = document.querySelector('.mobile-card-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.className = 'mobile-card-container';
+        table.parentNode.insertBefore(container, table);
+    }
+    
+    container.innerHTML = '';
+    
+    const rows = tbody.querySelectorAll('tr');
+    rows.forEach(row => {
+        const cells = row.querySelectorAll('td');
+        if (cells.length < 9) return;
+        
+        const card = document.createElement('div');
+        card.className = 'customer-card';
+        
+        const id = cells[0].textContent.trim();
+        const username = cells[1].textContent.trim();
+        const email = cells[2].textContent.trim();
+        const name = cells[3].textContent.trim();
+        const phone = cells[4].textContent.trim();
+        const statusBadge = cells[5].querySelector('.status-badge');
+        const registered = cells[6].textContent.trim();
+        const orders = cells[7].textContent.trim();
+        const actions = cells[8].querySelector('.table-actions');
+        
+        const statusClass = statusBadge ? statusBadge.className : '';
+        const statusText = statusBadge ? statusBadge.textContent.trim() : '';
+        
+        card.innerHTML = `
+            <div class="customer-card-header">
+                <div class="customer-card-id">${id}</div>
+                <span class="${statusClass}">${statusText}</span>
+            </div>
+            <div class="customer-card-body">
+                <div class="customer-card-row">
+                    <span class="customer-card-label">Username</span>
+                    <span class="customer-card-value">${username}</span>
+                </div>
+                <div class="customer-card-row">
+                    <span class="customer-card-label">Email</span>
+                    <span class="customer-card-value">${email}</span>
+                </div>
+                <div class="customer-card-row">
+                    <span class="customer-card-label">Name</span>
+                    <span class="customer-card-value">${name}</span>
+                </div>
+                <div class="customer-card-row">
+                    <span class="customer-card-label">Phone</span>
+                    <span class="customer-card-value">${phone}</span>
+                </div>
+                <div class="customer-card-row">
+                    <span class="customer-card-label">Registered</span>
+                    <span class="customer-card-value">${registered}</span>
+                </div>
+                <div class="customer-card-row">
+                    <span class="customer-card-label">Orders</span>
+                    <span class="customer-card-value">${orders}</span>
+                </div>
+            </div>
+            <div class="customer-card-actions"></div>
+        `;
+        
+        if (actions) {
+            const cardActions = card.querySelector('.customer-card-actions');
+            const actionButtons = actions.querySelectorAll('.action-btn');
+            actionButtons.forEach(btn => {
+                const newBtn = btn.cloneNode(true);
+                if (newBtn.classList.contains('btn-change-status')) {
+                    const currentStatus = newBtn.getAttribute('data-current-status');
+                    newBtn.setAttribute('data-action-label', currentStatus === 'active' ? 'Deactivate' : 'Activate');
+                }
+                cardActions.appendChild(newBtn);
+            });
+        }
+        
+        container.appendChild(card);
+    });
+    
+    // Re-attach event listeners for mobile cards
+    attachMobileEventListeners();
+}
+
+function attachMobileEventListeners() {
+    // Re-attach status toggle listeners
+    document.querySelectorAll('.mobile-card-container .btn-change-status').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const userId = btn.getAttribute('data-user-id');
+            const current = btn.getAttribute('data-current-status');
+            const action = current === 'active' ? 'deactivate' : 'activate';
+            const label = action === 'activate' ? 'Activate' : 'Deactivate';
+            const msg = action === 'activate'
+                ? 'Activate this customer?'
+                : 'Deactivate this customer? They will not be able to log in.';
+            const url = `admin-customers.php?action=${action}&id=${encodeURIComponent(userId)}&page=<?php echo $page; ?>`;
+            adminShowConfirm(msg, label).then(ok => { if (ok) window.location.href = url; });
+        });
+    });
+}
+
+// Call on load and resize
+window.addEventListener('load', generateMobileCards);
+window.addEventListener('resize', generateMobileCards);
+
+
+
+
 // Reusable confirm modal matching logout style
 function adminShowConfirm(message, confirmText) {
   return new Promise(function(resolve){
