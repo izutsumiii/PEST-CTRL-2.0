@@ -1482,6 +1482,496 @@ $totalProductsAll = array_sum($stats);
             max-width: 100%;
         }
     }
+
+
+    /* Enhanced Mobile Responsive Styles */
+@media (max-width: 768px) {
+    /* Container adjustments */
+    .container {
+        padding: 0 12px;
+        margin-top: -10px;
+    }
+    
+    /* Page header adjustments */
+    .page-header {
+        margin: -50px auto 16px auto !important;
+        padding: 0 12px !important;
+    }
+    
+    .page-header h1,
+    .page-heading-title {
+        font-size: 18px !important;
+        margin-top: -50px !important;
+    }
+    
+    /* Stats grid - 2 columns on mobile */
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+        margin-bottom: 16px;
+    }
+    
+    .stat-card {
+        padding: 16px 12px;
+    }
+    
+    .stat-number {
+        font-size: 24px;
+        margin-bottom: 6px;
+    }
+    
+    .stat-label {
+        font-size: 11px;
+    }
+    
+    /* Filter section - stack everything */
+    .filter-section {
+        padding: 16px !important;
+    }
+    
+    .filter-row {
+        flex-direction: column;
+        gap: 12px;
+        align-items: stretch;
+    }
+    
+    .status-filters {
+        flex-direction: row;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        gap: 6px;
+        padding-bottom: 4px;
+    }
+    
+    .status-filters::-webkit-scrollbar {
+        height: 4px;
+    }
+    
+    .status-filters::-webkit-scrollbar-track {
+        background: #f1f1f1;
+    }
+    
+    .status-filters::-webkit-scrollbar-thumb {
+        background: #adb5bd;
+        border-radius: 2px;
+    }
+    
+    .status-filters a {
+        padding: 6px 12px;
+        font-size: 12px;
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
+    
+    /* Search form adjustments */
+    .search-form {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .search-input {
+        min-width: 100% !important;
+        max-width: 100% !important;
+        width: 100% !important;
+    }
+    
+    .btn-search {
+        width: 100% !important;
+        height: 44px !important;
+        font-size: 14px;
+        justify-content: center;
+        gap: 8px;
+    }
+    
+    .btn-search::after {
+        content: 'Search Products';
+        margin-left: 4px;
+    }
+    
+    .btn-clear {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    /* Table container - card style on mobile */
+    .table-container {
+        padding: 0 !important;
+        border: none !important;
+        background: transparent !important;
+        box-shadow: none !important;
+    }
+    
+    .table-wrapper {
+        overflow-x: visible !important;
+    }
+    
+    /* Hide table, show cards */
+    table {
+        display: none;
+    }
+    
+    /* Mobile card layout */
+    .mobile-card-container {
+        display: block;
+    }
+    
+    .product-card {
+        background: #ffffff;
+        border: 1px solid rgba(0,0,0,0.1);
+        border-radius: 12px;
+        padding: 16px;
+        margin-bottom: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    
+    .product-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 12px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid #f0f0f0;
+        gap: 8px;
+    }
+    
+    .product-card-id {
+        font-size: 14px;
+        font-weight: 700;
+        color: #130325;
+    }
+    
+    .product-card-status {
+        flex-shrink: 0;
+    }
+    
+    .product-card-body {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .product-card-title {
+        font-size: 16px;
+        font-weight: 700;
+        color: #130325;
+        margin-bottom: 8px;
+        line-height: 1.3;
+    }
+    
+    .product-card-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 6px 0;
+        gap: 8px;
+    }
+    
+    .product-card-label {
+        font-size: 12px;
+        font-weight: 600;
+        color: #6b7280;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        flex-shrink: 0;
+    }
+    
+    .product-card-value {
+        font-size: 14px;
+        font-weight: 500;
+        color: #130325;
+        text-align: right;
+        word-break: break-word;
+    }
+    
+    .product-card-value-small {
+        font-size: 12px;
+        color: #6b7280;
+        text-align: right;
+    }
+    
+    .product-card-actions {
+        display: flex;
+        gap: 8px;
+        margin-top: 12px;
+        padding-top: 12px;
+        border-top: 1px solid #f0f0f0;
+        flex-wrap: wrap;
+    }
+    
+    .product-card-actions .action-btn {
+        flex: 1;
+        min-width: 70px;
+        width: auto;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        font-size: 12px;
+        font-weight: 600;
+        border-radius: 6px;
+    }
+    
+    .product-card-actions .action-btn i {
+        position: static;
+        transform: none;
+        font-size: 13px;
+    }
+    
+    /* Action button labels for mobile */
+    .product-card-actions .btn-view::after {
+        content: 'View';
+    }
+    
+    .product-card-actions .btn-approve::after {
+        content: 'Approve';
+    }
+    
+    .product-card-actions .btn-reject::after {
+        content: 'Reject';
+    }
+    
+    .product-card-actions .btn-suspend::after {
+        content: 'Suspend';
+    }
+    
+    .product-card-actions .btn-reactivate::after {
+        content: 'Reactivate';
+    }
+    
+    /* Toast notifications - adjust for mobile */
+    .toast-notification {
+        top: 60px;
+        min-width: calc(100% - 24px);
+        max-width: calc(100% - 24px);
+        left: 12px;
+        transform: none;
+        font-size: 13px;
+    }
+    
+    @keyframes toastSlideIn {
+        from {
+            opacity: 0;
+            transform: translateY(-20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    @keyframes toastSlideOut {
+        from {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        to {
+            opacity: 0;
+            transform: translateY(-20px);
+        }
+    }
+    
+    /* Pagination adjustments */
+    .pagination {
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+    
+    .page-link {
+        padding: 6px 10px;
+        font-size: 12px;
+    }
+    
+    /* Empty state adjustments */
+    .empty-state {
+        padding: 40px 20px;
+    }
+    
+    .empty-state i {
+        font-size: 36px;
+    }
+    
+    .empty-state h3 {
+        font-size: 16px;
+    }
+    
+    .empty-state p {
+        font-size: 13px;
+    }
+    
+    /* Modal adjustments for mobile */
+    .modal-dialog {
+        width: calc(100% - 24px);
+        max-width: calc(100% - 24px);
+    }
+    
+    .product-modal-dialog {
+        width: calc(100% - 24px);
+        max-width: calc(100% - 24px);
+        max-height: calc(100vh - 40px);
+        margin: 20px 12px;
+    }
+    
+    .product-modal-body {
+        padding: 16px;
+        max-height: calc(100vh - 100px);
+    }
+    
+    .product-modal-close {
+        top: 10px;
+        right: 10px;
+        width: 32px;
+        height: 32px;
+        font-size: 24px;
+    }
+    
+    /* Product view modal mobile adjustments */
+    .product-view-main {
+        flex-direction: column;
+    }
+    
+    .product-image-gallery {
+        flex: 1;
+        width: 100%;
+    }
+    
+    .product-main-image-container {
+        max-width: 100%;
+        width: 100%;
+    }
+    
+    .product-info-section {
+        padding: 16px;
+    }
+    
+    .product-title {
+        font-size: 18px;
+        margin-bottom: 10px;
+    }
+    
+    .product-price-section {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+    
+    .product-price-amount {
+        font-size: 18px;
+    }
+    
+    .product-info-row {
+        flex-wrap: wrap;
+    }
+    
+    .product-info-item {
+        padding: 5px 8px;
+        font-size: 11px;
+    }
+    
+    .product-details-section {
+        padding: 12px;
+    }
+    
+    .product-details-section h3 {
+        font-size: 12px;
+    }
+    
+    .product-category-text,
+    .product-description-content {
+        font-size: 11px;
+    }
+    
+    .product-modal-actions {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .btn-approve-modal,
+    .btn-reject-modal,
+    .btn-suspend-modal {
+        width: 100%;
+        justify-content: center;
+        font-size: 13px;
+        padding: 12px 16px;
+    }
+    
+    /* Reviews section mobile adjustments */
+    .product-reviews-section {
+        padding: 16px;
+    }
+    
+    .reviews-section-title {
+        font-size: 14px;
+    }
+    
+    .review-item-modal {
+        padding: 12px;
+    }
+    
+    .review-header-modal {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+    
+    .review-username {
+        font-size: 12px;
+    }
+    
+    .review-date-small {
+        font-size: 10px;
+    }
+    
+    .review-rating-modal {
+        font-size: 13px;
+    }
+    
+    .review-text-modal {
+        font-size: 12px;
+    }
+    
+    .review-actions {
+        flex-wrap: wrap;
+    }
+    
+    .btn-hide-review,
+    .btn-unhide-review {
+        font-size: 11px;
+        padding: 5px 10px;
+    }
+}
+
+/* Tablet adjustments */
+@media (min-width: 769px) and (max-width: 1024px) {
+    .container {
+        max-width: 100%;
+        padding: 0 16px;
+    }
+    
+    .stats-grid {
+        grid-template-columns: repeat(4, 1fr);
+        gap: 14px;
+    }
+    
+    .search-input {
+        min-width: 200px !important;
+        max-width: 280px !important;
+    }
+    
+    table {
+        font-size: 13px;
+    }
+    
+    th, td {
+        padding: 10px 12px;
+    }
+}
+
+/* Hide mobile cards on desktop */
+@media (min-width: 769px) {
+    .mobile-card-container {
+        display: none;
+    }
+}
 </style>
 
 <?php if ($message): ?>
@@ -2158,6 +2648,8 @@ function escapeHtml(text) {
 
 // Auto-dismiss toast notifications after 1.5 seconds
 document.addEventListener('DOMContentLoaded', function() {
+    // Generate mobile cards
+    generateProductMobileCards();
     const successToast = document.getElementById('successToast');
     const errorToast = document.getElementById('errorToast');
     
@@ -2386,6 +2878,150 @@ function closeHideErrorModal() {
         document.body.style.overflow = '';
     }
 }
+
+// Generate mobile-friendly cards from table data
+function generateProductMobileCards() {
+    if (window.innerWidth > 768) return;
+    
+    const table = document.getElementById('productsTable');
+    if (!table) return;
+    
+    const tbody = table.querySelector('tbody');
+    if (!tbody) return;
+    
+    let container = document.querySelector('.mobile-card-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.className = 'mobile-card-container';
+        table.parentNode.insertBefore(container, table);
+    }
+    
+    container.innerHTML = '';
+    
+    const rows = tbody.querySelectorAll('tr');
+    rows.forEach(row => {
+        const cells = row.querySelectorAll('td');
+        if (cells.length < 7) return;
+        
+        const card = document.createElement('div');
+        card.className = 'product-card';
+        
+        const id = cells[0].textContent.trim();
+        
+        // Product info (name and categories)
+        const productInfoCell = cells[1];
+        const productName = productInfoCell.querySelector('strong') ? productInfoCell.querySelector('strong').textContent : '';
+        const productCategories = productInfoCell.querySelector('small') ? productInfoCell.querySelector('small').textContent.replace('Categories: ', '') : 'N/A';
+        
+        // Seller info
+        const sellerCell = cells[2];
+        const sellerName = sellerCell.querySelector('strong') ? sellerCell.querySelector('strong').textContent : '';
+        const sellerEmail = sellerCell.querySelector('small') ? sellerCell.querySelector('small').textContent : '';
+        
+        // Price and stock
+        const priceStockCell = cells[3];
+        const price = priceStockCell.querySelector('strong') ? priceStockCell.querySelector('strong').textContent : '';
+        const stock = priceStockCell.querySelector('small') ? priceStockCell.querySelector('small').textContent.replace('Stock: ', '') : '0';
+        
+        // Status
+        const statusCell = cells[4];
+        const statusBadge = statusCell.querySelector('.status-badge');
+        const statusBadgeHTML = statusBadge ? statusBadge.outerHTML : '';
+        
+        // Dates
+        const datesCell = cells[5];
+        const datesHTML = datesCell.querySelector('small') ? datesCell.querySelector('small').innerHTML : '';
+        
+        // Actions
+        const actions = cells[6].querySelector('.action-buttons');
+        
+        card.innerHTML = `
+            <div class="product-card-header">
+                <div class="product-card-id">${id}</div>
+                <div class="product-card-status">${statusBadgeHTML}</div>
+            </div>
+            <div class="product-card-body">
+                <div class="product-card-title">${productName}</div>
+                <div class="product-card-row">
+                    <span class="product-card-label">Categories</span>
+                    <span class="product-card-value-small">${productCategories}</span>
+                </div>
+                <div class="product-card-row">
+                    <span class="product-card-label">Seller</span>
+                    <span class="product-card-value">${sellerName}</span>
+                </div>
+                <div class="product-card-row">
+                    <span class="product-card-label">Email</span>
+                    <span class="product-card-value-small">${sellerEmail}</span>
+                </div>
+                <div class="product-card-row">
+                    <span class="product-card-label">Price</span>
+                    <span class="product-card-value">${price}</span>
+                </div>
+                <div class="product-card-row">
+                    <span class="product-card-label">Stock</span>
+                    <span class="product-card-value">${stock}</span>
+                </div>
+                <div class="product-card-row">
+                    <span class="product-card-label">Dates</span>
+                    <span class="product-card-value-small">${datesHTML}</span>
+                </div>
+            </div>
+            <div class="product-card-actions"></div>
+        `;
+        
+        if (actions) {
+            const cardActions = card.querySelector('.product-card-actions');
+            const actionButtons = actions.querySelectorAll('.action-btn');
+            actionButtons.forEach(btn => {
+                const newBtn = btn.cloneNode(true);
+                cardActions.appendChild(newBtn);
+            });
+        }
+        
+        container.appendChild(card);
+    });
+    
+    // Re-attach event listeners for mobile cards
+    attachProductMobileEventListeners();
+}
+
+function attachProductMobileEventListeners() {
+    // Re-attach view button listeners
+    document.querySelectorAll('.mobile-card-container .btn-view').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const onclick = this.getAttribute('onclick');
+            if (onclick) {
+                const match = onclick.match(/openProductModal\((\d+)\)/);
+                if (match) {
+                    openProductModal(parseInt(match[1]));
+                }
+            }
+        });
+    });
+    
+    // Re-attach action button listeners (approve, reject, suspend, reactivate)
+    document.querySelectorAll('.mobile-card-container .btn-approve, .mobile-card-container .btn-reject, .mobile-card-container .btn-suspend, .mobile-card-container .btn-reactivate').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const onclick = this.getAttribute('onclick');
+            if (onclick) {
+                const match = onclick.match(/openConfirmModal\('(\w+)',\s*(\d+),\s*'([^']*)'\)/);
+                if (match) {
+                    const action = match[1];
+                    const productId = parseInt(match[2]);
+                    const productName = match[3];
+                    openConfirmModal(action, productId, productName);
+                }
+            }
+        });
+    });
+}
+
+// Call on load and resize
+window.addEventListener('load', generateProductMobileCards);
+window.addEventListener('resize', generateProductMobileCards);
 </script>
 
 <!-- Confirmation Modals -->
