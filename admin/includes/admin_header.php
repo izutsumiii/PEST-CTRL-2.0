@@ -15,6 +15,25 @@ require_once $rootPath . '/includes/functions.php';
     <link href="../assets/css/pest-ctrl.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
+        /* Review badge indicator */
+.nav-links a .review-badge {
+    background: #dc3545;
+    color: white;
+    border-radius: 50%;
+    width: 18px;
+    height: 18px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: bold;
+    margin-left: auto;
+    min-width: 18px;
+}
+
+.nav-links a .review-badge.hidden {
+    display: none;
+}
         * {
             margin: 0;
             padding: 0;
@@ -1372,7 +1391,11 @@ require_once $rootPath . '/includes/functions.php';
                 </div>
                 <div class="section-title hide-on-collapse">Reviews</div>
                 <div class="nav-links">
-                    <a href="admin-reviews.php" data-tooltip="Reviews"><i class="fas fa-star"></i><span class="hide-on-collapse"> Reviews</span></a>
+                <a href="admin-reviews.php" data-tooltip="Reviews">
+                    <i class="fas fa-star"></i>
+                    <span class="hide-on-collapse"> Reviews</span>
+                    <span class="review-badge hidden" id="reviewBadge">0</span>
+                </a>
                 </div>
                 <div class="section-title hide-on-collapse">System</div>
                 
@@ -1409,6 +1432,22 @@ require_once $rootPath . '/includes/functions.php';
     </div>
     
     <script>
+        function loadReviewCount() {
+    fetch('../ajax/get-new-review-count.php')
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const badge = document.getElementById('reviewBadge');
+            if (badge) {
+                badge.textContent = data.count || 0;
+                badge.classList.toggle('hidden', (data.count || 0) === 0);
+            }
+        }
+    })
+    .catch(error => {
+        console.error('Error loading review count:', error);
+    });
+}
         document.addEventListener('DOMContentLoaded', function() {
             // Confirmation modal for actions
             const confirmModal = document.createElement('div');
@@ -1809,6 +1848,11 @@ require_once $rootPath . '/includes/functions.php';
                 
                 // Load admin notifications on page load
                 loadAdminNotifications();
+                // Load review count on page load
+            loadReviewCount();
+
+            // Refresh review count every 30 seconds
+            setInterval(loadReviewCount, 30000);
             });
 
             // Logout Modal Functions

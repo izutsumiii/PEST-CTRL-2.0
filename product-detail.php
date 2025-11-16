@@ -106,43 +106,60 @@ if ($reviewCount > 0) {
 $canReview = false;
 $hasReviewed = false;
 $eligibleOrderId = null;
+$totalPurchases = 0;
+$totalReviews = 0;
 
 if (isLoggedIn()) {
     $userId = $_SESSION['user_id'];
     
-    // Get a completed/delivered order for this product that hasn't been reviewed yet
-    $checkOrder = $pdo->prepare("
-        SELECT o.id 
+    // First, count total completed purchases of this product
+    $purchaseCountStmt = $pdo->prepare("
+        SELECT COUNT(DISTINCT o.id) as total_purchases
         FROM order_items oi
         JOIN orders o ON oi.order_id = o.id
-        LEFT JOIN product_reviews pr ON pr.order_id = o.id AND pr.product_id = oi.product_id AND pr.user_id = o.user_id
         WHERE o.user_id = ? 
           AND oi.product_id = ? 
           AND o.status IN ('delivered', 'completed')
-          AND pr.id IS NULL
-        ORDER BY o.completed_at DESC
-        LIMIT 1
     ");
-    $checkOrder->execute([$userId, $productId]);
-    $eligibleOrderId = $checkOrder->fetchColumn();
+    $purchaseCountStmt->execute([$userId, $productId]);
+    $totalPurchases = (int)$purchaseCountStmt->fetchColumn();
     
-    if ($eligibleOrderId) {
-        $canReview = true;
-        error_log("Product #{$productId} - User #{$userId} - Can review from order #{$eligibleOrderId}");
-    } else {
-        // Check if they've reviewed from ALL their orders
-        $checkAnyOrder = $pdo->prepare("
-            SELECT COUNT(*) FROM order_items oi
+    // Count how many times user has reviewed this product
+    $reviewCountStmt = $pdo->prepare("
+        SELECT COUNT(*) as total_reviews
+        FROM product_reviews
+        WHERE user_id = ? AND product_id = ?
+    ");
+    $reviewCountStmt->execute([$userId, $productId]);
+    $totalReviews = (int)$reviewCountStmt->fetchColumn();
+    
+    // User can review if they have more purchases than reviews
+    if ($totalPurchases > $totalReviews) {
+        // Get the next eligible order that hasn't been reviewed yet
+        $checkOrder = $pdo->prepare("
+            SELECT o.id 
+            FROM order_items oi
             JOIN orders o ON oi.order_id = o.id
-            WHERE o.user_id = ? AND oi.product_id = ? AND o.status IN ('delivered', 'completed')
+            LEFT JOIN product_reviews pr ON pr.order_id = o.id 
+                AND pr.product_id = oi.product_id 
+                AND pr.user_id = o.user_id
+            WHERE o.user_id = ? 
+              AND oi.product_id = ? 
+              AND o.status IN ('delivered', 'completed')
+              AND pr.id IS NULL
+            ORDER BY o.completed_at DESC
+            LIMIT 1
         ");
-        $checkAnyOrder->execute([$userId, $productId]);
-        $totalOrders = $checkAnyOrder->fetchColumn();
+        $checkOrder->execute([$userId, $productId]);
+        $eligibleOrderId = $checkOrder->fetchColumn();
         
-        if ($totalOrders > 0) {
-            $hasReviewed = true;
-            error_log("Product #{$productId} - User #{$userId} - Already reviewed all orders");
+        if ($eligibleOrderId) {
+            $canReview = true;
+            error_log("Product #{$productId} - User #{$userId} - Can review from order #{$eligibleOrderId} (Purchase #" . ($totalReviews + 1) . " of {$totalPurchases})");
         }
+    } else {
+        $hasReviewed = true;
+        error_log("Product #{$productId} - User #{$userId} - Already reviewed all {$totalPurchases} purchases");
     }
 }
 
@@ -1932,14 +1949,14 @@ main h3 {
 
         <!-- Product Details Section -->
         <div class="product-details-section">
-            <div class="product-category">
-                <h3>Product Category</h3>
-                <p><?php echo htmlspecialchars($categoryPath[count($categoryPath) - 1] ?? 'General'); ?></p>
-            </div>
+        <div class="product-category">
+            <h3>Product Category</h3>
+            <p><?php echo html_entity_decode($categoryPath[count($categoryPath) - 1] ?? 'General', ENT_QUOTES, 'UTF-8'); ?></p>
+        </div>
             <div class="product-description">
                 <h3>Product Description</h3>
                 <div class="description-content" id="description-content">
-                    <?php echo nl2br(htmlspecialchars($product['description'])); ?>
+                <?php echo nl2br(html_entity_decode($product['description'], ENT_QUOTES, 'UTF-8')); ?>
                 </div>
                 <button class="read-more-btn" onclick="toggleDescription()" id="read-more-btn">Read More</button>
             </div>
@@ -1987,7 +2004,10 @@ main h3 {
                     </div>
                 <?php else: ?>
                     <?php foreach ($reviews as $review): ?>
-                        <div class="review-item <?php echo $review['is_hidden'] ? 'hidden-review' : ''; ?>" data-rating="<?php echo $review['rating']; ?>" data-review-id="<?php echo $review['id']; ?>">
+                        <div class="review-item <?php echo $review['is_hidden'] ? 'hidden-review' : ''; ?>" 
+     data-rating="<?php echo $review['rating']; ?>"
+     data-review-id="<?php echo $review['id']; ?>"
+     data-user-id="<?php echo $review['user_id']; ?>">
                             <div class="review-header">
                                 <span class="reviewer-name"><?php echo htmlspecialchars($review['username']); ?></span>
                                 <span class="review-date"><?php echo date('F j, Y', strtotime($review['created_at'])); ?></span>
@@ -2034,8 +2054,16 @@ main h3 {
 
             <!-- Add Review Form -->
             <?php if (isLoggedIn() && !$hasReviewed && $canReview && empty($_GET['review_success'])): ?>
-                <div class="review-form-container">
-                    <h4>Write a Review</h4>
+    <div class="review-form-container">
+        <h4>Write a Review</h4>
+        <?php if ($totalPurchases > 1): ?>
+            <p style="color: var(--text-light); font-size: 12px; margin-bottom: 12px; background: rgba(255, 215, 54, 0.1); padding: 8px 12px; border-radius: 6px; border-left: 3px solid var(--accent-yellow);">
+                <i class="fas fa-info-circle"></i> You've purchased this product <?php echo $totalPurchases; ?> times. 
+                <?php if ($totalReviews > 0): ?>
+                    This is review #<?php echo $totalReviews + 1; ?>.
+                <?php endif; ?>
+            </p>
+        <?php endif; ?>
                     
 <?php if (!empty($reviewMessage) && strpos($reviewMessage, 'Error') !== false): ?>
     <div class="alert alert-error">
