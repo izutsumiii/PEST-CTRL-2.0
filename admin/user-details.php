@@ -1,6 +1,6 @@
 <?php
 require_once '../config/database.php';
-require_once 'includes/admin_header.php';
+require_once '../includes/functions.php';
 
 requireAdmin();
 
@@ -174,6 +174,8 @@ try {
 } catch (PDOException $e) {
     $isActiveExists = false;
 }
+
+require_once 'includes/admin_header.php';
 ?>
 
 <style>

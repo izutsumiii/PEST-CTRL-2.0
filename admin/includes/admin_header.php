@@ -523,7 +523,7 @@ require_once $rootPath . '/includes/functions.php';
         
         .notification-dropdown {
             position: absolute;
-            top: 100%;
+            top: calc(100% + 10px);
             right: 0;
             background: #ffffff;
             border: 1px solid #e5e7eb;
@@ -534,6 +534,7 @@ require_once $rootPath . '/includes/functions.php';
             z-index: 1000;
             display: none;
             overflow: hidden;
+            margin-top: 5px;
         }
         
         .notification-dropdown.show {
@@ -894,7 +895,219 @@ require_once $rootPath . '/includes/functions.php';
             font-size: 12px;
         }
         
+        /* Mobile Drawer Styles */
+        .mobile-drawer {
+            position: fixed;
+            top: 0;
+            left: -280px;
+            width: 280px;
+            height: 100vh;
+            background: #130325;
+            box-shadow: 6px 0 30px rgba(0,0,0,0.3);
+            transition: all 0.3s ease;
+            z-index: 2000;
+            padding: 0 !important;
+            margin: 0 !important;
+            overflow: hidden;
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: stretch !important;
+            justify-content: flex-start !important;
+        }
+        
+        /* Mobile drawer scrollbar styling - Chrome/Edge/Safari */
+        .mobile-drawer::-webkit-scrollbar {
+            width: 6px;
+        }
+        .mobile-drawer::-webkit-scrollbar-track {
+            background: transparent;
+            border-radius: 3px;
+        }
+        .mobile-drawer::-webkit-scrollbar-thumb {
+            background: rgba(255, 215, 54, 0.15);
+            border-radius: 3px;
+            border: 1px solid rgba(255, 215, 54, 0.05);
+            transition: background 0.2s ease;
+        }
+        .mobile-drawer::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 215, 54, 0.3);
+            border: 1px solid rgba(255, 215, 54, 0.1);
+        }
+        
+        .mobile-drawer.show {
+            left: 0;
+        }
+        
+        .mobile-drawer-header {
+            background: linear-gradient(135deg, #130325 0%, #1a0a33 100%);
+            padding: 12px 15px;
+            border-bottom: 2px solid #FFD736;
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            flex-shrink: 0;
+            position: relative;
+            z-index: 10;
+            width: 100%;
+            height: auto;
+            min-height: 50px;
+        }
+        
+        .mobile-drawer .close-btn {
+            background: transparent;
+            border: none;
+            color: #FFD736;
+            font-size: 26px;
+            cursor: pointer;
+            padding: 0;
+            margin: 0;
+            transition: all 0.3s ease;
+        }
+        
+        .mobile-drawer .close-btn:hover {
+            color: #FFF;
+            transform: rotate(90deg);
+        }
+        
+        .mobile-drawer .links {
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 0 !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            align-items: stretch !important;
+            justify-content: flex-start !important;
+            flex: 1 1 0 !important;
+            width: 100% !important;
+            overflow-y: auto !important;
+            overflow-x: hidden !important;
+            min-height: 0 !important;
+            max-height: 100% !important;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255, 215, 54, 0.15) transparent;
+            background: #130325;
+            visibility: visible !important;
+            opacity: 1 !important;
+        }
+        
+        /* Links container scrollbar styling */
+        .mobile-drawer .links::-webkit-scrollbar {
+            width: 6px;
+        }
+        .mobile-drawer .links::-webkit-scrollbar-track {
+            background: transparent;
+            border-radius: 3px;
+        }
+        .mobile-drawer .links::-webkit-scrollbar-thumb {
+            background: rgba(255, 215, 54, 0.15);
+            border-radius: 3px;
+            border: 1px solid rgba(255, 215, 54, 0.05);
+            transition: background 0.2s ease;
+        }
+        .mobile-drawer .links::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 215, 54, 0.3);
+            border: 1px solid rgba(255, 215, 54, 0.1);
+        }
+        
+        .mobile-drawer .links a {
+            color: #F9F9F9 !important;
+            padding: 15px 20px !important;
+            text-decoration: none !important;
+            font-size: 15px !important;
+            font-weight: 500 !important;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+            transition: all 0.3s ease;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: flex-start !important;
+            gap: 15px !important;
+            text-align: left !important;
+            width: 100% !important;
+            box-sizing: border-box !important;
+            margin: 0 !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+        }
+        
+        .mobile-drawer .links a:first-child {
+            border-top: none;
+        }
+        
+        .mobile-drawer .links a:hover {
+            background: rgba(255, 215, 54, 0.15);
+            color: #FFD736;
+            padding-left: 25px !important;
+        }
+        
+        .mobile-drawer .links a i {
+            font-size: 18px;
+            width: 22px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+        
+        .mobile-drawer .section-divider {
+            padding: 10px 20px !important;
+            color: rgba(255, 215, 54, 0.6) !important;
+            font-size: 12px !important;
+            font-weight: 600 !important;
+            text-transform: uppercase !important;
+            letter-spacing: 1px !important;
+            border-bottom: 1px solid rgba(255, 215, 54, 0.1) !important;
+            margin-top: 5px !important;
+            margin-bottom: 0 !important;
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            width: 100% !important;
+        }
+        
+        /* Mobile Drawer Overlay */
+        .mobile-drawer-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1999;
+            display: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .mobile-drawer-overlay.show {
+            display: block;
+            opacity: 1;
+        }
+        
+        /* Header Logo for Mobile */
+        .header-logo {
+            display: none;
+        }
+        
+        .header-logo a {
+            color: #FFD736;
+            text-decoration: none;
+            font-family: 'Libre Barcode 128 Text', monospace;
+            font-size: 20px;
+            font-weight: 400;
+        }
+        
+        .header-logo a:hover {
+            color: #F9F9F9;
+        }
+
         @media (max-width: 768px) {
+            main { margin-left: 0 !important; }
+            .sidebar { 
+                display: none !important; 
+            }
+            
+            .header-logo {
+                display: block;
+            }
+            
             nav {
                 flex-direction: column;
                 gap: 12px;
@@ -1286,14 +1499,69 @@ require_once $rootPath . '/includes/functions.php';
             gap: 6px;
         }
     </style>
+    <script>
+        // Define mobile drawer function immediately to avoid ReferenceError
+        function toggleAdminMobileDrawer() {
+            const drawer = document.getElementById('adminMobileDrawer');
+            const overlay = document.getElementById('adminMobileDrawerOverlay');
+            
+            // On desktop, toggle sidebar instead
+            if (window.innerWidth > 768) {
+                toggleAdminSidebar();
+                return;
+            }
+            
+            // On mobile, toggle drawer
+            drawer.classList.toggle('show');
+            overlay.classList.toggle('show');
+            
+            if (drawer.classList.contains('show')) {
+                document.body.style.overflow = 'hidden';
+            } else {
+                document.body.style.overflow = '';
+            }
+        }
+        
+        function toggleAdminSidebar() {
+            const sidebar = document.getElementById('adminSidebar');
+            const main = document.querySelector('main');
+            const barcodeText = document.querySelector('.barcode-text');
+            
+            if (!sidebar) return;
+            
+            sidebar.classList.toggle('collapsed');
+            
+            // Adjust main content margin
+            if (sidebar.classList.contains('collapsed')) {
+                if (main) main.style.marginLeft = '70px';
+                if (barcodeText) {
+                    barcodeText.style.transform = 'scale(0.8)';
+                    barcodeText.style.opacity = '0.7';
+                }
+            } else {
+                if (main) main.style.marginLeft = '240px';
+                if (barcodeText) {
+                    barcodeText.style.transform = 'scale(1)';
+                    barcodeText.style.opacity = '1';
+                }
+            }
+            
+            // Save state to localStorage
+            const isCollapsed = sidebar.classList.contains('collapsed');
+            localStorage.setItem('adminSidebarCollapsed', isCollapsed);
+        }
+    </script>
 </head>
 <body class="<?php echo 'page-' . strtolower(pathinfo($_SERVER['PHP_SELF'], PATHINFO_FILENAME)); ?>">
     <!-- Full-width Header -->
     <div class="invisible-header">
         <div class="header-left">
-            <button class="header-hamburger" onclick="toggleAdminSidebar()">
+            <button class="header-hamburger" id="adminHamburgerBtn" onclick="toggleAdminMobileDrawer()">
                 <i class="fas fa-bars"></i>
             </button>
+            <div class="header-logo">
+                <a href="admin-dashboard.php">PEST-CTRL</a>
+            </div>
             </div>
 
         <?php if (isLoggedIn() && isAdmin()): ?>
@@ -1431,6 +1699,41 @@ require_once $rootPath . '/includes/functions.php';
         </aside>
     </div>
     
+    <!-- Mobile Drawer Overlay -->
+    <div class="mobile-drawer-overlay" id="adminMobileDrawerOverlay"></div>
+    
+    <!-- Mobile Drawer -->
+    <nav class="mobile-drawer" id="adminMobileDrawer">
+        <div class="mobile-drawer-header">
+            <button class="close-btn" id="adminDrawerClose"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="links">
+            <?php if (isLoggedIn() && isAdmin()): ?>
+                <div class="section-divider">Overview</div>
+                <a href="admin-dashboard.php"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+                <a href="admin-products.php"><i class="fas fa-box"></i> Products</a>
+                <a href="admin-categories.php"><i class="fas fa-tags"></i> Categories</a>
+                <a href="admin-reviews.php"><i class="fas fa-star"></i> Reviews</a>
+                
+                <div class="section-divider">Users</div>
+                <a href="admin-customers.php"><i class="fas fa-users"></i> Customers</a>
+                <a href="admin-sellers.php"><i class="fas fa-store"></i> Sellers</a>
+                <a href="seller-details.php"><i class="fas fa-info-circle"></i> Seller Details</a>
+                <a href="user-details.php"><i class="fas fa-user-circle"></i> User Details</a>
+                
+                <div class="section-divider">System</div>
+                <a href="admin-notifications.php"><i class="fas fa-bell"></i> Notifications</a>
+                <a href="admin-settings.php?section=order"><i class="fas fa-clock"></i> Order Settings</a>
+                <a href="admin-settings.php?section=maintenance"><i class="fas fa-tools"></i> Maintenance Mode</a>
+                <a href="admin-settings.php?section=site"><i class="fas fa-cog"></i> Site Settings</a>
+                <a href="admin-settings.php?section=profile"><i class="fas fa-user-edit"></i> Edit Profile</a>
+                <a href="../logout.php"><i class="fas fa-sign-out-alt"></i> Logout</a>
+            <?php else: ?>
+                <a href="../login.php"><i class="fas fa-sign-in-alt"></i> Admin Login</a>
+            <?php endif; ?>
+        </div>
+    </nav>
+    
     <script>
         function loadReviewCount() {
     fetch('../ajax/get-new-review-count.php')
@@ -1514,34 +1817,23 @@ require_once $rootPath . '/includes/functions.php';
         </script>
 
         <script>
-            function toggleAdminSidebar() {
-                const sidebar = document.getElementById('adminSidebar');
-                const main = document.querySelector('main');
-                const barcodeText = document.querySelector('.barcode-text');
+            // Close drawer when clicking overlay or close button
+            document.addEventListener('DOMContentLoaded', function() {
+                const overlay = document.getElementById('adminMobileDrawerOverlay');
+                const closeBtn = document.getElementById('adminDrawerClose');
                 
-                sidebar.classList.toggle('collapsed');
-                
-                // Adjust main content margin
-                if (sidebar.classList.contains('collapsed')) {
-                    main.style.marginLeft = '70px';
-                    // Animate logo when sidebar collapses
-                    if (barcodeText) {
-                        barcodeText.style.transform = 'scale(0.8)';
-                        barcodeText.style.opacity = '0.7';
-                    }
-                } else {
-                    main.style.marginLeft = '240px';
-                    // Animate logo when sidebar expands
-                    if (barcodeText) {
-                        barcodeText.style.transform = 'scale(1)';
-                        barcodeText.style.opacity = '1';
-                    }
+                if (overlay) {
+                    overlay.addEventListener('click', function() {
+                        toggleAdminMobileDrawer();
+                    });
                 }
                 
-                // Save state to localStorage
-                const isCollapsed = sidebar.classList.contains('collapsed');
-                localStorage.setItem('adminSidebarCollapsed', isCollapsed);
-            }
+                if (closeBtn) {
+                    closeBtn.addEventListener('click', function() {
+                        toggleAdminMobileDrawer();
+                    });
+                }
+            });
 
             function toggleAdminHeaderDropdown() {
                 const dropdown = document.getElementById('adminHeaderDropdown');

@@ -632,7 +632,7 @@ h1 {
     }
 }
 </style>
-<main style="background: var(--bg-light); min-height: 100vh; padding: 0;">
+<main style="background: var(--bg-light); min-height: 100vh; padding: 0; margin-top: -30px;">
   <div class="notifications-container">
     <div class="page-header">
       <div class="page-header-left">

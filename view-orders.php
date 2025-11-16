@@ -384,10 +384,10 @@ main {
     background: var(--bg-light) !important;
     margin: 0;
     padding: 12px;
-    margin-top: 15px;
+    margin-top: -100px;
     margin-left: 240px;
     transition: margin-left 0.3s ease !important;
-    min-height: calc(100vh - 15px) !important;
+    min-height: calc(100vh - 5px) !important;
 }
 
 .sidebar.collapsed ~ main {
@@ -410,6 +410,7 @@ main {
     margin: 0;
     letter-spacing: -0.3px;
     line-height: 1.2;
+    text-shadow: none !important;
 }
 
 h1.page-header-title {
@@ -420,6 +421,7 @@ h1.page-header-title {
     margin-bottom: 16px !important;
     letter-spacing: -0.3px;
     line-height: 1.2;
+    text-shadow: none !important;
 }
 
 .notification-toast {
@@ -1264,7 +1266,7 @@ h1.page-header-title {
     main {
         margin-left: 0 !important;
         padding: 10px 8px;
-        margin-top: 10px;
+        margin-top: -50px;
     }
 
     .orders-container {

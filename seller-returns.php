@@ -303,7 +303,7 @@ body {
     background: var(--bg-light) !important;
     min-height: 100vh;
     padding: 12px;
-    margin-top: 15px;
+    margin-top: 5px;
     margin-left: 0;
     transition: margin-left 0.3s ease !important;
 }
@@ -337,6 +337,7 @@ body {
     margin-bottom: 16px !important;
     letter-spacing: -0.3px;
     line-height: 1.2;
+    text-shadow: none !important;
 }
 
 /* Export Button */

@@ -220,7 +220,7 @@ html, body {
 main {
     background: var(--bg-light) !important;
     min-height: calc(100vh - 60px);
-    margin-top: 15px;
+    margin-top: -30px;
     margin-left: 240px;
     margin-bottom: 0;
     padding: 12px;
@@ -1151,9 +1151,10 @@ main.sidebar-collapsed .products-container {
 
 .products-table {
     width: 100%;
+    min-width: 1200px;
     border-collapse: collapse;
     font-size: 14px;
-    table-layout: fixed;
+    table-layout: auto;
 }
 
 .products-table thead {
@@ -1225,6 +1226,37 @@ main.sidebar-collapsed .products-container {
     vertical-align: middle;
     border: none;
     box-sizing: border-box;
+}
+
+/* Table column widths for proper responsiveness */
+.products-table th:nth-child(1),
+.products-table td:nth-child(1) {
+    min-width: 300px; /* Product Name */
+}
+
+.products-table th:nth-child(2),
+.products-table td:nth-child(2) {
+    min-width: 100px; /* Price */
+}
+
+.products-table th:nth-child(3),
+.products-table td:nth-child(3) {
+    min-width: 80px; /* Stock */
+}
+
+.products-table th:nth-child(4),
+.products-table td:nth-child(4) {
+    min-width: 100px; /* Status */
+}
+
+.products-table th:nth-child(5),
+.products-table td:nth-child(5) {
+    min-width: 150px; /* Date Added */
+}
+
+.products-table th:nth-child(6),
+.products-table td:nth-child(6) {
+    min-width: 120px; /* Actions */
 }
 
 .product-name-cell {
@@ -1642,6 +1674,7 @@ main.sidebar-collapsed .products-container {
     }
 
     .add-product-card {
+        margin-left: 0;
         padding: 16px;
         border-radius: 8px;
         margin-bottom: 16px;
@@ -1696,6 +1729,7 @@ main.sidebar-collapsed .products-container {
     }
 
     .add-product-card {
+        margin-left: 0;
         padding: 12px;
         margin-bottom: 12px;
     }
@@ -1737,6 +1771,7 @@ main.sidebar-collapsed .products-container {
     }
 
     .add-product-card {
+        margin-left: 0;
         padding: 10px;
         margin-bottom: 10px;
     }
@@ -2047,95 +2082,6 @@ main.sidebar-collapsed .products-container {
             </div>
         </form>
     </div>
-</div>
-
-<!-- Products Table -->
-<div class="products-table-container">
-        <div class="table-wrapper">
-            <table class="products-table" id="products-table">
-                <thead>
-                    <tr>
-                        <th class="sortable" data-column="name">
-                            Product Name
-                            <span class="sort-indicator"></span>
-                        </th>
-                        <th class="sortable" data-column="price">
-                            Price
-                            <span class="sort-indicator"></span>
-                        </th>
-                        <th class="sortable" data-column="stock_quantity">
-                            Stock
-                            <span class="sort-indicator"></span>
-                        </th>
-                        <th class="sortable" data-column="status">
-                            Status
-                            <span class="sort-indicator"></span>
-                        </th>
-                        <th class="sortable" data-column="created_at">
-                            Date Added
-                            <span class="sort-indicator"></span>
-                        </th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php if (empty($sellerProducts)): ?>
-                    <tr>
-                        <td colspan="6" style="text-align:center; color:#6b7280; padding:20px;">No products found.</td>
-                    </tr>
-                    <?php else: foreach ($sellerProducts as $product): ?>
-                        <tr data-name="<?php echo htmlspecialchars($product['name']); ?>" 
-                            data-price="<?php echo $product['price']; ?>" 
-                            data-stock="<?php echo (int)$product['stock_quantity']; ?>" 
-                            data-status="<?php echo $product['status']; ?>" 
-                            data-date="<?php echo strtotime($product['created_at']); ?>">
-                            <td>
-                                <div class="product-name-cell">
-                                    <?php if ($product['image_url']): ?>
-                                        <img src="<?php echo htmlspecialchars($product['image_url']); ?>" alt="<?php echo htmlspecialchars($product['name']); ?>" class="product-thumb">
-                                    <?php endif; ?>
-                                    <span><?php echo htmlspecialchars($product['name']); ?></span>
-                                </div>
-                            </td>
-                            <td>₱<?php echo number_format($product['price'], 2); ?></td>
-                            <td>
-                                <span class="stock-badge-table <?php echo $product['stock_quantity'] > 10 ? 'in-stock' : ($product['stock_quantity'] > 0 ? 'low-stock' : 'out-stock'); ?>">
-                                    <?php echo (int)$product['stock_quantity']; ?>
-                                </span>
-                            </td>
-                            <td>
-                                <span class="status-badge-table <?php echo $product['status'] == 'active' ? 'active' : 'inactive'; ?>">
-                                    <?php echo ucfirst($product['status']); ?>
-                                </span>
-                            </td>
-                            <td><?php echo date('M d, Y', strtotime($product['created_at'])); ?></td>
-                            <td>
-                                <div class="table-actions">
-                                    <?php if (in_array($product['status'], ['suspended', 'rejected'])): ?>
-                                        <a href="edit-product.php?id=<?php echo $product['id']; ?>" class="action-btn edit-btn" title="View Details (Read-Only)">
-                                            <i class="fas fa-eye"></i>
-                                        </a>
-                                    <?php else: ?>
-                                        <a href="edit-product.php?id=<?php echo $product['id']; ?>" class="action-btn edit-btn" title="Edit">
-                                            <i class="fas fa-edit"></i>
-                                        </a>
-                                        <a href="?toggle_status=<?php echo $product['id']; ?>" class="action-btn status-btn" title="<?php echo $product['status'] == 'active' ? 'Toggle Inactive' : 'Toggle Active'; ?>">
-                                            <i class="fas fa-<?php echo $product['status'] == 'active' ? 'toggle-on' : 'toggle-off'; ?>"></i>
-                                        </a>
-                                        <a href="?delete=<?php echo $product['id']; ?>" 
-                                           class="action-btn delete-btn product-delete" 
-                                           title="Delete Product"
-                                           data-product-name="<?php echo htmlspecialchars($product['name']); ?>">
-                                            <i class="fas fa-trash"></i>
-                                        </a>
-                                    <?php endif; ?>
-                                </div>
-                            </td>
-                        </tr>
-                    <?php endforeach; endif; ?>
-                </tbody>
-            </table>
-        </div>
 </div>
 
 <!-- Preview Modal -->

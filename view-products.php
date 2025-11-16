@@ -227,10 +227,10 @@ html, body {
 main {
     background: var(--bg-light) !important;
     min-height: calc(100vh - 60px);
-    margin-top: 15px;
+    margin-top: -30px;
     margin-left: 240px;
     margin-bottom: 0;
-    padding: 12px;
+    padding: 8px 12px 12px 12px;
     transition: margin-left 0.3s ease !important;
 }
 
@@ -514,22 +514,29 @@ h1 {
     font-size: 1.35rem !important;
     font-weight: 700 !important;
     margin: 0 !important;
-    margin-bottom: 16px !important;
+    margin-top: 0 !important;
+    margin-bottom: 12px !important;
+    margin-left: -100px !important;
     padding: 0 !important;
     text-shadow: none !important;
+    transition: margin-left 0.3s ease;
+}
+
+main.sidebar-collapsed h1 {
+    margin-left: -40px !important;
 }
 
 /* Container - Adjusted for sidebar */
 .products-container {
     max-width: 1400px;
     margin: 0;
-    margin-left: -220px;
+    margin-left: -150px;
     padding: 0 16px;
     transition: margin-left 0.3s ease;
 }
 
 main.sidebar-collapsed .products-container {
-    margin-left: -150px;
+    margin-left: -80px;
 }
 
 /* ============================================
@@ -537,13 +544,19 @@ main.sidebar-collapsed .products-container {
    ============================================ */
 
 .filter-section {
-    margin-bottom: 16px;
+    margin-top: 0;
+    margin-bottom: 12px;
+    margin-left: -100px;
     padding: 14px 16px;
     background: var(--bg-white);
     border-radius: 6px;
     border: 1px solid rgba(19, 3, 37, 0.08);
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
     transition: all 0.2s ease;
+}
+
+main.sidebar-collapsed .filter-section {
+    margin-left: -40px;
 }
 
 .filter-section:hover {
@@ -644,7 +657,12 @@ main.sidebar-collapsed .products-container {
     border-radius: 12px;
     padding: 24px;
     margin-top: 0;
+    margin-left: -100px;
     box-shadow: 0 2px 8px rgba(19, 3, 37, 0.08);
+}
+
+main.sidebar-collapsed .products-table-container {
+    margin-left: -40px;
 }
 
 .table-wrapper {
@@ -654,9 +672,10 @@ main.sidebar-collapsed .products-container {
 
 .products-table {
     width: 100%;
+    min-width: 1000px;
     border-collapse: collapse;
     font-size: 14px;
-    table-layout: fixed;
+    table-layout: auto;
 }
 
 .products-table thead {
@@ -730,6 +749,47 @@ main.sidebar-collapsed .products-container {
     box-sizing: border-box;
 }
 
+/* Table column widths for proper responsiveness */
+.products-table th:nth-child(1),
+.products-table td:nth-child(1) {
+    min-width: 80px; /* ID */
+}
+
+.products-table th:nth-child(2),
+.products-table td:nth-child(2) {
+    min-width: 100px; /* Image */
+}
+
+.products-table th:nth-child(3),
+.products-table td:nth-child(3) {
+    min-width: 140px; /* Name */
+}
+
+.products-table th:nth-child(4),
+.products-table td:nth-child(4) {
+    min-width: 150px; /* Category */
+}
+
+.products-table th:nth-child(5),
+.products-table td:nth-child(5) {
+    min-width: 100px; /* Price */
+}
+
+.products-table th:nth-child(6),
+.products-table td:nth-child(6) {
+    min-width: 80px; /* Stock */
+}
+
+.products-table th:nth-child(7),
+.products-table td:nth-child(7) {
+    min-width: 100px; /* Status */
+}
+
+.products-table th:nth-child(8),
+.products-table td:nth-child(8) {
+    min-width: 140px; /* Actions */
+}
+
 .product-name-cell {
     display: flex;
     align-items: center;
@@ -791,35 +851,48 @@ main.sidebar-collapsed .products-container {
 
 .table-actions {
     display: flex;
+    flex-direction: column;
     gap: 6px;
+    align-items: center;
+}
+
+.table-actions-row {
+    display: flex;
+    gap: 6px;
+    justify-content: center;
+}
+
+.table-actions .action-btn.delete-btn {
+    width: 100px;
+    padding: 6px 12px;
 }
 
 .action-btn {
-    width: 32px;
-    height: 32px;
+    width: 26px;
+    height: 26px;
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 6px;
+    border-radius: 4px;
     transition: all 0.2s ease;
     text-decoration: none;
     color: var(--primary-dark);
     background: transparent;
-    border: 2px solid var(--primary-dark);
-    font-size: 14px;
+    border: 1.5px solid var(--primary-dark);
+    font-size: 11px;
 }
 
 .action-btn:hover {
     background: var(--primary-dark);
     color: var(--bg-white);
     transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(19, 3, 37, 0.2);
+    box-shadow: 0 2px 6px rgba(19, 3, 37, 0.15);
 }
 
 .edit-btn {
     background: transparent;
     color: var(--primary-dark);
-    border: 2px solid var(--primary-dark);
+    border: 1.5px solid var(--primary-dark);
 }
 
 .edit-btn:hover {
@@ -829,23 +902,23 @@ main.sidebar-collapsed .products-container {
 
 .status-btn {
     background: transparent;
-    color: var(--success-green);
-    border: 2px solid var(--success-green);
+    color: #F5A623;
+    border: 1.5px solid #F5A623;
 }
 
 .status-btn:hover {
-    background: var(--success-green);
-    color: var(--bg-white);
+    background: #F5A623;
+    color: var(--primary-dark);
 }
 
 .delete-btn {
-    background: transparent;
-    color: var(--error-red);
-    border: 2px solid var(--error-red);
+    background: var(--primary-dark);
+    color: var(--bg-white);
+    border: 1.5px solid var(--primary-dark);
 }
 
 .delete-btn:hover {
-    background: var(--error-red);
+    background: #0a0218;
     color: var(--bg-white);
 }
 
@@ -967,17 +1040,27 @@ main.sidebar-collapsed .products-container {
     main {
         margin-left: 70px;
         padding: 10px;
-        margin-top: 15px;
+        margin-top: -30px;
     }
 
     .products-container {
-        margin-left: -150px;
+        margin-left: -80px;
         padding: 0 12px;
     }
 
+    .products-table-container {
+        margin-left: -40px;
+        padding: 20px;
+    }
+
     .filter-section {
+        margin-left: -40px;
         padding: 8px 10px;
         margin-bottom: 10px;
+    }
+
+    h1 {
+        margin-left: -40px !important;
     }
 
     .filter-wrapper {
@@ -994,7 +1077,7 @@ main.sidebar-collapsed .products-container {
     main {
         margin-left: 0;
         padding: 10px 8px;
-        margin-top: 15px;
+        margin-top: -30px;
     }
 
     .products-container {
@@ -1003,8 +1086,18 @@ main.sidebar-collapsed .products-container {
         max-width: 100%;
     }
 
+    .products-table-container {
+        margin-left: 0;
+        padding: 16px 12px;
+    }
+
     .filter-section {
+        margin-left: 0;
         padding: 6px 8px;
+    }
+
+    h1 {
+        margin-left: 0 !important;
     }
 
     .filter-wrapper {
@@ -1042,9 +1135,9 @@ main.sidebar-collapsed .products-container {
     }
 
     .action-btn {
-        width: 28px;
-        height: 28px;
-        font-size: 12px;
+        width: 24px;
+        height: 24px;
+        font-size: 10px;
     }
 }
 
@@ -1058,9 +1151,19 @@ main.sidebar-collapsed .products-container {
         padding: 0 8px;
     }
 
+    .products-table-container {
+        margin-left: 0;
+        padding: 14px;
+    }
+
     .filter-section {
+        margin-left: 0;
         padding: 8px 6px;
         margin-bottom: 12px;
+    }
+
+    h1 {
+        margin-left: 0 !important;
     }
 
     .filter-wrapper {
@@ -1084,8 +1187,9 @@ main.sidebar-collapsed .products-container {
     }
 
     .action-btn {
-        width: 24px;
-        height: 24px;
+        width: 22px;
+        height: 22px;
+        font-size: 9px;
     }
 }
 
@@ -1099,9 +1203,19 @@ main.sidebar-collapsed .products-container {
         padding: 0 6px;
     }
 
+    .products-table-container {
+        margin-left: 0;
+        padding: 12px 8px;
+    }
+
     .filter-section {
+        margin-left: 0;
         padding: 6px 4px;
         margin-bottom: 8px;
+    }
+
+    h1 {
+        margin-left: 0 !important;
     }
 
     h1 {
@@ -1123,7 +1237,7 @@ main.sidebar-collapsed .products-container {
     .action-btn {
         width: 20px;
         height: 20px;
-        font-size: 10px;
+        font-size: 8px;
     }
 }
 
@@ -1829,26 +1943,30 @@ main.sidebar-collapsed .products-container {
                                 </td>
                                 <td>
                                     <div class="table-actions">
-                                        <a href="?view=<?php echo $product['id']; ?>" class="action-btn view-btn" title="View Product">
-                                            <i class="fas fa-eye"></i>
-                                        </a>
+                                        <div class="table-actions-row">
+                                            <a href="?view=<?php echo $product['id']; ?>" class="action-btn view-btn" title="View Product">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            <?php if (!in_array($product['status'], ['suspended', 'rejected'])): ?>
+                                                <a href="edit-product.php?id=<?php echo $product['id']; ?>" class="action-btn edit-btn" title="Edit">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                                <a href="?toggle_status=<?php echo $product['id']; ?>"
+                                                   class="action-btn status-btn product-toggle"
+                                                   title="<?php echo ($product['status'] == 'active') ? 'Toggle Inactive' : 'Toggle Active'; ?>"
+                                                   data-action="<?php echo ($product['status'] == 'active') ? 'deactivate' : 'activate'; ?>"
+                                                   data-product-name="<?php echo htmlspecialchars($product['name']); ?>">
+                                                    <i class="fas fa-<?php echo ($product['status'] == 'active') ? 'toggle-on' : 'toggle-off'; ?>"></i>
+                                                </a>
+                                            <?php endif; ?>
+                                        </div>
                                         <?php if (!in_array($product['status'], ['suspended', 'rejected'])): ?>
-                                            <a href="edit-product.php?id=<?php echo $product['id']; ?>" class="action-btn edit-btn" title="Edit">
-                                                <i class="fas fa-edit"></i>
-                                            </a>
-                                            <a href="?toggle_status=<?php echo $product['id']; ?>" 
-                                               class="action-btn status-btn product-toggle"
-                                               title="<?php echo ($product['status'] == 'active') ? 'Toggle Inactive' : 'Toggle Active'; ?>"
-                                               data-action="<?php echo ($product['status'] == 'active') ? 'deactivate' : 'activate'; ?>"
-                                               data-product-name="<?php echo htmlspecialchars($product['name']); ?>">
-                                                <i class="fas fa-<?php echo ($product['status'] == 'active') ? 'toggle-on' : 'toggle-off'; ?>"></i>
-                                            </a>
-                                            <a href="?delete=<?php echo $product['id']; ?>" 
+                                            <a href="?delete=<?php echo $product['id']; ?>"
                                                class="action-btn delete-btn product-delete"
                                                title="Delete Product"
                                                data-action="delete"
                                                data-product-name="<?php echo htmlspecialchars($product['name']); ?>">
-                                                <i class="fas fa-trash"></i>
+                                                <i class="fas fa-trash"></i> CANCEL
                                             </a>
                                         <?php endif; ?>
                                     </div>
