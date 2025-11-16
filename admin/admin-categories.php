@@ -654,9 +654,392 @@ function removeEmojis($text) {
             grid-template-columns: 1fr;
         }
     }
+
+
+/* Enhanced Mobile Responsive Styles */
+@media (max-width: 768px) {
+    /* Container adjustments */
+    .container-section {
+        padding: 0 12px 24px;
+        margin-top: -10px;
+    }
+    
+    /* Page header adjustments */
+    .page-header {
+        margin: -50px auto 16px auto !important;
+        padding: 0 12px !important;
+    }
+    
+    .page-header h1,
+    .page-heading-title {
+        font-size: 18px !important;
+        margin-top: -50px !important;
+    }
+    
+    /* Filter section adjustments */
+    .filter-section {
+        padding: 16px !important;
+        margin-bottom: 16px;
+    }
+    
+    .filter-section h3 {
+        font-size: 16px;
+        margin-bottom: 16px;
+    }
+    
+    /* Form adjustments - stack vertically */
+    .form-row {
+        grid-template-columns: 1fr !important;
+        gap: 12px;
+    }
+    
+    .form-group label {
+        font-size: 13px;
+        margin-bottom: 6px;
+    }
+    
+    .form-group input,
+    .form-group select {
+        padding: 10px 12px;
+        font-size: 14px;
+        height: 44px;
+    }
+    
+    .form-group-button {
+        margin-top: 0;
+    }
+    
+    .btn-add-category {
+        width: 100%;
+        height: 44px;
+        font-size: 14px;
+        padding: 12px 16px;
+    }
+    
+    .form-help {
+        font-size: 12px;
+        margin-top: 8px;
+    }
+    
+    /* Toast notifications - adjust for mobile */
+    .toast-notification {
+        top: 60px;
+        min-width: calc(100% - 24px);
+        max-width: calc(100% - 24px);
+        left: 12px;
+        transform: none;
+        font-size: 13px;
+        padding: 12px 16px;
+    }
+    
+    @keyframes toastSlideIn {
+        from {
+            opacity: 0;
+            transform: translateY(-20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    /* Table container - card style on mobile */
+    .table-container {
+        padding: 0 !important;
+        border: none !important;
+        background: transparent !important;
+        box-shadow: none !important;
+    }
+    
+    /* Hide table, show cards */
+    table {
+        display: none;
+    }
+    
+    /* Mobile card layout */
+    .mobile-card-container {
+        display: block;
+    }
+    
+    .category-card {
+        background: #ffffff;
+        border: 1px solid rgba(0,0,0,0.1);
+        border-radius: 12px;
+        padding: 16px;
+        margin-bottom: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    
+    .category-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 12px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid #f0f0f0;
+        gap: 12px;
+    }
+    
+    .category-card-title {
+        font-size: 16px;
+        font-weight: 700;
+        color: #130325;
+        line-height: 1.3;
+        flex: 1;
+    }
+    
+    .category-card-indent {
+        display: inline-block;
+        color: #6b7280;
+        margin-right: 8px;
+        font-size: 12px;
+    }
+    
+    .category-card-body {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        margin-bottom: 12px;
+    }
+    
+    .category-card-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 6px 0;
+        gap: 8px;
+    }
+    
+    .category-card-label {
+        font-size: 12px;
+        font-weight: 600;
+        color: #6b7280;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        flex-shrink: 0;
+    }
+    
+    .category-card-value {
+        font-size: 14px;
+        font-weight: 500;
+        color: #130325;
+        text-align: right;
+        word-break: break-word;
+    }
+    
+    .category-card-actions {
+        display: flex;
+        gap: 8px;
+        padding-top: 12px;
+        border-top: 1px solid #f0f0f0;
+    }
+    
+    .category-card-actions .action-btn {
+        flex: 1;
+        width: auto;
+        height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        border-radius: 8px;
+    }
+    
+    .category-card-actions .action-btn i {
+        font-size: 16px;
+    }
+    
+    /* Action button labels for mobile */
+    .category-card-actions .btn-edit::after {
+        content: 'Edit';
+    }
+    
+    .category-card-actions .btn-delete::after {
+        content: 'Delete';
+    }
+    
+    /* Empty state adjustments */
+    .empty-state {
+        padding: 40px 20px;
+    }
+    
+    .empty-state i {
+        font-size: 36px;
+    }
+    
+    .empty-state p {
+        font-size: 13px;
+    }
+    
+    /* Pagination adjustments */
+    .pagination {
+        flex-wrap: wrap;
+        gap: 6px;
+        padding: 16px;
+    }
+    
+    .page-link {
+        padding: 6px 10px;
+        font-size: 12px;
+    }
+    
+    /* Modal adjustments for mobile */
+    .edit-modal-overlay {
+        padding: 12px;
+    }
+    
+    .edit-modal-card {
+        max-width: calc(100% - 24px) !important;
+        width: calc(100% - 24px) !important;
+    }
+}
+
+/* Tablet adjustments */
+@media (min-width: 769px) and (max-width: 1024px) {
+    .container-section {
+        max-width: 100%;
+        padding: 0 16px 24px;
+    }
+    
+    .form-row {
+        grid-template-columns: 2fr 2fr 1fr;
+        gap: 14px;
+    }
+}
+
+/* Hide mobile cards on desktop */
+@media (min-width: 769px) {
+    .mobile-card-container {
+        display: none;
+    }
+}
+
 </style>
 
 <script>
+// Generate mobile-friendly cards from table data
+function generateCategoryMobileCards() {
+    if (window.innerWidth > 768) return;
+    
+    const table = document.getElementById('categoriesTable');
+    if (!table) return;
+    
+    const tbody = table.querySelector('tbody');
+    if (!tbody) return;
+    
+    let container = document.querySelector('.mobile-card-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.className = 'mobile-card-container';
+        table.parentNode.insertBefore(container, table);
+    }
+    
+    container.innerHTML = '';
+    
+    const rows = tbody.querySelectorAll('tr');
+    rows.forEach(row => {
+        const cells = row.querySelectorAll('td');
+        if (cells.length < 3) return;
+        
+        const card = document.createElement('div');
+        card.className = 'category-card';
+        
+        // Category name (with indentation)
+        const categoryCell = cells[0];
+        const categoryHTML = categoryCell.innerHTML;
+        
+        // Count nbsp entities to determine indent level
+        const indentMatch = categoryHTML.match(/(&nbsp;)+/g);
+        const indentLevel = indentMatch ? indentMatch[0].length / 6 : 0; // Each &nbsp; is 6 chars
+        
+        // Extract just the text without HTML
+        const categoryName = categoryCell.textContent.trim();
+        
+        // Parent category
+        const parentCategory = cells[1].textContent.trim();
+        
+        // Actions
+        const actions = cells[2].querySelector('.action-buttons');
+        
+        // Build indent indicator
+        let indentHTML = '';
+        if (indentLevel > 0) {
+            indentHTML = '<span class="category-card-indent">' + '→ '.repeat(indentLevel) + '</span>';
+        }
+        
+        card.innerHTML = `
+            <div class="category-card-header">
+                <div class="category-card-title">
+                    ${indentHTML}${categoryName}
+                </div>
+            </div>
+            <div class="category-card-body">
+                <div class="category-card-row">
+                    <span class="category-card-label">Parent Category</span>
+                    <span class="category-card-value">${parentCategory}</span>
+                </div>
+            </div>
+            <div class="category-card-actions"></div>
+        `;
+        
+        if (actions) {
+            const cardActions = card.querySelector('.category-card-actions');
+            const actionButtons = actions.querySelectorAll('.action-btn');
+            actionButtons.forEach(btn => {
+                const newBtn = btn.cloneNode(true);
+                cardActions.appendChild(newBtn);
+            });
+        }
+        
+        container.appendChild(card);
+    });
+    
+    // Re-attach event listeners for mobile cards
+    attachCategoryMobileEventListeners();
+}
+
+function attachCategoryMobileEventListeners() {
+    // Re-attach edit button listeners
+    document.querySelectorAll('.mobile-card-container .btn-edit').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const onclick = this.getAttribute('onclick');
+            if (onclick) {
+                // Extract parameters from onclick attribute
+                const match = onclick.match(/openEditModal\((\d+),\s*'([^']*)',\s*(\d+|null)\)/);
+                if (match) {
+                    const id = parseInt(match[1]);
+                    const name = match[2].replace(/\\\'/g, "'");
+                    const parentId = match[3] === 'null' ? null : parseInt(match[3]);
+                    openEditModal(id, name, parentId);
+                }
+            }
+        });
+    });
+    
+    // Re-attach delete button listeners
+    document.querySelectorAll('.mobile-card-container .btn-delete').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const onclick = this.getAttribute('onclick');
+            if (onclick) {
+                const match = onclick.match(/openDeleteModal\((\d+),\s*'([^']*)'\)/);
+                if (match) {
+                    const id = parseInt(match[1]);
+                    const name = match[2].replace(/\\\'/g, "'");
+                    openDeleteModal(id, name);
+                }
+            }
+        });
+    });
+}
+
+// Call on load and resize
+window.addEventListener('load', generateCategoryMobileCards);
+window.addEventListener('resize', generateCategoryMobileCards);
+
 // Reusable confirm dialog matching logout style
 function adminCatConfirm(message, label){
     return new Promise(function(resolve){
@@ -849,6 +1232,8 @@ document.addEventListener('keydown', function(e) {
 
 // Auto-dismiss toast notifications
 document.addEventListener('DOMContentLoaded', function() {
+    // Generate mobile cards
+    generateCategoryMobileCards();
     const successToast = document.getElementById('successToast');
     const errorToast = document.getElementById('errorToast');
     
