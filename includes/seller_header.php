@@ -587,6 +587,31 @@ require_once __DIR__ . '/maintenance_check.php';
             overflow-y: auto;
         }
         
+        /* Global empty state styling - centered and minimized font */
+        .notification-item.empty-state,
+        .notification-item:has(> span:only-child),
+        .notif-empty {
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            text-align: center !important;
+            padding: 16px 8px !important;
+            font-size: 11px !important;
+            color: #130325 !important;
+            opacity: 0.7 !important;
+            width: 100% !important;
+            min-height: 60px !important;
+            border: none !important;
+            background: transparent !important;
+        }
+        
+        .notification-item.empty-state span,
+        .notification-item:has(> span:only-child) span {
+            font-size: 11px !important;
+            text-align: center !important;
+            width: 100% !important;
+        }
+        
         .notification-item {
             padding: 12px 15px;
             border-bottom: 1px solid #f3f4f6;
@@ -772,10 +797,11 @@ require_once __DIR__ . '/maintenance_check.php';
             justify-content: flex-end;
             align-items: center;
             flex-shrink: 0;
-            position: sticky;
-            top: 0;
+            position: relative;
             z-index: 10;
             width: 100%;
+            height: auto;
+            min-height: 50px;
         }
         
         .mobile-drawer .close-btn {
@@ -800,15 +826,19 @@ require_once __DIR__ . '/maintenance_check.php';
             gap: 0 !important;
             margin: 0 !important;
             padding: 0 !important;
-            align-items: flex-start !important;
+            align-items: stretch !important;
             justify-content: flex-start !important;
-            flex: 1 1 auto !important;
+            flex: 1 1 0 !important;
             width: 100% !important;
-            overflow-y: auto;
-            overflow-x: hidden;
-            min-height: 0;
+            overflow-y: auto !important;
+            overflow-x: hidden !important;
+            min-height: 0 !important;
+            max-height: 100% !important;
             scrollbar-width: thin;
             scrollbar-color: rgba(255, 215, 54, 0.15) transparent;
+            background: #130325;
+            visibility: visible !important;
+            opacity: 1 !important;
         }
         
         /* Links container scrollbar styling */
@@ -831,21 +861,23 @@ require_once __DIR__ . '/maintenance_check.php';
         }
         
         .mobile-drawer .links a {
-            color: #F9F9F9;
+            color: #F9F9F9 !important;
             padding: 15px 20px !important;
-            text-decoration: none;
-            font-size: 15px;
-            font-weight: 500;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            text-decoration: none !important;
+            font-size: 15px !important;
+            font-weight: 500 !important;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
             transition: all 0.3s ease;
             display: flex !important;
             align-items: center !important;
             justify-content: flex-start !important;
-            gap: 15px;
+            gap: 15px !important;
             text-align: left !important;
             width: 100% !important;
-            box-sizing: border-box;
+            box-sizing: border-box !important;
             margin: 0 !important;
+            visibility: visible !important;
+            opacity: 1 !important;
         }
         
         .mobile-drawer .links a:first-child {
@@ -866,14 +898,19 @@ require_once __DIR__ . '/maintenance_check.php';
         }
         
         .mobile-drawer .section-divider {
-            padding: 10px 20px;
-            color: rgba(255, 215, 54, 0.6);
-            font-size: 12px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            border-bottom: 1px solid rgba(255, 215, 54, 0.1);
-            margin-top: 5px;
+            padding: 10px 20px !important;
+            color: rgba(255, 215, 54, 0.6) !important;
+            font-size: 12px !important;
+            font-weight: 600 !important;
+            text-transform: uppercase !important;
+            letter-spacing: 1px !important;
+            border-bottom: 1px solid rgba(255, 215, 54, 0.1) !important;
+            margin-top: 5px !important;
+            margin-bottom: 0 !important;
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            width: 100% !important;
         }
         
         /* Mobile Drawer Overlay */
@@ -938,6 +975,41 @@ require_once __DIR__ . '/maintenance_check.php';
                 align-items: center;
                 gap: 12px;
             }
+            
+            /* Notification dropdown responsive positioning for small screens */
+            .seller-notifications {
+                position: relative;
+            }
+            
+            .seller-notifications .notification-dropdown {
+                width: calc(100vw - 24px) !important;
+                max-width: 320px !important;
+                right: -12px !important;
+                left: auto !important;
+                transform: none !important;
+                margin-top: 8px;
+                box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2) !important;
+            }
+            
+            /* Ensure dropdown doesn't go off screen on very small devices */
+            @media (max-width: 480px) {
+                .seller-notifications .notification-dropdown {
+                    width: calc(100vw - 20px) !important;
+                    max-width: calc(100vw - 20px) !important;
+                    right: -10px !important;
+                }
+            }
+            
+            /* For screens where dropdown might still overflow, position it from left */
+            @media (max-width: 360px) {
+                .seller-notifications .notification-dropdown {
+                    right: auto !important;
+                    left: 50% !important;
+                    transform: translateX(-50%) !important;
+                    width: calc(100vw - 16px) !important;
+                    max-width: calc(100vw - 16px) !important;
+                }
+            }
         }
     </style>
 </head>
@@ -966,7 +1038,7 @@ require_once __DIR__ . '/maintenance_check.php';
                         <button type="button" onclick="clearAllSellerNotifications()" style="background:transparent; border:none; color:#dc2626; padding:4px 8px; border-radius:6px; font-weight:600; cursor:pointer; font-size:12px;">Clear All</button>
                     </div>
                     <div class="notification-list" id="sellerNotificationList">
-                        <div class="notification-item">
+                        <div class="notification-item empty-state">
                             <span style="color: #1f2937;">Loading notifications...</span>
                         </div>
                     </div>
@@ -1320,7 +1392,7 @@ function markAllSellerNotificationsAsRead() {
 function clearAllSellerNotifications() {
     const list = document.getElementById('sellerNotificationList');
     if (list) {
-        list.innerHTML = '<div class="notification-item"><span>No notifications</span></div>';
+        list.innerHTML = '<div class="notification-item empty-state"><span>No notifications</span></div>';
     }
     const badge = document.getElementById('sellerNotificationBadge');
     if (badge) { badge.classList.add('hidden'); badge.style.display = 'none'; }
@@ -1358,7 +1430,7 @@ function clearAllSellerNotifications() {
             // Show UNREAD items only in dropdown to keep it clean after Clear All
             const unread = (Array.isArray(notifications) ? notifications : []).filter(n => !n.is_read);
             if (unread.length === 0) {
-                list.innerHTML = '<div class="notification-item"><span>No notifications</span></div>';
+                list.innerHTML = '<div class="notification-item empty-state"><span>No notifications</span></div>';
                 return;
             }
             list.innerHTML = unread.map(notification => {
@@ -1394,7 +1466,7 @@ function clearAllSellerNotifications() {
                 element.remove();
                 // If list empty, show placeholder
                 if (parent && parent.children.length === 0) {
-                    parent.innerHTML = '<div class="notification-item"><span>No notifications</span></div>';
+                    parent.innerHTML = '<div class="notification-item empty-state"><span>No notifications</span></div>';
                 }
             }, 180);
         }
@@ -1546,7 +1618,7 @@ function markSellerNotificationAsRead(notificationId) {
                     // Check if list is now empty
                     const list = document.getElementById('sellerNotificationList');
                     if (list && list.children.length === 0) {
-                        list.innerHTML = '<div class="notification-item"><span>No notifications</span></div>';
+                        list.innerHTML = '<div class="notification-item empty-state"><span>No notifications</span></div>';
                     }
                 }, 300);
             }

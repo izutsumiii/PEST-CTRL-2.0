@@ -64,6 +64,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $notificationMessage = "Your return request for Order #" . str_pad($returnDetails['order_id'], 6, '0', STR_PAD_LEFT) . " has been approved. Refund is being processed.";
                     $stmt->execute([$returnDetails['order_id'], $notificationMessage]);
                     
+                    // Create explicit app notification for customer in notifications table
+                    if (!empty($returnDetails['customer_id'])) {
+                        try {
+                            $stmt = $pdo->prepare("INSERT INTO notifications (user_id, order_id, message, type, created_at) VALUES (?, ?, ?, 'success', NOW())");
+                            $stmt->execute([$returnDetails['customer_id'], $returnDetails['order_id'], $notificationMessage]);
+                        } catch (Exception $e) {
+                            error_log("Failed to create return approval notification: " . $e->getMessage());
+                        }
+                    }
+                    
                 
                     $mail = new PHPMailer(true);
                     try {

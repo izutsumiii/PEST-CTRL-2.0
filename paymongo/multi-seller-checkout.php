@@ -658,10 +658,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['checkout'])) {
                         $stmt->execute([$result['payment_transaction_id']]);
                         $orderIds = $stmt->fetchAll(PDO::FETCH_COLUMN);
                         
-                        foreach ($orderIds as $orderId) {
-                            $message = "Order #" . str_pad($orderId, 6, '0', STR_PAD_LEFT) . " has been placed successfully with COD.";
-                            createOrderNotification($userId, $orderId, $message, 'order_placed');
-                        }
+                        // Don't create notifications here - they will be created in order-success.php with seller name
+                        // This prevents duplicate notifications
                     }
                     
                     // Clear applied discount after successful COD checkout

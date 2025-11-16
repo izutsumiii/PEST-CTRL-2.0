@@ -327,7 +327,18 @@ $pathPrefix = ($currentDir === 'paymongo') ? '../' : '';
         .notification-message { color:#130325; opacity:0.9; font-size: 12px; }
         .notification-time { color:#9ca3af; font-size: 11px; margin-top: 2px; }
         .notification-icon { width:24px; height:24px; display:flex; align-items:center; justify-content:center; background: rgba(255,215,54,0.2); color:#FFD736; border-radius:6px; flex: 0 0 24px; }
-        .notif-empty { color:#130325; opacity:0.7; text-align:center; padding:16px 8px; }
+        .notif-empty { 
+            color:#130325; 
+            opacity:0.7; 
+            text-align:center; 
+            padding:16px 8px; 
+            font-size: 11px !important;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            min-height: 60px;
+        }
         
         .clear-all-btn {
             background: transparent;
@@ -1264,27 +1275,43 @@ $pathPrefix = ($currentDir === 'paymongo') ? '../' : '';
                 list.innerHTML = '<div class="notif-empty">No notifications yet.</div>';
             } else {
                 items.forEach(it => {
-                    const url = it.order_id ? '<?php echo $pathPrefix; ?>order-details.php?id=' + it.order_id : '<?php echo $pathPrefix; ?>customer-notifications.php';
+                    // Determine URL: product > order > default
+                    let url = '<?php echo $pathPrefix; ?>customer-notifications.php';
+                    const isSellerReply = it.type === 'seller_reply';
+                    
+                    if (it.product_id) {
+                        url = '<?php echo $pathPrefix; ?>product-detail.php?id=' + it.product_id;
+                        if (isSellerReply) {
+                            url += '#reviews-tab';
+                        }
+                    } else if (it.order_id) {
+                        url = '<?php echo $pathPrefix; ?>order-details.php?id=' + it.order_id;
+                    }
+                    
                     const item = document.createElement('div');
                     item.className = 'notification-item';
                     item.style.position = 'relative';
                     item.dataset.orderId = it.order_id || '';
-                    item.dataset.isCustom = (it.status === 'notification') ? '1' : '0';
+                    item.dataset.productId = it.product_id || '';
+                    item.dataset.notificationId = it.notification_id || '';
+                    item.dataset.isCustom = (it.is_custom_notification || it.status === 'notification') ? '1' : '0';
+                    
                     let title = '';
                     let message = '';
-                    let icon = it.status === 'notification' ? 'fa-info-circle' : 'fa-bell';
-                    if (it.status === 'notification') {
+                    let icon = (it.status === 'notification' || it.is_custom_notification) ? 'fa-info-circle' : 'fa-bell';
+                    
+                    if (it.is_custom_notification && it.message) {
                         title = 'Notification';
                         message = it.message;
-                    } else {
+                    } else if (it.order_id) {
                         let statusText = it.status;
                         if (it.return_status) { statusText += ' | Return: ' + it.return_status; }
                         title = 'Order #' + it.order_id + ' update';
                         message = 'Status: ' + statusText;
+                    } else {
+                        title = 'Notification';
+                        message = it.message || 'New notification';
                     }
-                    // Attach meta for mark-as-read
-                    item.dataset.orderId = it.order_id || '';
-                    item.dataset.isCustom = (it.status === 'notification') ? '1' : '0';
 
                     item.innerHTML =
                         '<div class="notification-icon"><i class="fas ' + icon + '"></i></div>'+
@@ -1294,14 +1321,15 @@ $pathPrefix = ($currentDir === 'paymongo') ? '../' : '';
                           '<div class="notification-time">' + it.updated_at_human + '</div>'+
                         '</div>';
                     item.addEventListener('click', function() {
-                        // Mark this notification as read, then remove from dropdown and navigate
-                        const body = {
-                            order_id: parseInt(item.dataset.orderId || '0', 10),
-                            is_custom: item.dataset.isCustom === '1'
-                        };
-                        if (body.order_id > 0) {
+                        // Mark this notification as read
+                        const notificationId = parseInt(item.dataset.notificationId || '0', 10);
+                        const orderId = parseInt(item.dataset.orderId || '0', 10);
+                        const isCustom = item.dataset.isCustom === '1';
+                        
+                        if (notificationId > 0) {
+                            // Product notification or standalone notification - use notification_id
                             try {
-                                const payload = JSON.stringify(body);
+                                const payload = JSON.stringify({ notification_id: notificationId });
                                 if (navigator.sendBeacon) {
                                     const blob = new Blob([payload], { type: 'application/json' });
                                     navigator.sendBeacon('<?php echo $pathPrefix; ?>ajax/mark-notification-read.php', blob);
@@ -1314,16 +1342,37 @@ $pathPrefix = ($currentDir === 'paymongo') ? '../' : '';
                                     }).catch(()=>{});
                                 }
                             } catch(e) {}
-                            // Optimistically remove from list and update badge
-                            item.remove();
-                            fetch('<?php echo $pathPrefix; ?>customer-notifications.php?as=json')
-                                .then(r=>r.json())
-                                .then(d=>{ updateNotificationBadge((d && d.unread_count) ? d.unread_count : 0); })
-                                .catch(()=>{});
-                            setTimeout(function(){ window.location.href = url; }, 200);
-                        } else {
-                            window.location.href = url;
+                        } else if (orderId > 0) {
+                            // Order notification - use order_id
+                            try {
+                                const payload = JSON.stringify({ order_id: orderId, is_custom: isCustom });
+                                if (navigator.sendBeacon) {
+                                    const blob = new Blob([payload], { type: 'application/json' });
+                                    navigator.sendBeacon('<?php echo $pathPrefix; ?>ajax/mark-notification-read.php', blob);
+                                } else {
+                                    fetch('<?php echo $pathPrefix; ?>ajax/mark-notification-read.php', {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        credentials: 'same-origin',
+                                        body: payload
+                                    }).catch(()=>{});
+                                }
+                            } catch(e) {}
                         }
+                        
+                        // Optimistically remove from list and update badge
+                        item.remove();
+                        fetch('<?php echo $pathPrefix; ?>customer-notifications.php?as=json')
+                            .then(r=>r.json())
+                            .then(d=>{ updateNotificationBadge((d && d.unread_count) ? d.unread_count : 0); })
+                            .catch(()=>{});
+                        
+                        // Set flag for back button handling if going to product page
+                        if (it.product_id) {
+                            sessionStorage.setItem('fromNotification', 'true');
+                        }
+                        
+                        setTimeout(function(){ window.location.href = url; }, 200);
                     });
                     list.appendChild(item);
                 });

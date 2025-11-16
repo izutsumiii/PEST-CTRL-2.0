@@ -1,15 +1,12 @@
 <?php
-require_once 'includes/header.php';
+// Process all form submissions BEFORE including header (to allow redirects)
+session_start();
 require_once 'config/database.php';
+require_once 'includes/functions.php';
 
 requireLogin();
 
 $userId = $_SESSION['user_id'];
-
-// Get user info
-$stmt = $pdo->prepare("SELECT * FROM users WHERE id = ?");
-$stmt->execute([$userId]);
-$user = $stmt->fetch(PDO::FETCH_ASSOC);
 
 // Check if user_addresses table exists, if not create it
 try {
@@ -30,15 +27,7 @@ try {
     // Table might already exist, continue
 }
 
-// Get user addresses
-$addressesStmt = $pdo->prepare("SELECT * FROM user_addresses WHERE user_id = ? ORDER BY is_default DESC, created_at DESC");
-$addressesStmt->execute([$userId]);
-$addresses = $addressesStmt->fetchAll(PDO::FETCH_ASSOC);
-
-// Handle address operations
-$message = '';
-$messageType = '';
-
+// Handle address operations FIRST (before any HTML output)
 if (isset($_POST['add_address'])) {
     $addressName = sanitizeInput($_POST['address_name']);
     $fullName = sanitizeInput($_POST['full_name']);
@@ -54,8 +43,6 @@ if (isset($_POST['add_address'])) {
     $stmt = $pdo->prepare("INSERT INTO user_addresses (user_id, address_name, full_name, phone, address, is_default) VALUES (?, ?, ?, ?, ?, ?)");
     $stmt->execute([$userId, $addressName, $fullName, $phone, $address, $isDefault]);
     
-    $message = 'Address added successfully!';
-    $messageType = 'success';
     header("Location: edit-profile.php?msg=address_added");
     exit();
 }
@@ -82,8 +69,6 @@ if (isset($_POST['update_address'])) {
         $stmt = $pdo->prepare("UPDATE user_addresses SET address_name = ?, full_name = ?, phone = ?, address = ?, is_default = ? WHERE id = ? AND user_id = ?");
         $stmt->execute([$addressName, $fullName, $phone, $address, $isDefault, $addressId, $userId]);
         
-        $message = 'Address updated successfully!';
-        $messageType = 'success';
         header("Location: edit-profile.php?msg=address_updated");
         exit();
     }
@@ -101,8 +86,6 @@ if (isset($_POST['delete_address'])) {
         $stmt = $pdo->prepare("DELETE FROM user_addresses WHERE id = ? AND user_id = ?");
         $stmt->execute([$addressId, $userId]);
         
-        $message = 'Address deleted successfully!';
-        $messageType = 'success';
         header("Location: edit-profile.php?msg=address_deleted");
         exit();
     }
@@ -122,8 +105,6 @@ if (isset($_POST['set_default_address'])) {
         // Set this as default
         $pdo->prepare("UPDATE user_addresses SET is_default = 1 WHERE id = ? AND user_id = ?")->execute([$addressId, $userId]);
         
-        $message = 'Default address updated!';
-        $messageType = 'success';
         header("Location: edit-profile.php?msg=default_updated");
         exit();
     }
@@ -148,17 +129,17 @@ if (isset($_POST['update_profile'])) {
     $existingUsername = $stmt->fetch(PDO::FETCH_ASSOC);
     
     if ($existingUser) {
-        $message = 'Error: Email already exists.';
-        $messageType = 'error';
+        $_SESSION['profile_error'] = 'Error: Email already exists.';
+        header("Location: edit-profile.php");
+        exit();
     } elseif ($existingUsername) {
-        $message = 'Error: Username already exists.';
-        $messageType = 'error';
+        $_SESSION['profile_error'] = 'Error: Username already exists.';
+        header("Location: edit-profile.php");
+        exit();
     } else {
         $stmt = $pdo->prepare("UPDATE users SET username = ?, first_name = ?, last_name = ?, email = ?, phone = ? WHERE id = ?");
         $stmt->execute([$username, $firstName, $lastName, $email, $phone, $userId]);
         
-        $message = 'Profile updated successfully!';
-        $messageType = 'success';
         header("Location: edit-profile.php?msg=profile_updated");
         exit();
     }
@@ -170,31 +151,47 @@ if (isset($_POST['change_password'])) {
     $newPassword = $_POST['new_password'];
     $confirmPassword = $_POST['confirm_password'];
     
-    // Verify current password
-    if (password_verify($currentPassword, $user['password'])) {
+    // Get user info first to verify password
+    $userStmt = $pdo->prepare("SELECT * FROM users WHERE id = ?");
+    $userStmt->execute([$userId]);
+    $userForPassword = $userStmt->fetch(PDO::FETCH_ASSOC);
+    
+    if ($userForPassword && password_verify($currentPassword, $userForPassword['password'])) {
         if ($newPassword === $confirmPassword) {
             $hashedPassword = password_hash($newPassword, PASSWORD_DEFAULT);
             $stmt = $pdo->prepare("UPDATE users SET password = ? WHERE id = ?");
             $stmt->execute([$hashedPassword, $userId]);
             
-            $message = 'Password changed successfully!';
-            $messageType = 'success';
             header("Location: edit-profile.php?msg=password_updated");
             exit();
         } else {
-            $message = 'Error: New passwords do not match.';
-            $messageType = 'error';
+            $_SESSION['profile_error'] = 'Error: New passwords do not match.';
+            header("Location: edit-profile.php");
+            exit();
         }
     } else {
-        $message = 'Error: Current password is incorrect.';
-        $messageType = 'error';
+        $_SESSION['profile_error'] = 'Error: Current password is incorrect.';
+        header("Location: edit-profile.php");
+        exit();
     }
 }
 
-// Get updated addresses after operations
+// NOW include header after all redirects are done
+require_once 'includes/header.php';
+
+// Get user info for display
+$stmt = $pdo->prepare("SELECT * FROM users WHERE id = ?");
+$stmt->execute([$userId]);
+$user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+// Get user addresses
 $addressesStmt = $pdo->prepare("SELECT * FROM user_addresses WHERE user_id = ? ORDER BY is_default DESC, created_at DESC");
 $addressesStmt->execute([$userId]);
 $addresses = $addressesStmt->fetchAll(PDO::FETCH_ASSOC);
+
+// Handle messages
+$message = '';
+$messageType = '';
 
 // Check for URL messages
 if (isset($_GET['msg'])) {
@@ -209,6 +206,13 @@ if (isset($_GET['msg'])) {
             $messageType = 'success';
             break;
     }
+}
+
+// Check for error messages from session
+if (isset($_SESSION['profile_error'])) {
+    $message = $_SESSION['profile_error'];
+    $messageType = 'error';
+    unset($_SESSION['profile_error']);
 }
 ?>
 
@@ -268,6 +272,18 @@ h1.page-title {
     border-left-color: var(--error-red);
     border: 1px solid #fecaca;
     color: #991b1b;
+}
+
+/* Custom Confirmation Dialog - Matching Logout Modal Design */
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .profile-content {
@@ -677,11 +693,6 @@ h1.page-title {
 <div class="profile-container">
     <h1 class="page-title">My Profile</h1>
 
-    <?php if ($message): ?>
-        <div class="alert alert-<?php echo $messageType; ?>">
-            <?php echo htmlspecialchars($message); ?>
-        </div>
-    <?php endif; ?>
 
     <div class="profile-header">
         <div class="profile-avatar">
@@ -785,9 +796,9 @@ h1.page-title {
                                 <button type="button" onclick="editAddress(<?php echo htmlspecialchars(json_encode($addr)); ?>)" class="btn btn-primary btn-sm">
                                     <i class="fas fa-edit"></i> Edit
                                 </button>
-                                <form method="POST" action="" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this address?');">
+                                <form method="POST" action="" id="deleteForm_<?php echo $addr['id']; ?>" style="display: inline;">
                                     <input type="hidden" name="address_id" value="<?php echo $addr['id']; ?>">
-                                    <button type="submit" name="delete_address" class="btn btn-danger btn-sm">
+                                    <button type="button" onclick="confirmDeleteAddress(<?php echo $addr['id']; ?>)" class="btn btn-danger btn-sm">
                                         <i class="fas fa-trash"></i> Delete
                                     </button>
                                 </form>
@@ -878,6 +889,176 @@ function editAddress(address) {
 function closeAddressModal() {
     document.getElementById('addressModal').style.display = 'none';
     document.getElementById('addressForm').reset();
+}
+
+// Show notification overlay (same as add to cart)
+function showNotification(message, type) {
+    // Remove existing notifications
+    const existingNotifications = document.querySelectorAll('.profile-notification');
+    existingNotifications.forEach(notification => notification.remove());
+    
+    // Create new notification
+    const notification = document.createElement('div');
+    notification.className = `profile-notification profile-notification-${type}`;
+    notification.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}" style="font-size: 18px;"></i>
+            <span>${message}</span>
+        </div>
+    `;
+    notification.style.cssText = `
+        position: fixed;
+        bottom: 24px;
+        left: 50%;
+        transform: translateX(-50%);
+        padding: 14px 20px;
+        border-radius: 10px;
+        color: white;
+        z-index: 10001;
+        max-width: 400px;
+        min-width: 280px;
+        text-align: center;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+        font-weight: 600;
+        font-size: 14px;
+        animation: slideUpNotification 0.3s ease-out;
+    `;
+    
+    if (type === 'success') {
+        notification.style.backgroundColor = '#10b981';
+    } else {
+        notification.style.backgroundColor = '#ef4444';
+    }
+    
+    document.body.appendChild(notification);
+    
+    // Remove notification after 3 seconds
+    setTimeout(() => {
+        notification.style.animation = 'slideDownNotification 0.3s ease-out';
+        setTimeout(() => {
+            notification.remove();
+        }, 300);
+    }, 3000);
+}
+
+// Custom confirmation dialog for delete address - Matching Logout Modal Design
+function confirmDeleteAddress(addressId) {
+    // Create modal overlay
+    const deleteModal = document.createElement('div');
+    deleteModal.id = 'deleteAddressModal';
+    deleteModal.style.cssText = 'display: flex; position: fixed; z-index: 10000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center;';
+    
+    // Create modal content
+    const modalContent = document.createElement('div');
+    modalContent.style.cssText = 'background: #ffffff; border-radius: 12px; padding: 0; max-width: 400px; width: 90%; box-shadow: 0 10px 40px rgba(0,0,0,0.2); animation: slideDown 0.3s ease;';
+    
+    // Create modal header
+    const modalHeader = document.createElement('div');
+    modalHeader.style.cssText = 'background: #130325; color: #ffffff; padding: 16px 20px; border-radius: 12px 12px 0 0; display: flex; align-items: center; gap: 10px;';
+    modalHeader.innerHTML = '<i class="fas fa-trash-alt" style="font-size: 16px; color: #FFD736;"></i><h3 style="margin: 0; font-size: 14px; font-weight: 700;">Confirm Delete</h3>';
+    
+    // Create modal body
+    const modalBody = document.createElement('div');
+    modalBody.style.cssText = 'padding: 20px; color: #130325;';
+    modalBody.innerHTML = '<p style="margin: 0; font-size: 13px; line-height: 1.5; color: #130325;">Are you sure you want to delete this address? This action cannot be undone.</p>';
+    
+    // Create modal footer
+    const modalFooter = document.createElement('div');
+    modalFooter.style.cssText = 'padding: 16px 24px; border-top: 1px solid #e5e7eb; display: flex; gap: 10px; justify-content: flex-end;';
+    
+    // Create Cancel button
+    const cancelBtn = document.createElement('button');
+    cancelBtn.textContent = 'Cancel';
+    cancelBtn.style.cssText = 'padding: 8px 20px; background: #f3f4f6; color: #130325; border: 1px solid #e5e7eb; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px; transition: all 0.2s ease;';
+    cancelBtn.onmouseover = function() { this.style.background = '#e5e7eb'; };
+    cancelBtn.onmouseout = function() { this.style.background = '#f3f4f6'; };
+    
+    // Create Delete button
+    const deleteBtn = document.createElement('button');
+    deleteBtn.textContent = 'Delete';
+    deleteBtn.style.cssText = 'padding: 8px 20px; background: #130325; color: #ffffff; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px; transition: all 0.2s ease;';
+    deleteBtn.onmouseover = function() { this.style.background = '#0a0218'; };
+    deleteBtn.onmouseout = function() { this.style.background = '#130325'; };
+    
+    // Button click handlers
+    cancelBtn.onclick = function() {
+        deleteModal.style.display = 'none';
+        setTimeout(() => {
+            if (deleteModal.parentNode) {
+                document.body.removeChild(deleteModal);
+            }
+        }, 300);
+    };
+    
+    deleteBtn.onclick = function() {
+        document.getElementById('deleteForm_' + addressId).submit();
+    };
+    
+    // Append elements
+    modalFooter.appendChild(cancelBtn);
+    modalFooter.appendChild(deleteBtn);
+    
+    modalContent.appendChild(modalHeader);
+    modalContent.appendChild(modalBody);
+    modalContent.appendChild(modalFooter);
+    deleteModal.appendChild(modalContent);
+    document.body.appendChild(deleteModal);
+    
+    // Close on overlay click
+    deleteModal.onclick = function(e) {
+        if (e.target === deleteModal) {
+            deleteModal.style.display = 'none';
+            setTimeout(() => {
+                if (deleteModal.parentNode) {
+                    document.body.removeChild(deleteModal);
+                }
+            }, 300);
+        }
+    };
+    
+    // Add CSS animation if not already added
+    if (!document.getElementById('deleteModalStyles')) {
+        const style = document.createElement('style');
+        style.id = 'deleteModalStyles';
+        style.textContent = '@keyframes slideDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }';
+        document.head.appendChild(style);
+    }
+}
+
+// Show notification on page load if message exists
+document.addEventListener('DOMContentLoaded', function() {
+    <?php if ($message): ?>
+        showNotification('<?php echo addslashes($message); ?>', '<?php echo $messageType; ?>');
+    <?php endif; ?>
+});
+
+// Add animation styles
+if (!document.getElementById('profileNotificationStyles')) {
+    const style = document.createElement('style');
+    style.id = 'profileNotificationStyles';
+    style.textContent = `
+        @keyframes slideUpNotification {
+            from {
+                opacity: 0;
+                transform: translateX(-50%) translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(-50%) translateY(0);
+            }
+        }
+        @keyframes slideDownNotification {
+            from {
+                opacity: 1;
+                transform: translateX(-50%) translateY(0);
+            }
+            to {
+                opacity: 0;
+                transform: translateX(-50%) translateY(20px);
+            }
+        }
+    `;
+    document.head.appendChild(style);
 }
 </script>
 

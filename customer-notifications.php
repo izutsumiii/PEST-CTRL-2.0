@@ -9,6 +9,21 @@ date_default_timezone_set('Asia/Manila');
 require_once 'config/database.php';
 require_once 'includes/functions.php';
 
+// Ensure product_id and review_id columns exist in notifications table
+try {
+    $checkColumn = $pdo->query("SHOW COLUMNS FROM notifications LIKE 'product_id'");
+    if ($checkColumn->rowCount() == 0) {
+        $pdo->exec("ALTER TABLE notifications ADD COLUMN product_id INT NULL AFTER order_id");
+    }
+    
+    $checkReviewColumn = $pdo->query("SHOW COLUMNS FROM notifications LIKE 'review_id'");
+    if ($checkReviewColumn->rowCount() == 0) {
+        $pdo->exec("ALTER TABLE notifications ADD COLUMN review_id INT NULL AFTER product_id");
+    }
+} catch (Exception $e) {
+    error_log("Error checking/adding columns: " . $e->getMessage());
+}
+
 // Handle delete notifications request
 if (isset($_POST['delete_notifications'])) {
     session_start();
@@ -70,76 +85,132 @@ if (isset($_GET['as']) && $_GET['as'] === 'json') {
     requireLogin();
     $userId = $_SESSION['user_id'];
 }
-// Combined query - get order updates WITH custom messages joined
+// Simplified query - get ALL notifications directly, then enrich with order/return data
 $stmt = $pdo->prepare("
     SELECT 
-        o.id as order_id, 
-        o.status, 
-        o.created_at, 
-        o.updated_at,
+        COALESCE(n.order_id, 0) as order_id,
+        COALESCE(o.status, 'notification') as status,
+        COALESCE(n.created_at, o.created_at) as created_at,
+        COALESCE(o.updated_at, n.created_at) as updated_at,
         COALESCE(NULLIF(pt.payment_status, ''), NULL) as payment_status,
-        IF(nr.read_at IS NULL OR GREATEST(COALESCE(o.updated_at, o.created_at), COALESCE(rr.processed_at, o.created_at), COALESCE(n.created_at, o.created_at)) > nr.read_at, 0, 1) as is_read,
+        IF(nr.read_at IS NULL OR COALESCE(n.created_at, o.updated_at, o.created_at) > nr.read_at, 0, 1) as is_read,
         rr.status as return_status,
         rr.processed_at as return_updated_at,
         n.message,
         n.type,
         n.id as notification_id,
         n.product_id,
+        n.review_id,
         GREATEST(
-            COALESCE(o.updated_at, o.created_at), 
-            COALESCE(rr.processed_at, o.created_at),
-            COALESCE(n.created_at, o.created_at)
+            COALESCE(n.created_at, o.updated_at, o.created_at),
+            COALESCE(rr.processed_at, '1970-01-01 00:00:00')
+        ) as sort_date
+    FROM notifications n
+    LEFT JOIN orders o ON n.order_id = o.id AND n.user_id = o.user_id
+    LEFT JOIN payment_transactions pt ON pt.id = o.payment_transaction_id
+    LEFT JOIN return_requests rr ON rr.order_id = o.id
+    LEFT JOIN (
+        SELECT 
+            COALESCE(notification_id, 0) as notification_id,
+            COALESCE(order_id, 0) as order_id,
+            MAX(read_at) as read_at
+        FROM notification_reads
+        WHERE user_id = ?
+        GROUP BY notification_id, order_id
+    ) nr ON (nr.notification_id = n.id OR (nr.notification_id = 0 AND nr.order_id = n.order_id))
+    WHERE n.user_id = ?
+    
+    UNION ALL
+    
+    -- Also show orders that don't have notifications yet (for order status tracking)
+    SELECT 
+        o.id as order_id,
+        o.status,
+        o.created_at,
+        o.updated_at,
+        COALESCE(NULLIF(pt.payment_status, ''), NULL) as payment_status,
+        IF(nr.read_at IS NULL OR GREATEST(COALESCE(o.updated_at, o.created_at), COALESCE(rr.processed_at, o.created_at)) > nr.read_at, 0, 1) as is_read,
+        rr.status as return_status,
+        rr.processed_at as return_updated_at,
+        NULL as message,
+        'order_update' as type,
+        NULL as notification_id,
+        NULL as product_id,
+        NULL as review_id,
+        GREATEST(
+            COALESCE(o.updated_at, o.created_at),
+            COALESCE(rr.processed_at, '1970-01-01 00:00:00')
         ) as sort_date
     FROM orders o
     LEFT JOIN payment_transactions pt ON pt.id = o.payment_transaction_id
+    LEFT JOIN return_requests rr ON rr.order_id = o.id
     LEFT JOIN (
         SELECT user_id, order_id, MAX(read_at) as read_at
         FROM notification_reads
         WHERE user_id = ?
         GROUP BY user_id, order_id
     ) nr ON nr.user_id = o.user_id AND nr.order_id = o.id
-    LEFT JOIN return_requests rr ON rr.order_id = o.id
-    LEFT JOIN (
-        SELECT order_id, user_id, message, type, id, created_at, product_id
-        FROM notifications
-        WHERE user_id = ? AND (order_id, created_at) IN (
-            SELECT order_id, MAX(created_at)
-            FROM notifications
-            WHERE user_id = ? AND order_id IS NOT NULL
-            GROUP BY order_id
-        )
-    ) n ON n.order_id = o.id AND n.user_id = o.user_id
     WHERE o.user_id = ?
-    
-    UNION ALL
-    
-    SELECT 
-        COALESCE(n.order_id, 0) as order_id,
-        'notification' as status,
-        n.created_at,
-        n.created_at as updated_at,
-        NULL as payment_status,
-        IF(nr.read_at IS NULL OR n.created_at > nr.read_at, 0, 1) as is_read,
-        NULL as return_status,
-        NULL as return_updated_at,
-        n.message,
-        n.type,
-        n.id as notification_id,
-        n.product_id,
-        n.created_at as sort_date
-    FROM notifications n
-    LEFT JOIN (
-        SELECT notification_id, MAX(read_at) as read_at
-        FROM notification_reads
-        WHERE user_id = ?
-        GROUP BY notification_id
-    ) nr ON nr.notification_id = n.id
-    WHERE n.user_id = ? AND n.order_id IS NULL
+    AND o.id NOT IN (
+        SELECT DISTINCT order_id 
+        FROM notifications 
+        WHERE user_id = ? AND order_id IS NOT NULL
+    )
     
     ORDER BY sort_date DESC
 ");
-$stmt->execute([$userId, $userId, $userId, $userId, $userId, $userId]);
-$events = $stmt->fetchAll(PDO::FETCH_ASSOC);
+try {
+    // First, let's verify notifications exist in database
+    $testStmt = $pdo->prepare("SELECT COUNT(*) as count FROM notifications WHERE user_id = ?");
+    $testStmt->execute([$userId]);
+    $testResult = $testStmt->fetch(PDO::FETCH_ASSOC);
+    $totalNotificationsInDB = $testResult['count'] ?? 0;
+    error_log('Customer Notifications - Total notifications in DB for user ' . $userId . ': ' . $totalNotificationsInDB);
+    
+    // Get sample notifications to verify they exist
+    $sampleStmt = $pdo->prepare("SELECT id, order_id, type, message, created_at FROM notifications WHERE user_id = ? ORDER BY created_at DESC LIMIT 5");
+    $sampleStmt->execute([$userId]);
+    $sampleNotifications = $sampleStmt->fetchAll(PDO::FETCH_ASSOC);
+    error_log('Customer Notifications - Sample notifications: ' . json_encode($sampleNotifications));
+    
+    // Parameters: 1 (notification_reads for notifications), 2 (notifications WHERE), 3 (notification_reads for orders), 4 (orders WHERE), 5 (orders NOT IN)
+    $stmt->execute([$userId, $userId, $userId, $userId, $userId]);
+    $events = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    // Debug: Log notification types found
+    $notificationTypes = [];
+    foreach ($events as $event) {
+        $type = $event['type'] ?? 'unknown';
+        $notificationTypes[$type] = ($notificationTypes[$type] ?? 0) + 1;
+    }
+    error_log('Customer Notifications - Query returned ' . count($events) . ' notifications for user ' . $userId);
+    error_log('Customer Notifications - Types found: ' . json_encode($notificationTypes));
+    error_log('Customer Notifications - DB has ' . $totalNotificationsInDB . ' notifications, query returned ' . count($events));
+} catch (PDOException $e) {
+    error_log("Error fetching notifications: " . $e->getMessage());
+    // If it's a column error, try to add the column and retry
+    if (strpos($e->getMessage(), 'product_id') !== false) {
+        try {
+            $pdo->exec("ALTER TABLE notifications ADD COLUMN product_id INT NULL AFTER order_id");
+            $stmt->execute([$userId, $userId, $userId, $userId, $userId]);
+            $events = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            // Debug: Log notification types found after retry
+            $notificationTypes = [];
+            foreach ($events as $event) {
+                $type = $event['type'] ?? 'unknown';
+                $notificationTypes[$type] = ($notificationTypes[$type] ?? 0) + 1;
+            }
+            error_log('Customer Notifications - After retry: Found ' . count($events) . ' notifications. Types: ' . json_encode($notificationTypes));
+        } catch (Exception $retryError) {
+            error_log("Error retrying after adding column: " . $retryError->getMessage());
+            $events = [];
+        }
+    } else {
+        $events = [];
+    }
+}
+
 // JSON mode for header popup
 if (isset($_GET['as']) && $_GET['as'] === 'json') {
     // Clear any previous output and turn off all error reporting
@@ -172,6 +243,45 @@ if (isset($_GET['as']) && $_GET['as'] === 'json') {
                 $mostRecentUpdate = $e['return_updated_at'];
             }
             
+            // For seller_reply notifications, ensure we have product_id and review_id
+            $productId = !empty($e['product_id']) ? (int)$e['product_id'] : null;
+            $reviewId = !empty($e['review_id']) ? (int)$e['review_id'] : null;
+            
+            // If seller_reply but missing product_id or review_id, try to get from database
+            if ($e['type'] === 'seller_reply' && (!$productId || !$reviewId)) {
+                try {
+                    $notifId = !empty($e['notification_id']) ? (int)$e['notification_id'] : null;
+                    if ($notifId) {
+                        $fixStmt = $pdo->prepare("SELECT product_id, review_id FROM notifications WHERE id = ?");
+                        $fixStmt->execute([$notifId]);
+                        $fixData = $fixStmt->fetch(PDO::FETCH_ASSOC);
+                        if ($fixData) {
+                            if (!$productId && !empty($fixData['product_id'])) {
+                                $productId = (int)$fixData['product_id'];
+                                error_log("Fixed missing product_id for notification $notifId: $productId");
+                            }
+                            if (!$reviewId && !empty($fixData['review_id'])) {
+                                $reviewId = (int)$fixData['review_id'];
+                                error_log("Fixed missing review_id for notification $notifId: $reviewId");
+                            }
+                        }
+                        
+                        // If still missing, try to get from review_id -> product_id
+                        if ($reviewId && !$productId) {
+                            $prodStmt = $pdo->prepare("SELECT product_id FROM product_reviews WHERE id = ?");
+                            $prodStmt->execute([$reviewId]);
+                            $prodData = $prodStmt->fetch(PDO::FETCH_ASSOC);
+                            if ($prodData && !empty($prodData['product_id'])) {
+                                $productId = (int)$prodData['product_id'];
+                                error_log("Fixed missing product_id from review $reviewId: $productId");
+                            }
+                        }
+                    }
+                } catch (Exception $fixError) {
+                    error_log("Error fixing seller_reply notification data: " . $fixError->getMessage());
+                }
+            }
+            
             // Build notification item
             $items[] = [
                 'order_id' => (int)$e['order_id'],
@@ -179,7 +289,8 @@ if (isset($_GET['as']) && $_GET['as'] === 'json') {
                 'message' => !empty($e['message']) ? (string)$e['message'] : null,
                 'type' => !empty($e['type']) ? (string)$e['type'] : 'info',
                 'notification_id' => !empty($e['notification_id']) ? (int)$e['notification_id'] : null,
-                'product_id' => !empty($e['product_id']) ? (int)$e['product_id'] : null,
+                'product_id' => $productId,
+                'review_id' => $reviewId,
                 'payment_status' => !empty($e['payment_status']) ? (string)$e['payment_status'] : null,
                 'return_status' => !empty($e['return_status']) ? (string)$e['return_status'] : null,
                 'updated_at' => $mostRecentUpdate,
@@ -366,46 +477,210 @@ h1 {
     transform: translateY(-1px);
 }
 
-.notif-list {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
+/* ============================================
+   FIX: Notification Item Height & Text Display
+   ============================================ */
 
-.notif-item {
+   .notif-item {
     background: var(--bg-white) !important;
     border: 1px solid var(--border-light);
     border-radius: 12px;
-    transition: all 0.2s ease;
+    transition: all 0.2s ease !important; /* Changed from none */
     position: relative;
-    overflow: hidden;
+    overflow: hidden !important;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    
+    /* FIXED: Increased height limits for better content visibility */
+    min-height: 80px !important;
+    max-height: 180px !important;
+    height: auto !important;
+    
+    display: block !important;
+    flex-shrink: 0 !important;
+    flex-grow: 0 !important;
+    width: 100% !important;
+    contain: layout style !important;
 }
 
+/* Expand on hover to show full content */
 .notif-item:hover {
     border-color: var(--primary-dark);
     box-shadow: 0 4px 12px rgba(19, 3, 37, 0.15), 0 0 0 1px rgba(19, 3, 37, 0.1);
     transform: translateY(-1px);
-}
-
-.notif-item[style*="border-left"] {
-    border-left: 4px solid var(--primary-dark) !important;
-    background: linear-gradient(90deg, #f8f7fa 0%, var(--bg-white) 100%) !important;
-    box-shadow: 0 2px 8px rgba(19, 3, 37, 0.1);
+    max-height: 300px !important; /* Expand on hover */
 }
 
 .notif-item a {
     text-decoration: none;
-    display: block;
+    display: block !important;
     background: transparent !important;
-    padding: 12px 14px;
+    padding: 14px 16px; /* Increased padding */
     border-radius: 12px;
+    height: auto !important;
+    max-height: 180px !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+    position: relative;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.notif-item:hover a {
+    max-height: 300px !important; /* Expand on hover */
+}
+
+.notif-title {
+    color: var(--text-dark);
+    font-weight: 600;
+    font-size: 13px;
+    margin-bottom: 5px;
+    line-height: 1.4;
+    
+    /* FIXED: Better text truncation with ellipsis */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 3; /* Show up to 3 lines */
+    line-clamp: 3;
+    -webkit-box-orient: vertical;
+    max-height: 4.2em; /* 3 lines × 1.4 line-height */
+    word-wrap: break-word;
+    word-break: break-word;
+}
+
+/* Show full title on hover */
+.notif-item:hover .notif-title {
+    -webkit-line-clamp: unset;
+    line-clamp: unset;
+    max-height: none;
+    overflow: visible;
+}
+
+.notif-details {
+    color: var(--text-light);
+    font-size: 11px;
+    line-height: 1.5;
+    margin-top: 4px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    
+    /* Prevent details from being cut off */
+    overflow: visible;
+    max-height: none;
 }
 
 .notif-item-content {
     display: flex;
     gap: 10px;
     align-items: flex-start;
+    height: auto;
+    min-height: 0;
+    max-height: none; /* Changed from fixed height */
+    width: 100%;
+    position: relative;
+    overflow: visible; /* Changed from hidden */
+}
+
+/* Mobile responsiveness improvements */
+@media (max-width: 968px) {
+    .notif-item {
+        min-height: 70px !important;
+        max-height: 160px !important;
+    }
+    
+    .notif-item:hover {
+        max-height: 250px !important;
+    }
+    
+    .notif-item a {
+        padding: 12px 14px;
+        max-height: 160px !important;
+    }
+    
+    .notif-item:hover a {
+        max-height: 250px !important;
+    }
+    
+    .notif-title {
+        font-size: 12px;
+        -webkit-line-clamp: 2; /* Show 2 lines on mobile */
+        line-clamp: 2;
+        max-height: 2.8em;
+    }
+    
+    .notif-details {
+        font-size: 10px;
+        gap: 4px;
+    }
+}
+
+/* Loading state for notifications */
+.notif-item.loading {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.notif-item.loading::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(
+        90deg,
+        transparent 0%,
+        rgba(255, 255, 255, 0.6) 50%,
+        transparent 100%
+    );
+    animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+    0% {
+        transform: translateX(-100%);
+    }
+    100% {
+        transform: translateX(100%);
+    }
+}
+
+/* Notification list improvements */
+.notif-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-height: none;
+    height: auto;
+    overflow: visible; /* Changed from hidden */
+    min-height: 0;
+    will-change: contents;
+    contain: layout style;
+}
+
+/* Smooth appearance for new notifications */
+.notif-item.new-notification {
+    animation: slideInNotification 0.4s ease-out;
+}
+
+@keyframes slideInNotification {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Missing CSS classes */
+.notif-item[style*="border-left"] {
+    border-left: 4px solid var(--primary-dark) !important;
+    background: linear-gradient(90deg, #f8f7fa 0%, var(--bg-white) 100%) !important;
+    box-shadow: 0 2px 8px rgba(19, 3, 37, 0.1);
 }
 
 .notif-icon {
@@ -448,25 +723,6 @@ h1 {
     flex: 1;
     min-width: 0;
     padding-right: 8px;
-}
-
-.notif-title {
-    color: var(--text-dark);
-    font-weight: 600;
-    font-size: 13px;
-    margin-bottom: 5px;
-    line-height: 1.4;
-}
-
-.notif-details {
-    color: var(--text-light);
-    font-size: 11px;
-    line-height: 1.5;
-    margin-top: 4px;
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 6px;
 }
 
 .notif-details .status-badge {
@@ -530,11 +786,18 @@ h1 {
 }
 
 .empty-state::before {
-    content: "🔔";
-    font-size: 48px;
+    content: "";
     display: block;
     margin-bottom: 16px;
-    opacity: 0.5;
+    opacity: 0.4;
+}
+
+.empty-state .empty-icon {
+    font-size: 48px;
+    color: var(--text-light);
+    opacity: 0.4;
+    margin-bottom: 16px;
+    display: block;
 }
 
 .alert {
@@ -558,35 +821,6 @@ h1 {
     border-left-color: var(--error-red);
     border: 1px solid #fecaca;
     color: #991b1b;
-}
-
-/* Notification animations */
-@keyframes slideInNotification {
-    from {
-        opacity: 0;
-        transform: translateX(-20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateX(0);
-    }
-}
-
-.notif-item.new-notification {
-    animation: slideInNotification 0.3s ease-out;
-}
-
-@keyframes subtlePulse {
-    0%, 100% {
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-    }
-    50% {
-        box-shadow: 0 2px 12px rgba(19, 3, 37, 0.2);
-    }
-}
-
-.notif-item[style*="border-left"] {
-    animation: subtlePulse 2s ease-in-out infinite;
 }
 
 /* Confirmation dialog */
@@ -847,19 +1081,31 @@ h1 {
     <?php endif; ?>
 
     <?php if (empty($events)): ?>
-      <div class="empty-state">No notifications yet.</div>
+      <div class="empty-state">
+        <i class="fas fa-bell empty-icon"></i>
+        <div>No notifications yet.</div>
+      </div>
     <?php else: ?>
       <div class="notif-list">
         <?php foreach ($events as $e): ?>
           
-            <div class="notif-item" <?php if (empty($e['is_read'])): ?>style="border-left: 4px solid var(--primary-dark);"<?php endif; ?>>
+            <div class="notif-item" <?php if (empty($e['is_read'])): ?>style="border-left: 4px solid var(--primary-dark); max-height: 180px !important; overflow: hidden !important; height: auto !important; min-height: 60px !important;"<?php else: ?>style="max-height: 180px !important; overflow: hidden !important; height: auto !important; min-height: 60px !important;"<?php endif; ?>>
     <?php
     $hasOrderId = !empty($e['order_id']);
     $hasProductId = !empty($e['product_id']);
+    $hasReviewId = !empty($e['review_id']);
     
     // Determine link URL: product > order > default
+    // For seller reply notifications, redirect to reviews tab with review_id
+    $isSellerReply = !empty($e['type']) && $e['type'] === 'seller_reply';
     if ($hasProductId) {
         $linkUrl = "product-detail.php?id=" . (int)$e['product_id'];
+        if ($isSellerReply && $hasReviewId) {
+            // Put review_id in query string, hash at the end
+            $linkUrl .= "&review_id=" . (int)$e['review_id'] . "#reviews-tab";
+        } elseif ($isSellerReply) {
+            $linkUrl .= "#reviews-tab";
+        }
     } elseif ($hasOrderId) {
         $linkUrl = "order-details.php?id=" . (int)$e['order_id'];
     } else {
@@ -871,7 +1117,60 @@ h1 {
        <?php if ($hasProductId): ?>data-product-id="<?php echo (int)$e['product_id']; ?>"<?php endif; ?>
        data-notification-id="<?php echo (int)$e['notification_id']; ?>"
        data-is-custom="<?php echo isset($e['message']) ? '1' : '0'; ?>"
-       <?php if (!$hasOrderId && !$hasProductId): ?>onclick="event.preventDefault(); markStandaloneNotificationRead(<?php echo (int)$e['notification_id']; ?>);"<?php elseif ($hasProductId): ?>onclick="event.preventDefault(); markStandaloneNotificationRead(<?php echo (int)$e['notification_id']; ?>, <?php echo (int)$e['product_id']; ?>); window.location.href='product-detail.php?id=<?php echo (int)$e['product_id']; ?>';"<?php endif; ?>>
+       <?php if ($hasProductId): ?>
+       onclick="event.preventDefault(); 
+                const startTime = performance.now();
+                const notificationId = <?php echo (int)$e['notification_id']; ?>;
+                const productId = <?php echo (int)$e['product_id']; ?>;
+                const reviewId = <?php echo $hasReviewId ? (int)$e['review_id'] : 'null'; ?>;
+                const isSellerReply = <?php echo $isSellerReply ? 'true' : 'false'; ?>;
+                const notificationType = '<?php echo isset($e['type']) ? htmlspecialchars($e['type']) : ''; ?>';
+                
+                console.log('[REDIRECT DEBUG] ============================================');
+                console.log('[REDIRECT DEBUG] Notification Click Event Started');
+                console.log('[REDIRECT DEBUG] Timestamp:', new Date().toISOString());
+                console.log('[REDIRECT DEBUG] Notification ID:', notificationId);
+                console.log('[REDIRECT DEBUG] Product ID:', productId);
+                console.log('[REDIRECT DEBUG] Review ID:', reviewId);
+                console.log('[REDIRECT DEBUG] Is Seller Reply:', isSellerReply);
+                console.log('[REDIRECT DEBUG] Notification Type:', notificationType);
+                
+                // Set flag for back button handling
+                sessionStorage.setItem('fromNotification', 'true');
+                console.log('[REDIRECT DEBUG] Set sessionStorage flag: fromNotification = true');
+                
+                // Build redirect URL correctly: product-detail.php?id=X&review_id=Y#reviews-tab
+                let redirectUrl = 'product-detail.php?id=' + productId;
+                if (reviewId) {
+                    redirectUrl += '&review_id=' + reviewId;
+                }
+                if (isSellerReply) {
+                    redirectUrl += '#reviews-tab';
+                }
+                
+                console.log('[REDIRECT DEBUG] Constructed Redirect URL:', redirectUrl);
+                console.log('[REDIRECT DEBUG] Current URL:', window.location.href);
+                
+                // Mark as read first (don't redirect from function)
+                console.log('[REDIRECT DEBUG] Calling markStandaloneNotificationRead...');
+                markStandaloneNotificationRead(notificationId, null, ''); // Don't redirect from function
+                
+                // Redirect immediately
+                const redirectStartTime = performance.now();
+                console.log('[REDIRECT DEBUG] Starting redirect in 150ms...');
+                setTimeout(function() { 
+                    const redirectTime = performance.now() - redirectStartTime;
+                    const totalTime = performance.now() - startTime;
+                    console.log('[REDIRECT DEBUG] Redirect timeout fired');
+                    console.log('[REDIRECT DEBUG] Redirect delay time:', redirectTime.toFixed(2), 'ms');
+                    console.log('[REDIRECT DEBUG] Total time from click:', totalTime.toFixed(2), 'ms');
+                    console.log('[REDIRECT DEBUG] Executing window.location.href =', redirectUrl);
+                    window.location.href = redirectUrl;
+                    console.log('[REDIRECT DEBUG] Redirect command executed');
+                }, 150);"
+       <?php elseif (!$hasOrderId && !$hasProductId): ?>
+       onclick="event.preventDefault(); markStandaloneNotificationRead(<?php echo (int)$e['notification_id']; ?>);"
+       <?php endif; ?>>
       <div class="notif-item-content">
         <div class="notif-icon">
           <i class="fas fa-<?php echo $e['type'] === 'warning' ? 'exclamation-triangle' : 'bell'; ?>"></i>
@@ -931,10 +1230,67 @@ h1 {
           <span class="notif-time" data-timestamp="<?php echo strtotime($e['created_at']); ?>">
             <?php echo htmlspecialchars(date('M d, Y h:i A', strtotime($e['created_at']))); ?>
           </span>
-          <?php if ($hasOrderId): ?>
+          <?php if ($hasOrderId || $hasProductId): ?>
           <button 
             type="button"
-            onclick="event.stopPropagation(); handleViewNotification(<?php echo (int)$e['order_id']; ?>, <?php echo isset($e['message']) ? '1' : '0'; ?>);"
+            onclick="event.stopPropagation(); 
+                     <?php if ($hasProductId): ?>
+                     const viewStartTime = performance.now();
+                     const viewNotificationId = <?php echo (int)$e['notification_id']; ?>;
+                     const viewProductId = <?php echo (int)$e['product_id']; ?>;
+                     const viewReviewId = <?php echo $hasReviewId ? (int)$e['review_id'] : 'null'; ?>;
+                     const viewIsSellerReply = <?php echo $isSellerReply ? 'true' : 'false'; ?>;
+                     
+                     console.log('[VIEW BUTTON DEBUG] ============================================');
+                     console.log('[VIEW BUTTON DEBUG] View Button Click Event Started');
+                     console.log('[VIEW BUTTON DEBUG] Timestamp:', new Date().toISOString());
+                     console.log('[VIEW BUTTON DEBUG] Notification ID:', viewNotificationId);
+                     console.log('[VIEW BUTTON DEBUG] Product ID:', viewProductId);
+                     console.log('[VIEW BUTTON DEBUG] Review ID:', viewReviewId);
+                     console.log('[VIEW BUTTON DEBUG] Is Seller Reply:', viewIsSellerReply);
+                     
+                     // Set flag for back button handling
+                     sessionStorage.setItem('fromNotification', 'true');
+                     console.log('[VIEW BUTTON DEBUG] Set sessionStorage flag: fromNotification = true');
+                     
+                     // Build redirect URL correctly
+                     let viewRedirectUrl = 'product-detail.php?id=' + viewProductId;
+                     if (viewReviewId) {
+                         viewRedirectUrl += '&review_id=' + viewReviewId;
+                     }
+                     if (viewIsSellerReply) {
+                         viewRedirectUrl += '#reviews-tab';
+                     }
+                     
+                     console.log('[VIEW BUTTON DEBUG] Constructed Redirect URL:', viewRedirectUrl);
+                     console.log('[VIEW BUTTON DEBUG] Current URL:', window.location.href);
+                     
+                     // Mark as read first (don't redirect from function)
+                     console.log('[VIEW BUTTON DEBUG] Calling markStandaloneNotificationRead...');
+                     markStandaloneNotificationRead(viewNotificationId, null, ''); // Don't redirect from function
+                     
+                     // Add to history for back button
+                     if (window.history && window.history.pushState) { 
+                         window.history.pushState({ page: 'customer-notifications', fromNotification: true }, '', 'customer-notifications.php');
+                         console.log('[VIEW BUTTON DEBUG] Added history state');
+                     }
+                     
+                     // Redirect immediately
+                     const viewRedirectStartTime = performance.now();
+                     console.log('[VIEW BUTTON DEBUG] Starting redirect in 150ms...');
+                     setTimeout(function() { 
+                         const viewRedirectTime = performance.now() - viewRedirectStartTime;
+                         const viewTotalTime = performance.now() - viewStartTime;
+                         console.log('[VIEW BUTTON DEBUG] Redirect timeout fired');
+                         console.log('[VIEW BUTTON DEBUG] Redirect delay time:', viewRedirectTime.toFixed(2), 'ms');
+                         console.log('[VIEW BUTTON DEBUG] Total time from click:', viewTotalTime.toFixed(2), 'ms');
+                         console.log('[VIEW BUTTON DEBUG] Executing window.location.href =', viewRedirectUrl);
+                         window.location.href = viewRedirectUrl;
+                         console.log('[VIEW BUTTON DEBUG] Redirect command executed');
+                     }, 150);
+                     <?php else: ?>
+                     handleViewNotification(<?php echo (int)$e['order_id']; ?>, <?php echo isset($e['message']) ? '1' : '0'; ?>);
+                     <?php endif; ?>"
             class="btn-view"
             title="View Details">
             <i class="fas fa-eye"></i> View
@@ -1077,55 +1433,73 @@ function updateNotifications() {
 let lastUpdateHash = '';
 
 function updateNotificationsDisplay(items, unreadCount) {
-    const notifList = document.querySelector('.notif-list');
-    if (!notifList) return;
-    
-    // Create hash of current data to check if update is needed
-    // Include all relevant fields to detect any changes
-    const currentHash = JSON.stringify(items.map(i => ({
-        id: i.order_id,
-        status: i.status || 'unknown',
-        payment: i.payment_status || null,
-        return: i.return_status || null,
-        read: i.is_read || false,
-        message: i.message || null,
-        updated_at: i.updated_at || null
-    })));
-    
-    // Only update if data actually changed
-    if (currentHash === lastUpdateHash && notifList.children.length > 0) {
-        // Just update header counts, don't rebuild list
+    requestAnimationFrame(() => {
+        const updateStartTime = performance.now();
+        
+        const notifList = document.querySelector('.notif-list');
+        if (!notifList) {
+            return;
+        }
+        
+        // Store current scroll position
+        const scrollTop = notifList.scrollTop || 0;
+        
+        // OPTIMIZED: Create hash more efficiently (only essential fields)
+        const hashData = items.length + '|' + items.map(i => 
+            `${i.order_id || ''}:${i.is_read ? '1' : '0'}:${i.updated_at || ''}`
+        ).join(',');
+        
+        // FIXED: Only skip if hash matches AND we have content already rendered
+        if (hashData === lastUpdateHash && notifList.children.length === items.length) {
+            updateHeaderCounts(items.length, unreadCount);
+            return;
+        }
+        
+        lastUpdateHash = hashData;
+        
+        // Update header counts first (lightweight operation)
         updateHeaderCounts(items.length, unreadCount);
-        return;
-    }
-    
-    lastUpdateHash = currentHash;
-    
-    // Clear existing notifications
-    notifList.innerHTML = '';
-    
-    // Update header counts
-    updateHeaderCounts(items.length, unreadCount);
-
-    // Show/hide clear all button based on notifications
-    const deleteAllForm = document.getElementById('deleteAllForm');
-    if (deleteAllForm) {
-        deleteAllForm.style.display = items.length > 0 ? 'block' : 'none';
-    }
-    
-    if (items.length === 0) {
-        notifList.innerHTML = '<div class="empty-state">No notifications yet.</div>';
-        return;
-    }
-    
-    // Add each notification
-    items.forEach(item => {
-        const notifElement = createNotificationElement(item);
-        notifList.appendChild(notifElement);
+        
+        // OPTIMIZED: Batch style updates
+        if (items.length === 0) {
+            notifList.innerHTML = '<div class="empty-state"><i class="fas fa-bell empty-icon"></i><div>No notifications yet.</div></div>';
+            const deleteAllForm = document.getElementById('deleteAllForm');
+            if (deleteAllForm) deleteAllForm.style.display = 'none';
+            return;
+        }
+        
+        // Show/hide clear all button
+        const deleteAllForm = document.getElementById('deleteAllForm');
+        if (deleteAllForm) {
+            deleteAllForm.style.display = 'block';
+        }
+        
+        // OPTIMIZED: Build all notification items in fragment (off-DOM, single pass)
+        const fragment = document.createDocumentFragment();
+        for (let i = 0; i < items.length; i++) {
+            try {
+                const notifElement = createNotificationElement(items[i]);
+                fragment.appendChild(notifElement);
+            } catch (error) {
+                console.error('[ERROR] Failed to create notification element:', error);
+            }
+        }
+        
+        // Clear and append in one operation
+        notifList.innerHTML = '';
+        notifList.appendChild(fragment);
+        
+        // Restore scroll position
+        notifList.scrollTop = scrollTop;
+        
+        // Update relative times (deferred to avoid blocking)
+        setTimeout(updateRelativeTimes, 50);
+        
+        const totalTime = performance.now() - updateStartTime;
+        if (totalTime > 50) {
+            console.warn('[PERF] updateNotificationsDisplay took', totalTime.toFixed(2), 'ms');
+        }
     });
-    
-    // Update relative times after adding notifications
-    setTimeout(updateRelativeTimes, 100);
 }
 
 function updateHeaderCounts(total, unreadCount) {
@@ -1170,25 +1544,43 @@ function updateHeaderCounts(total, unreadCount) {
 }
 
 function createNotificationElement(item) {
-    const notifContainer = document.createElement('div');
-    notifContainer.className = 'notif-item';
-    notifContainer.style.position = 'relative';
-    
-    // Add unread indicator style
-    if (!item.is_read) {
-        notifContainer.style.borderLeft = '4px solid #130325';
-    }
-    
-    const notifDiv = document.createElement('a');
-    notifDiv.setAttribute('data-order-id', item.order_id);
-    if (item.product_id) {
-        notifDiv.setAttribute('data-product-id', item.product_id);
-    }
-    notifDiv.setAttribute('data-is-custom', item.is_custom_notification ? '1' : '0');
-    
-// Determine correct filter based on status
-// Determine correct filter based on status
-let filterStatus = item.status.toLowerCase();
+    try {
+        const notifContainer = document.createElement('div');
+        notifContainer.className = 'notif-item';
+        
+        // FIXED: Increase max-height and add dynamic height
+        const containerStyles = `
+            position: relative;
+            max-height: 180px !important;
+            min-height: 80px !important;
+            height: auto !important;
+            overflow: hidden !important;
+            display: block !important;
+            flex-shrink: 0 !important;
+            flex-grow: 0 !important;
+            width: 100% !important;
+            contain: layout style !important;
+            transition: max-height 0.2s ease !important;
+        `;
+        notifContainer.style.cssText = containerStyles;
+        
+        // Add unread indicator style
+        if (!item.is_read) {
+            notifContainer.style.borderLeft = '4px solid #130325';
+        }
+        
+        // OPTIMIZED: Use CSS class for hover instead of JS event listeners
+        // Hover is handled by CSS .notif-item:hover { max-height: 300px !important; }
+        
+        const notifDiv = document.createElement('a');
+        notifDiv.setAttribute('data-order-id', item.order_id);
+        if (item.product_id) {
+            notifDiv.setAttribute('data-product-id', item.product_id);
+        }
+        notifDiv.setAttribute('data-is-custom', item.is_custom_notification ? '1' : '0');
+        
+        // Determine URL
+        let filterStatus = item.status.toLowerCase();
 
 // Map order status to dashboard filter
 switch(filterStatus) {
@@ -1219,16 +1611,32 @@ if (item.return_status) {
 }
 
 // Link directly: product > order > default
-const targetUrl = item.product_id 
-    ? `product-detail.php?id=${item.product_id}` 
-    : (item.order_id ? `order-details.php?id=${item.order_id}` : 'customer-notifications.php');
+// For seller reply notifications, add #reviews-tab hash with review_id in query string
+const isSellerReply = item.type === 'seller_reply';
+const reviewId = item.review_id || null;
+const productId = item.product_id || null;
+
+let targetUrl = '';
+if (productId) {
+    targetUrl = `product-detail.php?id=${productId}`;
+    if (reviewId) {
+        targetUrl += `&review_id=${reviewId}`;
+    }
+    if (isSellerReply) {
+        targetUrl += '#reviews-tab';
+    }
+} else if (item.order_id) {
+    targetUrl = `order-details.php?id=${item.order_id}`;
+} else {
+    targetUrl = 'customer-notifications.php';
+}
+
 notifDiv.href = targetUrl;
 notifDiv.style.textDecoration = 'none';
 notifDiv.style.display = 'block';
 
-// Mark as read when clicked
+// Click handler
 notifDiv.addEventListener('click', function(e) {
-    // Don't intercept if clicking the View button (it has its own handler)
     if (e.target.closest('.btn-view')) {
         return;
     }
@@ -1236,30 +1644,37 @@ notifDiv.addEventListener('click', function(e) {
     e.preventDefault();
     const isCustom = item.is_custom_notification || false;
     
-    // Handle product notifications differently
     if (item.product_id) {
-        // Mark standalone notification as read
-        markStandaloneNotificationRead(item.notification_id || 0, item.product_id);
-        // Redirect to product page
+        const isSellerReply = item.type === 'seller_reply';
+        const reviewId = item.review_id || null;
+        
+        sessionStorage.setItem('fromNotification', 'true');
+        
+        let redirectUrl = 'product-detail.php?id=' + item.product_id;
+        if (reviewId) {
+            redirectUrl += '&review_id=' + reviewId;
+        }
+        if (isSellerReply) {
+            redirectUrl += '#reviews-tab';
+        }
+        
+        markStandaloneNotificationRead(item.notification_id || 0, null, '');
+        
         setTimeout(function() { 
-            window.location.href = 'product-detail.php?id=' + item.product_id; 
-        }, 100);
+            window.location.href = redirectUrl;
+        }, 150);
         return;
     }
     
     if (!item.is_read && item.order_id) {
         markNotificationAsRead(item.order_id, isCustom);
-        // Update UI immediately
         updateNotificationItemUI(item.order_id);
-        // Update header badge immediately and after a delay
         setTimeout(updateHeaderBadge, 100);
         setTimeout(updateHeaderBadge, 500);
     } else {
-        // Even if already read, update badge to ensure it's current
         setTimeout(updateHeaderBadge, 100);
     }
     
-    // Add to history for back button functionality
     if (window.history && window.history.pushState) {
         window.history.pushState({ page: 'customer-notifications' }, '', 'customer-notifications.php');
     }
@@ -1344,7 +1759,15 @@ if (!isReviewNotification && item.order_id) {
                 <i class="fas fa-bell"></i>
             </div>
             <div class="notif-body">
-                <div class="notif-title">${titleText}</div>
+                <div class="notif-title" style="
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    display: -webkit-box;
+                    -webkit-line-clamp: 3;
+                    -webkit-box-orient: vertical;
+                    line-height: 1.4;
+                    max-height: 4.2em;
+                ">${titleText}</div>
                 ${detailsContent}
             </div>
             <div class="notif-meta">
@@ -1360,13 +1783,39 @@ if (!isReviewNotification && item.order_id) {
         </div>
     `;
     
+    // Apply anchor styles
+    const anchorStyles = `
+        text-decoration: none !important;
+        display: block !important;
+        background: transparent !important;
+        padding: 14px 16px;
+        border-radius: 12px;
+        max-height: 180px !important;
+        overflow: hidden !important;
+        height: auto !important;
+        position: relative;
+        width: 100%;
+        box-sizing: border-box;
+    `;
+    notifDiv.style.cssText = anchorStyles;
     
     notifDiv.innerHTML = content;
+    
     notifContainer.appendChild(notifDiv);
     
-    // No per-item delete in page list
+    // OPTIMIZED: Removed forced reflow per item - will be done once after all items are appended
     
     return notifContainer;
+    } catch (error) {
+        console.error('[ERROR] createNotificationElement failed:', error, item);
+        // Return a minimal error element
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'notif-item';
+        errorDiv.style.maxHeight = '180px';
+        errorDiv.style.overflow = 'hidden';
+        errorDiv.textContent = 'Error loading notification';
+        return errorDiv;
+    }
 }
 
 function escapeHtml(text) {
@@ -1588,7 +2037,7 @@ function deleteNotificationFromPage(orderId, button, isCustomNotification) {
                     if (remainingNotifs.length === 0) {
                         const notifList = document.querySelector('.notif-list');
                         if (notifList) {
-                            notifList.innerHTML = '<div class="empty-state">No notifications yet.</div>';
+                            notifList.innerHTML = '<div class="empty-state"><i class="fas fa-bell empty-icon"></i><div>No notifications yet.</div></div>';
                         }
                         
                         // Hide clear all button
@@ -1631,15 +2080,28 @@ function deleteNotificationFromPage(orderId, button, isCustomNotification) {
     });
 }
 // Mark standalone notification as read (no order_id)
-function markStandaloneNotificationRead(notificationId, productId = null) {
+function markStandaloneNotificationRead(notificationId, productId = null, hash = '') {
+    const markStartTime = performance.now();
+    console.log('[MARK READ DEBUG] ============================================');
+    console.log('[MARK READ DEBUG] markStandaloneNotificationRead called');
+    console.log('[MARK READ DEBUG] Timestamp:', new Date().toISOString());
+    console.log('[MARK READ DEBUG] Notification ID:', notificationId);
+    console.log('[MARK READ DEBUG] Product ID:', productId);
+    console.log('[MARK READ DEBUG] Hash:', hash);
+    console.log('[MARK READ DEBUG] Will redirect from function:', (productId && hash) ? 'YES' : 'NO');
+    
     // Mark as read via beacon (fire and forget)
     if (navigator.sendBeacon) {
+        const beaconStartTime = performance.now();
         const formData = new FormData();
         formData.append('notification_id', notificationId);
-        navigator.sendBeacon('ajax/mark-notification-read.php', formData);
+        const sent = navigator.sendBeacon('ajax/mark-notification-read.php', formData);
+        const beaconTime = performance.now() - beaconStartTime;
+        console.log('[MARK READ DEBUG] sendBeacon result:', sent, 'Time:', beaconTime.toFixed(2), 'ms');
     }
     
     // Also try fetch for immediate feedback
+    const fetchStartTime = performance.now();
     fetch('ajax/mark-notification-read.php', {
         method: 'POST',
         headers: {
@@ -1650,8 +2112,15 @@ function markStandaloneNotificationRead(notificationId, productId = null) {
         }),
         credentials: 'same-origin'
     })
-    .then(response => response.json())
+    .then(response => {
+        const fetchTime = performance.now() - fetchStartTime;
+        console.log('[MARK READ DEBUG] Fetch response received in', fetchTime.toFixed(2), 'ms');
+        return response.json();
+    })
     .then(result => {
+        const totalMarkTime = performance.now() - markStartTime;
+        console.log('[MARK READ DEBUG] markStandaloneNotificationRead response:', result);
+        console.log('[MARK READ DEBUG] Total mark-as-read time:', totalMarkTime.toFixed(2), 'ms');
         if (result.success) {
             // Update UI immediately
             const notifItem = document.querySelector(`a[data-notification-id="${notificationId}"]`);
@@ -1659,36 +2128,56 @@ function markStandaloneNotificationRead(notificationId, productId = null) {
                 const parentItem = notifItem.closest('.notif-item');
                 if (parentItem) {
                     parentItem.style.borderLeft = 'none';
+                    console.log('[MARK READ DEBUG] Updated UI - removed border-left');
                 }
             }
             // Update header badge
             updateHeaderBadge();
+            console.log('[MARK READ DEBUG] Updated header badge');
+        } else {
+            console.error('[MARK READ DEBUG] Failed to mark notification as read:', result.message);
         }
     })
     .catch(error => {
-        console.error('Error marking notification as read:', error);
+        const errorTime = performance.now() - markStartTime;
+        console.error('[MARK READ DEBUG] Error marking notification as read:', error, 'Time:', errorTime.toFixed(2), 'ms');
     });
     
-    // Redirect to product if productId provided (handled in onclick, but keep for safety)
-    if (productId) {
+    // Only redirect if productId is provided AND hash is provided (to avoid double redirect)
+    // If hash is empty string, caller will handle redirect
+    if (productId && hash) {
+        console.log('[MARK READ DEBUG] Redirecting from function to: product-detail.php?id=' + productId + hash);
         setTimeout(() => {
-            window.location.href = 'product-detail.php?id=' + productId;
-        }, 100);
+            console.log('[MARK READ DEBUG] Executing redirect from markStandaloneNotificationRead');
+            window.location.href = 'product-detail.php?id=' + productId + hash;
+        }, 150);
+    } else {
+        console.log('[MARK READ DEBUG] No redirect from function - caller will handle redirect');
     }
 }
+let updateTimeout;
+
 function startRealTimeUpdates() {
     // Clear any existing interval first
     if (refreshInterval) {
         clearInterval(refreshInterval);
     }
     
-    // Update every 5 seconds (reduced frequency to prevent flicker)
-    refreshInterval = setInterval(updateNotifications, 5000);
+    // Clear any pending timeout
+    if (updateTimeout) {
+        clearTimeout(updateTimeout);
+    }
     
-    // Initial update with delay to let page fully load
-    setTimeout(() => {
-        updateNotifications();
-    }, 1000);
+    // Update every 10 seconds (reduced frequency to prevent lag)
+    refreshInterval = setInterval(() => {
+        clearTimeout(updateTimeout);
+        updateTimeout = setTimeout(() => {
+            updateNotifications();
+        }, 500);
+    }, 10000);
+    
+    // NO initial update - let server-rendered content stay
+    // Only update if user explicitly requests or on visibility change
 }
 
 function stopRealTimeUpdates() {
@@ -1696,12 +2185,19 @@ function stopRealTimeUpdates() {
         clearInterval(refreshInterval);
         refreshInterval = null;
     }
+    if (updateTimeout) {
+        clearTimeout(updateTimeout);
+        updateTimeout = null;
+    }
 }
 
-// Add visibility change handler
+// Add visibility change handler - only update when tab becomes visible
+let isUpdating = false;
 document.addEventListener('visibilitychange', function() {
-    if (!document.hidden) {
+    if (!document.hidden && !isUpdating) {
+        isUpdating = true;
         updateNotifications();
+        setTimeout(() => { isUpdating = false; }, 2000);
     }
 });
 
@@ -1730,31 +2226,176 @@ function updateRelativeTimes() {
     });
 }
 
-// Handle back button - redirect to customer-notifications if coming from order details
+// Handle back button - redirect to customer-notifications if coming from notification click
 window.addEventListener('popstate', function(event) {
+    if (event.state && event.state.fromNotification) {
+        window.location.href = 'customer-notifications.php';
+        return;
+    }
     if (event.state && event.state.page === 'customer-notifications') {
         return;
     }
-    if (window.location.pathname.indexOf('customer-notifications') === -1) {
-        window.location.href = 'customer-notifications.php';
-    }
 });
+
+// Fix server-rendered items IMMEDIATELY (before DOMContentLoaded)
+(function() {
+    'use strict';
+    try {
+        // Inject critical CSS immediately to prevent expansion
+        const style = document.createElement('style');
+        style.textContent = `
+            .notif-list {
+                will-change: contents !important;
+                contain: layout style !important;
+                transition: none !important;
+            }
+            .notif-item {
+                max-height: 180px !important;
+                overflow: hidden !important;
+                height: auto !important;
+                contain: layout style !important;
+                flex-shrink: 0 !important;
+                flex-grow: 0 !important;
+                transition: none !important;
+            }
+            .notif-item a {
+                max-height: 180px !important;
+                overflow: hidden !important;
+                display: block !important;
+            }
+            .notif-item-content {
+                max-height: 160px !important;
+                overflow: hidden !important;
+            }
+            .notif-title {
+                display: -webkit-box !important;
+                -webkit-line-clamp: 3 !important;
+                -webkit-box-orient: vertical !important;
+                overflow: hidden !important;
+                text-overflow: ellipsis !important;
+            }
+        `;
+        document.head.appendChild(style);
+        
+        // Fix items as soon as they exist
+        const fixItems = () => {
+            const notifList = document.querySelector('.notif-list');
+            if (!notifList) {
+                // Retry if not ready yet
+                if (document.readyState === 'loading') {
+                    setTimeout(fixItems, 10);
+                }
+                return;
+            }
+            
+            Array.from(notifList.children).forEach((item, index) => {
+                try {
+                    const itemHeight = item.offsetHeight;
+                    if (itemHeight > 200) {
+                        console.warn(`[FIX] Item ${index} height: ${itemHeight}px - Applying constraints`);
+                        
+                        // Apply constraints immediately
+                        item.style.setProperty('max-height', '180px', 'important');
+                        item.style.setProperty('overflow', 'hidden', 'important');
+                        item.style.setProperty('height', 'auto', 'important');
+                        
+                        const anchor = item.querySelector('a');
+                        if (anchor) {
+                            anchor.style.setProperty('max-height', '180px', 'important');
+                            anchor.style.setProperty('overflow', 'hidden', 'important');
+                        }
+                        
+                        const content = item.querySelector('.notif-item-content');
+                        if (content) {
+                            content.style.setProperty('max-height', '160px', 'important');
+                            content.style.setProperty('overflow', 'hidden', 'important');
+                        }
+                        
+                        const title = item.querySelector('.notif-title');
+                        if (title) {
+                            title.style.setProperty('display', '-webkit-box', 'important');
+                            title.style.setProperty('-webkit-line-clamp', '3', 'important');
+                            title.style.setProperty('-webkit-box-orient', 'vertical', 'important');
+                            title.style.setProperty('overflow', 'hidden', 'important');
+                            title.style.setProperty('text-overflow', 'ellipsis', 'important');
+                        }
+                        
+                        // Force reflow
+                        void item.offsetHeight;
+                        
+                        const newHeight = item.offsetHeight;
+                        if (newHeight > 200) {
+                            console.error(`[ERROR] Item ${index} still too tall: ${newHeight}px`);
+                        }
+                    }
+                } catch (error) {
+                    console.error(`[ERROR] Failed to fix item ${index}:`, error);
+                }
+            });
+        };
+        
+        // Run immediately and on DOM ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', fixItems);
+        } else {
+            fixItems();
+        }
+        
+        // Also run after a short delay to catch any late-rendered items
+        setTimeout(fixItems, 100);
+    } catch (error) {
+        console.error('[ERROR] Failed to initialize item fix:', error);
+    }
+})();
 
 // Start real-time updates when page loads
 document.addEventListener('DOMContentLoaded', function() {
-    // Add initial history state
-    if (window.history && window.history.pushState) {
-        window.history.replaceState({ page: 'customer-notifications' }, '', 'customer-notifications.php');
+    const pageLoadStartTime = performance.now();
+    console.log('[PAGE LOAD] Initializing notifications...');
+    
+    try {
+        // Add initial history state
+        if (window.history && window.history.pushState) {
+            window.history.replaceState({ page: 'customer-notifications' }, '', 'customer-notifications.php');
+        }
+        
+        // Force an immediate update to show all notifications
+        // This ensures AJAX loads all notifications even if server-rendered content exists
+        setTimeout(() => {
+            console.log('[PAGE LOAD] Forcing initial notification fetch...');
+            updateNotifications();
+        }, 500);
+        
+        startRealTimeUpdates();
+        updateRelativeTimes();
+        
+        // Update relative times every minute
+        setInterval(updateRelativeTimes, 60000);
+        
+        // Stop updates when page is unloaded
+        window.addEventListener('beforeunload', stopRealTimeUpdates);
+        
+        const pageLoadTime = performance.now() - pageLoadStartTime;
+        console.log('[PAGE LOAD] Initialization completed in', pageLoadTime.toFixed(2), 'ms');
+    } catch (error) {
+        console.error('[PAGE LOAD] ERROR:', error);
     }
-    
-    startRealTimeUpdates();
-    updateRelativeTimes();
-    
-    // Update relative times every minute
-    setInterval(updateRelativeTimes, 60000);
-    
-    // Stop updates when page is unloaded
-    window.addEventListener('beforeunload', stopRealTimeUpdates);
+});
+
+// Log page reload
+window.addEventListener('load', function() {
+    console.log('[PAGE RELOAD DEBUG] ============================================');
+    console.log('[PAGE RELOAD DEBUG] Window load event fired');
+    console.log('[PAGE RELOAD DEBUG] Timestamp:', new Date().toISOString());
+    console.log('[PAGE RELOAD DEBUG] Current URL:', window.location.href);
+    console.log('[PAGE RELOAD DEBUG] Document ready state:', document.readyState);
+    if (performance.timing) {
+        console.log('[PAGE RELOAD DEBUG] Performance timing:', {
+            domContentLoaded: performance.timing.domContentLoadedEventEnd - performance.timing.domContentLoadedEventStart,
+            loadComplete: performance.timing.loadEventEnd - performance.timing.loadEventStart
+        });
+    }
+    console.log('[PAGE RELOAD DEBUG] ============================================');
 });
 
 </script>

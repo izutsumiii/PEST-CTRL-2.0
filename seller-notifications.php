@@ -7,422 +7,34 @@ require_once 'includes/seller_notification_functions.php';
 requireSeller();
 $userId = $_SESSION['user_id'];
 
-// Get seller info
-$stmt = $pdo->prepare("SELECT username FROM users WHERE id = ?");
-$stmt->execute([$userId]);
-$seller = $stmt->fetch(PDO::FETCH_ASSOC);
-
 // Get all notifications for this seller
-$notifications = getSellerNotifications($userId, 50); // Get more notifications for the full page
+$notifications = getSellerNotifications($userId, 50);
 $unreadCount = getSellerUnreadCount($userId);
 
 // Include seller header
 require_once 'includes/seller_header.php';
 
-?>
-<style>
-  html, body { background:#f8f9fa !important; }
-  main { background:#f8f9fa !important; }
-  main h1 { text-shadow: none !important; }
-  .notif-item { background:#ffffff !important; }
-  .notif-item a { background:#ffffff !important; }
-  .notif-item a:hover { background:#ffffff !important; }
-  .notif-item a:focus { background:#ffffff !important; }
-  .notif-item a:active { background:#ffffff !important; }
-  .notif-item a:visited { background:#ffffff !important; }
-  .notif-list .notif-item { background:#ffffff !important; }
-  .notif-list .notif-item a { background:#ffffff !important; }
-  .notif-list .notif-item a:hover { background:#ffffff !important; }
-  .notif-list .notif-item a:focus { background:#ffffff !important; }
-  .notif-list .notif-item a:active { background:#ffffff !important; }
-  .notif-list .notif-item a:visited { background:#ffffff !important; }
-  
-  
-  /* Add smooth transitions for notification removal */
-  .notif-item {
-    transition: opacity 0.3s ease, transform 0.3s ease;
-  }
-
-  .notif-list {
-    transition: all 0.3s ease;
-  }
-
-  .notification-status-badge {
-    display: inline-block;
-    padding: 4px 10px;
-    border-radius: 4px;
-    font-size: 10px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    white-space: nowrap;
-  }
-
-  .notification-status-order {
-    background: #3b82f6;
-    color: #ffffff;
-  }
-
-  .notification-status-return {
-    background: #dc3545;
-    color: #ffffff;
-  }
-
-  .notification-status-lowstock {
-    background: #f97316;
-    color: #ffffff;
-  }
-
-  .notification-status-processing {
-    background: #10b981;
-    color: #ffffff;
-  }
-
-  
-  /* Confirmation dialog (match logout modal design) */
-  .confirm-dialog {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.5);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 10000;
-  }
-  .confirm-content {
-    background: #ffffff;
-    border-radius: 12px;
-    padding: 0;
-    max-width: 420px;
-    width: 90%;
-    box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-    animation: confirmSlideIn 0.3s ease-out;
-    overflow: hidden;
-  }
-  @keyframes confirmSlideIn { from { opacity:0; transform: translateY(-20px);} to { opacity:1; transform: translateY(0);} }
-  .confirm-header { background:#130325; color:#ffffff; padding:16px 20px; display:flex; align-items:center; gap:10px; }
-  .confirm-header h3 { margin:0; font-size:14px; font-weight:700; }
-  .confirm-body { padding:20px; color:#130325; font-size:13px; line-height:1.5; }
-  .confirm-footer { padding:16px 24px; border-top:1px solid #e5e7eb; display:flex; gap:10px; justify-content:flex-end; }
-  .confirm-btn { padding:8px 20px; border-radius:6px; font-size:14px; font-weight:600; border:none; cursor:pointer; }
-  .confirm-btn-cancel { background:#f3f4f6; color:#130325; border:1px solid #e5e7eb; }
-  .confirm-btn-primary { background:#130325; color:#ffffff; }
-</style>
-
-<main style="background:#f8f9fa; min-height:100vh; padding: 0 0 60px 0;">
-  <div style="max-width: 1400px; margin-left: -150px; margin-right: auto; margin-top: -15px; padding-left: 0; padding-right: 60px;">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
-      <h1 style="color:#130325; margin:0; font-size: 28px; font-weight: 700;">Notifications <span style="background: #FFD736; color: #130325; padding: 4px 12px; border-radius: 20px; font-size: 18px; font-weight: 600; margin-left: 8px;"><?php echo count($notifications); ?> total</span><?php if ($unreadCount > 0): ?><span style="background: #dc3545; color: #ffffff; padding: 4px 12px; border-radius: 20px; font-size: 18px; font-weight: 600; margin-left: 8px;"><?php echo (int)$unreadCount; ?> unread</span><?php endif; ?></h1>
-      <?php if (!empty($notifications)): ?>
-        <button onclick="markAllAsRead()" style="background:#dc3545; color:#ffffff; border:none; padding:8px 16px; border-radius:6px; cursor:pointer; font-weight:600;">
-          Mark All as Read
-        </button>
-      <?php endif; ?>
-    </div>
-
-    <?php if (empty($notifications)): ?>
-      <div style="background:#ffffff; border:1px solid rgba(0,0,0,0.1); color:#130325; border-radius:8px; padding:20px; text-align:center;">No notifications yet.</div>
-    <?php else: ?>
-      <div class="notif-list" style="display:flex; flex-direction:column; gap:12px;">
-        <?php foreach ($notifications as $notification): ?>
-              <div class="notif-item" style="position: relative; cursor:pointer;" 
-                   data-notif-id="<?php echo (int)$notification['id']; ?>"
-                   data-notif-url="<?php echo htmlspecialchars($notification['action_url'] ?: '', ENT_QUOTES); ?>"
-                   data-notif-title="<?php echo htmlspecialchars($notification['title'], ENT_QUOTES); ?>"
-                   data-notif-msg="<?php echo htmlspecialchars($notification['message'], ENT_QUOTES); ?>"
-                   onclick="markAndGoFromData(this)">
-            <div style="display:flex; gap:12px; align-items:center; background:#ffffff; border:1px solid rgba(0,0,0,0.1); padding:14px; border-radius:10px; width:100%;">
-              <span class="notification-status-badge <?php echo getNotificationBadgeClass($notification['title'], $notification['type']); ?>">
-                <?php echo getNotificationBadgeText($notification['title'], $notification['type']); ?>
-              </span>
-              <div style="flex:1;">
-                <div style="color:#130325; font-weight:700;"><?php echo htmlspecialchars($notification['title']); ?></div>
-                <div style="color:#130325; opacity:0.9; font-size:0.9rem;">
-                  <?php echo htmlspecialchars($notification['message']); ?>
-                </div>
-              </div>
-              <div style="display:flex; align-items:center; gap:12px;">
-                <div style="color:#6b7280; font-size:0.8rem; white-space:nowrap;">
-                  <?php echo htmlspecialchars(date('M d, h:i A', strtotime($notification['created_at']))); ?>
-                </div>
-                <button 
-                  onclick="event.stopPropagation(); event.preventDefault(); markAndGoFromData(this.closest('.notif-item'))" 
-                  style="background: transparent; color: #130325; border: 1px solid rgba(19, 3, 37, 0.2); border-radius: 8px; padding: 8px 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.3s ease; width: 36px; height: 36px;"
-                  onmouseover="this.style.backgroundColor='rgba(19, 3, 37, 0.05)'; this.style.borderColor='rgba(19, 3, 37, 0.3)'; this.style.transform='translateY(-2px)';"
-                  onmouseout="this.style.backgroundColor='transparent'; this.style.borderColor='rgba(19, 3, 37, 0.2)'; this.style.transform='translateY(0)';"
-                  title="View Details">
-                  <i class="fas fa-eye" style="color: #130325; font-size: 14px;"></i>
-                </button>
-              </div>
-            </div>
-          </div>
-        <?php endforeach; ?>
-      </div>
-    <?php endif; ?>
-  </div>
-</main>
-
-<script>
-// Wrapper function to read data from HTML data attributes
-function markAndGoFromData(element) {
-  const notificationId = parseInt(element.getAttribute('data-notif-id'));
-  const actionUrl = element.getAttribute('data-notif-url') || null;
-  const title = element.getAttribute('data-notif-title') || '';
-  const message = element.getAttribute('data-notif-msg') || '';
-  
-  markAndGo(notificationId, actionUrl, title, message);
+// Helper function for status badge
+function statusBadge($status) {
+    $status = strtolower((string)$status);
+    $map = [
+        'pending' => ['Pending', '#ffc107', '#130325'],
+        'processing' => ['Processing', '#0dcaf0', '#130325'],
+        'shipped' => ['Shipped', '#17a2b8', '#ffffff'],
+        'delivered' => ['Delivered', '#28a745', '#ffffff'],
+        'cancelled' => ['Cancelled', '#dc3545', '#ffffff'],
+        'refunded' => ['Refunded', '#6c757d', '#ffffff'],
+        'completed' => ['Completed', '#28a745', '#ffffff'],
+        'failed' => ['Failed', '#dc3545', '#ffffff'],
+    ];
+    $label = ucfirst($status);
+    $bg = '#6c757d';
+    $fg = '#ffffff';
+    if (isset($map[$status])) { [$label,$bg,$fg] = $map[$status]; }
+    return '<span class="status-badge" style="background:'.$bg.';color:'.$fg.';padding:2px 6px;border-radius:6px;font-weight:500;font-size:11px;opacity:0.9;">'.$label.'</span>';
 }
 
-function markAndGo(notificationId, actionUrl, title, message){
-  // Mark notification as read
-  try {
-    navigator.sendBeacon('ajax/mark-seller-notification-read.php', new Blob([JSON.stringify({ notification_id: notificationId })], { type:'application/json' }));
-  } catch(e){
-    fetch('ajax/mark-seller-notification-read.php', { 
-      method:'POST', 
-      headers:{'Content-Type':'application/json'}, 
-      body: JSON.stringify({ notification_id: notificationId }), 
-      credentials:'same-origin', 
-      keepalive:true 
-    }).catch(() => {});
-  }
-  
-  const text = (title||'') + ' ' + (message||'');
-  let orderId = null;
-  let returnId = null;
-  let productId = null;
-  
-  // Extract product ID from action URL (for product review notifications)
-  if (actionUrl) {
-    const urlProductMatch = actionUrl.match(/[?&]product_id=(\d+)/i);
-    if (urlProductMatch && urlProductMatch[1]) {
-      productId = urlProductMatch[1];
-    }
-  }
-  
-  // Extract order ID
-  const orderMatch = text.match(/(?:Order\s*#?0*|order_id[=:])\s*(\d{1,10})/i);
-  if (orderMatch && orderMatch[1]) {
-    orderId = orderMatch[1];
-  }
-  
-  // Extract return ID
-  const returnMatch = text.match(/(?:return_id[=:]|return\s*request\s*#?)\s*(\d{1,10})/i);
-  if (returnMatch && returnMatch[1]) {
-    returnId = returnMatch[1];
-  }
-  
-  // Check action URL for order_id or return_id parameters
-  if (actionUrl) {
-    const urlOrderMatch = actionUrl.match(/[?&]order_id=(\d+)/i);
-    if (urlOrderMatch && urlOrderMatch[1]) {
-      orderId = urlOrderMatch[1];
-    }
-    const urlReturnMatch = actionUrl.match(/[?&]return_id=(\d+)/i);
-    if (urlReturnMatch && urlReturnMatch[1]) {
-      returnId = urlReturnMatch[1];
-    }
-  }
-  
-  // Determine redirect URL based on priority
-  let href = null;
-  
-  // Priority 0: Product reviews
-  if (productId) {
-    href = 'view-products.php?product_id=' + productId;
-  }
-  // Priority 1: Return requests
-  else if (returnId || (text.toLowerCase().includes('return request') && orderId)) {
-    if (returnId) {
-      href = 'seller-returns.php?return_id=' + returnId;
-    } else if (orderId) {
-      const actionReturnMatch = actionUrl ? actionUrl.match(/[?&]return_id=(\d+)/i) : null;
-      href = actionReturnMatch ? 'seller-returns.php?return_id=' + actionReturnMatch[1] : 'seller-returns.php?order_id=' + orderId;
-    }
-  }
-  // Priority 2: Orders
-  else if (orderId) {
-    href = 'seller-order-details.php?order_id=' + orderId;
-  }
-  // Priority 3: Use action URL
-  else if (actionUrl && actionUrl !== '' && actionUrl !== 'null' && actionUrl !== 'undefined') {
-    href = actionUrl;
-    // Override view-orders.php to order details if possible
-    if (/view-orders\.php/i.test(href) && orderId) {
-      href = 'seller-order-details.php?order_id=' + orderId;
-    }
-  }
-  // Priority 4: Fallback
-  else {
-    if (/low stock/i.test(text)) {
-      href = 'manage-products.php';
-    } else if (orderId) {
-      href = 'seller-order-details.php?order_id=' + orderId;
-    } else {
-      href = 'view-orders.php';
-    }
-  }
-  
-  // Redirect
-  if (href) {
-    setTimeout(() => { window.location.href = href; }, 120);
-  } else {
-    console.error('Could not determine redirect URL for notification:', notificationId);
-    alert('Error: Could not determine where to redirect. Please refresh and try again.');
-  }
-}
-// Custom styled confirmation dialog function
-function openConfirm(message, onConfirm) {
-    const dialog = document.createElement('div');
-    dialog.className = 'confirm-dialog';
-    dialog.innerHTML = `
-      <div class="confirm-content">
-        <div class="confirm-header">
-          <i class="fas fa-bell" style="font-size:16px; color:#FFD736;"></i>
-          <h3>Confirm Action</h3>
-        </div>
-        <div class="confirm-body">${message}</div>
-        <div class="confirm-footer">
-          <button class="confirm-btn confirm-btn-cancel">Cancel</button>
-          <button class="confirm-btn confirm-btn-primary">Confirm</button>
-        </div>
-      </div>`;
-    document.body.appendChild(dialog);
-    const onClose = () => { if (dialog && dialog.parentNode) dialog.parentNode.removeChild(dialog); };
-    dialog.addEventListener('click', (e)=>{ if (e.target === dialog) onClose(); });
-    const esc = (e)=>{ if (e.key === 'Escape') { onClose(); document.removeEventListener('keydown', esc); } };
-    document.addEventListener('keydown', esc);
-    dialog.querySelector('.confirm-btn-cancel').addEventListener('click', onClose);
-    dialog.querySelector('.confirm-btn-primary').addEventListener('click', ()=>{ onClose(); if (onConfirm) onConfirm(); });
-}
-
-function deleteSellerNotification(notificationId, buttonElement) {
-    openConfirm('Are you sure you want to delete this notification? This action cannot be undone.', function() {
-        // Hide the notification item immediately with animation
-        const notifItem = buttonElement.closest('.notif-item');
-        if (notifItem) {
-            notifItem.style.opacity = '0';
-            notifItem.style.transform = 'translateX(-20px)';
-            setTimeout(() => {
-                notifItem.style.display = 'none';
-            }, 300);
-        }
-        
-        // Call API to delete
-        fetch('ajax/delete-seller-notification.php', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ notification_id: notificationId })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                // Remove the item from DOM
-                if (notifItem) {
-                    notifItem.remove();
-                }
-                // Update the count in the header
-                const header = document.querySelector('h1');
-                if (header) {
-                    const notifList = document.querySelector('.notif-list');
-                    const remainingCount = notifList ? notifList.querySelectorAll('.notif-item').length : 0;
-                    header.textContent = `Seller Notifications (${remainingCount} total)`;
-                }
-            } else {
-                // If deletion failed, show the item again
-                if (notifItem) {
-                    notifItem.style.opacity = '1';
-                    notifItem.style.transform = 'translateX(0)';
-                    notifItem.style.display = 'block';
-                }
-                alert('Failed to delete notification: ' + (data.message || 'Unknown error'));
-            }
-        })
-        .catch(error => {
-            console.error('Error deleting notification:', error);
-            // If deletion failed, show the item again
-            if (notifItem) {
-                notifItem.style.opacity = '1';
-                notifItem.style.transform = 'translateX(0)';
-                notifItem.style.display = 'block';
-            }
-            alert('Error deleting notification. Please try again.');
-        });
-    });
-}
-
-function markAsRead(notificationId) {
-    fetch('ajax/mark-seller-notification-read.php', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ notification_id: notificationId })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            // Reload page to update the display
-            location.reload();
-        }
-    })
-    .catch(error => {
-        console.error('Error marking notification as read:', error);
-    });
-}
-
-function markAllAsRead() {
-    openConfirm('Are you sure you want to mark all notifications as read?', function() {
-        fetch('ajax/mark-all-seller-notifications-read.php', {
-            method: 'POST'
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                // Reload page to update the display
-                location.reload();
-            }
-        })
-        .catch(error => {
-            console.error('Error marking all notifications as read:', error);
-        });
-    });
-}
-
-function getNotificationIcon(type) {
-    switch(type) {
-        case 'warning': return 'exclamation-triangle';
-        case 'success': return 'check-circle';
-        case 'error': return 'times-circle';
-        default: return 'info-circle';
-    }
-}
-
-function getNotificationColor(type) {
-    switch(type) {
-        case 'warning': return 'text-yellow-400';
-        case 'success': return 'text-green-400';
-        case 'error': return 'text-red-400';
-        default: return 'text-blue-400';
-    }
-}
-
-function formatTime(timestamp) {
-    const date = new Date(timestamp);
-    const now = new Date();
-    const diff = now - date;
-    
-    if (diff < 60000) return 'Just now';
-    if (diff < 3600000) return Math.floor(diff / 60000) + 'm ago';
-    if (diff < 86400000) return Math.floor(diff / 3600000) + 'h ago';
-    return Math.floor(diff / 86400000) + 'd ago';
-}
-</script>
-
-<?php
-// Helper functions
+// Helper function for notification badge class
 function getNotificationBadgeClass($title, $type) {
     $titleLower = strtolower($title);
     
@@ -439,9 +51,10 @@ function getNotificationBadgeClass($title, $type) {
         return 'notification-status-processing';
     }
     
-    return 'notification-status-order'; // Default fallback
+    return 'notification-status-order';
 }
 
+// Helper function for notification badge text
 function getNotificationBadgeText($title, $type) {
     $titleLower = strtolower($title);
     
@@ -458,41 +71,812 @@ function getNotificationBadgeText($title, $type) {
         return 'Processing';
     }
     
-    return 'Order'; // Default fallback
-}
-
-function getNotificationIcon($type) {
-    switch($type) {
-        case 'warning': return 'exclamation-triangle';
-        case 'success': return 'check-circle';
-        case 'error': return 'times-circle';
-        default: return 'info-circle';
-    }
-}
-
-function getNotificationColor($type) {
-    switch($type) {
-        case 'warning': return 'text-yellow-400';
-        case 'success': return 'text-green-400';
-        case 'error': return 'text-red-400';
-        default: return 'text-blue-400';
-    }
-}
-
-function formatTime($timestamp) {
-    $date = new DateTime($timestamp);
-    $now = new DateTime();
-    $diff = $now->diff($date);
-    
-    if ($diff->days > 0) {
-        return $diff->days . 'd ago';
-    } elseif ($diff->h > 0) {
-        return $diff->h . 'h ago';
-    } elseif ($diff->i > 0) {
-        return $diff->i . 'm ago';
-    } else {
-        return 'Just now';
-    }
+    return 'Order';
 }
 ?>
+<style>
+:root {
+    --primary-dark: #130325;
+    --accent-yellow: #FFD736;
+    --text-dark: #1a1a1a;
+    --text-light: #6b7280;
+    --border-light: #e5e7eb;
+    --bg-light: #f9fafb;
+    --bg-white: #ffffff;
+    --success-green: #10b981;
+    --error-red: #ef4444;
+}
 
+body { 
+    background: var(--bg-light) !important; 
+    color: var(--text-dark); 
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+.notifications-container {
+    max-width: 1400px;
+    margin: 0;
+    padding: 12px 20px;
+    margin-left: -220px;
+    transition: margin-left 0.3s ease;
+}
+
+.sidebar.collapsed ~ main .notifications-container {
+    margin-left: 80px;
+}
+
+h1 {
+    color: var(--text-dark);
+    margin: 0 0 12px 0;
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+}
+
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 12px 16px;
+    background: var(--bg-white);
+    border-bottom: 1px solid var(--border-light);
+    position: relative;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+
+.page-header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.back-arrow {
+    color: var(--bg-white);
+    text-decoration: none;
+    font-size: 16px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    padding: 6px 8px;
+    border-radius: 8px;
+    width: 32px;
+    height: 32px;
+    background: var(--primary-dark);
+    border: 1px solid var(--primary-dark);
+}
+
+.back-arrow:hover {
+    color: var(--bg-white);
+    background: #0a0118;
+    border-color: #0a0118;
+    transform: translateX(-2px);
+    box-shadow: 0 2px 6px rgba(19, 3, 37, 0.3);
+}
+
+.back-arrow i {
+    margin: 0;
+}
+
+.page-header-title {
+    color: var(--text-dark);
+    font-size: 1.35rem;
+    font-weight: 600;
+    margin: 0;
+    letter-spacing: -0.3px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.badge {
+    padding: 3px 8px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    display: inline-block;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+}
+
+.badge-total {
+    background: rgba(19, 3, 37, 0.1);
+    color: var(--text-dark);
+    border: 1px solid rgba(19, 3, 37, 0.2);
+    margin-left: 6px;
+}
+
+.badge-unread {
+    background: var(--error-red);
+    color: #ffffff;
+    margin-left: 6px;
+    animation: pulse 2s ease-in-out infinite;
+    border: 1px solid var(--error-red);
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.8;
+    }
+}
+
+.btn-clear-all {
+    background: var(--error-red);
+    color: #ffffff;
+    border: none;
+    padding: 8px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    transition: all 0.2s ease;
+}
+
+.btn-clear-all:hover {
+    background: #dc2626;
+    transform: translateY(-1px);
+}
+
+.notif-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.notif-item {
+    background: var(--bg-white) !important;
+    border: 1px solid var(--border-light);
+    border-radius: 12px;
+    transition: all 0.2s ease;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.notif-item:hover {
+    border-color: var(--primary-dark);
+    box-shadow: 0 4px 12px rgba(19, 3, 37, 0.15), 0 0 0 1px rgba(19, 3, 37, 0.1);
+    transform: translateY(-1px);
+}
+
+.notif-item[style*="border-left"] {
+    border-left: 4px solid var(--primary-dark) !important;
+    background: linear-gradient(90deg, #f8f7fa 0%, var(--bg-white) 100%) !important;
+    box-shadow: 0 2px 8px rgba(19, 3, 37, 0.1);
+}
+
+.notif-item a {
+    text-decoration: none;
+    display: block;
+    background: transparent !important;
+    padding: 12px 14px;
+    border-radius: 12px;
+}
+
+.notif-item-content {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+}
+
+.notif-icon {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, rgba(19, 3, 37, 0.1) 0%, rgba(19, 3, 37, 0.05) 100%);
+    color: var(--primary-dark);
+    border-radius: 10px;
+    flex-shrink: 0;
+    font-size: 16px;
+    border: 1px solid rgba(19, 3, 37, 0.2);
+    position: relative;
+    box-shadow: 0 1px 3px rgba(19, 3, 37, 0.1);
+}
+
+.notif-item[style*="border-left"] .notif-icon {
+    background: linear-gradient(135deg, rgba(19, 3, 37, 0.15) 0%, rgba(19, 3, 37, 0.1) 100%);
+    border-color: rgba(19, 3, 37, 0.3);
+    box-shadow: 0 2px 6px rgba(19, 3, 37, 0.15);
+}
+
+.notif-item[style*="border-left"] .notif-icon::after {
+    content: '';
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    width: 10px;
+    height: 10px;
+    background: var(--error-red);
+    border-radius: 50%;
+    border: 2px solid var(--bg-white);
+    box-shadow: 0 0 6px rgba(239, 68, 68, 0.5);
+    animation: pulse 2s ease-in-out infinite;
+}
+
+.notif-body {
+    flex: 1;
+    min-width: 0;
+    padding-right: 8px;
+}
+
+.notif-title {
+    color: var(--text-dark);
+    font-weight: 600;
+    font-size: 13px;
+    margin-bottom: 5px;
+    line-height: 1.4;
+}
+
+.notif-details {
+    color: var(--text-light);
+    font-size: 11px;
+    line-height: 1.5;
+    margin-top: 4px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+}
+
+.notif-details .status-badge {
+    margin: 0;
+    vertical-align: middle;
+    display: inline-block;
+}
+
+.notif-meta {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 6px;
+    flex-shrink: 0;
+    min-width: 90px;
+}
+
+.notif-time {
+    color: var(--text-light);
+    font-size: 10px;
+    white-space: nowrap;
+}
+
+.btn-view {
+    background: var(--bg-light);
+    color: var(--text-dark);
+    border: 1px solid var(--border-light);
+    border-radius: 8px;
+    padding: 6px 10px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    transition: all 0.2s ease;
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.btn-view:hover {
+    background: var(--primary-dark);
+    border-color: var(--primary-dark);
+    color: var(--bg-white);
+    transform: translateY(-1px);
+}
+
+.btn-view i {
+    font-size: 12px;
+}
+
+.empty-state {
+    background: var(--bg-white);
+    border: 1px solid var(--border-light);
+    color: var(--text-light);
+    border-radius: 12px;
+    padding: 40px 20px;
+    text-align: center;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    border-top: 3px solid rgba(19, 3, 37, 0.2);
+}
+
+.empty-state::before {
+    content: "🔔";
+    font-size: 48px;
+    display: block;
+    margin-bottom: 16px;
+    opacity: 0.5;
+}
+
+.alert {
+    padding: 10px 14px;
+    border-radius: 8px;
+    margin-bottom: 14px;
+    border-left: 4px solid;
+    font-size: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.alert-success {
+    background-color: #d1fae5;
+    border-left-color: var(--success-green);
+    border: 1px solid #a7f3d0;
+    color: #065f46;
+}
+
+.alert-error {
+    background-color: #fef2f2;
+    border-left-color: var(--error-red);
+    border: 1px solid #fecaca;
+    color: #991b1b;
+}
+
+/* Notification animations */
+@keyframes slideInNotification {
+    from {
+        opacity: 0;
+        transform: translateX(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.notif-item.new-notification {
+    animation: slideInNotification 0.3s ease-out;
+}
+
+@keyframes subtlePulse {
+    0%, 100% {
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+    50% {
+        box-shadow: 0 2px 12px rgba(19, 3, 37, 0.2);
+    }
+}
+
+.notif-item[style*="border-left"] {
+    animation: subtlePulse 2s ease-in-out infinite;
+}
+
+/* Confirmation dialog */
+.confirm-dialog {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    backdrop-filter: blur(5px);
+}
+
+.confirm-content {
+    background: var(--bg-white);
+    border-radius: 12px;
+    padding: 18px 20px;
+    max-width: 400px;
+    width: 90%;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(19, 3, 37, 0.1);
+    text-align: center;
+    animation: confirmSlideIn 0.3s ease-out;
+    border-top: 3px solid var(--primary-dark);
+}
+
+@keyframes confirmSlideIn {
+    from {
+        opacity: 0;
+        transform: scale(0.8) translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+.confirm-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-dark);
+    margin-bottom: 10px;
+}
+
+.confirm-message {
+    font-size: 12px;
+    color: var(--text-light);
+    margin-bottom: 16px;
+    line-height: 1.5;
+}
+
+.confirm-buttons {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
+
+.confirm-btn {
+    padding: 8px 14px;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-width: 70px;
+}
+
+.confirm-btn-yes {
+    background: var(--error-red);
+    color: white;
+}
+
+.confirm-btn-yes:hover {
+    background: #dc2626;
+    transform: translateY(-1px);
+}
+
+.confirm-btn-no {
+    background: var(--text-light);
+    color: white;
+}
+
+.confirm-btn-no:hover {
+    background: #4b5563;
+    transform: translateY(-1px);
+}
+
+/* Responsive */
+@media (max-width: 968px) {
+    .notifications-container {
+        padding: 10px 12px;
+        max-width: 100%;
+        margin-left: 0 !important;
+    }
+    
+    h1 {
+        font-size: 1.35rem;
+        margin-bottom: 12px;
+    }
+    
+    .page-header {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 10px 12px;
+        padding-bottom: 10px;
+        gap: 8px;
+    }
+    
+    .page-header-left {
+        width: 100%;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+    
+    .back-arrow {
+        width: 28px;
+        height: 28px;
+        font-size: 14px;
+    }
+    
+    .page-header-title {
+        font-size: 1.2rem;
+        font-weight: 600;
+    }
+    
+    .btn-clear-all {
+        width: 100%;
+        justify-content: center;
+        margin-top: 4px;
+    }
+    
+    .notif-item-content {
+        gap: 8px;
+    }
+    
+    .notif-icon {
+        width: 36px;
+        height: 36px;
+        font-size: 14px;
+    }
+    
+    .notif-item a {
+        padding: 10px 12px;
+    }
+    
+    .notif-body {
+        padding-right: 0;
+    }
+    
+    .notif-title {
+        font-size: 12px;
+    }
+    
+    .notif-details {
+        font-size: 10px;
+        gap: 4px;
+    }
+    
+    .notif-meta {
+        min-width: auto;
+        align-items: flex-end;
+        gap: 4px;
+    }
+    
+    .notif-time {
+        font-size: 9px;
+    }
+    
+    .btn-view {
+        padding: 5px 8px;
+        font-size: 10px;
+    }
+    
+    .badge {
+        font-size: 10px;
+        padding: 2px 6px;
+    }
+}
+</style>
+<main style="background: var(--bg-light); min-height: 100vh; padding: 0;">
+  <div class="notifications-container">
+    <div class="page-header">
+      <div class="page-header-left">
+        <a href="seller-dashboard.php" class="back-arrow" title="Back to Dashboard">
+          <i class="fas fa-arrow-left"></i>
+        </a>
+        <div class="page-header-title">
+          Notifications
+        </div>
+        <span class="badge badge-total"><?php echo count($notifications); ?> total</span>
+        <?php if ($unreadCount > 0): ?>
+          <span class="badge badge-unread"><?php echo (int)$unreadCount; ?> unread</span>
+        <?php endif; ?>
+      </div>
+      <?php if (!empty($notifications)): ?>
+        <button type="button" onclick="markAllAsRead()" class="btn-clear-all">
+          <i class="fas fa-check-double"></i> Mark All as Read
+        </button>
+      <?php endif; ?>
+    </div>
+
+    <?php if (empty($notifications)): ?>
+      <div class="empty-state">No notifications yet.</div>
+    <?php else: ?>
+      <div class="notif-list">
+        <?php foreach ($notifications as $notification): ?>
+          <div class="notif-item" <?php if (!$notification['is_read']): ?>style="border-left: 4px solid var(--primary-dark);"<?php endif; ?>>
+            <a href="#" onclick="handleViewNotification(<?php echo (int)$notification['id']; ?>, '<?php echo htmlspecialchars($notification['action_url'] ?: '', ENT_QUOTES); ?>'); return false;" data-notif-id="<?php echo (int)$notification['id']; ?>" data-notif-url="<?php echo htmlspecialchars($notification['action_url'] ?: '', ENT_QUOTES); ?>">
+              <div class="notif-item-content">
+                <div class="notif-icon">
+                  <i class="fas fa-bell"></i>
+                </div>
+                <div class="notif-body">
+                  <div class="notif-title">
+                    <?php echo htmlspecialchars($notification['title']); ?>
+                  </div>
+                  <div class="notif-details">
+                    <span><?php echo htmlspecialchars($notification['message']); ?></span>
+                  </div>
+                </div>
+                <div class="notif-meta">
+                  <span class="notif-time" data-timestamp="<?php echo strtotime($notification['created_at']); ?>"><?php echo htmlspecialchars(date('M d, Y h:i A', strtotime($notification['created_at']))); ?></span>
+                  <button 
+                    type="button"
+                    onclick="event.stopPropagation(); event.preventDefault(); handleViewNotification(<?php echo (int)$notification['id']; ?>, '<?php echo htmlspecialchars($notification['action_url'] ?: '', ENT_QUOTES); ?>');"
+                    class="btn-view"
+                    title="View Details">
+                    <i class="fas fa-eye"></i> View
+                  </button>
+                </div>
+              </div>
+            </a>
+          </div>
+        <?php endforeach; ?>
+      </div>
+    <?php endif; ?>
+  </div>
+</main>
+
+<script>
+// Custom styled confirmation dialog function
+function openConfirm(message, onConfirm) {
+    const dialog = document.createElement('div');
+    dialog.className = 'confirm-dialog';
+    dialog.innerHTML = `
+        <div class="confirm-content">
+            <div class="confirm-title">Confirm Action</div>
+            <div class="confirm-message">${message}</div>
+            <div class="confirm-buttons">
+                <button class="confirm-btn confirm-btn-yes">Yes</button>
+                <button class="confirm-btn confirm-btn-no">No</button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(dialog);
+    
+    const yesBtn = dialog.querySelector('.confirm-btn-yes');
+    const noBtn = dialog.querySelector('.confirm-btn-no');
+    
+    yesBtn.addEventListener('click', () => {
+        document.body.removeChild(dialog);
+        if (onConfirm) onConfirm();
+    });
+    
+    noBtn.addEventListener('click', () => {
+        document.body.removeChild(dialog);
+    });
+    
+    const handleEscape = (e) => {
+        if (e.key === 'Escape') {
+            document.body.removeChild(dialog);
+            document.removeEventListener('keydown', handleEscape);
+        }
+    };
+    document.addEventListener('keydown', handleEscape);
+    
+    dialog.addEventListener('click', (e) => {
+        if (e.target === dialog) {
+            document.body.removeChild(dialog);
+            document.removeEventListener('keydown', handleEscape);
+        }
+    });
+}
+
+function markAllAsRead() {
+    openConfirm('Are you sure you want to mark all notifications as read?', function() {
+        fetch('ajax/mark-all-seller-notifications-read.php', {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            }
+        })
+        .catch(error => {
+            console.error('Error marking all notifications as read:', error);
+        });
+    });
+}
+
+// Function to handle View button click - marks as read and navigates
+function handleViewNotification(notificationId, actionUrl) {
+    // Update UI immediately for better UX
+    updateNotificationItemUI(notificationId);
+    
+    // Mark as read - use sendBeacon for reliability when navigating
+    const data = JSON.stringify({
+        notification_id: notificationId
+    });
+    
+    // Use sendBeacon for reliability when navigating away
+    if (navigator.sendBeacon) {
+        const formData = new FormData();
+        formData.append('notification_id', notificationId);
+        navigator.sendBeacon('ajax/mark-seller-notification-read.php', formData);
+    }
+    
+    // Also use fetch for immediate badge update (if page doesn't navigate)
+    fetch('ajax/mark-seller-notification-read.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: data,
+        credentials: 'same-origin'
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            // Update header badge if function exists
+            if (typeof updateSellerNotificationBadge === 'function') {
+                fetch('ajax/get-seller-notifications.php', { credentials: 'same-origin' })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            updateSellerNotificationBadge(data.unreadCount);
+                        }
+                    });
+            }
+        }
+    })
+    .catch(error => {
+        console.error('Error marking notification as read:', error);
+    });
+    
+    // Navigate after a short delay to ensure the mark request is sent
+    setTimeout(function() {
+        if (actionUrl && actionUrl !== '' && actionUrl !== 'null' && actionUrl !== 'undefined') {
+            window.location.href = actionUrl;
+        } else {
+            // Extract order ID or return ID from notification title/message if possible
+            const notifItem = document.querySelector(`[data-notif-id="${notificationId}"]`);
+            if (notifItem) {
+                const title = notifItem.closest('.notif-item').querySelector('.notif-title').textContent;
+                const message = notifItem.closest('.notif-item').querySelector('.notif-details span').textContent;
+                const text = title + ' ' + message;
+                
+                // Try to extract order ID
+                const orderMatch = text.match(/(?:Order\s*#?0*|order_id[=:])\s*(\d{1,10})/i);
+                if (orderMatch && orderMatch[1]) {
+                    window.location.href = 'seller-order-details.php?order_id=' + orderMatch[1];
+                    return;
+                }
+                
+                // Try to extract return ID
+                const returnMatch = text.match(/(?:return_id[=:]|return\s*request\s*#?)\s*(\d{1,10})/i);
+                if (returnMatch && returnMatch[1]) {
+                    window.location.href = 'seller-returns.php?return_id=' + returnMatch[1];
+                    return;
+                }
+            }
+            
+            // Default fallback
+            window.location.href = 'view-orders.php';
+        }
+    }, 150);
+}
+
+// Function to update notification item UI (remove unread styling)
+function updateNotificationItemUI(notificationId) {
+    // Find the notification item
+    const notifLink = document.querySelector(`[data-notif-id="${notificationId}"]`);
+    if (notifLink) {
+        const notifItem = notifLink.closest('.notif-item');
+        if (notifItem) {
+            // Remove unread styling
+            notifItem.style.borderLeft = 'none';
+            notifItem.style.background = 'var(--bg-white)';
+        }
+    }
+}
+
+// Format relative time (like "2 hours ago")
+function formatRelativeTime(timestamp) {
+    const now = Math.floor(Date.now() / 1000);
+    const diff = now - timestamp;
+    
+    if (diff < 60) return 'Just now';
+    if (diff < 3600) return Math.floor(diff / 60) + ' min ago';
+    if (diff < 86400) return Math.floor(diff / 3600) + ' hour' + (Math.floor(diff / 3600) > 1 ? 's' : '') + ' ago';
+    if (diff < 604800) return Math.floor(diff / 86400) + ' day' + (Math.floor(diff / 86400) > 1 ? 's' : '') + ' ago';
+    
+    // For older dates, show actual date
+    const date = new Date(timestamp * 1000);
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: date.getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined });
+}
+
+// Update relative times on page load and periodically
+function updateRelativeTimes() {
+    document.querySelectorAll('.notif-time[data-timestamp]').forEach(el => {
+        const timestamp = parseInt(el.getAttribute('data-timestamp'));
+        if (timestamp) {
+            el.textContent = formatRelativeTime(timestamp);
+        }
+    });
+}
+
+// Update relative times on page load
+document.addEventListener('DOMContentLoaded', function() {
+    updateRelativeTimes();
+    
+    // Update relative times every minute
+    setInterval(updateRelativeTimes, 60000);
+});
+</script>

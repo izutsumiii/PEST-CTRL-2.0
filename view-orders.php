@@ -277,11 +277,59 @@ function sendOrderStatusUpdateEmail($customerEmail, $customerName, $orderId, $ne
 }
 
 
+// Pagination setup
+$page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
+$limit = 20;
+$offset = ($page - 1) * $limit;
+
+// Get total count of unique orders for this seller
+$countStmt = $pdo->prepare("
+    SELECT COUNT(DISTINCT o.id) as total 
+    FROM orders o 
+    LEFT JOIN order_items oi ON o.id = oi.order_id 
+    LEFT JOIN products p ON oi.product_id = p.id 
+    WHERE (o.seller_id = ? OR p.seller_id = ?)
+");
+$countStmt->execute([$userId, $userId]);
+$totalOrders = $countStmt->fetch(PDO::FETCH_ASSOC)['total'];
+$totalPages = ceil($totalOrders / $limit);
+
 // CRITICAL FIX: Check BOTH o.seller_id (new multi-seller orders) AND p.seller_id (legacy compatibility)
-// This ensures orders created with proper seller_id in orders table are shown
-$stmt = $pdo->prepare("SELECT o.*, oi.quantity, oi.price as item_price, p.name as product_name, p.id as product_id, COALESCE(u.username, 'Guest Customer') as customer_name FROM orders o JOIN order_items oi ON o.id = oi.order_id JOIN products p ON oi.product_id = p.id LEFT JOIN users u ON o.user_id = u.id WHERE (o.seller_id = ? OR p.seller_id = ?) ORDER BY o.created_at DESC");
-$stmt->execute([$userId, $userId]);
-$orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
+// Get unique order IDs first with pagination
+$orderIdsStmt = $pdo->prepare("
+    SELECT DISTINCT o.id 
+    FROM orders o 
+    LEFT JOIN order_items oi ON o.id = oi.order_id 
+    LEFT JOIN products p ON oi.product_id = p.id 
+    WHERE (o.seller_id = ? OR p.seller_id = ?) 
+    ORDER BY o.created_at DESC 
+    LIMIT ? OFFSET ?
+");
+$orderIdsStmt->bindValue(1, $userId, PDO::PARAM_INT);
+$orderIdsStmt->bindValue(2, $userId, PDO::PARAM_INT);
+$orderIdsStmt->bindValue(3, $limit, PDO::PARAM_INT);
+$orderIdsStmt->bindValue(4, $offset, PDO::PARAM_INT);
+$orderIdsStmt->execute();
+$orderIds = $orderIdsStmt->fetchAll(PDO::FETCH_COLUMN);
+
+// Get full order details for the paginated order IDs
+if (!empty($orderIds)) {
+    $placeholders = str_repeat('?,', count($orderIds) - 1) . '?';
+    $stmt = $pdo->prepare("
+        SELECT o.*, oi.quantity, oi.price as item_price, p.name as product_name, p.id as product_id, 
+               COALESCE(u.username, 'Guest Customer') as customer_name 
+        FROM orders o 
+        JOIN order_items oi ON o.id = oi.order_id 
+        JOIN products p ON oi.product_id = p.id 
+        LEFT JOIN users u ON o.user_id = u.id 
+        WHERE o.id IN ($placeholders) 
+        ORDER BY o.created_at DESC
+    ");
+    $stmt->execute($orderIds);
+    $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
+} else {
+    $orders = [];
+}
 
 $groupedOrders = [];
 foreach ($orders as $order) {
@@ -311,54 +359,84 @@ require_once 'includes/seller_header.php';
 ?>
 
 <style>
+:root {
+    --primary-dark: #130325;
+    --accent-yellow: #FFD736;
+    --text-dark: #1a1a1a;
+    --text-light: #6b7280;
+    --border-light: #e5e7eb;
+    --bg-light: #f9fafb;
+    --bg-white: #ffffff;
+    --success-green: #10b981;
+    --error-red: #ef4444;
+}
+
 html, body { 
-    background: #f0f2f5 !important; 
+    background: var(--bg-light) !important; 
     margin: 0; 
     padding: 0; 
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
-main { 
-    background: #f0f2f5 !important; 
-    margin-left: 120px !important; 
-    margin-top: -20px !important;
-    margin-bottom: 0 !important;
-    padding-top: 5px !important;
-    padding-bottom: 40px !important;
-    padding-left: 30px !important;
-    padding-right: 30px !important;
-    min-height: calc(100vh - 60px) !important; 
-    transition: margin-left 0.3s ease !important;
-}
-main.sidebar-collapsed { margin-left: 0px !important; }
 
-h1 { 
-    color: #130325 !important; 
-    font-size: 20px !important; 
-    font-weight: 700 !important; 
-    margin: 0 !important;
-    margin-bottom: 16px !important;
-    padding: 0 !important; 
-    text-shadow: none !important;
+main { 
+    background: var(--bg-light) !important; 
+    margin: 0;
+    padding: 20px;
+    margin-top: 60px;
+    margin-left: 240px;
+    transition: margin-left 0.3s ease !important;
+    min-height: calc(100vh - 60px) !important;
+}
+
+.sidebar.collapsed ~ main {
+    margin-left: 70px;
+}
+
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.page-header-title {
+    color: var(--text-dark);
+    font-size: 1.35rem;
+    font-weight: 600;
+    margin: 0;
+    letter-spacing: -0.3px;
+    line-height: 1.2;
+}
+
+h1.page-header-title {
+    color: var(--text-dark);
+    font-size: 1.35rem;
+    font-weight: 600;
+    margin: 0;
+    letter-spacing: -0.3px;
+    line-height: 1.2;
 }
 
 .notification-toast {
     position: fixed;
-    top: 100px;
+    top: 80px;
     right: 20px;
-    max-width: 450px;
-    min-width: 350px;
-    background: #ffffff;
-    border: 1px solid rgba(0, 0, 0, 0.1);
-    border-radius: 16px;
-    padding: 20px 24px;
-    color: #130325;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    max-width: 400px;
+    min-width: 320px;
+    background: var(--bg-white);
+    border: 1px solid var(--border-light);
+    border-radius: 10px;
+    padding: 16px 18px;
+    color: var(--text-dark);
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
     z-index: 10000;
     animation: slideInRight 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
     display: flex;
     align-items: center;
-    gap: 16px;
-    font-family: var(--font-primary, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
+    gap: 12px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 .notification-toast::before {
@@ -367,29 +445,27 @@ h1 {
     top: 0;
     left: 0;
     right: 0;
-    height: 4px;
-    border-radius: 16px 16px 0 0;
-    background: linear-gradient(90deg, #FFD736, #FFA500);
+    height: 3px;
+    border-radius: 10px 10px 0 0;
+    background: var(--accent-yellow);
 }
 
 .notification-toast.success {
-    background: #ffffff;
-    border-color: rgba(40, 167, 69, 0.3);
-    border-top: 4px solid #28a745;
+    background: var(--bg-white);
+    border-color: rgba(40, 167, 69, 0.2);
 }
 
 .notification-toast.success::before {
-    background: linear-gradient(90deg, #28a745, #20c997);
+    background: var(--success-green);
 }
 
 .notification-toast.error {
-    background: #ffffff;
-    border-color: rgba(220, 53, 69, 0.3);
-    border-top: 4px solid #dc3545;
+    background: var(--bg-white);
+    border-color: rgba(220, 53, 69, 0.2);
 }
 
 .notification-toast.error::before {
-    background: linear-gradient(90deg, #dc3545, #fd7e14);
+    background: var(--error-red);
 }
 
 @keyframes slideInRight {
@@ -423,25 +499,26 @@ h1 {
 }
 
 .notification-toast .toast-icon {
-    width: 48px;
-    height: 48px;
-    border-radius: 12px;
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 20px;
+    font-size: 18px;
     flex-shrink: 0;
     background: rgba(255, 215, 54, 0.15);
+    color: var(--accent-yellow);
 }
 
 .notification-toast.success .toast-icon {
     background: rgba(40, 167, 69, 0.15);
-    color: #28a745;
+    color: var(--success-green);
 }
 
 .notification-toast.error .toast-icon {
     background: rgba(220, 53, 69, 0.15);
-    color: #dc3545;
+    color: var(--error-red);
 }
 
 .notification-toast .toast-content {
@@ -450,60 +527,65 @@ h1 {
 }
 
 .notification-toast .toast-title {
-    font-size: 16px;
-    font-weight: 700;
+    font-size: 14px;
+    font-weight: 600;
     margin: 0 0 4px 0;
-    color: #130325;
+    color: var(--text-dark);
     line-height: 1.3;
 }
 
 .notification-toast .toast-message {
-    font-size: 14px;
+    font-size: 13px;
     margin: 0;
-    color: #130325;
-    opacity: 0.8;
+    color: var(--text-light);
     line-height: 1.4;
 }
 
 .notification-toast .toast-close {
     position: absolute;
-    top: 12px;
-    right: 12px;
+    top: 10px;
+    right: 10px;
     background: none;
     border: none;
-    color: #130325;
+    color: var(--text-light);
     opacity: 0.6;
-    font-size: 18px;
+    font-size: 16px;
     cursor: pointer;
     padding: 4px;
     border-radius: 6px;
     transition: all 0.2s ease;
-    width: 28px;
-    height: 28px;
+    width: 24px;
+    height: 24px;
     display: flex;
     align-items: center;
     justify-content: center;
 }
 
 .notification-toast .toast-close:hover {
-    background: rgba(255, 215, 54, 0.15);
-    color: #130325;
+    background: rgba(19, 3, 37, 0.05);
+    color: var(--text-dark);
     opacity: 1;
     transform: scale(1.1);
 }
 
 .orders-container {
-    max-width: 1600px;
-    margin: 0 auto;
+    max-width: 1400px;
+    margin: 0;
+    margin-left: -220px;
+    transition: margin-left 0.3s ease;
+}
+
+.sidebar.collapsed ~ main .orders-container {
+    margin-left: -150px;
 }
 
 .search-card {
-    background: #ffffff;
-    border: 1px solid rgba(0,0,0,0.1);
-    border-radius: 8px;
-    padding: 20px;
-    margin-bottom: 30px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    background: var(--bg-white);
+    border: 1px solid var(--border-light);
+    border-radius: 10px;
+    padding: 16px 18px;
+    margin-bottom: 20px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .search-wrapper {
@@ -520,49 +602,53 @@ h1 {
 
 .search-bar {
     flex: 1;
-    padding: 12px 14px;
-    background: #ffffff;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    color: #130325;
-    font-size: 14px;
+    padding: 10px 14px;
+    background: var(--bg-white);
+    border: 1px solid var(--border-light);
+    border-radius: 8px;
+    color: var(--text-dark);
+    font-size: 0.875rem;
     transition: all 0.2s ease;
 }
 
 .search-bar:focus {
     outline: none;
-    border-color: #FFD736;
-    box-shadow: 0 0 0 2px rgba(255,215,54,0.2);
+    border-color: var(--primary-dark);
+    box-shadow: 0 0 0 2px rgba(19, 3, 37, 0.1);
 }
 
 .search-bar::placeholder {
-    color: #999;
+    color: var(--text-light);
 }
 
 .search-btn {
-    padding: 12px 16px;
-    background: #FFD736;
-    color: #130325;
+    padding: 10px 16px;
+    background: var(--accent-yellow);
+    color: var(--primary-dark);
     border: none;
-    border-radius: 4px;
+    border-radius: 8px;
     cursor: pointer;
     transition: all 0.2s ease;
     display: flex;
     align-items: center;
     justify-content: center;
+    font-weight: 600;
+    font-size: 0.875rem;
 }
 
 .search-btn:hover {
-    background: #f5d026;
+    background: #ffd020;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(255, 215, 54, 0.3);
 }
 
 .orders-table-container {
-    background: #ffffff;
-    border: 1px solid rgba(0,0,0,0.1);
-    border-radius: 8px;
-    padding: 24px;
+    background: var(--bg-white);
+    border: 1px solid var(--border-light);
+    border-radius: 10px;
+    padding: 20px;
     margin-top: 0;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .table-wrapper {
@@ -572,27 +658,27 @@ h1 {
 .orders-table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 14px;
+    font-size: 0.875rem;
 }
 
 .orders-table thead {
-    background: #130325;
-    border-bottom: 2px solid #FFD736;
+    background: var(--primary-dark);
+    border-bottom: 2px solid var(--accent-yellow);
 }
 
 .orders-table th {
-    padding: 12px 16px;
+    padding: 12px 14px;
     text-align: left;
-    font-weight: 700;
-    color: #ffffff;
-    font-size: 13px;
+    font-weight: 600;
+    color: var(--bg-white);
+    font-size: 0.75rem;
     text-transform: uppercase;
     letter-spacing: 0.5px;
     position: relative;
     user-select: none;
     cursor: pointer;
     transition: background 0.2s ease;
-    padding-right: 32px;
+    padding-right: 28px;
 }
 
 .orders-table th.sortable {
@@ -605,11 +691,11 @@ h1 {
 
 .sort-indicator {
     position: absolute;
-    right: 12px;
+    right: 10px;
     top: 50%;
     transform: translateY(-50%);
     font-size: 10px;
-    color: #FFD736;
+    color: var(--accent-yellow);
     transition: all 0.2s ease;
 }
 
@@ -620,39 +706,47 @@ h1 {
 
 .sort-indicator.asc::before {
     content: '↑';
-    color: #FFD736;
+    color: var(--accent-yellow);
 }
 
 .sort-indicator.desc::before {
     content: '↓';
-    color: #FFD736;
+    color: var(--accent-yellow);
 }
 
 .orders-table td {
-    padding: 14px 16px;
-    color: #130325;
-    border-bottom: 1px solid #f0f0f0;
+    padding: 12px 14px;
+    color: var(--text-dark);
+    border-bottom: 1px solid var(--border-light);
     vertical-align: top;
+    font-size: 0.875rem;
 }
 
 .orders-table tbody tr {
-    border-bottom: 1px solid #f0f0f0;
+    border-bottom: 1px solid var(--border-light);
     transition: background 0.2s ease;
 }
 
 .orders-table tbody tr:hover {
-    background: rgba(255, 215, 54, 0.05);
+    background: rgba(19, 3, 37, 0.03);
 }
 
 .order-id {
-    color: #130325;
-    font-weight: 700;
-    font-size: 15px;
+    color: var(--primary-dark);
+    font-weight: 600;
+    font-size: 0.9rem;
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+.order-id:hover {
+    color: var(--accent-yellow);
 }
 
 .customer-name {
-    color: #130325;
+    color: var(--text-dark);
     font-weight: 600;
+    font-size: 0.875rem;
 }
 
 .product-list {
@@ -662,30 +756,32 @@ h1 {
 }
 
 .product-item {
-    padding: 4px 0;
-    color: #130325;
+    padding: 3px 0;
+    color: var(--text-dark);
     opacity: 0.9;
-    font-size: 13px;
+    font-size: 0.813rem;
+    line-height: 1.4;
 }
 
 .product-item strong {
-    color: #130325;
+    color: var(--text-dark);
     font-weight: 600;
 }
 
 .total-amount {
-    color: #130325;
+    color: var(--primary-dark);
     font-weight: 700;
-    font-size: 16px;
+    font-size: 0.95rem;
 }
 
 .order-status {
     display: inline-block;
     padding: 4px 10px;
-    border-radius: 4px;
+    border-radius: 6px;
     font-weight: 600;
-    font-size: 12px;
+    font-size: 0.7rem;
     text-transform: uppercase;
+    letter-spacing: 0.3px;
 }
 
 .status-pending { background: rgba(255,193,7,0.15); color: #ffc107; }
@@ -696,9 +792,9 @@ h1 {
 .status-cancelled { background: rgba(220,53,69,0.15); color: #dc3545; }
 
 .order-date {
-    color: #130325;
-    opacity: 0.8;
-    font-size: 13px;
+    color: var(--text-light);
+    font-size: 0.813rem;
+    line-height: 1.4;
 }
 
 .actions-cell {
@@ -709,13 +805,13 @@ h1 {
 .grace-period-timer {
     background: rgba(255,193,7,0.15);
     border: 1px solid #ffc107;
-    padding: 8px 12px;
-    border-radius: 4px;
+    padding: 6px 10px;
+    border-radius: 6px;
     text-align: center;
     color: #ffc107;
     font-weight: 600;
-    font-size: 12px;
-    margin-bottom: 10px;
+    font-size: 0.75rem;
+    margin-bottom: 8px;
 }
 
 .grace-period-ready {
@@ -723,12 +819,12 @@ h1 {
     border: 1px solid #007bff;
     color: #007bff;
     padding: 4px 10px;
-    border-radius: 4px;
+    border-radius: 6px;
     font-weight: 600;
-    font-size: 11px;
+    font-size: 0.7rem;
     text-transform: uppercase;
     display: inline-block;
-    margin-bottom: 10px;
+    margin-bottom: 8px;
 }
 
 .action-buttons {
@@ -736,17 +832,17 @@ h1 {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 8px;
+    gap: 6px;
 }
 
 .action-btn {
     width: auto;
-    min-width: 120px;
-    padding: 8px 14px;
+    min-width: 110px;
+    padding: 8px 12px;
     border: none;
-    border-radius: 4px;
+    border-radius: 8px;
     font-weight: 600;
-    font-size: 13px;
+    font-size: 0.813rem;
     cursor: pointer;
     transition: all 0.2s ease;
     text-align: center;
@@ -765,7 +861,8 @@ h1 {
 
 .btn-process:hover {
     background: #0056b3;
-    transform: scale(1.1);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 123, 255, 0.3);
 }
 
 .btn-ship {
@@ -775,7 +872,8 @@ h1 {
 
 .btn-ship:hover {
     background: #138496;
-    transform: scale(1.1);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(23, 162, 184, 0.3);
 }
 
 .btn-delivered {
@@ -785,34 +883,37 @@ h1 {
 
 .btn-delivered:hover {
     background: #218838;
-    transform: scale(1.1);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(40, 167, 69, 0.3);
 }
 
 .btn-completed {
-    background: #130325;
-    color: #FFD736;
+    background: var(--primary-dark);
+    color: var(--accent-yellow);
 }
 
 .btn-completed:hover:not(:disabled) {
     background: #0a0218;
-    transform: scale(1.1);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(19, 3, 37, 0.3);
 }
 
 .btn-cancel {
-    background: #dc3545;
+    background: var(--error-red);
     color: white;
 }
 
 .btn-cancel:hover {
-    background: #c82333;
-    transform: scale(1.1);
+    background: #dc2626;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(220, 53, 69, 0.3);
 }
 
 /* Custom Confirmation Modal */
 .custom-confirm-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.6);
+    background: rgba(0, 0, 0, 0.5);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -820,29 +921,89 @@ h1 {
     opacity: 0;
     visibility: hidden;
     transition: all 0.25s ease;
+    backdrop-filter: blur(5px);
 }
 
 .custom-confirm-overlay.show { opacity: 1; visibility: visible; }
 
 .custom-confirm-dialog {
-    background: #ffffff;
-    border-radius: 10px;
+    background: var(--bg-white);
+    border-radius: 12px;
     padding: 18px 20px;
-    width: 92%;
-    max-width: 420px;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+    width: 90%;
+    max-width: 400px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(19, 3, 37, 0.1);
+    border-top: 3px solid var(--primary-dark);
+    animation: confirmSlideIn 0.3s ease-out;
 }
 
-.custom-confirm-title { color: #111827; font-weight: 600; font-size: 1.1rem; margin: 0 0 10px 0; text-transform: none; letter-spacing: normal; }
-.custom-confirm-message { color: #374151; font-size: 0.92rem; margin-bottom: 20px; line-height: 1.5; }
-.custom-confirm-buttons { display: flex; gap: 10px; justify-content: flex-end; margin-top: 16px; }
-.custom-confirm-btn { padding: 6px 12px; border-radius: 6px; font-size: 0.85rem; font-weight: 600; text-transform: none; letter-spacing: normal; border: none; cursor: pointer; }
-.custom-confirm-btn.cancel { background: #6c757d; color: white; }
-.custom-confirm-btn.confirm { background: #dc3545; color: white; }
-.custom-confirm-btn.primary { background: #FFD736; color: #130325; }
-.custom-confirm-btn.primary:hover { background: #f5d026; }
-.custom-confirm-btn.cancel:hover { background: #5a6268; }
-.custom-confirm-btn.confirm:hover { background: #c82333; }
+@keyframes confirmSlideIn {
+    from {
+        opacity: 0;
+        transform: scale(0.8) translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+.custom-confirm-title { 
+    color: var(--text-dark); 
+    font-weight: 700; 
+    font-size: 16px; 
+    margin: 0 0 10px 0; 
+    text-transform: none; 
+    letter-spacing: normal; 
+}
+
+.custom-confirm-message { 
+    color: var(--text-light); 
+    font-size: 13px; 
+    margin-bottom: 20px; 
+    line-height: 1.5; 
+}
+
+.custom-confirm-buttons { 
+    display: flex; 
+    gap: 10px; 
+    justify-content: flex-end; 
+    margin-top: 16px; 
+}
+
+.custom-confirm-btn { 
+    padding: 8px 14px; 
+    border-radius: 8px; 
+    font-size: 13px; 
+    font-weight: 600; 
+    text-transform: none; 
+    letter-spacing: normal; 
+    border: none; 
+    cursor: pointer; 
+    transition: all 0.2s ease;
+    min-width: 70px;
+}
+
+.custom-confirm-btn.cancel { 
+    background: var(--text-light); 
+    color: white; 
+}
+
+.custom-confirm-btn.cancel:hover { 
+    background: #4b5563; 
+    transform: translateY(-1px);
+}
+
+.custom-confirm-btn.primary { 
+    background: var(--primary-dark); 
+    color: var(--bg-white); 
+}
+
+.custom-confirm-btn.primary:hover { 
+    background: #0a0118; 
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(19, 3, 37, 0.2);
+}
 
 /* Cancellation Reason Modal */
 .cancel-reason-overlay {
@@ -965,16 +1126,162 @@ h1 {
 .no-orders-message {
     text-align: center;
     padding: 40px;
-    color: #6b7280;
-    font-size: 14px;
+    color: var(--text-light);
+    font-size: 0.9rem;
 }
 
-@media (max-width: 768px) {
-    main { padding: 30px 24px 60px 24px !important; }
-    .orders-table-container { padding: 20px; }
-    .orders-table { font-size: 12px; }
-    .orders-table th, .orders-table td { padding: 10px 12px; }
-    .table-wrapper { overflow-x: auto; }
+/* Pagination */
+.pagination { 
+    display: flex; 
+    justify-content: center; 
+    gap: 8px; 
+    margin-top: 24px; 
+    flex-wrap: wrap;
+}
+
+.page-link { 
+    padding: 8px 14px; 
+    background: var(--bg-white) !important; 
+    color: var(--primary-dark) !important; 
+    text-decoration: none; 
+    border-radius: 8px; 
+    border: 1px solid var(--border-light) !important; 
+    font-weight: 600; 
+    font-size: 0.813rem; 
+    transition: all 0.2s ease; 
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.page-link i { 
+    color: var(--primary-dark) !important; 
+    font-size: 0.75rem;
+}
+
+.page-link:hover { 
+    background: rgba(19, 3, 37, 0.05) !important; 
+    color: var(--primary-dark) !important; 
+    border-color: var(--primary-dark) !important; 
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(19, 3, 37, 0.15);
+}
+
+.page-link:hover i { 
+    color: var(--primary-dark) !important; 
+}
+
+.page-link.active { 
+    background: var(--primary-dark) !important; 
+    color: var(--bg-white) !important; 
+    border-color: var(--primary-dark) !important; 
+    box-shadow: 0 2px 8px rgba(19, 3, 37, 0.3); 
+}
+
+.page-link.active i { 
+    color: var(--bg-white) !important; 
+}
+
+.page-ellipsis { 
+    padding: 8px 8px; 
+    color: var(--text-light); 
+    font-weight: 700; 
+    display: inline-flex;
+    align-items: center;
+}
+
+.pagination-info { 
+    text-align: center; 
+    margin-top: 12px; 
+    color: var(--text-light); 
+    font-size: 0.813rem; 
+    font-weight: 500; 
+}
+
+/* Responsive Design */
+@media (max-width: 968px) {
+    main {
+        margin-left: 0 !important;
+        padding: 16px 12px;
+    }
+
+    .orders-container {
+        margin-left: 0 !important;
+        max-width: 100%;
+    }
+
+    .page-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    .page-header-title {
+        font-size: 1.2rem;
+    }
+
+    .search-card {
+        padding: 14px;
+    }
+
+    .orders-table-container { 
+        padding: 16px; 
+    }
+
+    .orders-table { 
+        font-size: 0.75rem; 
+    }
+
+    .orders-table th, .orders-table td { 
+        padding: 10px 12px; 
+    }
+
+    .table-wrapper { 
+        overflow-x: auto; 
+    }
+
+    .action-btn {
+        min-width: 100px;
+        padding: 6px 10px;
+        font-size: 0.75rem;
+    }
+}
+
+@media (max-width: 480px) {
+    main {
+        padding: 12px 10px;
+    }
+
+    .page-header-title {
+        font-size: 1.1rem;
+    }
+
+    .orders-table {
+        font-size: 0.7rem;
+    }
+
+    .orders-table th, .orders-table td {
+        padding: 8px 10px;
+    }
+
+    .action-btn {
+        min-width: 90px;
+        padding: 6px 8px;
+        font-size: 0.7rem;
+    }
+
+    .pagination {
+        gap: 4px;
+    }
+
+    .page-link {
+        padding: 6px 10px;
+        font-size: 0.75rem;
+    }
+
+    .pagination-info {
+        font-size: 0.75rem;
+    }
 }
 </style>
 
@@ -1004,12 +1311,14 @@ h1 {
         <?php unset($_SESSION['order_message']); ?>
     <?php endif; ?>
 
-    <h1>Order Management</h1>
+    <div class="page-header">
+        <h1 class="page-header-title">Order Management</h1>
+    </div>
 
     <div class="search-card">
         <div class="search-wrapper">
             <div class="search-input-group">
-                <input type="text" class="search-bar" id="orderSearch" placeholder="Search by Order ID, Customer, Status, or Product..." onkeyup="filterOrders()">
+                <input type="text" class="search-bar" id="orderSearch" placeholder="Search by Order ID, Customer, Status, or Product..." value="<?php echo isset($_GET['search']) ? htmlspecialchars($_GET['search']) : ''; ?>" onkeyup="filterOrders()">
                 <button class="search-btn" onclick="filterOrders()" title="Search">
                     <i class="fas fa-search"></i>
                 </button>
@@ -1034,7 +1343,10 @@ h1 {
                     <tbody>
                         <?php if (empty($groupedOrders)): ?>
                         <tr>
-                            <td colspan="7" style="text-align:center; color:#6b7280; padding:20px;">No orders found.</td>
+                            <td colspan="7" class="no-orders-message" style="text-align:center; padding:40px 20px;">
+                                <i class="fas fa-inbox" style="font-size: 48px; color: var(--text-light); opacity: 0.5; margin-bottom: 16px; display: block;"></i>
+                                <p style="margin: 0; color: var(--text-light); font-size: 0.9rem;">No orders found.</p>
+                            </td>
                         </tr>
                         <?php else: foreach ($groupedOrders as $order):
             $withinGracePeriod = isWithinGracePeriod($order['created_at'], $pdo);
@@ -1206,6 +1518,52 @@ h1 {
                 </table>
             </div>
         </div>
+
+        <!-- Pagination -->
+        <?php if ($totalPages > 1): ?>
+            <div class="pagination">
+                <?php if ($page > 1): ?>
+                    <a href="view-orders.php?page=<?php echo $page - 1; ?><?php echo isset($_GET['search']) ? '&search=' . urlencode($_GET['search']) : ''; ?>" class="page-link">
+                        <i class="fas fa-chevron-left"></i> Previous
+                    </a>
+                <?php endif; ?>
+                
+                <?php 
+                // Show page numbers with ellipsis for large page counts
+                $startPage = max(1, $page - 2);
+                $endPage = min($totalPages, $page + 2);
+                
+                if ($startPage > 1): ?>
+                    <a href="view-orders.php?page=1<?php echo isset($_GET['search']) ? '&search=' . urlencode($_GET['search']) : ''; ?>" class="page-link">1</a>
+                    <?php if ($startPage > 2): ?>
+                        <span class="page-ellipsis">...</span>
+                    <?php endif; ?>
+                <?php endif; ?>
+                
+                <?php for ($i = $startPage; $i <= $endPage; $i++): ?>
+                    <a href="view-orders.php?page=<?php echo $i; ?><?php echo isset($_GET['search']) ? '&search=' . urlencode($_GET['search']) : ''; ?>" 
+                       class="page-link <?php echo $i === $page ? 'active' : ''; ?>"><?php echo $i; ?></a>
+                <?php endfor; ?>
+                
+                <?php if ($endPage < $totalPages): ?>
+                    <?php if ($endPage < $totalPages - 1): ?>
+                        <span class="page-ellipsis">...</span>
+                    <?php endif; ?>
+                    <a href="view-orders.php?page=<?php echo $totalPages; ?><?php echo isset($_GET['search']) ? '&search=' . urlencode($_GET['search']) : ''; ?>" class="page-link"><?php echo $totalPages; ?></a>
+                <?php endif; ?>
+                
+                <?php if ($page < $totalPages): ?>
+                    <a href="view-orders.php?page=<?php echo $page + 1; ?><?php echo isset($_GET['search']) ? '&search=' . urlencode($_GET['search']) : ''; ?>" class="page-link">
+                        Next <i class="fas fa-chevron-right"></i>
+                    </a>
+                <?php endif; ?>
+            </div>
+            
+            <div class="pagination-info">
+                Showing <?php echo (($page - 1) * $limit + 1); ?>-<?php echo min($page * $limit, $totalOrders); ?> 
+                of <?php echo $totalOrders; ?> orders
+            </div>
+        <?php endif; ?>
 </div>
 </main>
 

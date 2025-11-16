@@ -79,21 +79,33 @@ try {
         try {
             $customerMessage = "The seller has responded to your review on '" . $review['product_name'] . "'";
             
-            // Create notification with product_id so it links to the product page
+            // First, ensure review_id column exists in notifications table
+            try {
+                $checkColumn = $pdo->query("SHOW COLUMNS FROM notifications LIKE 'review_id'");
+                if ($checkColumn->rowCount() == 0) {
+                    $pdo->exec("ALTER TABLE notifications ADD COLUMN review_id INT NULL AFTER product_id");
+                    error_log("Added review_id column to notifications table");
+                }
+            } catch (Exception $e) {
+                error_log("Error checking/adding review_id column: " . $e->getMessage());
+            }
+            
+            // Create notification with product_id and review_id so it links to the specific review
             $notifStmt = $pdo->prepare("
-                INSERT INTO notifications (user_id, order_id, message, type, product_id, created_at)
-                VALUES (?, ?, ?, ?, ?, NOW())
+                INSERT INTO notifications (user_id, order_id, message, type, product_id, review_id, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, NOW())
             ");
             $notifStmt->execute([
                 $review['customer_id'],
                 $review['order_id'],
                 $customerMessage,
                 'seller_reply',
-                $review['product_id']
+                $review['product_id'],
+                $reviewId
             ]);
             
             // Log for debugging
-            error_log("Seller reply notification created for customer ID: " . $review['customer_id'] . " on product ID: " . $review['product_id']);
+            error_log("Seller reply notification created for customer ID: " . $review['customer_id'] . " on product ID: " . $review['product_id'] . " for review ID: " . $reviewId);
             
         } catch (Exception $e) {
             error_log("Error creating customer notification for seller reply: " . $e->getMessage());

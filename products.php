@@ -197,17 +197,55 @@ body {
 .products-layout {
     display: grid;
     grid-template-columns: 220px 1fr;
-    align-items: start;
     gap: 20px;
     max-width: 1600px;
     margin: 0 auto;
     padding: 0 20px;
 }
 
+/* Filters Sidebar - Visible on desktop */
+.filters {
+    background: var(--bg-white);
+    border: 1px solid var(--border-light);
+    border-radius: 8px;
+    padding: 16px;
+    margin-top: 20px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    position: sticky;
+    top: 100px;
+    max-height: calc(100vh - 120px);
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+/* Custom Scrollbar for Filters */
+.filters::-webkit-scrollbar {
+    width: 8px;
+}
+
+.filters::-webkit-scrollbar-track {
+    background: var(--bg-light);
+    border-radius: 4px;
+}
+
+.filters::-webkit-scrollbar-thumb {
+    background: var(--primary-dark);
+    border-radius: 4px;
+    border: 2px solid var(--bg-light);
+}
+
+.filters::-webkit-scrollbar-thumb:hover {
+    background: #0a0118;
+}
+
+/* Firefox scrollbar */
+.filters {
+    scrollbar-width: thin;
+    scrollbar-color: var(--primary-dark) var(--bg-light);
+}
+
 .products-main {
-    min-width: 0;
-    grid-column: 2;
-    grid-row: 1;
+    width: 100%;
     margin-top: 20px;
 }
 
@@ -236,35 +274,28 @@ body {
     font-weight: 600;
 }
 
-/* Products Grid - EXACT MATCH TO INDEX.PHP */
+/* Products Grid - 4 columns */
 .products-grid {
-    display: flex !important;
-    gap: 25px !important;
-    overflow: visible !important;
-    position: relative !important;
+    display: grid !important;
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: 16px !important;
     width: 100% !important;
-    justify-content: center !important;
-    max-width: none !important;
     margin: 0 auto !important;
     text-align: center !important;
-    grid-template-columns: none !important;
-    flex-wrap: wrap !important;
 }
 
-/* Product Card - Modern Compact Design */
+/* Product Card - Smaller than index.php and seller.php */
 .product-card {
     position: relative !important;
     background: var(--bg-white) !important;
     border: 1px solid var(--border-light) !important;
-    border-radius: 12px !important;
-    padding: 12px !important;
+    border-radius: 8px !important;
+    padding: 6px 5px !important;
     text-align: center !important;
     transition: all 0.2s ease !important;
     display: flex !important;
     flex-direction: column !important;
-    flex: 0 0 19% !important;
-    min-width: 200px !important;
-    max-width: 250px !important;
+    width: 100% !important;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
 }
 
@@ -274,27 +305,27 @@ body {
     box-shadow: 0 4px 12px rgba(19, 3, 37, 0.15) !important;
 }
 
-/* Product Image - EXACT MATCH */
+/* Product Image - Smaller */
 .product-card img {
     width: 100% !important;
-    height: 160px !important;
+    height: 90px !important;
     object-fit: cover !important;
-    border-radius: 12px !important;
-    margin-bottom: 10px !important;
+    border-radius: 5px !important;
+    margin-bottom: 4px !important;
 }
 
 /* Product Checkbox - Modern Design */
 .product-checkbox {
     position: absolute !important;
-    top: 12px !important;
-    right: 12px !important;
+    top: 6px !important;
+    right: 6px !important;
     background: rgba(19, 3, 37, 0.08) !important;
-    padding: 6px 10px !important;
+    padding: 4px 6px !important;
     border: 1px solid rgba(19, 3, 37, 0.2) !important;
-    border-radius: 6px !important;
+    border-radius: 5px !important;
     display: flex !important;
     align-items: center !important;
-    gap: 6px !important;
+    gap: 4px !important;
     z-index: 2 !important;
     transition: all 0.2s ease !important;
 }
@@ -317,48 +348,48 @@ body {
     text-transform: uppercase !important;
 }
 
-/* Product Name - EXACT MATCH */
+/* Product Name - Smaller */
 .products-layout .product-card .product-name,
 .products-list .product-card .product-name {
     color: #212529 !important;
-    font-size: 1.1rem !important;
-    font-weight: 700 !important;
-    margin: 5px 0 !important;
-    min-height: 35px !important;
-    max-height: 50px !important;
+    font-size: 10px !important;
+    font-weight: 600 !important;
+    margin: 2px 0 !important;
+    min-height: 24px !important;
+    max-height: 28px !important;
     overflow: hidden !important;
     text-overflow: ellipsis !important;
     display: -webkit-box !important;
     -webkit-line-clamp: 2 !important;
     -webkit-box-orient: vertical !important;
-    line-height: 1.4 !important;
+    line-height: 1.2 !important;
 }
 
-/* Price - EXACT MATCH */
+/* Price - Smaller */
 .products-layout .product-card .price,
 .products-list .product-card .price {
     color: #212529 !important;
     font-weight: 700 !important;
-    font-size: 1.2rem !important;
-    margin: 4px 0 !important;
+    font-size: 12px !important;
+    margin: 2px 0 !important;
 }
 
-/* Rating - Modern Design */
+/* Rating - Smaller */
 .products-layout .product-card .rating,
 .products-list .product-card .rating {
     color: var(--accent-yellow) !important;
-    font-size: 1.1rem !important;
-    margin: 4px 0 !important;
+    font-size: 10px !important;
+    margin: 2px 0 !important;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
-    gap: 6px !important;
+    gap: 2px !important;
 }
 
 .products-layout .product-card .rating-text,
 .products-list .product-card .rating-text {
     color: #212529 !important;
-    font-size: 0.9rem !important;
+    font-size: 9px !important;
     display: inline !important;
     margin: 0 !important;
     font-weight: 700 !important;
@@ -367,8 +398,8 @@ body {
 /* Stock - EXACT MATCH */
 .stock {
     color: #28a745 !important;
-    font-size: 0.9rem !important;
-    margin: 12px 0 !important;
+    font-size: 9px !important;
+    margin: 4px 0 !important;
     font-weight: 600 !important;
 }
 
@@ -376,23 +407,23 @@ body {
 .product-actions {
     display: flex !important;
     flex-direction: row !important;
-    gap: 8px !important;
+    gap: 5px !important;
     align-items: center !important;
     margin-top: auto !important;
     margin-bottom: 0 !important;
-    padding-top: 8px !important;
+    padding-top: 5px !important;
 }
 
 .btn-cart-icon {
     background: var(--accent-yellow) !important;
     color: var(--primary-dark) !important;
     border: 1px solid var(--accent-yellow) !important;
-    border-radius: 6px !important;
-    padding: 4px !important;
+    border-radius: 5px !important;
+    padding: 3px !important;
     cursor: pointer !important;
-    font-size: 10px !important;
-    width: 24px !important;
-    height: 24px !important;
+    font-size: 9px !important;
+    width: 22px !important;
+    height: 22px !important;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
@@ -431,15 +462,15 @@ body {
     background: #130325 !important;
     color: #ffffff !important;
     border: 2px solid #130325 !important;
-    padding: 4px 10px !important;
-    font-size: 0.75rem !important;
+    padding: 3px 8px !important;
+    font-size: 9px !important;
     flex: 1 !important;
     justify-content: center !important;
     border-radius: 4px !important;
     margin: 0 !important;
     line-height: 1.2 !important;
     min-height: auto !important;
-    height: 24px !important;
+    height: 20px !important;
     text-align: center !important;
 }
 
@@ -465,24 +496,7 @@ body {
     transform: translateY(-2px) !important;
 }
 
-/* Filters Section */
-.filters {
-    background: transparent;
-    border: none;
-    border-radius: 0;
-    padding: 10px;
-    margin: 80px 0 20px -20px;
-    box-shadow: none;
-    color: #130325;
-    grid-column: 1;
-    grid-row: 1;
-    max-width: 220px;
-    align-self: start;
-    position: sticky;
-    top: 100px;
-    max-height: none;
-    overflow-y: visible;
-}
+/* Filters Section - Removed duplicate, using the one above */
 
 .filters h2 {
     color: var(--text-dark);
@@ -656,6 +670,7 @@ body {
     display: flex;
     align-items: center;
     gap: 15px;
+    flex: 1;
 }
 
 .sort-label {
@@ -692,6 +707,185 @@ body {
 .order-select option {
     background: var(--bg-white);
     color: var(--text-dark);
+}
+
+/* Filter Button - Hidden on desktop, shown on mobile */
+.btn-filter {
+    background: var(--primary-dark) !important;
+    color: var(--bg-white) !important;
+    border: 1px solid var(--primary-dark) !important;
+    padding: 8px 16px !important;
+    border-radius: 6px !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
+    display: none !important;
+    align-items: center !important;
+    gap: 6px !important;
+    transition: all 0.2s ease !important;
+    margin-left: auto !important;
+}
+
+.btn-filter:hover {
+    background: var(--accent-yellow) !important;
+    color: var(--primary-dark) !important;
+    border-color: var(--accent-yellow) !important;
+    transform: translateY(-1px) !important;
+}
+
+.btn-filter i {
+    font-size: 12px !important;
+}
+
+/* Filter Modal */
+.filter-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 10000;
+    align-items: center;
+    justify-content: center;
+}
+
+.filter-modal.active {
+    display: flex;
+}
+
+.filter-modal-content {
+    background: var(--bg-white);
+    border-radius: 12px;
+    max-width: 500px;
+    width: 90%;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    animation: slideDown 0.3s ease;
+    overflow: hidden;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.filter-modal-header {
+    background: var(--primary-dark);
+    color: var(--bg-white);
+    padding: 16px 20px;
+    border-radius: 12px 12px 0 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.filter-modal-header h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.filter-modal-close {
+    background: transparent;
+    border: none;
+    color: var(--bg-white);
+    font-size: 24px;
+    cursor: pointer;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: background 0.2s ease;
+}
+
+.filter-modal-close:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.filter-modal-body {
+    padding: 20px;
+    max-height: calc(90vh - 140px);
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+/* Custom Scrollbar for Filter Modal */
+.filter-modal-body::-webkit-scrollbar {
+    width: 8px;
+}
+
+.filter-modal-body::-webkit-scrollbar-track {
+    background: var(--bg-light);
+    border-radius: 4px;
+    margin: 4px 0;
+}
+
+.filter-modal-body::-webkit-scrollbar-thumb {
+    background: var(--primary-dark);
+    border-radius: 4px;
+    border: 2px solid var(--bg-light);
+}
+
+.filter-modal-body::-webkit-scrollbar-thumb:hover {
+    background: #0a0118;
+}
+
+/* Firefox scrollbar for filter modal */
+.filter-modal-body {
+    scrollbar-width: thin;
+    scrollbar-color: var(--primary-dark) var(--bg-light);
+}
+
+.filter-modal-footer {
+    padding: 16px 20px;
+    border-top: 1px solid var(--border-light);
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+}
+
+.btn-clear-filters-modal,
+.btn-apply-filters {
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s ease;
+}
+
+.btn-clear-filters-modal {
+    background: var(--bg-light);
+    color: var(--text-dark);
+    border: 1px solid var(--border-light);
+}
+
+.btn-clear-filters-modal:hover {
+    background: #e5e7eb;
+}
+
+.btn-apply-filters {
+    background: var(--primary-dark);
+    color: var(--bg-white);
+}
+
+.btn-apply-filters:hover {
+    background: #0a0118;
+    transform: translateY(-1px);
 }
 
 /* Category Tree */
@@ -894,7 +1088,7 @@ body {
     }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 968px) {
     body {
         overflow-x: hidden !important;
         width: 100% !important;
@@ -910,17 +1104,14 @@ body {
         box-sizing: border-box !important;
     }
     
-    /* Mobile Filter Toggle Button */
+    /* Hide filters sidebar on mobile */
     .filters {
-        margin: 20px 0 !important;
-        position: relative !important;
-        top: 0 !important;
-        max-height: none !important;
-        background: rgba(26, 10, 46, 0.6) !important;
-        border: 2px solid rgba(255, 215, 54, 0.3) !important;
-        border-radius: 12px !important;
-        padding: 15px !important;
-        max-width: 100% !important;
+        display: none !important;
+    }
+    
+    /* Show filter button on mobile */
+    .btn-filter {
+        display: inline-flex !important;
     }
     
     .filters h2 {
@@ -1162,6 +1353,67 @@ body {
     </div>
 </div>
 
+<!-- Filter Modal -->
+<div id="filterModal" class="filter-modal">
+    <div class="filter-modal-content">
+        <div class="filter-modal-header">
+            <h3>Filters</h3>
+            <button class="filter-modal-close" onclick="closeFilterModal()">&times;</button>
+        </div>
+        <div class="filter-modal-body">
+            <form method="GET" id="filterForm">
+                <input type="hidden" name="search" value="<?php echo htmlspecialchars($search); ?>">
+                
+                <div class="filter-group">
+                    <h3>Category</h3>
+                    <div class="category-tree">
+                        <?php
+                        $categoryTree = buildCategoryTree($categories);
+                        renderCategoryTree($categoryTree, $selectedCategories);
+                        ?>
+                    </div>
+                </div>
+                
+                <div class="filter-group">
+                    <h3>Price Range</h3>
+                    <div class="price-range">
+                        <input type="number" name="min_price" placeholder="Min" value="<?php echo $minPrice; ?>" step="0.01" min="0">
+                        <span>to</span>
+                        <input type="number" name="max_price" placeholder="Max" value="<?php echo $maxPrice; ?>" step="0.01" min="0">
+                    </div>
+                </div>
+                
+                <div class="filter-group">
+                    <h3>Rating</h3>
+                    <div class="rating-filter">
+                        <div class="rating-options">
+                            <?php for ($i = 1; $i <= 5; $i++): ?>
+                                <label>
+                                <input type="radio" name="min_rating" value="<?php echo $i; ?>" 
+                                <?php echo $minRating == $i ? 'checked' : ''; ?>>
+                                    <span class="rating-stars">
+                                        <?php echo str_repeat('<span class=\'star-filled\'>★</span>', $i)
+                                            . str_repeat('<span class=\'star-empty\'>☆</span>', 5 - $i); ?>
+                                    </span>
+                                </label>
+                            <?php endfor; ?>
+                            <label>
+                            <input type="radio" name="min_rating" value="0" 
+                            <?php echo $minRating == 0 ? 'checked' : ''; ?>>
+                                Any Rating
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+        <div class="filter-modal-footer">
+            <button type="button" class="btn-clear-filters-modal" onclick="clearFilters()">Clear All</button>
+            <button type="button" class="btn-apply-filters" onclick="applyFilters()">Apply Filters</button>
+        </div>
+    </div>
+</div>
+
 <div class="products-layout">
     <!-- Filters Sidebar -->
     <div class="filters">
@@ -1327,6 +1579,9 @@ body {
                         <option value="ASC" <?php echo $order == 'ASC' ? 'selected' : ''; ?>>Ascending</option>
                     </select>
                 </div>
+                <button type="button" class="btn-filter" onclick="openFilterModal()">
+                    <i class="fas fa-filter"></i> Filters
+                </button>
             </form>
         </div>
         
@@ -1606,6 +1861,32 @@ document.addEventListener('DOMContentLoaded', function() {
     
     if (clearCompareBtn) {
         clearCompareBtn.addEventListener('click', clearCompare);
+    }
+});
+
+// Filter Modal Functions
+function openFilterModal() {
+    document.getElementById('filterModal').classList.add('active');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeFilterModal() {
+    document.getElementById('filterModal').classList.remove('active');
+    document.body.style.overflow = '';
+}
+
+function applyFilters() {
+    document.getElementById('filterForm').submit();
+}
+
+function clearFilters() {
+    window.location.href = 'products.php<?php echo $search ? '?search=' . urlencode($search) : ''; ?>';
+}
+
+// Close modal when clicking outside
+document.getElementById('filterModal')?.addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeFilterModal();
     }
 });
 </script>

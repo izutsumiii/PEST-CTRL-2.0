@@ -207,13 +207,6 @@ body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
-.product-info-section,
-.seller-section,
-.product-details-section,
-.reviews-section {
-    background: var(--bg-white) !important;
-}
-
 main {
     background: transparent !important;
     padding: 0 0 60px 0 !important;
@@ -229,7 +222,8 @@ main h3 {
 .product-container {
     max-width: 1600px;
     margin: 0 auto;
-    padding: 12px 20px;
+    padding: 16px 24px;
+    min-height: 100vh;
 }
 
 /* Breadcrumb */
@@ -240,6 +234,7 @@ main h3 {
     border-radius: 8px;
     margin-bottom: 12px;
     font-size: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .breadcrumb-nav a {
@@ -263,29 +258,46 @@ main h3 {
     margin: 12px 0 20px 0;
 }
 
+/* Product Info Section - Flex Layout */
+.product-info-section {
+    background: var(--bg-white);
+    padding: 20px 24px;
+    border: 1px solid var(--border-light);
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    margin-bottom: 16px;
+    display: flex;
+    gap: 24px;
+    align-items: flex-start;
+}
+
 /* Image Gallery */
 .image-gallery {
-    flex: 0 0 300px;
+    flex: 0 0 450px;
+    width: 450px;
     height: fit-content;
+    position: sticky;
+    top: 80px;
 }
 
 .main-image-container {
     background: var(--bg-white);
     border: 1px solid var(--border-light);
-    padding: 12px;
+    padding: 16px;
     margin-bottom: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
-    min-height: 280px;
-    max-width: 100%;
+    min-height: 400px;
+    max-height: 500px;
+    width: 100%;
     border-radius: 12px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 .main-image {
     max-width: 100%;
-    max-height: 300px;
+    max-height: 450px;
     width: auto;
     height: auto;
     object-fit: contain;
@@ -363,26 +375,14 @@ main h3 {
     object-fit: contain;
 }
 
-/* Product Info */
-.product-info-section {
-    background: var(--bg-white);
-    padding: 14px 16px;
-    display: flex;
-    gap: 20px;
-    align-items: flex-start;
-    border: 1px solid var(--border-light);
-    border-radius: 12px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-    margin-bottom: 16px;
-}
-
 /* Product Details */
 .product-details {
     flex: 1;
+    min-width: 0;
 }
 
 .product-title {
-    font-size: 1.5rem;
+    font-size: 1.35rem;
     font-weight: 600;
     color: var(--text-dark);
     margin-bottom: 12px;
@@ -412,14 +412,16 @@ main h3 {
 }
 
 .review-link {
-    color: #130325;
+    color: var(--primary-dark);
     text-decoration: none;
-    font-size: 16px;
+    font-size: 12px;
     font-weight: 600;
-    margin-left: 10px;
+    margin-left: 8px;
+    transition: color 0.2s;
 }
 
 .review-link:hover {
+    color: var(--accent-yellow);
     text-decoration: underline;
 }
 
@@ -638,7 +640,7 @@ main h3 {
     background: var(--accent-yellow);
     color: var(--primary-dark);
     border: 1px solid var(--accent-yellow);
-    padding: 10px 16px;
+    padding: 8px 14px;
     border-radius: 8px;
     font-size: 13px;
     font-weight: 600;
@@ -650,7 +652,7 @@ main h3 {
     gap: 6px;
     width: auto;
     min-width: 130px;
-    height: 40px;
+    height: 38px;
     flex-shrink: 0;
 }
 
@@ -658,14 +660,14 @@ main h3 {
     background: #ffd020;
     border-color: #ffd020;
     transform: translateY(-1px);
-    box-shadow: 0 2px 6px rgba(255, 215, 54, 0.3);
+    box-shadow: 0 2px 8px rgba(255, 215, 54, 0.3);
 }
 
 .btn-buy-now {
     background: var(--primary-dark);
     color: var(--bg-white);
     border: 1px solid var(--primary-dark);
-    padding: 10px 20px;
+    padding: 8px 18px;
     border-radius: 8px;
     font-size: 13px;
     font-weight: 600;
@@ -678,14 +680,14 @@ main h3 {
     margin-left: 8px;
     width: auto;
     min-width: 140px;
-    height: 40px;
+    height: 38px;
 }
 
 .btn-buy-now:hover {
     background: #0a0118;
     border-color: #0a0118;
     transform: translateY(-1px);
-    box-shadow: 0 2px 6px rgba(19, 3, 37, 0.3);
+    box-shadow: 0 2px 8px rgba(19, 3, 37, 0.3);
 }
 
 /* Social Sharing & Favorites */
@@ -789,12 +791,12 @@ main h3 {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin: 20px 0;
+    margin: 16px 0;
     padding: 14px 16px;
     background: var(--bg-white);
     border: 1px solid var(--border-light);
     border-radius: 12px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 .seller-profile {
@@ -879,12 +881,12 @@ main h3 {
 
 /* Product Details Section */
 .product-details-section {
-    margin: 20px 0;
+    margin: 16px 0;
     padding: 14px 16px;
     background: var(--bg-white);
     border: 1px solid var(--border-light);
     border-radius: 12px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 .product-category h3,
@@ -913,12 +915,12 @@ main h3 {
 
 /* Reviews Section */
 .reviews-section {
-    margin: 20px 0;
+    margin: 16px 0;
     padding: 14px 16px;
     background: var(--bg-white);
     border: 1px solid var(--border-light);
     border-radius: 12px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 .reviews-header {
@@ -935,7 +937,6 @@ main h3 {
     font-size: 1.1rem;
     color: var(--text-dark);
     font-weight: 600;
-    font-weight: 700;
 }
 
 .overall-rating {
@@ -1103,31 +1104,31 @@ main h3 {
     line-height: 1.5;
 }
 
-/* Review Success Modal */
+/* Review Success Modal - Using Logout Modal Design */
 .modal-overlay {
     display: none;
     position: fixed;
-    top: 0;
+    z-index: 10000;
     left: 0;
+    top: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.35);
-    z-index: 99999;
+    background: rgba(0,0,0,0.5);
     align-items: center;
     justify-content: center;
 }
 
 .modal-dialog {
-    width: 420px;
-    max-width: 90vw;
     background: #ffffff;
-    border: none;
     border-radius: 12px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-    animation: modalSlideIn 0.3s ease;
+    padding: 0;
+    max-width: 400px;
+    width: 90%;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+    animation: slideDown 0.3s ease;
 }
 
-@keyframes modalSlideIn {
+@keyframes slideDown {
     from {
         opacity: 0;
         transform: translateY(-20px);
@@ -1139,27 +1140,25 @@ main h3 {
 }
 
 .modal-header {
-    padding: 8px 12px;
     background: #130325;
-    color: #F9F9F9;
-    border-bottom: none;
+    color: #ffffff;
+    padding: 16px 20px;
+    border-radius: 12px 12px 0 0;
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    border-radius: 12px 12px 0 0;
+    gap: 10px;
 }
 
 .modal-title {
-    font-size: 12px;
-    font-weight: 800;
-    letter-spacing: 0.3px;
+    font-size: 14px;
+    font-weight: 700;
     margin: 0;
 }
 
 .modal-close {
     background: transparent;
     border: none;
-    color: #F9F9F9;
+    color: #ffffff;
     font-size: 20px;
     line-height: 1;
     cursor: pointer;
@@ -1170,6 +1169,7 @@ main h3 {
     align-items: center;
     justify-content: center;
     transition: opacity 0.2s;
+    margin-left: auto;
 }
 
 .modal-close:hover {
@@ -1177,36 +1177,34 @@ main h3 {
 }
 
 .modal-body {
-    padding: 16px;
+    padding: 20px;
     color: #130325;
-    font-size: 12px;
+    font-size: 13px;
+    line-height: 1.5;
 }
 
 .modal-actions {
     display: flex;
-    gap: 8px;
-    justify-content: center;
-    padding: 0 12px 12px 12px;
+    gap: 10px;
+    justify-content: flex-end;
+    padding: 16px 24px;
+    border-top: 1px solid #e5e7eb;
 }
 
 .btn-primary-y {
-    background: linear-gradient(135deg, #FFD736 0%, #FFC107 100%);
-    color: #130325;
+    background: #130325;
+    color: #ffffff;
     border: none;
-    border-radius: 8px;
-    padding: 6px 16px;
-    font-weight: 700;
-    font-size: 12px;
+    border-radius: 6px;
+    padding: 8px 20px;
+    font-weight: 600;
+    font-size: 14px;
     cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
     transition: all 0.2s ease;
 }
 
 .btn-primary-y:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(255, 215, 54, 0.3);
+    background: #0a0118;
 }
 
 .review-header {
@@ -1518,26 +1516,260 @@ main h3 {
     border: 1px solid #f5c6cb;
 }
 
+/* Review Form Styling */
+.review-form-container {
+    margin-top: 20px;
+    padding: 16px;
+    background: var(--bg-light);
+    border-radius: 8px;
+    border: 1px solid var(--border-light);
+}
+
+.review-form-container h4 {
+    margin: 0 0 12px 0;
+    font-size: 14px;
+    color: var(--text-dark);
+    font-weight: 600;
+}
+
+.form-group {
+    margin-bottom: 16px;
+}
+
+.form-label {
+    display: block;
+    color: var(--text-dark);
+    font-weight: 600;
+    margin-bottom: 8px;
+    font-size: 12px;
+}
+
+.star-rating {
+    display: flex;
+    flex-direction: row;
+    gap: 8px;
+    justify-content: flex-start;
+}
+
+.star-rating input {
+    display: none;
+}
+
+.star-rating label {
+    font-size: 28px;
+    color: rgba(255, 215, 54, 0.3);
+    cursor: pointer;
+    transition: all 0.2s;
+    text-shadow: none;
+}
+
+/* Star hover effect - highlight current and previous stars */
+.star-rating label:hover,
+.star-rating label:hover ~ label {
+    color: var(--accent-yellow);
+    transform: scale(1.1);
+}
+
+/* Highlight selected star and all stars before it */
+.star-rating input:checked ~ label {
+    color: var(--accent-yellow);
+}
+
+.star-rating input:checked + label {
+    color: var(--accent-yellow);
+}
+
+/* JavaScript will handle highlighting all stars up to selected rating */
+
+.form-textarea {
+    width: 100%;
+    padding: 10px 12px;
+    background: var(--bg-white);
+    border: 1px solid var(--border-light);
+    border-radius: 6px;
+    color: var(--text-dark);
+    font-size: 13px;
+    resize: vertical;
+    min-height: 100px;
+    font-family: inherit;
+}
+
+.form-textarea:focus {
+    outline: none;
+    border-color: var(--primary-dark);
+    box-shadow: 0 0 0 3px rgba(19, 3, 37, 0.1);
+}
+
+.btn-submit-review {
+    background: var(--primary-dark);
+    color: var(--bg-white);
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.btn-submit-review:hover {
+    background: #0a0118;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(19, 3, 37, 0.3);
+}
+
 /* Responsive */
 @media (max-width: 1200px) {
-    .product-main {
-        grid-template-columns: 400px 1fr;
-        gap: 30px;
+    .image-gallery {
+        flex: 0 0 400px;
+        width: 400px;
+    }
+    
+    .main-image-container {
+        min-height: 350px;
+        max-height: 400px;
+    }
+    
+    .main-image {
+        max-height: 380px;
     }
 }
 
 @media (max-width: 968px) {
-    .product-main {
-        grid-template-columns: 1fr;
+    .product-container {
+        padding: 12px 16px;
+    }
+    
+    .product-info-section {
+        flex-direction: column;
+        gap: 16px;
+        padding: 14px 16px;
     }
     
     .image-gallery {
+        flex: 0 0 auto;
+        width: 100%;
         position: relative;
         top: 0;
     }
     
+    .main-image-container {
+        min-height: 250px;
+        max-height: 300px;
+        padding: 12px;
+    }
+    
+    .main-image {
+        max-height: 250px;
+    }
+    
+    .thumbnail-grid {
+        grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+        gap: 8px;
+    }
+    
+    .thumbnail {
+        padding: 4px;
+    }
+    
+    .product-details {
+        width: 100%;
+    }
+    
     .action-buttons {
         flex-direction: column;
+        gap: 8px;
+        width: 100%;
+        margin-top: 12px;
+        padding-bottom: 20px;
+    }
+    
+    .btn-add-to-cart,
+    .btn-buy-now {
+        width: 100%;
+        margin-left: 0;
+        margin-top: 0;
+        padding: 10px 16px;
+        height: 42px;
+        font-size: 13px;
+    }
+    
+    .quantity-section {
+        margin: 12px 0;
+        padding: 10px 12px;
+    }
+    
+    .quantity-control {
+        flex: 1;
+    }
+    
+    .seller-section {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 16px;
+        padding: 12px 14px;
+    }
+    
+    .seller-details {
+        width: 100%;
+    }
+    
+    .product-details-section,
+    .reviews-section {
+        padding: 12px 14px;
+    }
+}
+
+@media (max-width: 640px) {
+    .product-container {
+        padding: 8px 12px;
+    }
+    
+    .product-info-section {
+        padding: 12px 14px;
+    }
+    
+    .main-image-container {
+        min-height: 200px;
+        max-height: 250px;
+        padding: 10px;
+    }
+    
+    .main-image {
+        max-height: 200px;
+    }
+    
+    .thumbnail-grid {
+        grid-template-columns: repeat(auto-fill, minmax(50px, 1fr));
+        gap: 6px;
+    }
+    
+    .product-title {
+        font-size: 1.1rem;
+    }
+    
+    .price-amount {
+        font-size: 1.3rem;
+    }
+    
+    .action-buttons {
+        gap: 6px;
+        padding-bottom: 16px;
+        margin-bottom: 0;
+    }
+    
+    .btn-add-to-cart,
+    .btn-buy-now {
+        padding: 8px 14px;
+        height: 38px;
+        font-size: 12px;
+    }
+    
+    .quantity-section {
+        padding: 8px 10px;
     }
 }
 </style>
@@ -1755,7 +1987,7 @@ main h3 {
                     </div>
                 <?php else: ?>
                     <?php foreach ($reviews as $review): ?>
-                        <div class="review-item <?php echo $review['is_hidden'] ? 'hidden-review' : ''; ?>" data-rating="<?php echo $review['rating']; ?>">
+                        <div class="review-item <?php echo $review['is_hidden'] ? 'hidden-review' : ''; ?>" data-rating="<?php echo $review['rating']; ?>" data-review-id="<?php echo $review['id']; ?>">
                             <div class="review-header">
                                 <span class="reviewer-name"><?php echo htmlspecialchars($review['username']); ?></span>
                                 <span class="review-date"><?php echo date('F j, Y', strtotime($review['created_at'])); ?></span>
@@ -1815,16 +2047,16 @@ main h3 {
                             <div class="form-group">
                                 <label class="form-label">Your Rating</label>
                                 <div class="star-rating">
-                                    <input type="radio" id="star5" name="rating" value="5" required>
-                                    <label for="star5" title="5 stars">★</label>
-                                    <input type="radio" id="star4" name="rating" value="4">
-                                    <label for="star4" title="4 stars">★</label>
-                                    <input type="radio" id="star3" name="rating" value="3">
-                                    <label for="star3" title="3 stars">★</label>
+                                    <input type="radio" id="star1" name="rating" value="1" required>
+                                    <label for="star1" title="1 star">★</label>
                                     <input type="radio" id="star2" name="rating" value="2">
                                     <label for="star2" title="2 stars">★</label>
-                                    <input type="radio" id="star1" name="rating" value="1">
-                                    <label for="star1" title="1 star">★</label>
+                                    <input type="radio" id="star3" name="rating" value="3">
+                                    <label for="star3" title="3 stars">★</label>
+                                    <input type="radio" id="star4" name="rating" value="4">
+                                    <label for="star4" title="4 stars">★</label>
+                                    <input type="radio" id="star5" name="rating" value="5">
+                                    <label for="star5" title="5 stars">★</label>
                                 </div>
                                 <div id="ratingWarning" style="display: none; color: var(--error-red); font-size: 12px; margin-top: 8px; padding: 8px; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 6px;">
                                     <i class="fas fa-exclamation-triangle"></i> Please select a rating before submitting your review.
@@ -1942,8 +2174,47 @@ function addToCart() {
     });
 }
 
-// Review form validation
+// Review form validation and rating parameter handling
 document.addEventListener('DOMContentLoaded', function() {
+    // Handle rating parameter from URL (from order-details.php rating modal)
+    const urlParams = new URLSearchParams(window.location.search);
+    const ratingParam = urlParams.get('rating');
+    
+    if (ratingParam) {
+        const rating = parseInt(ratingParam);
+        if (rating >= 1 && rating <= 5) {
+            const reviewForm = document.getElementById('reviewForm');
+            if (reviewForm) {
+                // Find and check the corresponding radio input
+                const ratingInput = reviewForm.querySelector(`input[name="rating"][value="${rating}"]`);
+                if (ratingInput) {
+                    ratingInput.checked = true;
+                    
+                    // Update visual state of stars (now in left-to-right order)
+                    const labels = reviewForm.querySelectorAll('.star-rating label');
+                    labels.forEach((label, index) => {
+                        const starValue = index + 1; // Stars are now in left-to-right order (1-5)
+                        if (starValue <= rating) {
+                            label.style.color = '#FFD736';
+                            label.style.textShadow = '0 0 10px rgba(255, 215, 54, 0.8)';
+                        } else {
+                            label.style.color = 'rgba(255, 215, 54, 0.3)';
+                            label.style.textShadow = 'none';
+                        }
+                    });
+                    
+                    // Scroll to review form
+                    setTimeout(() => {
+                        const reviewFormContainer = document.querySelector('.review-form-container');
+                        if (reviewFormContainer) {
+                            reviewFormContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }
+                    }, 300);
+                }
+            }
+        }
+    }
+    
     const reviewForm = document.getElementById('reviewForm');
     if (reviewForm) {
         reviewForm.addEventListener('submit', function(e) {
@@ -1972,16 +2243,63 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
         
-        // Hide warning when rating is selected
+        // Hide warning when rating is selected and update star display
         const ratingInputs = reviewForm.querySelectorAll('input[name="rating"]');
+        const labels = reviewForm.querySelectorAll('.star-rating label');
+        
+        function updateStarDisplay(selectedRating) {
+            labels.forEach((label, index) => {
+                const starValue = index + 1;
+                if (starValue <= selectedRating) {
+                    label.style.color = '#FFD736';
+                    label.style.textShadow = '0 0 10px rgba(255, 215, 54, 0.8)';
+                } else {
+                    label.style.color = 'rgba(255, 215, 54, 0.3)';
+                    label.style.textShadow = 'none';
+                }
+            });
+        }
+        
         ratingInputs.forEach(input => {
             input.addEventListener('change', function() {
                 const warningDiv = document.getElementById('ratingWarning');
                 if (warningDiv) {
                     warningDiv.style.display = 'none';
                 }
+                // Update star display
+                updateStarDisplay(parseInt(this.value));
             });
         });
+        
+        // Handle hover to show preview
+        labels.forEach((label, index) => {
+            label.addEventListener('mouseenter', function() {
+                const starValue = index + 1;
+                labels.forEach((l, i) => {
+                    if (i + 1 <= starValue) {
+                        l.style.color = '#FFD736';
+                    } else {
+                        l.style.color = 'rgba(255, 215, 54, 0.3)';
+                    }
+                });
+            });
+        });
+        
+        // Reset on mouse leave if no rating selected
+        const starRatingContainer = reviewForm.querySelector('.star-rating');
+        if (starRatingContainer) {
+            starRatingContainer.addEventListener('mouseleave', function() {
+                const checkedInput = reviewForm.querySelector('input[name="rating"]:checked');
+                if (checkedInput) {
+                    updateStarDisplay(parseInt(checkedInput.value));
+                } else {
+                    labels.forEach(label => {
+                        label.style.color = 'rgba(255, 215, 54, 0.3)';
+                        label.style.textShadow = 'none';
+                    });
+                }
+            });
+        }
     }
 });
 
@@ -2130,19 +2448,89 @@ document.querySelector('.review-link')?.addEventListener('click', function(e) {
 });
 
 // Auto-scroll to reviews section if hash is present
-if (window.location.hash === '#reviews-tab') {
+if (window.location.hash === '#reviews-tab' || window.location.hash.indexOf('#reviews-tab') !== -1) {
+    // Extract review_id from URL if present
+    const urlParams = new URLSearchParams(window.location.search);
+    const reviewId = urlParams.get('review_id') || null;
+    
+    // Also check hash for review_id (format: #reviews-tab&review_id=123)
+    let hashReviewId = null;
+    if (window.location.hash.indexOf('&review_id=') !== -1) {
+        const hashPart = window.location.hash.substring(window.location.hash.indexOf('&') + 1);
+        const hashParams = new URLSearchParams(hashPart);
+        hashReviewId = hashParams.get('review_id') || null;
+    }
+    
+    const targetReviewId = reviewId || hashReviewId;
+    
+    console.log('[DEBUG] Reviews tab hash detected - Review ID:', targetReviewId, 'URL:', window.location.href);
+    
     // Wait for page to load completely
     setTimeout(function() {
         const reviewsSection = document.getElementById('reviews-tab');
         if (reviewsSection) {
-            reviewsSection.scrollIntoView({ 
-                behavior: 'smooth', 
-                block: 'start',
-                inline: 'nearest'
-            });
+            // If specific review_id, scroll to that review
+            if (targetReviewId) {
+                const reviewElement = document.querySelector(`.review-item[data-review-id="${targetReviewId}"]`);
+                if (reviewElement) {
+                    console.log('[DEBUG] Scrolling to specific review:', targetReviewId);
+                    reviewElement.scrollIntoView({ 
+                        behavior: 'smooth', 
+                        block: 'center',
+                        inline: 'nearest'
+                    });
+                    // Highlight the review briefly
+                    reviewElement.style.transition = 'box-shadow 0.3s ease';
+                    reviewElement.style.boxShadow = '0 0 0 3px rgba(255, 215, 54, 0.5)';
+                    setTimeout(() => {
+                        reviewElement.style.boxShadow = '';
+                    }, 2000);
+                } else {
+                    console.log('[DEBUG] Review element not found, scrolling to reviews section');
+                    reviewsSection.scrollIntoView({ 
+                        behavior: 'smooth', 
+                        block: 'start',
+                        inline: 'nearest'
+                    });
+                }
+            } else {
+                // Just scroll to reviews section
+                reviewsSection.scrollIntoView({ 
+                    behavior: 'smooth', 
+                    block: 'start',
+                    inline: 'nearest'
+                });
+            }
+        } else {
+            console.log('[DEBUG] Reviews section not found');
         }
-    }, 100);
+    }, 300);
 }
+
+// Handle back button - if came from customer-notifications, go back there
+document.addEventListener('DOMContentLoaded', function() {
+    // Check if we came from customer-notifications (via referrer or sessionStorage)
+    const referrer = document.referrer;
+    const fromNotifications = sessionStorage.getItem('fromNotification') === 'true' || 
+                               (referrer && referrer.indexOf('customer-notifications.php') !== -1);
+    
+    if (fromNotifications) {
+        // Clear the flag
+        sessionStorage.removeItem('fromNotification');
+        
+        // Add history entry so back button goes to customer-notifications
+        if (window.history && window.history.replaceState) {
+            window.history.replaceState({ page: 'product-detail', fromNotification: true }, '', window.location.href);
+        }
+        
+        // Listen for back button
+        window.addEventListener('popstate', function(event) {
+            if (event.state && event.state.fromNotification) {
+                window.location.href = 'customer-notifications.php';
+            }
+        });
+    }
+});
 
 // Show styled Buy Now error message
 function showBuyNowError(message) {
@@ -2312,24 +2700,22 @@ function filterReviewsByStars() {
 
         </div>
 
-<!-- Review Success Modal -->
+<!-- Review Success Modal - Using Logout Modal Design -->
 <div id="reviewSuccessModal" class="modal-overlay" role="dialog" aria-modal="true" aria-hidden="true" style="display: none;">
     <div class="modal-dialog" onclick="event.stopPropagation()">
         <div class="modal-header">
+            <i class="fas fa-check-circle" style="font-size: 16px; color: #FFD736;"></i>
             <div class="modal-title">Review Submitted!</div>
             <button type="button" class="modal-close" onclick="closeReviewSuccessModal()">×</button>
         </div>
         <div class="modal-body">
-            <div style="text-align: center; padding: 10px 0;">
-                <i class="fas fa-check-circle" style="font-size: 48px; color: #28a745; margin-bottom: 12px;"></i>
-                <p style="margin: 0; color: #130325; font-size: 14px; line-height: 1.5; font-weight: 500;">
-                    Thank you for your review! Your feedback helps other customers make informed decisions.
-                </p>
-            </div>
+            <p style="margin: 0; color: #130325; font-size: 13px; line-height: 1.5;">
+                Thank you for your review! Your feedback helps other customers make informed decisions.
+            </p>
         </div>
         <div class="modal-actions">
             <button type="button" class="btn-primary-y" onclick="closeReviewSuccessModal()">
-                <i class="fas fa-check"></i> Got it!
+                Got it!
             </button>
         </div>
     </div>

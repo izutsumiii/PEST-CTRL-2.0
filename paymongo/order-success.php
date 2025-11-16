@@ -208,11 +208,13 @@ try {
             }
             
             // Create order for this seller
+            // For COD orders, payment_status should be 'pending', not 'completed'
+            $paymentStatus = ($paymentMethod === 'cod') ? 'pending' : 'completed';
             $stmt = $pdo->prepare("
                 INSERT INTO orders (
                     user_id, payment_transaction_id, seller_id, total_amount,
                     shipping_address, payment_method, status, payment_status
-                ) VALUES (?, ?, ?, ?, ?, ?, 'pending', 'completed')
+                ) VALUES (?, ?, ?, ?, ?, ?, 'pending', ?)
             ");
             $stmt->execute([
                 $userId, 
@@ -220,7 +222,8 @@ try {
                 $sellerIdInt,  // Use validated integer seller_id
                 $sellerGroup['subtotal'],
                 $shippingAddress, 
-                $paymentMethod
+                $paymentMethod,
+                $paymentStatus  // 'pending' for COD, 'completed' for others
             ]);
             $orderId = $pdo->lastInsertId();
             error_log('Order Success - Order #' . $orderId . ' created with seller_id: ' . $sellerIdInt);
@@ -251,14 +254,15 @@ try {
         $stmt = $pdo->prepare("UPDATE payment_transactions SET payment_status = 'completed' WHERE id = ?");
         $stmt->execute([$transactionId]);
         
+        // Get all orders we just created (needed for both seller and customer notifications)
+        $stmt = $pdo->prepare("SELECT * FROM orders WHERE payment_transaction_id = ?");
+        $stmt->execute([$transactionId]);
+        $createdOrders = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        error_log('Order Success - Found ' . count($createdOrders) . ' orders for transaction ' . $transactionId);
+        
         // Create seller notifications for all created orders
         if (file_exists(__DIR__ . '/../includes/seller_notification_functions.php')) {
             require_once __DIR__ . '/../includes/seller_notification_functions.php';
-            
-            // Get all orders we just created
-            $stmt = $pdo->prepare("SELECT * FROM orders WHERE payment_transaction_id = ?");
-            $stmt->execute([$transactionId]);
-            $createdOrders = $stmt->fetchAll(PDO::FETCH_ASSOC);
             
             foreach ($createdOrders as $createdOrder) {
                 $sellerId = $createdOrder['seller_id'];
@@ -279,27 +283,61 @@ try {
         
         // Create customer notifications for each order
         try {
-            foreach ($createdOrders as $createdOrder) {
-                $orderId = $createdOrder['id'];
-                $orderTotal = $createdOrder['total_amount'];
-                
-                $stmt = $pdo->prepare("
-                    INSERT INTO notifications (user_id, order_id, message, type, created_at) 
-                    VALUES (?, ?, ?, 'order_placed', NOW())
-                ");
-                $message = "Your order #" . str_pad($orderId, 6, '0', STR_PAD_LEFT) . " totaling ₱" . number_format($orderTotal, 2) . " has been placed successfully.";
-                $stmt->execute([$userId, $orderId, $message]);
+            if (isset($createdOrders) && !empty($createdOrders)) {
+                foreach ($createdOrders as $createdOrder) {
+                    $orderId = $createdOrder['id'];
+                    $orderTotal = $createdOrder['total_amount'];
+                    $sellerId = $createdOrder['seller_id'];
+                    
+                    // Get seller name for notification message
+                    $sellerStmt = $pdo->prepare("
+                        SELECT COALESCE(display_name, CONCAT(first_name, ' ', last_name), username, 'Unknown Seller') as seller_name
+                        FROM users WHERE id = ?
+                    ");
+                    $sellerStmt->execute([$sellerId]);
+                    $seller = $sellerStmt->fetch(PDO::FETCH_ASSOC);
+                    $sellerName = $seller['seller_name'] ?? 'Unknown Seller';
+                    
+                    // Check if notification already exists (prevent duplicates)
+                    $checkStmt = $pdo->prepare("SELECT id FROM notifications WHERE user_id = ? AND order_id = ? AND type = 'order_placed'");
+                    $checkStmt->execute([$userId, $orderId]);
+                    $existingNotif = $checkStmt->fetch(PDO::FETCH_ASSOC);
+                    
+                    if (!$existingNotif) {
+                        $stmt = $pdo->prepare("
+                            INSERT INTO notifications (user_id, order_id, message, type, created_at) 
+                            VALUES (?, ?, ?, 'order_placed', NOW())
+                        ");
+                        $message = "Order #" . str_pad($orderId, 6, '0', STR_PAD_LEFT) . " has been placed successfully with " . htmlspecialchars($sellerName) . ".";
+                        $stmt->execute([$userId, $orderId, $message]);
+                        error_log('Order Success - Created notification for order #' . $orderId . ' for user ' . $userId . ' with seller: ' . $sellerName);
+                    } else {
+                        error_log('Order Success - Notification already exists for order #' . $orderId . ', skipping duplicate');
+                    }
+                }
+                error_log('Order Success - Customer notifications created for ' . count($createdOrders) . ' orders');
+            } else {
+                error_log('Order Success - WARNING: $createdOrders is empty or not set, cannot create notifications');
             }
-            error_log('Order Success - Customer notifications created for ' . count($createdOrders) . ' orders');
         } catch (Exception $e) {
             error_log('Order Success - Error creating customer notification: ' . $e->getMessage());
+            error_log('Order Success - Stack trace: ' . $e->getTraceAsString());
         }
         
         // Clear cart items for this user
+        // Clear session-based cart (for guests)
         if (isset($_SESSION['cart_session_id'])) {
             $stmt = $pdo->prepare("DELETE FROM cart_items WHERE session_id = ?");
             $stmt->execute([$_SESSION['cart_session_id']]);
             error_log('Order Success - Cart cleared for session: ' . $_SESSION['cart_session_id']);
+        }
+        
+        // Clear database cart (for logged-in users)
+        if (isset($_SESSION['user_id'])) {
+            $userId = $_SESSION['user_id'];
+            $stmt = $pdo->prepare("DELETE FROM cart WHERE user_id = ?");
+            $stmt->execute([$userId]);
+            error_log('Order Success - Cart cleared for logged-in user: ' . $userId);
         }
         
         // Clear pending checkout session data
@@ -368,6 +406,36 @@ try {
     if (!empty($allOrders)) {
         $order = $allOrders[0];
     }
+    
+    // CRITICAL FIX: Create notifications for orders if they don't exist yet
+    // This handles cases where session was lost but orders were created
+    if (!empty($allOrders) && isset($_SESSION['user_id'])) {
+        $userId = $_SESSION['user_id'];
+        foreach ($allOrders as $existingOrder) {
+            $orderId = $existingOrder['id'];
+            $orderTotal = $existingOrder['total_amount'];
+            
+            // Check if notification already exists for this order
+            $checkStmt = $pdo->prepare("SELECT id FROM notifications WHERE user_id = ? AND order_id = ? AND type = 'order_placed'");
+            $checkStmt->execute([$userId, $orderId]);
+            $existingNotification = $checkStmt->fetch(PDO::FETCH_ASSOC);
+            
+            if (!$existingNotification) {
+                // Create notification if it doesn't exist
+                try {
+                    $notifStmt = $pdo->prepare("
+                        INSERT INTO notifications (user_id, order_id, message, type, created_at) 
+                        VALUES (?, ?, ?, 'order_placed', NOW())
+                    ");
+                    $message = "Your order #" . str_pad($orderId, 6, '0', STR_PAD_LEFT) . " totaling ₱" . number_format($orderTotal, 2) . " has been placed successfully.";
+                    $notifStmt->execute([$userId, $orderId, $message]);
+                    error_log('Order Success - Created missing notification for existing order #' . $orderId . ' for user ' . $userId);
+                } catch (Exception $e) {
+                    error_log('Order Success - Error creating notification for existing order: ' . $e->getMessage());
+                }
+            }
+        }
+    }
 }
     
     // If no order or transaction found, redirect
@@ -376,10 +444,34 @@ try {
         exit();
     }
     
-    // Get customer info - from transaction if available, otherwise from order
+    // Get customer info - prioritize session data (from checkout form), then transaction, then order
+    // Session data is the most accurate as it comes directly from the checkout form
+    $customerName = '';
+    $customerEmail = '';
+    $customerPhone = '';
+    
+    // First, try to get from session (stored during checkout)
+    if (isset($_SESSION['pending_customer_name']) && !empty($_SESSION['pending_customer_name'])) {
+        $customerName = $_SESSION['pending_customer_name'];
+    }
+    if (isset($_SESSION['pending_customer_email']) && !empty($_SESSION['pending_customer_email'])) {
+        $customerEmail = $_SESSION['pending_customer_email'];
+    }
+    if (isset($_SESSION['pending_customer_phone']) && !empty($_SESSION['pending_customer_phone'])) {
+        $customerPhone = $_SESSION['pending_customer_phone'];
+    }
+    
+    // If session data not available, fall back to transaction
     if ($transaction) {
-        $customerName = $transaction['customer_name'] ?? '';
-        $customerEmail = $transaction['customer_email'] ?? '';
+        if (empty($customerName)) {
+            $customerName = $transaction['customer_name'] ?? '';
+        }
+        if (empty($customerEmail)) {
+            $customerEmail = $transaction['customer_email'] ?? '';
+        }
+        if (empty($customerPhone)) {
+            $customerPhone = $transaction['customer_phone'] ?? '';
+        }
         $paymentMethod = $transaction['payment_method'] ?? '';
         
         // CRITICAL: Check if discount was applied
@@ -394,12 +486,21 @@ try {
             $totalAmount = (float)($transaction['total_amount'] ?? 0);
         }
     } else {
-        // Get customer info from order
-        $stmt = $pdo->prepare("SELECT first_name, last_name, email FROM users WHERE id = ?");
-        $stmt->execute([$order['user_id']]);
-        $customer = $stmt->fetch(PDO::FETCH_ASSOC);
-        $customerName = ($customer['first_name'] ?? '') . ' ' . ($customer['last_name'] ?? '');
-        $customerEmail = $customer['email'] ?? '';
+        // Get customer info from order (only if not already set from session)
+        if (empty($customerName) || empty($customerEmail)) {
+            $stmt = $pdo->prepare("SELECT first_name, last_name, email, phone FROM users WHERE id = ?");
+            $stmt->execute([$order['user_id']]);
+            $customer = $stmt->fetch(PDO::FETCH_ASSOC);
+            if (empty($customerName)) {
+                $customerName = trim(($customer['first_name'] ?? '') . ' ' . ($customer['last_name'] ?? ''));
+            }
+            if (empty($customerEmail)) {
+                $customerEmail = $customer['email'] ?? '';
+            }
+            if (empty($customerPhone)) {
+                $customerPhone = $customer['phone'] ?? '';
+            }
+        }
         $paymentMethod = $order['payment_method'] ?? '';
         $totalAmount = (float)($order['total_amount'] ?? 0);
         $hasDiscount = false;
@@ -881,6 +982,18 @@ body {
                     <span>Customer:</span>
                     <span><?php echo htmlspecialchars($customerName); ?></span>
                 </div>
+                <?php if (!empty($customerEmail)): ?>
+                <div>
+                    <span>Email:</span>
+                    <span><?php echo htmlspecialchars($customerEmail); ?></span>
+                </div>
+                <?php endif; ?>
+                <?php if (!empty($customerPhone)): ?>
+                <div>
+                    <span>Phone:</span>
+                    <span><?php echo htmlspecialchars($customerPhone); ?></span>
+                </div>
+                <?php endif; ?>
                 <div>
                     <span>Payment:</span>
                     <span style="color: var(--primary-dark); font-weight: 600;"><?php echo htmlspecialchars($paymentMethodDisplay); ?></span>
