@@ -564,6 +564,383 @@ try {
             grid-template-columns: 1fr;
         }
     }
+
+
+
+
+    /* ===== ENHANCED MOBILE RESPONSIVE STYLES ===== */
+
+/* Tablets and below */
+@media (max-width: 768px) {
+    body {
+        padding-bottom: 20px;
+    }
+
+    /* Alert adjustments */
+    .alert {
+        margin: 12px;
+        padding: 12px 16px;
+        font-size: 13px;
+    }
+
+    /* Breadcrumb */
+    .breadcrumb {
+        margin: -20px auto 12px;
+        padding: 0 12px;
+    }
+
+    .breadcrumb a {
+        font-size: 13px;
+    }
+
+    /* Page header */
+    .page-header {
+        padding: 0 12px;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    .page-header h1 {
+        font-size: 20px;
+    }
+
+    .page-actions {
+        width: 100%;
+        flex-direction: column;
+    }
+
+    .page-actions .action-btn {
+        width: 100%;
+        justify-content: center;
+        padding: 12px 16px;
+        font-size: 14px;
+    }
+
+    /* Container */
+    .container {
+        padding: 0 12px;
+    }
+
+    /* Profile section - stack vertically */
+    .profile-section {
+        flex-direction: column;
+        padding: 16px;
+        gap: 24px;
+    }
+
+    .profile-info,
+    .profile-stats {
+        min-width: 100%;
+    }
+
+    .profile-info h2,
+    .profile-stats h2 {
+        font-size: 16px;
+        margin-bottom: 14px;
+    }
+
+    /* Info rows - single column */
+    .info-row {
+        grid-template-columns: 1fr;
+        gap: 14px;
+        margin-bottom: 14px;
+    }
+
+    .info-item {
+        gap: 6px;
+    }
+
+    .info-item label {
+        font-size: 10px;
+    }
+
+    .info-item span {
+        font-size: 13px;
+    }
+
+    /* Stats grid - single column on mobile */
+    .stats-grid {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+
+    .stat-card {
+        padding: 14px;
+    }
+
+    .stat-number {
+        font-size: 20px;
+        margin-bottom: 6px;
+    }
+
+    .stat-label {
+        font-size: 10px;
+    }
+
+    /* Status badges */
+    .status-badge {
+        font-size: 11px;
+        padding: 5px 10px;
+    }
+
+    /* Orders section */
+    .orders-section {
+        padding: 16px;
+    }
+
+    .orders-section h2 {
+        font-size: 16px;
+        margin-bottom: 16px;
+    }
+
+    /* Hide table, show mobile cards */
+    .table-container {
+        border: none;
+        overflow-x: visible;
+    }
+
+    table {
+        display: none;
+    }
+
+    /* Mobile order cards */
+    .mobile-orders-container {
+        display: block;
+    }
+
+    .order-card {
+        background: #f9fafb;
+        border: 1px solid rgba(0,0,0,0.1);
+        border-radius: 10px;
+        padding: 16px;
+        margin-bottom: 12px;
+    }
+
+    .order-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid #e5e7eb;
+    }
+
+    .order-card-id {
+        font-size: 16px;
+        font-weight: 700;
+        color: #130325;
+    }
+
+    .order-card-body {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .order-card-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 6px 0;
+    }
+
+    .order-card-label {
+        font-size: 12px;
+        font-weight: 600;
+        color: #6b7280;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .order-card-value {
+        font-size: 14px;
+        font-weight: 600;
+        color: #130325;
+        text-align: right;
+    }
+
+    /* Pagination */
+    .pagination {
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-top: 16px;
+    }
+
+    .page-link {
+        padding: 6px 10px;
+        font-size: 12px;
+    }
+
+    /* Modals */
+    .modal-dialog {
+        width: calc(100% - 24px);
+        max-width: calc(100% - 24px);
+    }
+
+    .modal-body {
+        padding: 16px;
+    }
+
+    .modal-body p {
+        font-size: 13px !important;
+    }
+
+    .modal-actions {
+        padding: 12px 16px 16px 16px;
+        flex-wrap: wrap;
+    }
+
+    .btn-outline,
+    .btn-primary-y,
+    .btn-danger {
+        flex: 1;
+        min-width: 100px;
+        justify-content: center;
+        padding: 10px 14px;
+        font-size: 13px;
+    }
+}
+
+/* Small mobile devices */
+@media (max-width: 576px) {
+    .page-header h1 {
+        font-size: 18px;
+    }
+
+    .page-actions .action-btn {
+        padding: 10px 14px;
+        font-size: 13px;
+    }
+
+    .profile-section {
+        padding: 14px;
+    }
+
+    .profile-info h2,
+    .profile-stats h2 {
+        font-size: 15px;
+    }
+
+    .info-item label {
+        font-size: 9px;
+    }
+
+    .info-item span {
+        font-size: 12px;
+    }
+
+    .stat-card {
+        padding: 12px;
+    }
+
+    .stat-number {
+        font-size: 18px;
+    }
+
+    .stat-label {
+        font-size: 9px;
+    }
+
+    .orders-section {
+        padding: 14px;
+    }
+
+    .orders-section h2 {
+        font-size: 15px;
+    }
+
+    .order-card {
+        padding: 14px;
+    }
+
+    .order-card-id {
+        font-size: 15px;
+    }
+
+    .order-card-label {
+        font-size: 11px;
+    }
+
+    .order-card-value {
+        font-size: 13px;
+    }
+
+    .status-badge {
+        font-size: 10px;
+        padding: 4px 8px;
+    }
+}
+
+/* Tablet landscape */
+@media (min-width: 769px) and (max-width: 1024px) {
+    .container {
+        padding: 0 16px;
+    }
+
+    .profile-section {
+        gap: 24px;
+    }
+
+    .info-row {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* Hide mobile cards on desktop */
+@media (min-width: 769px) {
+    .mobile-orders-container {
+        display: none;
+    }
+}
+
+/* Very small devices */
+@media (max-width: 400px) {
+    .breadcrumb a {
+        font-size: 12px;
+    }
+
+    .page-header h1 {
+        font-size: 16px;
+    }
+
+    .profile-info h2,
+    .profile-stats h2,
+    .orders-section h2 {
+        font-size: 14px;
+    }
+
+    .stat-number {
+        font-size: 16px;
+    }
+
+    .order-card-id {
+        font-size: 14px;
+    }
+}
+
+/* Landscape mode for mobile */
+@media (max-height: 600px) and (orientation: landscape) {
+    .profile-section {
+        padding: 12px;
+    }
+
+    .orders-section {
+        padding: 12px;
+    }
+
+    .stat-card {
+        padding: 10px;
+    }
+
+    .order-card {
+        padding: 12px;
+    }
+}
 </style>
 
 <?php if ($message): ?>
@@ -834,4 +1211,76 @@ document.addEventListener('keydown', function(e) {
         });
     }
 });
+
+// Generate mobile order cards
+function generateMobileOrderCards() {
+    if (window.innerWidth > 768) {
+        // Remove mobile cards if they exist
+        const existingContainer = document.querySelector('.mobile-orders-container');
+        if (existingContainer) {
+            existingContainer.remove();
+        }
+        return;
+    }
+    
+    const table = document.querySelector('.table-container table');
+    if (!table) return;
+    
+    const tbody = table.querySelector('tbody');
+    if (!tbody) return;
+    
+    const rows = tbody.querySelectorAll('tr');
+    if (rows.length === 0) return;
+    
+    let container = document.querySelector('.mobile-orders-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.className = 'mobile-orders-container';
+        table.parentNode.insertBefore(container, table);
+    }
+    
+    container.innerHTML = '';
+    
+    rows.forEach(row => {
+        const cells = row.querySelectorAll('td');
+        if (cells.length < 4) return;
+        
+        const orderId = cells[0].textContent.trim();
+        const date = cells[1].textContent.trim();
+        const statusBadge = cells[2].querySelector('.status-badge');
+        const amount = cells[3].textContent.trim();
+        
+        const statusClass = statusBadge ? statusBadge.className : '';
+        const statusText = statusBadge ? statusBadge.textContent.trim() : '';
+        
+        const card = document.createElement('div');
+        card.className = 'order-card';
+        
+        card.innerHTML = `
+            <div class="order-card-header">
+                <div class="order-card-id">${orderId}</div>
+                <span class="${statusClass}">${statusText}</span>
+            </div>
+            <div class="order-card-body">
+                <div class="order-card-row">
+                    <span class="order-card-label">Date</span>
+                    <span class="order-card-value" style="font-size: 12px;">${date}</span>
+                </div>
+                <div class="order-card-row">
+                    <span class="order-card-label">Amount</span>
+                    <span class="order-card-value">${amount}</span>
+                </div>
+            </div>
+        `;
+        
+        container.appendChild(card);
+    });
+}
+
+// Call on load and resize
+window.addEventListener('load', generateMobileOrderCards);
+window.addEventListener('resize', generateMobileOrderCards);
+
+// Also call when DOM is ready
+document.addEventListener('DOMContentLoaded', generateMobileOrderCards);
 </script>
