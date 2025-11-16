@@ -606,9 +606,404 @@ $totalPages = ceil($totalSellers / $limit);
             justify-content: center;
         }
     }
+    /* Enhanced Mobile Responsive Styles */
+@media (max-width: 768px) {
+    /* Container adjustments */
+    .container {
+        padding: 0 12px;
+        margin-top: 0;
+    }
+    
+    /* Page heading - stack vertically */
+    .container > h1 {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 8px !important;
+        padding: 0 !important;
+        margin: 0 0 16px 0 !important;
+    }
+    
+    .page-heading-title {
+        font-size: 18px !important;
+    }
+    
+    .total-count-badge {
+        margin-left: 0 !important;
+        font-size: 13px;
+        padding: 5px 12px;
+    }
+    
+    /* Filter section - stack inputs */
+    .filter-section {
+        padding: 16px !important;
+    }
+    
+    .status-filters {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .seller-filter-form {
+        flex-direction: column !important;
+        gap: 10px !important;
+        align-items: stretch !important;
+    }
+    
+    .seller-filter-form .filter-select,
+    .seller-filter-form .search-input {
+        min-width: 100% !important;
+        max-width: 100% !important;
+        width: 100% !important;
+    }
+    
+    .seller-filter-form .btn-search {
+        width: 100% !important;
+        height: 44px !important;
+        font-size: 14px;
+        justify-content: center;
+        gap: 8px;
+    }
+    
+    .seller-filter-form .btn-search::after {
+        content: 'Search';
+        margin-left: 4px;
+    }
+    
+    /* Alert adjustments */
+    .alert {
+        margin: 12px;
+        padding: 12px 16px;
+        font-size: 13px;
+    }
+    
+    /* Table container - card style on mobile */
+    .table-container {
+        padding: 0 !important;
+        border: none !important;
+        background: transparent !important;
+        box-shadow: none !important;
+    }
+    
+    .table-wrapper {
+        overflow-x: visible !important;
+    }
+    
+    /* Hide table, show cards */
+    table {
+        display: none;
+    }
+    
+    /* Mobile card layout */
+    .mobile-card-container {
+        display: block;
+    }
+    
+    .seller-card {
+        background: #ffffff;
+        border: 1px solid rgba(0,0,0,0.1);
+        border-radius: 12px;
+        padding: 16px;
+        margin-bottom: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    
+    .seller-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 12px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid #f0f0f0;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+    
+    .seller-card-id {
+        font-size: 16px;
+        font-weight: 700;
+        color: #130325;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+    
+    .seller-card-id .invalid-id-warning {
+        font-size: 11px;
+        color: #dc2626;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+    }
+    
+    .seller-card-status-container {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 4px;
+    }
+    
+    .seller-card-body {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .seller-card-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 6px 0;
+    }
+    
+    .seller-card-label {
+        font-size: 12px;
+        font-weight: 600;
+        color: #6b7280;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .seller-card-value {
+        font-size: 14px;
+        font-weight: 500;
+        color: #130325;
+        text-align: right;
+        max-width: 60%;
+        word-break: break-word;
+    }
+    
+    .seller-card-actions {
+        display: flex;
+        gap: 8px;
+        margin-top: 12px;
+        padding-top: 12px;
+        border-top: 1px solid #f0f0f0;
+        flex-wrap: wrap;
+    }
+    
+    .seller-card-actions .action-btn {
+        flex: 1;
+        min-width: 80px;
+        width: auto;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        font-size: 12px;
+        font-weight: 600;
+        border-radius: 6px;
+    }
+    
+    .seller-card-actions .action-btn i {
+        position: static;
+        transform: none;
+        font-size: 13px;
+    }
+    
+    /* Action button labels for mobile */
+    .seller-card-actions .btn-view::after {
+        content: 'View';
+    }
+    
+    .seller-card-actions .btn-approve::after {
+        content: 'Approve';
+    }
+    
+    .seller-card-actions .btn-reject::after {
+        content: 'Reject';
+    }
+    
+    .seller-card-actions .btn-suspend::after {
+        content: 'Suspend';
+    }
+    
+    .seller-card-actions .btn-ban::after {
+        content: 'Ban';
+    }
+    
+    .seller-card-actions .btn-restore::after {
+        content: 'Restore';
+    }
+    
+    .seller-card-actions .action-btn[title="Fix ID"]::after {
+        content: 'Fix ID';
+    }
+    
+    /* Pagination adjustments */
+    .pagination {
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+    
+    .page-link {
+        padding: 6px 10px;
+        font-size: 12px;
+    }
+    
+    .pagination-info {
+        font-size: 12px;
+        margin-top: 10px;
+    }
+    
+    /* Status badge adjustments for mobile */
+    .status-badge {
+        min-width: 75px;
+        max-width: 85px;
+        font-size: 10px;
+        padding: 4px 8px;
+    }
+    
+    .verified {
+        font-size: 10px;
+        margin-top: 2px;
+    }
+}
+
+/* Tablet adjustments */
+@media (min-width: 769px) and (max-width: 1024px) {
+    .container {
+        max-width: 100%;
+        padding: 0 16px;
+    }
+    
+    .seller-filter-form .search-input {
+        min-width: 200px !important;
+        max-width: 280px !important;
+    }
+    
+    table {
+        font-size: 13px;
+    }
+    
+    th, td {
+        padding: 10px 12px;
+    }
+}
+
+/* Hide mobile cards on desktop */
+@media (min-width: 769px) {
+    .mobile-card-container {
+        display: none;
+    }
+}
 </style>
 
 <script>
+    // Generate mobile-friendly cards from table data
+function generateSellerMobileCards() {
+    if (window.innerWidth > 768) return;
+    
+    const table = document.getElementById('sellersTable');
+    if (!table) return;
+    
+    const tbody = table.querySelector('tbody');
+    if (!tbody) return;
+    
+    let container = document.querySelector('.mobile-card-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.className = 'mobile-card-container';
+        table.parentNode.insertBefore(container, table);
+    }
+    
+    container.innerHTML = '';
+    
+    const rows = tbody.querySelectorAll('tr');
+    rows.forEach(row => {
+        const cells = row.querySelectorAll('td');
+        if (cells.length < 6) return;
+        
+        const card = document.createElement('div');
+        card.className = 'seller-card';
+        
+        const idCell = cells[0];
+        const id = idCell.querySelector('strong') ? idCell.querySelector('strong').textContent.trim() : '';
+        const hasInvalidId = idCell.textContent.includes('Invalid ID');
+        
+        const username = cells[1].textContent.trim();
+        const email = cells[2].textContent.trim();
+        const statusCell = cells[3];
+        const statusBadge = statusCell.querySelector('.status-badge');
+        const verifiedBadge = statusCell.querySelector('.verified');
+        const registered = cells[4].textContent.trim();
+        const actions = cells[5].querySelector('.action-buttons');
+        
+        const statusBadgeHTML = statusBadge ? statusBadge.outerHTML : '';
+        const verifiedHTML = verifiedBadge ? verifiedBadge.outerHTML : '';
+        
+        card.innerHTML = `
+            <div class="seller-card-header">
+                <div class="seller-card-id">
+                    ${id}
+                    ${hasInvalidId ? '<span class="invalid-id-warning">⚠️ Invalid ID</span>' : ''}
+                </div>
+                <div class="seller-card-status-container">
+                    ${statusBadgeHTML}
+                    ${verifiedHTML}
+                </div>
+            </div>
+            <div class="seller-card-body">
+                <div class="seller-card-row">
+                    <span class="seller-card-label">Username</span>
+                    <span class="seller-card-value">${username}</span>
+                </div>
+                <div class="seller-card-row">
+                    <span class="seller-card-label">Email</span>
+                    <span class="seller-card-value">${email}</span>
+                </div>
+                <div class="seller-card-row">
+                    <span class="seller-card-label">Registered</span>
+                    <span class="seller-card-value">${registered}</span>
+                </div>
+            </div>
+            <div class="seller-card-actions"></div>
+        `;
+        
+        if (actions) {
+            const cardActions = card.querySelector('.seller-card-actions');
+            const actionButtons = actions.querySelectorAll('.action-btn');
+            actionButtons.forEach(btn => {
+                const newBtn = btn.cloneNode(true);
+                cardActions.appendChild(newBtn);
+            });
+        }
+        
+        container.appendChild(card);
+    });
+    
+    // Re-attach event listeners for mobile cards
+    attachSellerMobileEventListeners();
+}
+
+function attachSellerMobileEventListeners() {
+    // Re-attach all action button listeners for mobile cards
+    document.querySelectorAll('.mobile-card-container a[href*="admin-sellers"]').forEach(function(link){
+        link.addEventListener('click', function(e){
+            if (link.href.includes('action=')) {
+                e.preventDefault();
+                const url = new URL(link.href, window.location.origin);
+                const action = (url.searchParams.get('action')||'').toLowerCase();
+                let msg='Proceed with this action?'; let label='Confirm';
+                if (action==='approve') { msg='Approve this seller?'; label='Approve'; }
+                else if (action==='reject') { msg='Reject this seller?'; label='Reject'; }
+                else if (action==='suspend') { msg='Suspend this seller?'; label='Suspend'; }
+                else if (action==='ban') { msg='Ban this seller?'; label='Ban'; }
+                else if (action==='restore') { msg='Restore this seller to approved?'; label='Restore'; }
+                else if (action==='verify_documents') { msg='Verify this seller\'s documents?'; label='Verify'; }
+                else if (action==='unverify_documents') { msg='Remove document verification for this seller?'; label='Unverify'; }
+                else if (action==='fix_id') { msg='This will assign a proper ID to this seller. Continue?'; label='Fix ID'; }
+                adminConfirmSeller(msg, label).then((ok)=>{ if (ok) window.location.href = link.href; });
+            }
+        });
+    });
+}
+
+// Call on load and resize
+window.addEventListener('load', generateSellerMobileCards);
+window.addEventListener('resize', generateSellerMobileCards);
 // Uniform confirm dialog for admin seller actions
 function adminConfirmSeller(message, label){
   return new Promise(function(resolve){
@@ -646,6 +1041,9 @@ document.addEventListener('DOMContentLoaded', function(){
     });
   });
 });
+
+
+
 </script>
 
 <!-- Removed legacy showCustomConfirm; unified confirm is used above -->
@@ -814,6 +1212,7 @@ document.addEventListener('DOMContentLoaded', function(){
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    generateSellerMobileCards();
     const alertEl = document.getElementById('page-alert');
     if (alertEl) {
         setTimeout(() => {
