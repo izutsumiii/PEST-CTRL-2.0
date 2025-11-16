@@ -1855,6 +1855,633 @@ try {
         }
     }
 
+
+
+
+/* ===== ENHANCED MOBILE RESPONSIVE STYLES ===== */
+
+/* Large Tablets and Small Desktops */
+@media (max-width: 1024px) {
+    .settings-container {
+        padding: 0 20px 20px;
+    }
+
+    .page-header {
+        padding: 0 16px !important;
+    }
+
+    .form-row {
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+    }
+
+    .discount-table {
+        font-size: 13px;
+    }
+
+    .discount-table th,
+    .discount-table td {
+        padding: 10px 12px;
+    }
+}
+
+/* Tablets (Portrait) and below */
+@media (max-width: 768px) {
+    /* Page header */
+    .page-header {
+        flex-direction: column;
+        align-items: flex-start !important;
+        gap: 8px !important;
+        padding: 0 12px !important;
+        margin: -20px auto 16px auto !important;
+    }
+
+    .page-header h1,
+    .page-heading-title {
+        font-size: 18px !important;
+    }
+
+    /* Container */
+    .settings-container {
+        padding: 0 16px 16px;
+        margin-top: 0;
+    }
+
+    /* Settings cards */
+    .settings-card {
+        padding: 20px 16px;
+        margin-bottom: 20px;
+    }
+
+    .settings-card h3 {
+        font-size: 16px;
+        flex-direction: column;
+        align-items: flex-start !important;
+        gap: 10px;
+    }
+
+    .section-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    .section-header .info-icon {
+        margin-left: 0;
+        align-self: flex-start;
+    }
+
+    .status-badge {
+        align-self: flex-start;
+        margin-left: 0;
+    }
+
+    /* Form adjustments */
+    .form-row {
+        grid-template-columns: 1fr !important;
+        gap: 16px;
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+        width: 100%;
+        max-width: 100%;
+        padding: 10px 12px;
+        font-size: 14px;
+    }
+
+    .form-group input[type="datetime-local"] {
+        max-width: 100%;
+    }
+
+    .input-group {
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    /* Buttons */
+    .btn-save,
+    .btn-cancel,
+    .btn-add-discount,
+    .btn-edit {
+        width: 100%;
+        justify-content: center;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 12px 20px;
+        font-size: 14px;
+    }
+
+    .form-actions {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    /* Toggle container */
+    .toggle-container {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    .toggle-label {
+        align-self: flex-start;
+    }
+
+    /* Schedule grid */
+    .schedule-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+
+    /* Discount table - convert to cards */
+    .discount-table {
+        display: none;
+    }
+
+    .discount-codes-list {
+        display: block;
+    }
+
+    .mobile-discount-card {
+        background: #f9fafb;
+        border: 1px solid #e5e7eb;
+        border-radius: 10px;
+        padding: 16px;
+        margin-bottom: 12px;
+    }
+
+    .mobile-discount-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 12px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid #e5e7eb;
+        gap: 10px;
+    }
+
+    .mobile-discount-code {
+        font-size: 18px;
+        font-weight: 700;
+        color: #130325;
+        word-break: break-all;
+    }
+
+    .mobile-discount-card-body {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        margin-bottom: 12px;
+    }
+
+    .mobile-discount-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 0;
+        gap: 10px;
+    }
+
+    .mobile-discount-label {
+        font-size: 12px;
+        font-weight: 600;
+        color: #6b7280;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .mobile-discount-value {
+        font-size: 14px;
+        font-weight: 600;
+        color: #130325;
+        text-align: right;
+    }
+
+    .mobile-discount-actions {
+        display: flex;
+        gap: 8px;
+        padding-top: 12px;
+        border-top: 1px solid #e5e7eb;
+    }
+
+    .mobile-discount-actions .btn-edit-small,
+    .mobile-discount-actions .btn-delete-small {
+        flex: 1;
+        width: auto;
+        height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        border-radius: 8px;
+    }
+
+    .mobile-discount-actions .btn-edit-small::after {
+        content: 'Edit';
+    }
+
+    .mobile-discount-actions .btn-delete-small::after {
+        content: 'Delete';
+    }
+
+    /* Info boxes */
+    .info-box-maintenance,
+    .maintenance-warning,
+    .schedule-info-box {
+        padding: 12px;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    .info-box-maintenance i,
+    .maintenance-warning i,
+    .schedule-info-box i {
+        font-size: 18px;
+    }
+
+    .info-box-maintenance li {
+        font-size: 12px;
+    }
+
+    .schedule-info-box p {
+        font-size: 12px;
+    }
+
+    /* Modals */
+    .info-modal-dialog {
+        padding: 24px;
+        width: 95%;
+        max-height: 85vh;
+    }
+
+    .info-modal-title {
+        font-size: 18px;
+    }
+
+    .info-modal-body {
+        font-size: 14px;
+    }
+
+    .info-modal-body h4 {
+        font-size: 15px;
+    }
+
+    .info-modal-body li {
+        font-size: 13px;
+    }
+
+    #maintenanceConfirmModal .modal-dialog,
+    #editDiscountModal .modal-dialog,
+    #deleteDiscountModal .modal-dialog {
+        width: calc(100% - 24px);
+        max-width: calc(100% - 24px);
+    }
+
+    /* Toast */
+    .toast-notification {
+        min-width: 280px;
+        max-width: calc(100vw - 40px);
+        top: 70px;
+        font-size: 14px;
+    }
+
+    /* View content */
+    .view-content {
+        gap: 12px;
+    }
+
+    .view-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+    }
+
+    .view-item strong {
+        font-size: 12px;
+    }
+
+    .view-item span {
+        font-size: 14px;
+    }
+}
+
+/* Mobile Devices (Large) */
+@media (max-width: 576px) {
+    .page-header {
+        margin: -15px auto 12px auto !important;
+    }
+
+    .page-header h1,
+    .page-heading-title {
+        font-size: 16px !important;
+    }
+
+    .settings-container {
+        padding: 0 12px 12px;
+    }
+
+    .settings-card {
+        padding: 16px 14px;
+        margin-bottom: 16px;
+        border-radius: 10px;
+    }
+
+    .settings-card h3 {
+        font-size: 15px;
+        margin-bottom: 16px;
+    }
+
+    .section-header {
+        margin-bottom: 14px;
+        padding-bottom: 10px;
+    }
+
+    .form-group {
+        margin-bottom: 16px;
+    }
+
+    .form-group label {
+        font-size: 12px;
+        margin-bottom: 6px;
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+        padding: 10px 12px;
+        font-size: 14px;
+    }
+
+    .btn-save,
+    .btn-cancel,
+    .btn-add-discount,
+    .btn-edit {
+        padding: 12px 18px;
+        font-size: 14px;
+    }
+
+    .toggle-label {
+        width: 50px;
+        height: 26px;
+    }
+
+    .toggle-slider:before {
+        height: 18px;
+        width: 18px;
+    }
+
+    input:checked + .toggle-slider:before {
+        transform: translateX(24px);
+    }
+
+    .toggle-info strong {
+        font-size: 14px;
+    }
+
+    .toggle-info p {
+        font-size: 12px;
+    }
+
+    .schedule-header h4 {
+        font-size: 15px;
+    }
+
+    .schedule-header p {
+        font-size: 12px;
+    }
+
+    .form-help-text {
+        font-size: 11px;
+    }
+
+    .current-value-badge {
+        font-size: 12px;
+        padding: 5px 10px;
+    }
+
+    .status-badge {
+        font-size: 10px;
+        padding: 5px 12px;
+    }
+
+    .mobile-discount-card {
+        padding: 14px;
+    }
+
+    .mobile-discount-code {
+        font-size: 16px;
+    }
+
+    .mobile-discount-row {
+        padding: 6px 0;
+    }
+
+    .mobile-discount-label {
+        font-size: 11px;
+    }
+
+    .mobile-discount-value {
+        font-size: 13px;
+    }
+
+    .mobile-discount-actions .btn-edit-small,
+    .mobile-discount-actions .btn-delete-small {
+        height: 40px;
+        font-size: 13px;
+    }
+
+    .info-modal-dialog {
+        padding: 20px;
+    }
+
+    .info-modal-title {
+        font-size: 16px;
+    }
+
+    .info-modal-body {
+        font-size: 13px;
+    }
+
+    .info-modal-body h4 {
+        font-size: 14px;
+    }
+
+    .info-modal-body li {
+        font-size: 12px;
+    }
+
+    .toast-notification {
+        min-width: 260px;
+        padding: 14px 16px;
+        font-size: 13px;
+        top: 60px;
+    }
+}
+
+/* Mobile Devices (Small) */
+@media (max-width: 400px) {
+    .settings-card {
+        padding: 14px 12px;
+    }
+
+    .settings-card h3 {
+        font-size: 14px;
+    }
+
+    .form-group label {
+        font-size: 11px;
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+        font-size: 13px;
+        padding: 9px 11px;
+    }
+
+    .btn-save,
+    .btn-cancel,
+    .btn-add-discount,
+    .btn-edit {
+        padding: 10px 16px;
+        font-size: 13px;
+    }
+
+    .toggle-label {
+        width: 46px;
+        height: 24px;
+    }
+
+    .toggle-slider:before {
+        height: 16px;
+        width: 16px;
+    }
+
+    input:checked + .toggle-slider:before {
+        transform: translateX(22px);
+    }
+
+    .toggle-info strong {
+        font-size: 13px;
+    }
+
+    .toggle-info p {
+        font-size: 11px;
+    }
+
+    .current-value-badge {
+        font-size: 11px;
+        padding: 4px 8px;
+    }
+
+    .mobile-discount-card {
+        padding: 12px;
+    }
+
+    .mobile-discount-code {
+        font-size: 15px;
+    }
+
+    .mobile-discount-label {
+        font-size: 10px;
+    }
+
+    .mobile-discount-value {
+        font-size: 12px;
+    }
+
+    .info-modal-dialog {
+        padding: 16px;
+    }
+
+    .info-modal-close {
+        width: 28px;
+        height: 28px;
+        font-size: 24px;
+    }
+
+    .toast-notification {
+        min-width: 240px;
+        padding: 12px 14px;
+        font-size: 12px;
+    }
+}
+
+/* Landscape Mode for Mobile */
+@media (max-height: 600px) and (orientation: landscape) {
+    .settings-card {
+        padding: 16px;
+    }
+
+    .form-group {
+        margin-bottom: 12px;
+    }
+
+    .settings-card h3 {
+        margin-bottom: 12px;
+    }
+
+    .toggle-container {
+        padding: 12px;
+    }
+
+    .info-box-maintenance,
+    .maintenance-warning,
+    .schedule-info-box {
+        padding: 10px;
+    }
+
+    .info-modal-dialog {
+        max-height: 90vh;
+        padding: 20px;
+    }
+
+    .toast-notification {
+        top: 50px;
+    }
+}
+
+/* Very small devices */
+@media (max-width: 320px) {
+    .page-header h1,
+    .page-heading-title {
+        font-size: 15px !important;
+    }
+
+    .settings-card {
+        padding: 12px 10px;
+    }
+
+    .settings-card h3 {
+        font-size: 13px;
+    }
+
+    .btn-save,
+    .btn-cancel,
+    .btn-add-discount,
+    .btn-edit {
+        padding: 9px 14px;
+        font-size: 12px;
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+        font-size: 12px;
+        padding: 8px 10px;
+    }
+
+    .info-modal-dialog {
+        padding: 14px;
+    }
+}
+
 </style>
 
 <div class="page-header">
@@ -3370,6 +3997,138 @@ function updateChangeType() {
         }
     }
 }
+
+
+
+// Generate mobile discount cards
+function generateMobileDiscountCards() {
+    if (window.innerWidth > 768) {
+        // Remove mobile cards if they exist
+        const existingCards = document.querySelector('.mobile-discount-cards-container');
+        if (existingCards) {
+            existingCards.remove();
+        }
+        return;
+    }
+    
+    const table = document.querySelector('.discount-table');
+    if (!table) return;
+    
+    const tbody = table.querySelector('tbody');
+    if (!tbody) return;
+    
+    // Check if table has discount rows
+    const rows = tbody.querySelectorAll('tr');
+    if (rows.length === 0 || (rows.length === 1 && rows[0].querySelector('td[colspan]'))) {
+        return; // No discounts or empty message
+    }
+    
+    let container = document.querySelector('.mobile-discount-cards-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.className = 'mobile-discount-cards-container';
+        table.parentNode.insertBefore(container, table);
+    }
+    
+    container.innerHTML = '';
+    
+    rows.forEach(row => {
+        const cells = row.querySelectorAll('td');
+        if (cells.length < 8) return;
+        
+        const code = cells[0].textContent.trim();
+        const type = cells[1].textContent.trim();
+        const value = cells[2].textContent.trim();
+        const minOrder = cells[3].textContent.trim();
+        const uses = cells[4].textContent.trim();
+        const period = cells[5].textContent.trim();
+        const statusBadge = cells[6].querySelector('.status-badge-compact');
+        const actions = cells[7];
+        
+        const card = document.createElement('div');
+        card.className = 'mobile-discount-card';
+        
+        card.innerHTML = `
+            <div class="mobile-discount-card-header">
+                <div class="mobile-discount-code">${code}</div>
+                ${statusBadge ? statusBadge.outerHTML : ''}
+            </div>
+            <div class="mobile-discount-card-body">
+                <div class="mobile-discount-row">
+                    <span class="mobile-discount-label">Type</span>
+                    <span class="mobile-discount-value">${type}</span>
+                </div>
+                <div class="mobile-discount-row">
+                    <span class="mobile-discount-label">Value</span>
+                    <span class="mobile-discount-value">${value}</span>
+                </div>
+                <div class="mobile-discount-row">
+                    <span class="mobile-discount-label">Min Order</span>
+                    <span class="mobile-discount-value">${minOrder}</span>
+                </div>
+                <div class="mobile-discount-row">
+                    <span class="mobile-discount-label">Uses</span>
+                    <span class="mobile-discount-value">${uses}</span>
+                </div>
+                <div class="mobile-discount-row">
+                    <span class="mobile-discount-label">Valid Period</span>
+                    <span class="mobile-discount-value" style="font-size: 12px;">${period}</span>
+                </div>
+            </div>
+            <div class="mobile-discount-actions"></div>
+        `;
+        
+        if (actions) {
+            const cardActions = card.querySelector('.mobile-discount-actions');
+            const actionButtons = actions.querySelectorAll('.btn-edit-small, .btn-delete-small');
+            actionButtons.forEach(btn => {
+                const newBtn = btn.cloneNode(true);
+                cardActions.appendChild(newBtn);
+            });
+        }
+        
+        container.appendChild(card);
+    });
+    
+    // Re-attach event listeners
+    attachMobileDiscountEventListeners();
+}
+
+function attachMobileDiscountEventListeners() {
+    // Re-attach edit button listeners
+    document.querySelectorAll('.mobile-discount-actions .btn-edit-small').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            const onclick = this.getAttribute('onclick');
+            if (onclick) {
+                eval(onclick);
+            }
+        });
+    });
+    
+    // Re-attach delete button listeners
+    document.querySelectorAll('.mobile-discount-actions .btn-delete-small').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            const onclick = this.getAttribute('onclick');
+            if (onclick) {
+                eval(onclick);
+            }
+        });
+    });
+}
+
+// Call on load and resize
+window.addEventListener('load', generateMobileDiscountCards);
+window.addEventListener('resize', generateMobileDiscountCards);
+
+// Also regenerate when discount form is toggled
+const originalToggleDiscountForm = window.toggleDiscountForm;
+window.toggleDiscountForm = function() {
+    if (originalToggleDiscountForm) {
+        originalToggleDiscountForm();
+    }
+    setTimeout(generateMobileDiscountCards, 100);
+};
+
 </script>
 
 <!-- Edit Discount Confirmation Modal -->
