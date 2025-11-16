@@ -1325,11 +1325,15 @@ $pathPrefix = ($currentDir === 'paymongo') ? '../' : '';
                         const notificationId = parseInt(item.dataset.notificationId || '0', 10);
                         const orderId = parseInt(item.dataset.orderId || '0', 10);
                         const isCustom = item.dataset.isCustom === '1';
+                        const notificationType = it.type || 'standalone'; // Get notification type (seller_reply, etc.)
                         
                         if (notificationId > 0) {
-                            // Product notification or standalone notification - use notification_id
+                            // Product notification, seller_reply, or standalone notification - use notification_id
                             try {
-                                const payload = JSON.stringify({ notification_id: notificationId });
+                                const payload = JSON.stringify({ 
+                                    notification_id: notificationId,
+                                    notification_type: notificationType // Pass the type for proper handling
+                                });
                                 if (navigator.sendBeacon) {
                                     const blob = new Blob([payload], { type: 'application/json' });
                                     navigator.sendBeacon('<?php echo $pathPrefix; ?>ajax/mark-notification-read.php', blob);

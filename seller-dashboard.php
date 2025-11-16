@@ -589,8 +589,9 @@ h3 {
 
 /* Export Button Styling */
 .download-icon-btn {
-    background: #FFD736;
-    border: none;
+    background: #130325;
+    color: #ffffff;
+    border: 1px solid #130325;
     border-radius: 8px;
     padding: 10px 18px;
     height: auto;
@@ -602,13 +603,14 @@ h3 {
     transition: all 0.2s ease;
     font-weight: 600;
     font-size: 13px;
-    color: #130325;
     box-shadow: 0 1px 2px rgba(0,0,0,0.05);
     font-family: inherit;
 }
 
 .download-icon-btn:hover {
-    background: #f5d026;
+    background: #f3f4f6;
+    border-color: #e5e7eb;
+    color: #130325;
     transform: translateY(-1px);
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
@@ -619,7 +621,7 @@ h3 {
 }
 
 .download-icon-btn i {
-    color: #130325;
+    color: inherit;
     font-size: 14px;
 }
 
@@ -943,8 +945,9 @@ h3 {
 }
 
 .view-btn {
-    background-color: #130325;
-    color: #ffffff;
+    background: #f3f4f6;
+    color: #130325;
+    border: 1px solid #e5e7eb;
     padding: 8px;
     width: 36px;
     height: 36px;
@@ -959,7 +962,9 @@ h3 {
 }
 
 .view-btn:hover {
-    background-color: #0a0218;
+    background: #130325;
+    border-color: #130325;
+    color: #ffffff;
     transform: translateY(-1px);
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
@@ -1294,7 +1299,7 @@ h3 {
                 Welcome, <?php echo htmlspecialchars($sellerName); ?>
             </h1>
             <button onclick="showDashboardExportModal()" class="download-icon-btn" title="Export Dashboard Data">
-                <i class="fas fa-download"></i> Export Data
+                <i class="fas fa-file-export"></i> EXPORT
             </button>
         </div>
 

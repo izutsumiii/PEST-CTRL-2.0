@@ -316,13 +316,14 @@ $orderIds = $orderIdsStmt->fetchAll(PDO::FETCH_COLUMN);
 if (!empty($orderIds)) {
     $placeholders = str_repeat('?,', count($orderIds) - 1) . '?';
     $stmt = $pdo->prepare("
-        SELECT o.*, oi.quantity, oi.price as item_price, p.name as product_name, p.id as product_id, 
-               COALESCE(u.username, 'Guest Customer') as customer_name 
-        FROM orders o 
-        JOIN order_items oi ON o.id = oi.order_id 
-        JOIN products p ON oi.product_id = p.id 
-        LEFT JOIN users u ON o.user_id = u.id 
-        WHERE o.id IN ($placeholders) 
+        SELECT o.*, oi.quantity, oi.price as item_price, p.name as product_name, p.id as product_id,
+               COALESCE(CONCAT(u.first_name, ' ', u.last_name), 'Guest Customer') as customer_name,
+               COALESCE(u.email, 'No email') as customer_email
+        FROM orders o
+        JOIN order_items oi ON o.id = oi.order_id
+        JOIN products p ON oi.product_id = p.id
+        LEFT JOIN users u ON o.user_id = u.id
+        WHERE o.id IN ($placeholders)
         ORDER BY o.created_at DESC
     ");
     $stmt->execute($orderIds);
@@ -338,6 +339,7 @@ foreach ($orders as $order) {
     $groupedOrders[$orderId] = [
         'order_id' => $orderId,
         'customer_name' => $order['customer_name'],
+        'customer_email' => $order['customer_email'],
         'total_amount' => $order['total_amount'],
         'status' => $order['status'],
         'created_at' => $order['created_at'],
@@ -378,14 +380,14 @@ html, body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
-main { 
-    background: var(--bg-light) !important; 
+main {
+    background: var(--bg-light) !important;
     margin: 0;
-    padding: 20px;
-    margin-top: 60px;
+    padding: 12px;
+    margin-top: 15px;
     margin-left: 240px;
     transition: margin-left 0.3s ease !important;
-    min-height: calc(100vh - 60px) !important;
+    min-height: calc(100vh - 15px) !important;
 }
 
 .sidebar.collapsed ~ main {
@@ -411,10 +413,11 @@ main {
 }
 
 h1.page-header-title {
-    color: var(--text-dark);
+    color: var(--primary-dark) !important;
     font-size: 1.35rem;
-    font-weight: 600;
+    font-weight: 700 !important;
     margin: 0;
+    margin-bottom: 16px !important;
     letter-spacing: -0.3px;
     line-height: 1.2;
 }
@@ -579,67 +582,99 @@ h1.page-header-title {
     margin-left: -150px;
 }
 
-.search-card {
+/* ============================================
+   FILTER SECTION - MODERN DESIGN
+   ============================================ */
+
+.filter-section {
+    margin-bottom: 16px;
+    padding: 14px 16px;
     background: var(--bg-white);
-    border: 1px solid var(--border-light);
-    border-radius: 10px;
-    padding: 16px 18px;
-    margin-bottom: 20px;
+    border-radius: 6px;
+    border: 1px solid rgba(19, 3, 37, 0.08);
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    transition: all 0.2s ease;
 }
 
-.search-wrapper {
-    display: flex;
-    gap: 12px;
-    align-items: center;
+.filter-section:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    border-color: rgba(19, 3, 37, 0.12);
 }
 
-.search-input-group {
+.filter-wrapper {
     display: flex;
     gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.filter-search {
     flex: 1;
-}
-
-.search-bar {
-    flex: 1;
-    padding: 10px 14px;
-    background: var(--bg-white);
-    border: 1px solid var(--border-light);
-    border-radius: 8px;
-    color: var(--text-dark);
-    font-size: 0.875rem;
-    transition: all 0.2s ease;
-}
-
-.search-bar:focus {
-    outline: none;
-    border-color: var(--primary-dark);
-    box-shadow: 0 0 0 2px rgba(19, 3, 37, 0.1);
-}
-
-.search-bar::placeholder {
-    color: var(--text-light);
-}
-
-.search-btn {
-    padding: 10px 16px;
-    background: var(--accent-yellow);
-    color: var(--primary-dark);
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.2s ease;
+    min-width: 150px;
+    position: relative;
     display: flex;
     align-items: center;
-    justify-content: center;
-    font-weight: 600;
-    font-size: 0.875rem;
 }
 
-.search-btn:hover {
-    background: #ffd020;
+.filter-search i {
+    position: absolute;
+    left: 10px;
+    color: var(--text-light);
+    font-size: 12px;
+    pointer-events: none;
+}
+
+.filter-search input {
+    width: 100%;
+    padding: 8px 12px 8px 32px;
+    border: 1.5px solid rgba(19, 3, 37, 0.15);
+    border-radius: 6px;
+    font-size: 13px;
+    background: var(--bg-white);
+    color: var(--text-dark);
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.filter-search input:focus {
+    outline: none;
+    border-color: var(--primary-dark);
+    box-shadow: 0 0 0 3px rgba(19, 3, 37, 0.1), 0 2px 4px rgba(19, 3, 37, 0.08);
+    border-width: 1.5px;
     transform: translateY(-1px);
-    box-shadow: 0 2px 6px rgba(255, 215, 54, 0.3);
+}
+
+.filter-search input::placeholder {
+    color: var(--text-light);
+    opacity: 0.7;
+}
+
+.filter-dropdown {
+    min-width: 140px;
+}
+
+.filter-dropdown select {
+    width: 100%;
+    padding: 8px 32px 8px 12px;
+    border: 1.5px solid rgba(19, 3, 37, 0.15);
+    border-radius: 6px;
+    font-size: 13px;
+    background: var(--bg-white);
+    color: var(--text-dark);
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23130325' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.filter-dropdown select:focus {
+    outline: none;
+    border-color: var(--primary-dark);
+    box-shadow: 0 0 0 3px rgba(19, 3, 37, 0.1), 0 2px 4px rgba(19, 3, 37, 0.08);
+    transform: translateY(-1px);
 }
 
 .orders-table-container {
@@ -743,10 +778,22 @@ h1.page-header-title {
     color: var(--accent-yellow);
 }
 
+.customer-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
 .customer-name {
     color: var(--text-dark);
     font-weight: 600;
     font-size: 0.875rem;
+}
+
+.customer-email {
+    color: var(--text-light);
+    font-size: 0.75rem;
+    font-weight: 500;
 }
 
 .product-list {
@@ -774,6 +821,12 @@ h1.page-header-title {
     font-size: 0.95rem;
 }
 
+.status-container {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
 .order-status {
     display: inline-block;
     padding: 4px 10px;
@@ -790,6 +843,24 @@ h1.page-header-title {
 .status-delivered { background: rgba(40,167,69,0.15); color: #28a745; }
 .status-completed { background: rgba(40,167,69,0.15); color: #28a745; }
 .status-cancelled { background: rgba(220,53,69,0.15); color: #dc3545; }
+
+.ready-indicator {
+    color: #28a745;
+    font-size: 0.6rem;
+    opacity: 0.8;
+    animation: pulse 2s infinite;
+    display: inline-flex;
+    align-items: center;
+}
+
+.ready-indicator i {
+    filter: drop-shadow(0 0 2px rgba(40, 167, 69, 0.5));
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 0.8; }
+    50% { opacity: 1; }
+}
 
 .order-date {
     color: var(--text-light);
@@ -815,16 +886,18 @@ h1.page-header-title {
 }
 
 .grace-period-ready {
-    background: rgba(0,123,255,0.15);
-    border: 1px solid #007bff;
-    color: #007bff;
-    padding: 4px 10px;
+    background: rgba(40, 167, 69, 0.15);
+    border: none;
+    color: #28a745;
+    padding: 6px 10px;
     border-radius: 6px;
-    font-weight: 600;
-    font-size: 0.7rem;
+    font-weight: 700;
+    font-size: 0.75rem;
     text-transform: uppercase;
-    display: inline-block;
+    display: block;
     margin-bottom: 8px;
+    text-align: center;
+    width: 100%;
 }
 
 .action-buttons {
@@ -839,7 +912,7 @@ h1.page-header-title {
     width: auto;
     min-width: 110px;
     padding: 8px 12px;
-    border: none;
+    border: 2px solid;
     border-radius: 8px;
     font-weight: 600;
     font-size: 0.813rem;
@@ -852,64 +925,83 @@ h1.page-header-title {
     justify-content: center;
     gap: 6px;
     white-space: nowrap;
+    background: transparent;
 }
 
 .btn-process {
-    background: #007bff;
-    color: white;
+    background: transparent;
+    color: #28a745;
+    border: 2px solid #28a745;
 }
 
 .btn-process:hover {
-    background: #0056b3;
+    background: rgba(40, 167, 69, 0.1);
     transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0, 123, 255, 0.3);
+    box-shadow: 0 4px 8px rgba(40, 167, 69, 0.2);
 }
 
 .btn-ship {
-    background: #17a2b8;
-    color: white;
+    background: transparent;
+    color: #17a2b8;
+    border: 2px solid #17a2b8;
 }
 
 .btn-ship:hover {
-    background: #138496;
+    background: rgba(23, 162, 184, 0.1);
     transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(23, 162, 184, 0.3);
+    box-shadow: 0 4px 8px rgba(23, 162, 184, 0.2);
 }
 
 .btn-delivered {
-    background: #28a745;
-    color: white;
+    background: transparent;
+    color: #28a745;
+    border: 2px solid #28a745;
 }
 
 .btn-delivered:hover {
-    background: #218838;
+    background: rgba(40, 167, 69, 0.1);
     transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(40, 167, 69, 0.3);
+    box-shadow: 0 4px 8px rgba(40, 167, 69, 0.2);
 }
 
 .btn-completed {
-    background: var(--primary-dark);
-    color: var(--accent-yellow);
+    background: transparent;
+    color: var(--primary-dark);
+    border: 2px solid var(--primary-dark);
 }
 
 .btn-completed:hover:not(:disabled) {
-    background: #0a0218;
+    background: rgba(19, 3, 37, 0.1);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(19, 3, 37, 0.2);
+}
+
+.btn-cancel {
+    background: #130325;
+    color: white;
+    border: 2px solid #130325;
+}
+
+.btn-cancel:hover {
+    background: #0a0118;
     transform: translateY(-2px);
     box-shadow: 0 4px 8px rgba(19, 3, 37, 0.3);
 }
 
-.btn-cancel {
-    background: var(--error-red);
-    color: white;
+.btn-view {
+    background: transparent;
+    color: #130325;
+    border: 2px solid #130325;
+    text-decoration: none;
 }
 
-.btn-cancel:hover {
-    background: #dc2626;
+.btn-view:hover {
+    background: rgba(19, 3, 37, 0.1);
     transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(220, 53, 69, 0.3);
+    box-shadow: 0 4px 8px rgba(19, 3, 37, 0.2);
 }
 
-/* Custom Confirmation Modal */
+/* Custom Confirmation Modal - Matching Logout Modal */
 .custom-confirm-overlay {
     position: fixed;
     inset: 0;
@@ -921,95 +1013,95 @@ h1.page-header-title {
     opacity: 0;
     visibility: hidden;
     transition: all 0.25s ease;
-    backdrop-filter: blur(5px);
 }
 
-.custom-confirm-overlay.show { opacity: 1; visibility: visible; }
+.custom-confirm-overlay.show {
+    opacity: 1;
+    visibility: visible;
+}
 
 .custom-confirm-dialog {
-    background: var(--bg-white);
+    background: #ffffff;
     border-radius: 12px;
-    padding: 18px 20px;
-    width: 90%;
+    padding: 0;
     max-width: 400px;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(19, 3, 37, 0.1);
-    border-top: 3px solid var(--primary-dark);
-    animation: confirmSlideIn 0.3s ease-out;
+    width: 90%;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+    animation: slideDown 0.3s ease;
 }
 
-@keyframes confirmSlideIn {
+.custom-confirm-header {
+    background: #130325;
+    color: #ffffff;
+    padding: 16px 20px;
+    border-radius: 12px 12px 0 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 600;
+    font-size: 16px;
+}
+
+.custom-confirm-body {
+    padding: 20px;
+    color: #130325;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.custom-confirm-footer {
+    padding: 16px 24px;
+    border-top: 1px solid #e5e7eb;
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+}
+
+.custom-confirm-btn {
+    padding: 8px 20px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 14px;
+    transition: all 0.2s ease;
+}
+
+.custom-confirm-btn.cancel {
+    background: #f3f4f6;
+    color: #130325;
+    border: 1px solid #e5e7eb;
+}
+
+.custom-confirm-btn.cancel:hover {
+    background: #e5e7eb;
+}
+
+.custom-confirm-btn.confirm {
+    background: #130325;
+    color: #ffffff;
+}
+
+.custom-confirm-btn.confirm:hover {
+    background: #0a0218;
+}
+
+@keyframes slideDown {
     from {
         opacity: 0;
-        transform: scale(0.8) translateY(-20px);
+        transform: translateY(-20px);
     }
     to {
         opacity: 1;
-        transform: scale(1) translateY(0);
+        transform: translateY(0);
     }
 }
 
-.custom-confirm-title { 
-    color: var(--text-dark); 
-    font-weight: 700; 
-    font-size: 16px; 
-    margin: 0 0 10px 0; 
-    text-transform: none; 
-    letter-spacing: normal; 
-}
-
-.custom-confirm-message { 
-    color: var(--text-light); 
-    font-size: 13px; 
-    margin-bottom: 20px; 
-    line-height: 1.5; 
-}
-
-.custom-confirm-buttons { 
-    display: flex; 
-    gap: 10px; 
-    justify-content: flex-end; 
-    margin-top: 16px; 
-}
-
-.custom-confirm-btn { 
-    padding: 8px 14px; 
-    border-radius: 8px; 
-    font-size: 13px; 
-    font-weight: 600; 
-    text-transform: none; 
-    letter-spacing: normal; 
-    border: none; 
-    cursor: pointer; 
-    transition: all 0.2s ease;
-    min-width: 70px;
-}
-
-.custom-confirm-btn.cancel { 
-    background: var(--text-light); 
-    color: white; 
-}
-
-.custom-confirm-btn.cancel:hover { 
-    background: #4b5563; 
-    transform: translateY(-1px);
-}
-
-.custom-confirm-btn.primary { 
-    background: var(--primary-dark); 
-    color: var(--bg-white); 
-}
-
-.custom-confirm-btn.primary:hover { 
-    background: #0a0118; 
-    transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(19, 3, 37, 0.2);
-}
-
-/* Cancellation Reason Modal */
+/* Cancellation Reason Modal - Matching Logout Modal */
 .cancel-reason-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.6);
+    background: rgba(0, 0, 0, 0.5);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1019,109 +1111,78 @@ h1.page-header-title {
     transition: all 0.25s ease;
 }
 
-.cancel-reason-overlay.show { 
-    opacity: 1; 
-    visibility: visible; 
+.cancel-reason-overlay.show {
+    opacity: 1;
+    visibility: visible;
 }
 
 .cancel-reason-dialog {
     background: #ffffff;
     border-radius: 12px;
-    padding: 24px;
-    width: 92%;
+    padding: 0;
     max-width: 500px;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+    width: 90%;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+    animation: slideDown 0.3s ease;
 }
 
-.cancel-reason-title { 
-    color: #111827; 
-    font-weight: 700; 
-    font-size: 1.2rem; 
-    margin: 0 0 8px 0; 
-    text-transform: none; 
-    letter-spacing: normal; 
-}
-
-.cancel-reason-subtitle {
-    color: #6b7280;
-    font-size: 0.9rem;
-    margin: 0 0 20px 0;
-}
-
-.cancel-reason-label {
-    display: block;
-    margin-bottom: 8px;
+.cancel-reason-header {
+    background: #130325;
+    color: #ffffff;
+    padding: 16px 20px;
+    border-radius: 12px 12px 0 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
     font-weight: 600;
-    color: #374151;
-    font-size: 0.9rem;
+    font-size: 16px;
 }
 
-.cancel-reason-textarea {
-    width: 100%;
-    min-height: 120px;
-    padding: 12px;
-    border: 1px solid #d1d5db;
-    border-radius: 6px;
-    font-size: 0.9rem;
-    font-family: inherit;
+.cancel-reason-body {
+    padding: 20px;
     color: #130325;
-    resize: vertical;
-    transition: all 0.2s ease;
-    box-sizing: border-box;
+    font-size: 14px;
+    line-height: 1.5;
 }
 
-.cancel-reason-textarea:focus {
-    outline: none;
-    border-color: #FFD736;
-    box-shadow: 0 0 0 3px rgba(255, 215, 54, 0.1);
+.cancel-reason-footer {
+    padding: 16px 24px;
+    border-top: 1px solid #e5e7eb;
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
 }
 
-.cancel-reason-textarea::placeholder {
-    color: #9ca3af;
-}
-
-.cancel-reason-buttons { 
-    display: flex; 
-    gap: 10px; 
-    justify-content: flex-end; 
-    margin-top: 20px; 
-}
-
-.cancel-reason-btn { 
-    padding: 10px 20px; 
-    border-radius: 6px; 
-    font-size: 0.9rem; 
-    font-weight: 600; 
-    text-transform: none; 
-    letter-spacing: normal; 
-    border: none; 
-    cursor: pointer; 
+.cancel-reason-btn {
+    padding: 8px 20px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 14px;
     transition: all 0.2s ease;
 }
 
-.cancel-reason-btn.cancel { 
-    background: #6c757d; 
-    color: white; 
+.cancel-reason-btn.cancel {
+    background: #f3f4f6;
+    color: #130325;
+    border: 1px solid #e5e7eb;
 }
 
-.cancel-reason-btn.cancel:hover { 
-    background: #5a6268; 
+.cancel-reason-btn.cancel:hover {
+    background: #e5e7eb;
 }
 
-.cancel-reason-btn.submit { 
-    background: #dc3545; 
-    color: white; 
+.cancel-reason-btn.submit {
+    background: #130325;
+    color: #ffffff;
 }
 
-.cancel-reason-btn.submit:hover { 
-    background: #c82333; 
+.cancel-reason-btn.submit:hover {
+    background: #0a0218;
 }
 
-.cancel-reason-btn.submit:disabled {
-    background: #d1d5db;
-    color: #9ca3af;
-    cursor: not-allowed;
-}
+
 
 .no-orders-message {
     text-align: center;
@@ -1202,12 +1263,36 @@ h1.page-header-title {
 @media (max-width: 968px) {
     main {
         margin-left: 0 !important;
-        padding: 16px 12px;
+        padding: 10px 8px;
+        margin-top: 10px;
     }
 
     .orders-container {
         margin-left: 0 !important;
         max-width: 100%;
+    }
+
+    .filter-section {
+        padding: 8px 10px;
+        margin-bottom: 10px;
+    }
+
+    .filter-wrapper {
+        gap: 6px;
+    }
+
+    .filter-search {
+        min-width: 120px;
+    }
+
+    .filter-search input {
+        padding: 5px 8px 5px 24px;
+        font-size: 11px;
+    }
+
+    .filter-search i {
+        left: 8px;
+        font-size: 11px;
     }
 
     .page-header {
@@ -1220,9 +1305,6 @@ h1.page-header-title {
         font-size: 1.2rem;
     }
 
-    .search-card {
-        padding: 14px;
-    }
 
     .orders-table-container { 
         padding: 16px; 
@@ -1247,40 +1329,159 @@ h1.page-header-title {
     }
 }
 
+@media (max-width: 768px) {
+    .filter-section {
+        padding: 6px 8px;
+    }
+
+    .filter-wrapper {
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .filter-search,
+    .filter-dropdown {
+        width: 100%;
+        min-width: 100%;
+    }
+
+    .filter-search input,
+    .filter-dropdown select {
+        padding: 5px 8px 5px 24px;
+        font-size: 11px;
+    }
+}
+
 @media (max-width: 480px) {
     main {
-        padding: 12px 10px;
+        padding: 8px 4px;
+        margin-top: 12px;
+    }
+
+    .page-header {
+        padding: 16px 0;
     }
 
     .page-header-title {
         font-size: 1.1rem;
     }
 
-    .orders-table {
-        font-size: 0.7rem;
+    .filter-section {
+        padding: 8px 6px;
+        margin-bottom: 12px;
     }
 
-    .orders-table th, .orders-table td {
-        padding: 8px 10px;
+    .filter-wrapper {
+        gap: 4px;
+    }
+
+    .filter-search,
+    .filter-dropdown {
+        min-width: 100%;
+        width: 100%;
+    }
+
+    .filter-search input,
+    .filter-dropdown select {
+        padding: 6px 8px 6px 28px;
+        font-size: 11px;
+    }
+
+    .filter-search i {
+        left: 8px;
+        font-size: 10px;
+    }
+
+    .orders-table-container {
+        padding: 12px 6px;
+    }
+
+    .orders-table {
+        font-size: 0.75rem;
+    }
+
+    .orders-table th,
+    .orders-table td {
+        padding: 6px 4px;
+    }
+
+    .customer-name {
+        font-size: 0.8rem;
+    }
+
+    .customer-email {
+        font-size: 0.65rem;
     }
 
     .action-btn {
-        min-width: 90px;
-        padding: 6px 8px;
+        min-width: 80px;
+        padding: 4px 6px;
         font-size: 0.7rem;
     }
 
     .pagination {
-        gap: 4px;
+        gap: 2px;
     }
 
     .page-link {
-        padding: 6px 10px;
-        font-size: 0.75rem;
+        padding: 6px 8px;
+        font-size: 0.7rem;
     }
 
     .pagination-info {
         font-size: 0.75rem;
+    }
+}
+
+@media (max-width: 360px) {
+    main {
+        padding: 6px 3px;
+        margin-top: 8px;
+    }
+
+    .page-header {
+        padding: 12px 0;
+    }
+
+    .page-header-title {
+        font-size: 1rem;
+    }
+
+    .filter-section {
+        padding: 6px 4px;
+        margin-bottom: 8px;
+    }
+
+    .orders-table-container {
+        padding: 8px 4px;
+    }
+
+    .orders-table {
+        font-size: 0.7rem;
+    }
+
+    .orders-table th,
+    .orders-table td {
+        padding: 4px 3px;
+    }
+
+    .customer-name {
+        font-size: 0.75rem;
+    }
+
+    .customer-email {
+        font-size: 0.6rem;
+    }
+
+    .action-btn {
+        min-width: 70px;
+        padding: 3px 4px;
+        font-size: 0.65rem;
+    }
+
+    .page-link {
+        padding: 4px 6px;
+        font-size: 0.65rem;
     }
 }
 </style>
@@ -1315,13 +1516,22 @@ h1.page-header-title {
         <h1 class="page-header-title">Order Management</h1>
     </div>
 
-    <div class="search-card">
-        <div class="search-wrapper">
-            <div class="search-input-group">
-                <input type="text" class="search-bar" id="orderSearch" placeholder="Search by Order ID, Customer, Status, or Product..." value="<?php echo isset($_GET['search']) ? htmlspecialchars($_GET['search']) : ''; ?>" onkeyup="filterOrders()">
-                <button class="search-btn" onclick="filterOrders()" title="Search">
-                    <i class="fas fa-search"></i>
-                </button>
+    <div class="filter-section">
+        <div class="filter-wrapper">
+            <div class="filter-search">
+                <i class="fas fa-search"></i>
+                <input type="text" id="orderSearch" placeholder="Search by Order ID, Customer, Status, or Product..." value="<?php echo isset($_GET['search']) ? htmlspecialchars($_GET['search']) : ''; ?>" onkeyup="filterOrders()">
+            </div>
+            <div class="filter-dropdown">
+                <select id="statusFilter" onchange="filterOrders()">
+                    <option value="all">All Status</option>
+                    <option value="pending">Pending</option>
+                    <option value="processing">Processing</option>
+                    <option value="shipped">Shipped</option>
+                    <option value="delivered">Delivered</option>
+                    <option value="completed">Completed</option>
+                    <option value="cancelled">Cancelled</option>
+                </select>
             </div>
         </div>
     </div>
@@ -1362,7 +1572,10 @@ h1.page-header-title {
                                 <a href="seller-order-details.php?order_id=<?php echo (int)$order['order_id']; ?>" class="order-id">#<?php echo str_pad($order['order_id'], 6, '0', STR_PAD_LEFT); ?></a>
                             </td>
                             <td>
-                                <span class="customer-name"><?php echo htmlspecialchars($order['customer_name']); ?></span>
+                                <div class="customer-info">
+                                    <div class="customer-name"><?php echo htmlspecialchars($order['customer_name']); ?></div>
+                                    <div class="customer-email"><?php echo htmlspecialchars($order['customer_email']); ?></div>
+                                </div>
                             </td>
                             <td>
                                 <ul class="product-list">
@@ -1378,10 +1591,17 @@ h1.page-header-title {
                                 <span class="total-amount">₱<?php echo number_format((float)$order['total_amount'], 2); ?></span>
                             </td>
                             <td>
-                                <span class="order-status <?php echo $statusClass; ?>">
-                        <?php echo ucfirst($order['status']); ?>
-                    </span>
-                </td>
+                                <div class="status-container">
+                                    <span class="order-status <?php echo $statusClass; ?>">
+                                        <?php echo ucfirst($order['status']); ?>
+                                    </span>
+                                    <?php if ($order['status'] === 'pending' && !$withinGracePeriod): ?>
+                                        <span class="ready-indicator" title="Ready to process">
+                                            <i class="fas fa-circle"></i>
+                                        </span>
+                                    <?php endif; ?>
+                                </div>
+                            </td>
                             <td>
                                 <div class="order-date">
                                     <?php echo date('M j, Y', strtotime($order['created_at'])); ?><br>
@@ -1413,10 +1633,11 @@ h1.page-header-title {
                                             })();
             </script>
         <?php else: ?>
-                                        <div class="grace-period-timer grace-period-ready">
-                                            Ready
-            </div>
                                         <div class="action-buttons">
+                                            <a href="seller-order-details.php?order_id=<?php echo $order['order_id']; ?>" class="action-btn btn-view">
+                                                <i class="fas fa-eye"></i>
+                                                <span>View</span>
+                                            </a>
                                             <form method="POST" onsubmit="return confirmStatusChange('processing');">
                                                 <input type="hidden" name="order_id" value="<?php echo $order['order_id']; ?>">
                                                 <input type="hidden" name="status" value="processing">
@@ -1434,6 +1655,10 @@ h1.page-header-title {
         <?php endif; ?>
                                 <?php elseif ($order['status'] === 'processing'): ?>
                                     <div class="action-buttons">
+                                        <a href="seller-order-details.php?order_id=<?php echo $order['order_id']; ?>" class="action-btn btn-view">
+                                            <i class="fas fa-eye"></i>
+                                            <span>View</span>
+                                        </a>
                                         <form method="POST" onsubmit="return confirmStatusChange('shipped');">
                                             <input type="hidden" name="order_id" value="<?php echo $order['order_id']; ?>">
                                             <input type="hidden" name="status" value="shipped">
@@ -1450,6 +1675,10 @@ h1.page-header-title {
                                     </div>
                                 <?php elseif ($order['status'] === 'shipped'): ?>
                                     <div class="action-buttons">
+                                        <a href="seller-order-details.php?order_id=<?php echo $order['order_id']; ?>" class="action-btn btn-view">
+                                            <i class="fas fa-eye"></i>
+                                            <span>View</span>
+                                        </a>
                                         <form method="POST" onsubmit="return confirmStatusChange('delivered');">
                                             <input type="hidden" name="order_id" value="<?php echo $order['order_id']; ?>">
                                             <input type="hidden" name="status" value="delivered">
@@ -1462,19 +1691,23 @@ h1.page-header-title {
                                     </div>
                                 <?php elseif ($order['status'] === 'delivered'): ?>
                                     <div class="action-buttons">
+                                        <a href="seller-order-details.php?order_id=<?php echo $order['order_id']; ?>" class="action-btn btn-view">
+                                            <i class="fas fa-eye"></i>
+                                            <span>View</span>
+                                        </a>
                                         <?php
                                         // Check if 1 week has passed since delivery_date
                                         $deliveryDate = $order['delivery_date'] ?? null;
                                         $canComplete = false;
                                         $daysSinceDelivery = 0; // Initialize variable
-                                        
+
                                         if ($deliveryDate) {
                                             $deliveryDateTime = new DateTime($deliveryDate);
                                             $currentDateTime = new DateTime();
                                             $daysSinceDelivery = $currentDateTime->diff($deliveryDateTime)->days;
                                             $canComplete = $daysSinceDelivery >= 7;
                                         }
-                                        
+
                                         // Check if order is already completed (customer might have confirmed)
                                         // Use the order status from the fetched data
                                         if (strtolower($order['status']) === 'completed') {
@@ -1645,12 +1878,14 @@ document.addEventListener('DOMContentLoaded', function() {
         orderRows.forEach(row => {
             const orderId = row.querySelector('.order-id')?.textContent.toLowerCase() || '';
             const customerName = row.querySelector('.customer-name')?.textContent.toLowerCase() || '';
+            const customerEmail = row.querySelector('.customer-email')?.textContent.toLowerCase() || '';
             const statusBadge = row.querySelector('.order-status')?.textContent.toLowerCase() || '';
             const productItems = row.querySelectorAll('.product-item strong');
             const productNames = Array.from(productItems).map(item => item.textContent.toLowerCase()).join(' ');
-            
-            const matchesSearch = orderId.includes(searchTerm) || 
-                                 customerName.includes(searchTerm) || 
+
+            const matchesSearch = orderId.includes(searchTerm) ||
+                                 customerName.includes(searchTerm) ||
+                                 customerEmail.includes(searchTerm) ||
                                  statusBadge.includes(searchTerm) ||
                                  productNames.includes(searchTerm);
             
@@ -1772,18 +2007,24 @@ function confirmStatusChange(nextStatus) {
     if (!nextStatus) return false;
     const overlay = document.createElement('div');
     overlay.className = 'custom-confirm-overlay';
+
+    const actionText = nextStatus==='processing' ? 'Move order to Processing?' :
+                      nextStatus==='shipped' ? 'Mark order as Shipped?' :
+                      nextStatus==='delivered' ? 'Mark order as Delivered?' :
+                      nextStatus==='cancelled' ? 'Cancel this order?' : 'Apply this status change?';
+
     overlay.innerHTML = `
       <div class="custom-confirm-dialog">
-        <div class="custom-confirm-title">Confirm Action</div>
-        <div class="custom-confirm-message">${
-            nextStatus==='processing' ? 'Move order to Processing?' :
-            nextStatus==='shipped' ? 'Mark order as Shipped?' :
-            nextStatus==='delivered' ? 'Mark order as Delivered?' :
-            nextStatus==='cancelled' ? 'Cancel this order?' : 'Apply this status change?'
-        }</div>
-        <div class="custom-confirm-buttons">
+        <div class="custom-confirm-header">
+            <i class="fas fa-exclamation-triangle"></i>
+            Confirm Action
+        </div>
+        <div class="custom-confirm-body">
+            <p style="margin: 0; font-size: 14px; line-height: 1.5; color: #130325;">${actionText}</p>
+        </div>
+        <div class="custom-confirm-footer">
           <button type="button" class="custom-confirm-btn cancel">Cancel</button>
-          <button type="button" class="custom-confirm-btn primary">Confirm</button>
+          <button type="button" class="custom-confirm-btn confirm">Confirm</button>
         </div>
       </div>`;
     document.body.appendChild(overlay);
@@ -1791,8 +2032,8 @@ function confirmStatusChange(nextStatus) {
     return new Promise((resolve)=>{
       const close = ()=>{ overlay.classList.remove('show'); setTimeout(()=>overlay.remove(), 200); };
       overlay.querySelector('.cancel').addEventListener('click', ()=>{ close(); resolve(false); });
+      overlay.querySelector('.confirm').addEventListener('click', ()=>{ close(); resolve(true); });
       overlay.addEventListener('click', (e)=>{ if(e.target===overlay){ close(); resolve(false);} });
-      overlay.querySelector('.primary').addEventListener('click', ()=>{ close(); resolve(true); });
     }).then(ok=> ok);
 }
 </script>
@@ -1851,34 +2092,41 @@ function showSellerOrderDetails(orderId) {
 }
 function escapeHtml(t){ const d=document.createElement('div'); d.textContent=t==null?'':String(t); return d.innerHTML; }
 
-// Cancellation Reason Modal
+// Cancellation Reason Modal - Matching Logout Modal
 function showCancelReasonModal(orderId) {
     const overlay = document.createElement('div');
     overlay.className = 'cancel-reason-overlay';
     overlay.innerHTML = `
         <div class="cancel-reason-dialog">
-            <div class="cancel-reason-title">Cancel Order #${String(orderId).padStart(6, '0')}</div>
-            <div class="cancel-reason-subtitle">Please provide a reason for cancellation. This will be sent to the customer.</div>
-            <form id="cancelOrderForm" method="POST">
-                <input type="hidden" name="order_id" value="${orderId}">
-                <input type="hidden" name="status" value="cancelled">
-                <input type="hidden" name="update_status" value="1">
-                <label for="cancellation_reason" class="cancel-reason-label">
-                    Cancellation Reason / Remarks <span style="color: #dc3545;">*</span>
-                </label>
-                <textarea 
-                    name="cancellation_reason" 
-                    id="cancellation_reason" 
-                    class="cancel-reason-textarea" 
-                    placeholder="Please explain why this order is being cancelled (e.g., Out of stock, Customer request, Payment issue, etc.)"
-                    required
-                    minlength="10"
-                ></textarea>
-                <div class="cancel-reason-buttons">
-                    <button type="button" class="cancel-reason-btn cancel" onclick="closeCancelReasonModal()">Cancel</button>
-                    <button type="submit" class="cancel-reason-btn submit">Confirm Cancellation</button>
-                </div>
-            </form>
+            <div class="cancel-reason-header">
+                <i class="fas fa-exclamation-triangle"></i>
+                Cancel Order #${String(orderId).padStart(6, '0')}
+            </div>
+            <div class="cancel-reason-body">
+                <p style="margin: 0 0 16px 0; font-size: 14px; line-height: 1.5; color: #130325;">
+                    Please provide a reason for cancellation. This will be sent to the customer.
+                </p>
+                <form id="cancelOrderForm" method="POST">
+                    <input type="hidden" name="order_id" value="${orderId}">
+                    <input type="hidden" name="status" value="cancelled">
+                    <input type="hidden" name="update_status" value="1">
+                    <label for="cancellation_reason" style="display: block; margin-bottom: 8px; font-weight: 600; color: #130325;">
+                        Cancellation Reason / Remarks <span style="color: #dc3545;">*</span>
+                    </label>
+                    <textarea
+                        name="cancellation_reason"
+                        id="cancellation_reason"
+                        style="width: 100%; padding: 10px; border: 1px solid #e5e7eb; border-radius: 6px; font-family: inherit; font-size: 14px; line-height: 1.5; resize: vertical; min-height: 80px;"
+                        placeholder="Please explain why this order is being cancelled (e.g., Out of stock, Customer request, Payment issue, etc.)"
+                        required
+                        minlength="10"
+                    ></textarea>
+                </form>
+            </div>
+            <div class="cancel-reason-footer">
+                <button type="button" class="cancel-reason-btn cancel" onclick="closeCancelReasonModal()">Cancel</button>
+                <button type="button" class="cancel-reason-btn submit" onclick="document.getElementById('cancelOrderForm').submit()">Confirm Cancellation</button>
+            </div>
         </div>
     `;
     document.body.appendChild(overlay);

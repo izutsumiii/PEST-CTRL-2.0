@@ -348,45 +348,75 @@ require_once 'includes/seller_header.php';
 </main>
 
 <style>
-html, body { 
-    background: #f0f2f5 !important; 
-    margin: 0; 
-    padding: 0; 
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+/* Modern CSS Variables - Matching Customer Side */
+:root {
+    --primary-dark: #130325;
+    --accent-yellow: #FFD736;
+    --text-dark: #1a1a1a;
+    --text-light: #6b7280;
+    --border-light: #e5e7eb;
+    --bg-light: #f9fafb;
+    --bg-white: #ffffff;
+    --success-green: #10b981;
+    --error-red: #ef4444;
 }
-main { 
-    background: #f0f2f5 !important; 
-    margin-left: 120px !important; 
-    margin-top: -20px !important;
-    margin-bottom: 0 !important;
-    padding-top: 5px !important;
-    padding-bottom: 40px !important;
-    padding-left: 30px !important;
-    padding-right: 30px !important;
-    min-height: calc(100vh - 60px) !important; 
+
+/* Base Styles */
+html, body {
+    background: var(--bg-light) !important;
+    margin: 0;
+    padding: 0;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    color: var(--text-dark);
+}
+
+/* Main Layout - Compact and Responsive */
+main {
+    background: var(--bg-light) !important;
+    min-height: calc(100vh - 60px);
+    margin-top: 15px;
+    margin-left: 240px;
+    margin-bottom: 0;
+    padding: 12px;
     transition: margin-left 0.3s ease !important;
 }
-main.sidebar-collapsed { margin-left: 0px !important; }
 
-/* Notification Toast */
+main.sidebar-collapsed {
+    margin-left: 70px;
+}
+
+/* Container - Adjusted for sidebar */
+.products-container {
+    max-width: 1400px;
+    margin: 0;
+    margin-left: -220px;
+    padding: 0 16px;
+    transition: margin-left 0.3s ease;
+}
+
+main.sidebar-collapsed .products-container {
+    margin-left: -150px;
+}
+
+/* Notification Toast - Modern */
 .notification-toast {
     position: fixed;
     top: 100px;
     right: 20px;
     max-width: 450px;
     min-width: 350px;
-    background: #ffffff;
-    border: 1px solid rgba(0, 0, 0, 0.1);
-    border-radius: 16px;
+    background: var(--bg-white);
+    border: 1px solid var(--border-light);
+    border-radius: 12px;
     padding: 20px 24px;
-    color: #130325;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    color: var(--text-dark);
+    box-shadow: 0 8px 24px rgba(19, 3, 37, 0.15);
     z-index: 10000;
     animation: slideInRight 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
     display: flex;
     align-items: center;
     gap: 16px;
-    font-family: var(--font-primary, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 .notification-toast::before {
@@ -520,36 +550,25 @@ main.sidebar-collapsed { margin-left: 0px !important; }
     animation: slideOutRight 0.3s ease forwards;
 }
 
-.products-container {
-    max-width: 1600px;
-    margin: 0 auto;
-}
-
-h1 { 
-    color: #130325 !important; 
-    font-size: 20px !important; 
-    font-weight: 700 !important; 
+/* Page Title */
+h1 {
+    color: var(--primary-dark) !important;
+    font-size: 1.35rem !important;
+    font-weight: 700 !important;
     margin: 0 !important;
     margin-bottom: 16px !important;
-    padding: 0 !important; 
+    padding: 0 !important;
     text-shadow: none !important;
-    border-bottom: none !important;
-    text-transform: none !important;
-    letter-spacing: normal !important;
-    text-align: left !important;
 }
 
-.product-management {
-    max-width: 1600px;
-    margin: 0 auto;
-}
-
+/* Edit Product Form - Modern */
 .edit-product-form {
-    background: #ffffff;
-    border: 1px solid rgba(0,0,0,0.1);
-    border-radius: 8px;
-    padding: 32px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    background: var(--bg-white);
+    border: 1px solid var(--border-light);
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 8px rgba(19, 3, 37, 0.08);
 }
 .category-selection-container {
     max-height: 320px;
@@ -703,9 +722,10 @@ h1 {
     font-style: italic;
 }
 
+/* Form Layout - Modern Grid */
 .form-grid {
     display: grid;
-    grid-template-columns: 1fr 380px;
+    grid-template-columns: 1fr 400px;
     gap: 24px;
     margin-bottom: 0;
 }
@@ -716,18 +736,9 @@ h1 {
     flex-direction: column;
 }
 
+/* Form Groups - Modern */
 .form-group {
-    margin-bottom: 25px;
-}
-
-.form-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
-}
-
-.form-group {
-    margin-bottom: 24px;
+    margin-bottom: 20px;
 }
 
 .form-group:last-child {
@@ -736,22 +747,21 @@ h1 {
 
 .form-group label {
     display: block;
-    color: #130325;
-    font-weight: 500;
+    color: var(--primary-dark);
+    font-weight: 600;
     margin-bottom: 8px;
     font-size: 14px;
-    text-shadow: none !important;
 }
 
 .form-group input,
 .form-group select,
 .form-group textarea {
     width: 100%;
-    padding: 12px 14px;
-    background: #ffffff;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    color: #130325;
+    padding: 10px 14px;
+    background: var(--bg-white);
+    border: 1.5px solid var(--border-light);
+    border-radius: 8px;
+    color: var(--primary-dark);
     font-size: 14px;
     transition: all 0.2s ease;
     font-family: inherit;
@@ -761,8 +771,8 @@ h1 {
 .form-group select:focus,
 .form-group textarea:focus {
     outline: none;
-    border-color: #FFD736;
-    box-shadow: 0 0 0 2px rgba(255,215,54,0.2);
+    border-color: var(--primary-dark);
+    box-shadow: 0 0 0 3px rgba(19, 3, 37, 0.1);
 }
 
 .form-group textarea {
@@ -772,16 +782,24 @@ h1 {
     line-height: 1.5;
 }
 
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+/* Form Right Panel - Modern */
 .form-right {
     display: flex;
     flex-direction: column;
-    background: #ffffff;
-    border: 1px solid #e0e0e0;
-    border-radius: 4px;
+    background: var(--bg-white);
+    border: 1px solid var(--border-light);
+    border-radius: 8px;
     padding: 20px;
     height: fit-content;
     position: sticky;
     top: 20px;
+    box-shadow: 0 2px 8px rgba(19, 3, 37, 0.06);
 }
 
 .current-image-preview {
@@ -865,12 +883,13 @@ h1 {
     font-style: italic;
 }
 
+/* Form Actions - Modern */
 .form-actions {
     display: flex;
-    gap: 10px;
+    gap: 12px;
     padding-top: 24px;
     margin-top: 24px;
-    border-top: 1px solid #e0e0e0;
+    border-top: 1px solid var(--border-light);
     justify-content: flex-start;
 }
 
@@ -878,10 +897,10 @@ h1 {
 .btn-cancel {
     padding: 8px 16px;
     border: none;
-    border-radius: 4px;
+    border-radius: 6px;
     cursor: pointer;
     font-size: 13px;
-    font-weight: 500;
+    font-weight: 600;
     transition: all 0.2s ease;
     display: flex;
     align-items: center;
@@ -892,27 +911,32 @@ h1 {
 }
 
 .form-actions button[type="submit"] {
-    background: #FFD736;
-    color: #130325;
+    background: var(--primary-dark);
+    color: var(--bg-white);
+    border: 1px solid var(--primary-dark);
 }
 
 .form-actions button[type="submit"]:hover:not(:disabled) {
-    background: #f5d026;
+    background: var(--accent-yellow);
+    color: var(--primary-dark);
+    border-color: var(--accent-yellow);
+    transform: translateY(-1px);
 }
 
 .form-actions button[type="submit"]:active:not(:disabled) {
-    background: #e6c230;
+    transform: translateY(0);
 }
 
 .btn-cancel {
-    background: #dc3545;
-    color: #ffffff;
-    border: 1px solid #dc3545;
+    background: var(--error-red);
+    color: var(--bg-white);
+    border: 1px solid var(--error-red);
 }
 
 .btn-cancel:hover {
-    background: #c82333;
-    border-color: #c82333;
+    background: #dc2626;
+    border-color: #dc2626;
+    transform: translateY(-1px);
 }
 
 #status {
@@ -931,31 +955,247 @@ h1 {
     gap: 20px;
 }
 
+/* Responsive Design - Modern */
 @media (max-width: 1024px) {
+    main {
+        margin-left: 70px;
+        padding: 10px;
+        margin-top: 15px;
+    }
+
+    .products-container {
+        margin-left: -150px;
+        padding: 0 12px;
+    }
+
+    .edit-product-form {
+        padding: 20px;
+    }
+
     .form-grid {
         grid-template-columns: 1fr;
-        gap: 32px;
+        gap: 20px;
     }
+
     .form-right {
         position: static;
-        top: auto;
+        width: 100%;
     }
 }
 
 @media (max-width: 768px) {
-    main { padding: 30px 24px 60px 24px !important; }
-    .edit-product-form { 
-        padding: 32px 24px; 
-        border-radius: 12px;
+    main {
+        margin-left: 0;
+        padding: 10px 8px;
+        margin-top: 15px;
     }
-    .form-row { grid-template-columns: 1fr; }
-    .form-actions { 
-        flex-direction: column; 
+
+    .products-container {
+        margin-left: 0;
+        padding: 0 12px;
+        max-width: 100%;
+    }
+
+    .edit-product-form {
+        padding: 16px;
+        border-radius: 8px;
+        margin-bottom: 16px;
+    }
+
+    .form-grid {
+        gap: 16px;
+    }
+
+    .form-right {
+        padding: 16px;
+    }
+
+    h1 {
+        font-size: 1.2rem;
+        margin-bottom: 12px;
+    }
+
+    .form-actions {
+        flex-direction: column;
         gap: 10px;
     }
+
+    .form-actions button,
+    .btn-cancel {
+        width: 100%;
+        justify-content: center;
+        padding: 10px 16px;
+        font-size: 14px;
+    }
+}
+
+@media (max-width: 480px) {
+    main {
+        padding: 8px 6px;
+        margin-top: 12px;
+    }
+
+    .products-container {
+        padding: 0 8px;
+    }
+
+    .edit-product-form {
+        padding: 12px;
+        margin-bottom: 12px;
+    }
+
+    .form-right {
+        padding: 12px;
+    }
+
     h1 {
-        font-size: 32px;
-        margin-bottom: 28px;
+        font-size: 1.1rem;
+        margin-bottom: 10px;
+    }
+}
+
+@media (max-width: 360px) {
+    main {
+        padding: 6px 4px;
+        margin-top: 10px;
+    }
+
+    .products-container {
+        padding: 0 6px;
+    }
+
+    .edit-product-form {
+        padding: 10px;
+        margin-bottom: 10px;
+    }
+
+    h1 {
+        font-size: 1rem;
+        margin-bottom: 8px;
+    }
+
+    .form-actions button,
+    .btn-cancel {
+        padding: 6px 12px;
+        font-size: 12px;
+        gap: 4px;
+    }
+}
+
+@media (max-width: 360px) {
+    .form-actions button,
+    .btn-cancel {
+        padding: 6px 10px;
+        font-size: 11px;
+        gap: 3px;
+    }
+}
+
+/* Custom Confirmation Modal - Matching Logout Modal Design */
+.custom-confirm-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+}
+
+.custom-confirm-overlay.show {
+    opacity: 1;
+    visibility: visible;
+}
+
+.custom-confirm-dialog {
+    background: var(--bg-white);
+    border-radius: 12px;
+    padding: 0;
+    width: 90%;
+    max-width: 400px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    animation: slideDown 0.3s ease;
+    overflow: hidden;
+}
+
+.custom-confirm-header {
+    background: var(--primary-dark);
+    color: var(--bg-white);
+    padding: 16px 20px;
+    border-radius: 12px 12px 0 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.custom-confirm-title {
+    color: var(--bg-white);
+    font-weight: 700;
+    font-size: 14px;
+    margin: 0;
+    text-transform: none;
+    letter-spacing: normal;
+}
+
+.custom-confirm-message {
+    color: var(--primary-dark);
+    font-size: 13px;
+    margin: 0;
+    padding: 20px;
+    line-height: 1.5;
+}
+
+.custom-confirm-buttons {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    padding: 16px 24px;
+    border-top: 1px solid var(--border-light);
+}
+
+.custom-confirm-btn {
+    padding: 8px 20px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    text-transform: none;
+    letter-spacing: normal;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.custom-confirm-btn.cancel {
+    background: #f3f4f6;
+    color: var(--primary-dark);
+    border: 1px solid var(--border-light);
+}
+
+.custom-confirm-btn.cancel:hover {
+    background: var(--border-light);
+}
+
+.custom-confirm-btn.primary {
+    background: var(--primary-dark);
+    color: var(--bg-white);
+}
+
+.custom-confirm-btn.primary:hover {
+    background: var(--accent-yellow);
+    color: var(--primary-dark);
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
     }
 }
 </style>
@@ -1014,6 +1254,72 @@ document.addEventListener('DOMContentLoaded', function() {
     if (sidebar) {
         observer.observe(sidebar, { attributes: true, attributeFilter: ['class'] });
     }
+
+    // Modern Confirmation Modal - Matching Logout Modal Design
+    function showConfirm(message, confirmText) {
+        return new Promise(function(resolve){
+            const overlay = document.createElement('div');
+            overlay.className = 'custom-confirm-overlay';
+
+            const dialog = document.createElement('div');
+            dialog.className = 'custom-confirm-dialog';
+
+            // Create header matching logout modal
+            const header = document.createElement('div');
+            header.className = 'custom-confirm-header';
+            header.innerHTML = '<h3 class="custom-confirm-title">Confirm Action</h3>';
+
+            // Create body
+            const body = document.createElement('div');
+            body.className = 'custom-confirm-message';
+            body.textContent = message;
+
+            // Create footer with buttons matching logout modal
+            const footer = document.createElement('div');
+            footer.className = 'custom-confirm-buttons';
+
+            const cancelBtn = document.createElement('button');
+            cancelBtn.className = 'custom-confirm-btn cancel';
+            cancelBtn.textContent = 'Cancel';
+            cancelBtn.onmouseover = function() { this.style.background = '#e5e7eb'; };
+            cancelBtn.onmouseout = function() { this.style.background = '#f3f4f6'; };
+
+            const confirmBtn = document.createElement('button');
+            confirmBtn.className = 'custom-confirm-btn primary';
+            confirmBtn.textContent = confirmText || 'Confirm';
+            confirmBtn.onmouseover = function() { this.style.background = '#FFD736'; this.style.color = '#130325'; };
+            confirmBtn.onmouseout = function() { this.style.background = '#130325'; this.style.color = '#ffffff'; };
+
+            footer.appendChild(cancelBtn);
+            footer.appendChild(confirmBtn);
+
+            dialog.appendChild(header);
+            dialog.appendChild(body);
+            dialog.appendChild(footer);
+            overlay.appendChild(dialog);
+
+            document.body.appendChild(overlay);
+
+            requestAnimationFrame(()=> overlay.classList.add('show'));
+
+            const close = ()=>{ overlay.classList.remove('show'); setTimeout(()=>overlay.remove(), 300); };
+
+            overlay.addEventListener('click', (e)=>{ if(e.target === overlay){ close(); resolve(false); } });
+            cancelBtn.addEventListener('click', ()=>{ close(); resolve(false); });
+            confirmBtn.addEventListener('click', ()=>{ close(); resolve(true); });
+        });
+    }
+
+    // Intercept back button clicks
+    document.querySelectorAll('.btn-cancel').forEach(function(btn){
+        btn.addEventListener('click', function(e){
+            e.preventDefault();
+            const message = this.textContent.trim() === 'Cancel' ? 'Are you sure you want to cancel? Any unsaved changes will be lost.' : 'Are you sure you want to go back to products?';
+            showConfirm(message, 'Yes').then(function(ok){
+                if (ok) window.location.href = btn.href || 'manage-products.php';
+            });
+        });
+    });
 });
 
 function previewImage(event) {

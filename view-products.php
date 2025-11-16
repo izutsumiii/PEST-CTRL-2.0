@@ -169,49 +169,94 @@ safeDelete:
     header("Location: view-products.php");
     exit();
 }
+
+// Handle product view
+if (isset($_GET['view'])) {
+    $productId = intval($_GET['view']);
+
+    $stmt = $pdo->prepare("SELECT * FROM products WHERE id = ? AND seller_id = ?");
+    $stmt->execute([$productId, $userId]);
+    $viewProduct = $stmt->fetch();
+
+    if ($viewProduct) {
+        // Get product images
+        $stmt = $pdo->prepare("SELECT * FROM product_images WHERE product_id = ? ORDER BY is_primary DESC, sort_order ASC");
+        $stmt->execute([$productId]);
+        $viewProduct['images'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        // For now, redirect back to products page with a success message
+        // This can be enhanced later to show a detailed view modal
+        $_SESSION['product_message'] = ['type' => 'success', 'text' => 'Viewing product: ' . htmlspecialchars($viewProduct['name'])];
+        header("Location: view-products.php");
+        exit();
+    } else {
+        $_SESSION['product_message'] = ['type' => 'error', 'text' => 'Product not found.'];
+        header("Location: view-products.php");
+        exit();
+    }
+}
+
 // Include header after form processing is complete (to avoid headers already sent)
 require_once 'includes/seller_header.php';
 ?>
 
 <style>
-html, body { 
-    background: #f0f2f5 !important; 
-    margin: 0; 
-    padding: 0; 
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+/* Modern CSS Variables - Matching Customer Side */
+:root {
+    --primary-dark: #130325;
+    --accent-yellow: #FFD736;
+    --text-dark: #1a1a1a;
+    --text-light: #6b7280;
+    --border-light: #e5e7eb;
+    --bg-light: #f9fafb;
+    --bg-white: #ffffff;
+    --success-green: #10b981;
+    --error-red: #ef4444;
 }
-main { 
-    background: #f0f2f5 !important; 
-    margin-left: 120px !important; 
-    margin-top: -20px !important;
-    margin-bottom: 0 !important;
-    padding-top: 5px !important;
-    padding-bottom: 40px !important;
-    padding-left: 30px !important;
-    padding-right: 30px !important;
-    min-height: calc(100vh - 60px) !important; 
+
+/* Base Styles */
+html, body {
+    background: var(--bg-light) !important;
+    margin: 0;
+    padding: 0;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    color: var(--text-dark);
+}
+
+/* Main Layout - Compact and Responsive */
+main {
+    background: var(--bg-light) !important;
+    min-height: calc(100vh - 60px);
+    margin-top: 15px;
+    margin-left: 240px;
+    margin-bottom: 0;
+    padding: 12px;
     transition: margin-left 0.3s ease !important;
 }
-main.sidebar-collapsed { margin-left: 0px !important; }
 
+main.sidebar-collapsed {
+    margin-left: 70px;
+}
+
+/* Notification Toast - Modern */
 .notification-toast {
     position: fixed;
     top: 100px;
     right: 20px;
     max-width: 450px;
     min-width: 350px;
-    background: #ffffff;
-    border: 1px solid rgba(0, 0, 0, 0.1);
-    border-radius: 16px;
+    background: var(--bg-white);
+    border: 1px solid var(--border-light);
+    border-radius: 12px;
     padding: 20px 24px;
-    color: #130325;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    color: var(--text-dark);
+    box-shadow: 0 8px 24px rgba(19, 3, 37, 0.15);
     z-index: 10000;
     animation: slideInRight 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
     display: flex;
     align-items: center;
     gap: 16px;
-    font-family: var(--font-primary, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 .notification-toast::before {
@@ -463,137 +508,174 @@ main.sidebar-collapsed { margin-left: 0px !important; }
     transform: none;
 }
 
-h1 { 
-    color: #130325 !important; 
-    font-size: 20px !important; 
-    font-weight: 700 !important; 
+/* Page Title */
+h1 {
+    color: var(--primary-dark) !important;
+    font-size: 1.35rem !important;
+    font-weight: 700 !important;
     margin: 0 !important;
     margin-bottom: 16px !important;
-    padding: 0 !important; 
+    padding: 0 !important;
     text-shadow: none !important;
 }
 
+/* Container - Adjusted for sidebar */
 .products-container {
-    max-width: 1600px;
-    margin: 0 auto;
+    max-width: 1400px;
+    margin: 0;
+    margin-left: -220px;
+    padding: 0 16px;
+    transition: margin-left 0.3s ease;
 }
 
-.search-card {
-    background: #ffffff;
-    border: 1px solid rgba(0,0,0,0.1);
-    border-radius: 8px;
-    padding: 20px;
-    margin-bottom: 30px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+main.sidebar-collapsed .products-container {
+    margin-left: -150px;
 }
 
-.search-wrapper {
-    display: flex;
-    gap: 12px;
-    align-items: center;
+/* ============================================
+   FILTER SECTION - MODERN DESIGN
+   ============================================ */
+
+.filter-section {
+    margin-bottom: 16px;
+    padding: 14px 16px;
+    background: var(--bg-white);
+    border-radius: 6px;
+    border: 1px solid rgba(19, 3, 37, 0.08);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    transition: all 0.2s ease;
 }
 
-.search-input-group {
+.filter-section:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    border-color: rgba(19, 3, 37, 0.12);
+}
+
+.filter-wrapper {
     display: flex;
     gap: 8px;
-    flex: 1;
+    align-items: center;
+    flex-wrap: wrap;
 }
 
-.search-bar {
+.filter-search {
+    position: relative;
     flex: 1;
-    padding: 12px 14px;
-    background: #ffffff;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    color: #130325;
+    min-width: 200px;
+}
+
+.filter-search i {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-light);
+    font-size: 14px;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.filter-search input {
+    width: 100%;
+    padding: 10px 12px 10px 36px;
+    border: 1px solid var(--border-light);
+    border-radius: 6px;
+    background: var(--bg-white);
+    color: var(--primary-dark);
     font-size: 14px;
     transition: all 0.2s ease;
+    font-family: inherit;
 }
 
-.search-bar:focus {
+.filter-search input:focus {
     outline: none;
-    border-color: #FFD736;
-    box-shadow: 0 0 0 2px rgba(255,215,54,0.2);
+    border-color: var(--primary-dark);
+    box-shadow: 0 0 0 3px rgba(19, 3, 37, 0.1);
 }
 
-.search-bar::placeholder {
-    color: #999;
-}
-
-.search-btn {
-    padding: 12px 16px;
-    background: #FFD736;
-    color: #130325;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.search-btn:hover {
-    background: #f5d026;
+.filter-search input::placeholder {
+    color: var(--text-light);
 }
 
 .filter-dropdown {
-    padding: 12px 14px;
-    background: #ffffff;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    color: #130325;
+    position: relative;
+    min-width: 140px;
+}
+
+.filter-dropdown select {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--border-light);
+    border-radius: 6px;
+    background: var(--bg-white);
+    color: var(--primary-dark);
     font-size: 14px;
     cursor: pointer;
     transition: all 0.2s ease;
-    min-width: 160px;
+    font-family: inherit;
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-size: 16px;
+    padding-right: 36px;
 }
 
-.filter-dropdown:focus {
+.filter-dropdown select:focus {
     outline: none;
-    border-color: #FFD736;
-    box-shadow: 0 0 0 2px rgba(255,215,54,0.2);
+    border-color: var(--primary-dark);
+    box-shadow: 0 0 0 3px rgba(19, 3, 37, 0.1);
+}
+
+.filter-dropdown select:hover {
+    border-color: rgba(19, 3, 37, 0.15);
 }
 
 .filter-dropdown option {
-    background: #ffffff;
-    color: #130325;
+    background: var(--bg-white);
+    color: var(--primary-dark);
+    padding: 8px;
 }
 
+/* Products Table Container - Modern */
 .products-table-container {
-    background: #ffffff;
-    border: 1px solid rgba(0,0,0,0.1);
-    border-radius: 8px;
+    background: var(--bg-white);
+    border: 1px solid var(--border-light);
+    border-radius: 12px;
     padding: 24px;
     margin-top: 0;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 8px rgba(19, 3, 37, 0.08);
 }
 
 .table-wrapper {
     overflow-x: auto;
+    border-radius: 8px;
 }
 
 .products-table {
     width: 100%;
     border-collapse: collapse;
     font-size: 14px;
+    table-layout: fixed;
 }
 
 .products-table thead {
-    background: #f8f9fa;
-    border-bottom: 2px solid #e5e7eb;
+    background: linear-gradient(135deg, var(--primary-dark) 0%, rgba(19, 3, 37, 0.95) 100%);
+    border-bottom: 2px solid var(--accent-yellow);
 }
 
 .products-table th {
     padding: 12px 16px;
     text-align: left;
     font-weight: 700;
-    color: #130325;
-    font-size: 13px;
+    color: var(--bg-white);
+    font-size: 0.75rem;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.8px;
     position: relative;
     user-select: none;
+    border: none;
+    box-sizing: border-box;
 }
 
 .products-table th.sortable {
@@ -612,7 +694,7 @@ h1 {
     top: 50%;
     transform: translateY(-50%);
     font-size: 10px;
-    color: #9ca3af;
+    color: var(--accent-yellow);
     transition: all 0.2s ease;
 }
 
@@ -623,27 +705,29 @@ h1 {
 
 .sort-indicator.asc::before {
     content: '↑';
-    color: #130325;
+    color: var(--accent-yellow);
 }
 
 .sort-indicator.desc::before {
     content: '↓';
-    color: #130325;
+    color: var(--accent-yellow);
 }
 
 .products-table tbody tr {
-    border-bottom: 1px solid #f0f0f0;
+    border-bottom: 1px solid var(--border-light);
     transition: background 0.2s ease;
 }
 
 .products-table tbody tr:hover {
-    background: rgba(255, 215, 54, 0.05);
+    background: rgba(255, 215, 54, 0.03);
 }
 
 .products-table td {
-    padding: 14px 16px;
-    color: #130325;
+    padding: 12px 16px;
+    color: var(--text-dark);
     vertical-align: middle;
+    border: none;
+    box-sizing: border-box;
 }
 
 .product-name-cell {
@@ -707,7 +791,7 @@ h1 {
 
 .table-actions {
     display: flex;
-    gap: 8px;
+    gap: 6px;
 }
 
 .action-btn {
@@ -716,40 +800,53 @@ h1 {
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 4px;
+    border-radius: 6px;
     transition: all 0.2s ease;
     text-decoration: none;
-    color: #130325;
+    color: var(--primary-dark);
+    background: transparent;
+    border: 2px solid var(--primary-dark);
+    font-size: 14px;
+}
+
+.action-btn:hover {
+    background: var(--primary-dark);
+    color: var(--bg-white);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(19, 3, 37, 0.2);
 }
 
 .edit-btn {
-    background: #130325;
-    color: #ffffff;
+    background: transparent;
+    color: var(--primary-dark);
+    border: 2px solid var(--primary-dark);
 }
 
 .edit-btn:hover {
-    background: #0a0218;
-    transform: scale(1.1);
+    background: var(--primary-dark);
+    color: var(--bg-white);
 }
 
 .status-btn {
-    background: #FFD736;
-    color: #130325;
+    background: transparent;
+    color: var(--success-green);
+    border: 2px solid var(--success-green);
 }
 
 .status-btn:hover {
-    background: #f5d026;
-    transform: scale(1.1);
+    background: var(--success-green);
+    color: var(--bg-white);
 }
 
 .delete-btn {
-    background: #dc3545;
-    color: #ffffff;
+    background: transparent;
+    color: var(--error-red);
+    border: 2px solid var(--error-red);
 }
 
 .delete-btn:hover {
-    background: #c82333;
-    transform: scale(1.1);
+    background: var(--error-red);
+    color: var(--bg-white);
 }
 
 .no-products-message {
@@ -865,12 +962,169 @@ h1 {
     }
 }
 
+/* Responsive Design - Modern */
+@media (max-width: 1024px) {
+    main {
+        margin-left: 70px;
+        padding: 10px;
+        margin-top: 15px;
+    }
+
+    .products-container {
+        margin-left: -150px;
+        padding: 0 12px;
+    }
+
+    .filter-section {
+        padding: 8px 10px;
+        margin-bottom: 10px;
+    }
+
+    .filter-wrapper {
+        gap: 6px;
+    }
+
+    .filter-search {
+        min-width: 120px;
+        flex: 1;
+    }
+}
+
 @media (max-width: 768px) {
-    main { padding: 30px 24px 60px 24px !important; }
-    .search-wrapper { flex-direction: column; }
-    .filter-dropdown { width: 100%; }
-    .products-table { font-size: 12px; }
-    .table-actions { flex-direction: row; }
+    main {
+        margin-left: 0;
+        padding: 10px 8px;
+        margin-top: 15px;
+    }
+
+    .products-container {
+        margin-left: 0;
+        padding: 0 12px;
+        max-width: 100%;
+    }
+
+    .filter-section {
+        padding: 6px 8px;
+    }
+
+    .filter-wrapper {
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .filter-search,
+    .filter-dropdown {
+        width: 100%;
+        min-width: auto;
+    }
+
+    h1 {
+        font-size: 1.2rem;
+        margin-bottom: 12px;
+    }
+
+    .products-table-container {
+        padding: 16px 12px;
+        margin-top: 16px;
+    }
+
+    .products-table {
+        font-size: 12px;
+    }
+
+    .products-table th,
+    .products-table td {
+        padding: 8px 12px;
+    }
+
+    .table-actions {
+        gap: 4px;
+    }
+
+    .action-btn {
+        width: 28px;
+        height: 28px;
+        font-size: 12px;
+    }
+}
+
+@media (max-width: 480px) {
+    main {
+        padding: 8px 6px;
+        margin-top: 12px;
+    }
+
+    .products-container {
+        padding: 0 8px;
+    }
+
+    .filter-section {
+        padding: 8px 6px;
+        margin-bottom: 12px;
+    }
+
+    .filter-wrapper {
+        gap: 4px;
+    }
+
+    h1 {
+        font-size: 1.1rem;
+        margin-bottom: 10px;
+    }
+
+    .products-table-container {
+        padding: 12px 8px;
+        margin-top: 12px;
+    }
+
+    .products-table th,
+    .products-table td {
+        padding: 6px 8px;
+        font-size: 11px;
+    }
+
+    .action-btn {
+        width: 24px;
+        height: 24px;
+    }
+}
+
+@media (max-width: 360px) {
+    main {
+        padding: 6px 4px;
+        margin-top: 10px;
+    }
+
+    .products-container {
+        padding: 0 6px;
+    }
+
+    .filter-section {
+        padding: 6px 4px;
+        margin-bottom: 8px;
+    }
+
+    h1 {
+        font-size: 1rem;
+        margin-bottom: 8px;
+    }
+
+    .products-table-container {
+        padding: 10px 6px;
+        margin-top: 10px;
+    }
+
+    .products-table th,
+    .products-table td {
+        padding: 4px 6px;
+        font-size: 10px;
+    }
+
+    .action-btn {
+        width: 20px;
+        height: 20px;
+        font-size: 10px;
+    }
 }
 
 /* Product ID Link */
@@ -1488,22 +1742,22 @@ h1 {
 
     <h1>View Products</h1>
 
-    <div class="search-card">
-        <div class="search-wrapper">
-            <div class="search-input-group">
-                <input type="text" class="search-bar" id="productSearch" placeholder="Search by name, category, or ID..." onkeyup="filterProducts()">
-                <button class="search-btn" onclick="filterProducts()" title="Search">
-                    <i class="fas fa-search"></i>
-                </button>
+    <div class="filter-section">
+        <div class="filter-wrapper">
+            <div class="filter-search">
+                <i class="fas fa-search"></i>
+                <input type="text" id="productSearch" placeholder="Search by name, category, or ID..." onkeyup="filterProducts()">
             </div>
-            <select class="filter-dropdown" id="statusFilter" onchange="filterProducts()">
-                <option value="all">All Products</option>
-                <option value="active">Active Only</option>
-                <option value="inactive">Inactive Only</option>
-                <option value="pending">Pending Approval</option>
-                <option value="rejected">Rejected</option>
-                <option value="suspended">Suspended</option>
-            </select>
+            <div class="filter-dropdown">
+                <select id="statusFilter" onchange="filterProducts()">
+                    <option value="all">All Products</option>
+                    <option value="active">Active Only</option>
+                    <option value="inactive">Inactive Only</option>
+                    <option value="pending">Pending Approval</option>
+                    <option value="rejected">Rejected</option>
+                    <option value="suspended">Suspended</option>
+                </select>
+            </div>
         </div>
     </div>
 
@@ -1575,6 +1829,9 @@ h1 {
                                 </td>
                                 <td>
                                     <div class="table-actions">
+                                        <a href="?view=<?php echo $product['id']; ?>" class="action-btn view-btn" title="View Product">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
                                         <?php if (!in_array($product['status'], ['suspended', 'rejected'])): ?>
                                             <a href="edit-product.php?id=<?php echo $product['id']; ?>" class="action-btn edit-btn" title="Edit">
                                                 <i class="fas fa-edit"></i>

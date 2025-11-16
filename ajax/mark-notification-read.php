@@ -13,6 +13,7 @@ require_once '../config/database.php';
 $orderId = 0;
 $notificationId = 0;
 $isCustom = false;
+$notificationType = null;
 
 $contentType = $_SERVER['CONTENT_TYPE'] ?? '';
 if (strpos($contentType, 'application/json') !== false) {
@@ -21,11 +22,13 @@ if (strpos($contentType, 'application/json') !== false) {
     $orderId = isset($data['order_id']) ? (int)$data['order_id'] : 0;
     $notificationId = isset($data['notification_id']) ? (int)$data['notification_id'] : 0;
     $isCustom = isset($data['is_custom']) ? (bool)$data['is_custom'] : false;
+    $notificationType = isset($data['notification_type']) ? $data['notification_type'] : null;
 } else {
     // FormData request (from sendBeacon)
     $orderId = isset($_POST['order_id']) ? (int)$_POST['order_id'] : 0;
     $notificationId = isset($_POST['notification_id']) ? (int)$_POST['notification_id'] : 0;
     $isCustom = isset($_POST['is_custom']) && $_POST['is_custom'] === '1';
+    $notificationType = isset($_POST['notification_type']) ? $_POST['notification_type'] : null;
 }
 
 $userId = $_SESSION['user_id'];
@@ -50,11 +53,14 @@ try {
     )");
     
     if ($notificationId > 0) {
-        // Mark standalone notification as read (product notifications, general notifications)
+        // Mark notification as read (product notifications, seller_reply, general notifications)
+        // Use the provided notification_type or default to 'standalone'
+        $typeToUse = $notificationType ?: 'standalone';
+        
         $stmt = $pdo->prepare("INSERT INTO notification_reads (user_id, notification_id, notification_type, read_at) 
-                               VALUES (?, ?, 'standalone', CURRENT_TIMESTAMP) 
+                               VALUES (?, ?, ?, CURRENT_TIMESTAMP) 
                                ON DUPLICATE KEY UPDATE read_at = CURRENT_TIMESTAMP");
-        $stmt->execute([$userId, $notificationId]);
+        $stmt->execute([$userId, $notificationId, $typeToUse]);
     } elseif ($orderId > 0) {
         // Mark order notification as read
         $notificationType = $isCustom ? 'custom' : 'order_update';

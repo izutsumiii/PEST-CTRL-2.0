@@ -297,207 +297,269 @@ if (isset($_POST['request_reset'])) {
 }
 ?>
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Forgot Password - PEST-CTRL</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+<style>
+    :root {
+        --primary-dark: #130325;
+        --accent-yellow: #FFD736;
+        --text-dark: #1a1a1a;
+        --text-light: #6b7280;
+        --border-light: #e5e7eb;
+        --bg-light: #f9fafb;
+        --bg-white: #ffffff;
+        --success-green: #10b981;
+        --error-red: #ef4444;
+    }
 
-        body {
-            font-family: 'Inter', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: linear-gradient(135deg, var(--primary-dark) 0%, rgba(19, 3, 37, 0.95) 100%);
-            min-height: 100vh;
-            padding: 0;
-            position: relative;
-            overflow-x: hidden;
+    /* Override body background */
+    body {
+        background: linear-gradient(135deg, var(--primary-dark) 0%, rgba(19, 3, 37, 0.95) 50%, #0a0118 100%);
+        min-height: 100vh;
+        margin: 0;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+
+    /* Main wrapper */
+    .forgot-password-wrapper {
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        min-height: calc(100vh - 80px);
+        padding: 40px 20px;
+    }
+
+    /* Forgot Password Container */
+    .forgot-password-container {
+        width: 100%;
+        max-width: 420px;
+        padding: 24px 20px;
+        border-radius: 12px;
+        background: var(--bg-white);
+        color: var(--text-dark);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        border: 1px solid var(--border-light);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .forgot-password-header {
+        text-align: center;
+        margin-bottom: 20px;
+    }
+
+    .forgot-password-header h1 {
+        color: var(--text-dark);
+        font-size: 1.35rem;
+        font-weight: 600;
+        margin-bottom: 6px;
+        letter-spacing: -0.3px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+    }
+
+    .forgot-password-header h1 i {
+        color: var(--primary-dark);
+        font-size: 1.2rem;
+    }
+
+    .forgot-password-header .subtitle {
+        font-size: 12px;
+        color: var(--text-light);
+        line-height: 1.4;
+    }
+
+    .form-group {
+        margin-bottom: 12px;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: 600;
+        color: #130325;
+        font-size: 12px;
+    }
+
+    .form-group input[type="email"] {
+        width: 100%;
+        padding: 10px 14px;
+        border: 1.5px solid var(--primary-dark);
+        border-radius: 8px;
+        font-size: 13px;
+        background: var(--bg-white);
+        color: var(--text-dark);
+        box-sizing: border-box;
+        transition: all 0.2s ease;
+    }
+
+    .form-group input:focus {
+        outline: none;
+        background: var(--bg-white);
+        border-color: var(--primary-dark);
+        box-shadow: 0 0 0 3px rgba(19, 3, 37, 0.1);
+        border-width: 2px;
+    }
+
+    .form-group input::placeholder {
+        color: rgba(19, 3, 37, 0.5);
+    }
+
+    .forgot-password-container button[type="submit"] {
+        width: 100%;
+        padding: 10px 16px;
+        background-color: var(--primary-dark);
+        color: var(--bg-white);
+        border: 1.5px solid var(--primary-dark);
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        text-decoration: none;
+        text-align: center;
+        transition: all 0.2s ease;
+        margin-top: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+    }
+
+    .forgot-password-container button[type="submit"]:hover:not(:disabled) {
+        background-color: #0a0118;
+        color: var(--bg-white);
+        border-color: #0a0118;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(19, 3, 37, 0.15);
+    }
+
+    .forgot-password-container button[type="submit"]:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+
+    .success-message, .error-message {
+        padding: 12px 14px;
+        border-radius: 8px;
+        margin-bottom: 16px;
+        text-align: left;
+        font-weight: 500;
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        font-size: 12px;
+        line-height: 1.5;
+    }
+
+    .success-message {
+        background: rgba(16, 185, 129, 0.1);
+        color: var(--success-green);
+        border: 1.5px solid var(--success-green);
+    }
+
+    .success-message i {
+        color: var(--success-green);
+        font-size: 16px;
+        margin-top: 1px;
+        flex-shrink: 0;
+    }
+
+    .error-message {
+        background: rgba(239, 68, 68, 0.1);
+        color: var(--error-red);
+        border: 1.5px solid var(--error-red);
+    }
+
+    .error-message i {
+        color: var(--error-red);
+        font-size: 16px;
+        margin-top: 1px;
+        flex-shrink: 0;
+    }
+
+    .error-details {
+        margin-top: 6px;
+        font-size: 11px;
+        color: rgba(239, 68, 68, 0.8);
+        opacity: 0.9;
+    }
+
+    .forgot-links {
+        text-align: center;
+        margin-top: 16px;
+        padding-top: 16px;
+        border-top: 1px solid rgba(19, 3, 37, 0.1);
+    }
+
+    .forgot-links p {
+        font-size: 11px;
+        color: #130325;
+        margin: 4px 0;
+    }
+
+    .forgot-links a {
+        color: #130325;
+        text-decoration: none;
+        font-weight: 600;
+    }
+
+    .forgot-links a:hover {
+        color: #130325;
+        text-decoration: underline;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+        .forgot-password-wrapper {
+            padding: 30px 16px;
         }
 
         .forgot-password-container {
-            background: var(--primary-dark);
-            backdrop-filter: blur(20px);
-            border: 1px solid var(--border-secondary);
-            padding: 40px 30px;
-            border-radius: 24px;
-            box-shadow: 0 20px 40px var(--shadow-light);
-            max-width: 480px;
-            width: 100%;
-            text-align: center;
-            position: relative;
-            overflow: hidden;
-            margin: 80px auto 24px;
-            color: var(--primary-light);
+            padding: 20px 16px;
+            max-width: 100%;
         }
 
-        .forgot-password-container h1 {
-            color: var(--accent-yellow);
-            font-size: 1.8rem;
-            margin-bottom: 10px;
-            font-weight: 700;
+        .forgot-password-header h1 {
+            font-size: 1.2rem;
         }
 
-        .forgot-password-container p {
-            color: rgba(249, 249, 249, 0.8);
-            margin-bottom: 30px;
-            font-size: 0.95rem;
-            line-height: 1.5;
+        .forgot-password-header .subtitle {
+            font-size: 11px;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .forgot-password-wrapper {
+            padding: 20px 12px;
         }
 
-        .form-group {
-            margin-bottom: 24px;
-            text-align: left;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 600;
-            color: var(--primary-light);
-            font-size: 14px;
+        .forgot-password-container {
+            padding: 18px 14px;
         }
 
         .form-group input[type="email"] {
-            width: 100%;
-            padding: 14px 16px;
-            border: 2px solid var(--border-secondary);
-            border-radius: 12px;
-            font-size: 15px;
-            background: var(--primary-light);
-            color: var(--primary-dark);
-            transition: all 0.3s ease;
-            font-family: 'Inter', sans-serif;
+            padding: 9px 12px;
+            font-size: 12px;
         }
 
-        .form-group input[type="email"]:focus {
-            outline: none;
-            border-color: var(--accent-yellow);
-            box-shadow: 0 0 0 3px rgba(255, 215, 54, 0.15);
+        .forgot-password-container button[type="submit"] {
+            padding: 9px 14px;
+            font-size: 12px;
         }
+    }
+</style>
 
-        .btn-primary {
-            width: 100%;
-            padding: 14px;
-            background: var(--accent-yellow);
-            color: var(--primary-dark);
-            border: none;
-            border-radius: 12px;
-            font-size: 15px;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-family: 'Inter', sans-serif;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
-
-        .btn-primary:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(255, 215, 54, 0.4);
-            background: #e6c230;
-        }
-
-        .btn-primary:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-        }
-
-        .success-message, .error-message {
-            padding: 18px;
-            border-radius: 12px;
-            margin-bottom: 24px;
-            text-align: left;
-            font-weight: 500;
-            display: flex;
-            align-items: flex-start;
-            gap: 12px;
-            font-size: 14px;
-            line-height: 1.6;
-        }
-
-        .success-message {
-            background: rgba(40, 167, 69, 0.15);
-            color: #28a745;
-            border: 2px solid #28a745;
-        }
-
-        .success-message i {
-            color: #28a745;
-            font-size: 18px;
-            margin-top: 2px;
-        }
-
-        .error-message {
-            background: rgba(220, 53, 69, 0.15);
-            color: #dc3545;
-            border: 2px solid #dc3545;
-        }
-
-        .error-message i {
-            color: #dc3545;
-            font-size: 18px;
-            margin-top: 2px;
-        }
-
-        .links {
-            text-align: center;
-            margin-top: 24px;
-            padding-top: 20px;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .links a {
-            color: var(--accent-yellow);
-            text-decoration: none;
-            font-weight: 500;
-            font-size: 0.95rem;
-            transition: color 0.3s ease;
-        }
-
-        .links a:hover {
-            color: #e6c230;
-            text-decoration: underline;
-        }
-
-        .links p {
-            text-decoration: none;
-            font-weight: 400;
-            font-size: 0.95rem;
-            color: rgba(249, 249, 249, 0.8);
-            margin: 8px 0;
-            line-height: 1.4;
-        }
-
-        /* Responsive */
-        @media (max-width: 768px) {
-            .forgot-password-container {
-                margin: 100px auto 24px;
-                padding: 30px 20px;
-            }
-
-            .forgot-password-container h1 {
-                font-size: 1.5rem;
-            }
-        }
-    </style>
-</head>
-<body>
+<div class="forgot-password-wrapper">
     <div class="forgot-password-container">
-        <h1><i class="fas fa-lock"></i> Forgot Password</h1>
-        <p>Enter your email address and we'll send you a link to reset your password.</p>
+        <div class="forgot-password-header">
+            <h1><i class="fas fa-lock"></i> Forgot Password</h1>
+            <p class="subtitle">Enter your email address and we'll send you a link to reset your password.</p>
+        </div>
 
         <?php if ($success): ?>
             <div class="success-message">
                 <i class="fas fa-check-circle"></i>
-                <div><?php echo $success; ?></div>
+                <div><?php echo htmlspecialchars($success); ?></div>
             </div>
         <?php endif; ?>
 
@@ -505,9 +567,9 @@ if (isset($_POST['request_reset'])) {
             <div class="error-message">
                 <i class="fas fa-exclamation-circle"></i>
                 <div>
-                    <?php echo $error; ?>
+                    <?php echo htmlspecialchars($error); ?>
                     <?php if (!empty($lastMailerError)): ?>
-                        <div style="margin-top:6px; font-size:12px; color:#f8d7da; opacity:0.9;">
+                        <div class="error-details">
                             Mailer error: <?php echo htmlspecialchars($lastMailerError); ?>
                         </div>
                     <?php endif; ?>
@@ -537,17 +599,32 @@ if (isset($_POST['request_reset'])) {
             </button>
         </form>
 
-        <div class="links">
+        <div class="forgot-links">
             <p>Remember your password? <a href="login_customer.php">Login here</a></p>
             <p>Need an account? <a href="register.php">Register here</a></p>
         </div>
     </div>
+</div>
 
-    <script>
-        // Auto-focus email input
-        document.getElementById('email').focus();
-    </script>
-</body>
-</html>
+<script>
+    // Auto-focus email input
+    document.addEventListener('DOMContentLoaded', function() {
+        const emailInput = document.getElementById('email');
+        if (emailInput) {
+            emailInput.focus();
+        }
+
+        // Form submission handler
+        const form = document.getElementById('forgot-form');
+        const submitBtn = document.getElementById('submit-btn');
+        
+        if (form && submitBtn) {
+            form.addEventListener('submit', function(e) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+            });
+        }
+    });
+</script>
 
 <?php require_once 'includes/footer.php'; ?>

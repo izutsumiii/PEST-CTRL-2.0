@@ -76,105 +76,199 @@ if (isset($_POST['change_password'])) {
 ?>
 
 <style>
-/* Force body and html to have full background coverage */
+/* CSS Variables - Customer-side design system */
+:root {
+    --primary-dark: #130325;
+    --accent-yellow: #FFD736;
+    --text-dark: #1a1a1a;
+    --text-light: #6b7280;
+    --border-light: #e5e7eb;
+    --bg-light: #f9fafb;
+    --bg-white: #ffffff;
+    --success-green: #10b981;
+    --error-red: #ef4444;
+}
+
+/* Base styles */
 html, body {
     margin: 0;
     padding: 0;
     min-height: 100vh;
-    background: #f0f2f5 !important;
+    background: var(--bg-light) !important;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    color: var(--text-dark);
 }
 
-/* Main container styling */
+/* Main layout with sidebar positioning */
 main {
     background: transparent !important;
-    margin-left: 120px !important;
-    margin-top: -20px !important;
-    padding: 5px 0 60px 0 !important;
-    min-height: calc(100vh - 60px) !important;
-    transition: margin-left 0.3s ease !important;
+    margin-left: 240px;
+    margin-top: 8px;
+    padding: 6px;
+    min-height: calc(100vh - 60px);
+    transition: margin-left 0.3s ease;
 }
 
 main.sidebar-collapsed {
-    margin-left: 0px !important;
+    margin-left: 70px;
 }
 
-/* Edit Profile Styles - aligned with customer edit profile design */
+@media (max-width: 1024px) {
+    main {
+        margin-left: 70px;
+    }
+}
 
+@media (max-width: 768px) {
+    main {
+        margin-left: 0 !important;
+        margin-top: 10px;
+        padding: 6px 3px;
+    }
+}
+
+@media (max-width: 480px) {
+    main {
+        margin-top: 8px;
+        padding: 4px 2px;
+    }
+}
+
+@media (max-width: 360px) {
+    main {
+        margin-top: 6px;
+        padding: 2px 1px;
+    }
+}
+
+/* Profile container - compact and modern */
+.profile-container {
+    max-width: 1400px;
+    margin: 0;
+    margin-left: -220px;
+    padding: 0 16px;
+}
+
+main.sidebar-collapsed .profile-container {
+    margin-left: -150px;
+}
+
+@media (max-width: 1024px) {
+    .profile-container {
+        margin-left: -150px;
+    }
+}
+
+@media (max-width: 768px) {
+    .profile-container {
+        margin-left: 0;
+        padding: 0 12px;
+    }
+}
+
+@media (max-width: 480px) {
+    .profile-container {
+        padding: 0 8px;
+    }
+}
+
+@media (max-width: 360px) {
+    .profile-container {
+        padding: 0 6px;
+    }
+}
+
+/* Page title */
+.page-title {
+    color: var(--text-dark);
+    margin: 0 0 16px 0;
+    font-size: 1.35rem;
+    font-weight: 600;
+    letter-spacing: -0.3px;
+    line-height: 1.2;
+}
+
+/* Profile header card */
 .profile-header {
-    max-width: 1000px;
-    margin: 0 auto 20px auto;
-    padding: 20px;
-    background: #ffffff;
-    border: 1px solid rgba(0, 0, 0, 0.1);
+    background-color: var(--bg-white);
+    border: 1px solid var(--border-light);
     border-radius: 12px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    padding: 16px 20px;
+    margin-bottom: 16px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
     display: flex;
     align-items: center;
     gap: 16px;
 }
 
 .profile-avatar {
-    width: 64px;
-    height: 64px;
+    width: 56px;
+    height: 56px;
     border-radius: 50%;
-    border: 3px solid #130325;
-    background: #F3F3F3;
+    border: 2px solid var(--primary-dark);
+    background: var(--bg-light);
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #130325;
-    font-weight: 800;
-    font-size: 1.1rem;
+    color: var(--primary-dark);
+    font-weight: 700;
+    font-size: 1rem;
+    flex-shrink: 0;
 }
 
 .profile-meta {
-    display: flex;
-    flex-direction: column;
+    flex: 1;
 }
 
 .profile-name {
-    color: #130325;
+    color: var(--text-dark);
     font-size: 1.1rem;
-    font-weight: 700;
+    font-weight: 600;
+    margin-bottom: 4px;
     line-height: 1.2;
 }
 
 .profile-email {
-    color: #6b7280;
+    color: var(--text-light);
     font-size: 0.9rem;
 }
 
-/* Compact header action buttons */
-#editAccountBtn,
-#changePasswordBtn {
-    padding: 6px 12px !important;
-    font-size: 0.85rem !important;
-    border-radius: 6px !important;
-}
-
-/* Action toggle (single icon button) */
+/* Action toggle button */
 .action-toggle-btn {
-    background: #FFD736;
-    color: #130325;
-    border: 2px solid #FFD736;
+    background: transparent;
+    color: var(--primary-dark);
+    border: 2px solid var(--primary-dark);
     border-radius: 8px;
-    width: 36px;
-    height: 36px;
-    display: inline-flex;
+    width: 40px;
+    height: 40px;
+    display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
 }
 
+.action-toggle-btn:hover {
+    background: var(--primary-dark);
+    color: var(--bg-white);
+    transform: translateY(-1px);
+}
+
+.action-toggle-btn:active {
+    transform: translateY(0);
+}
+
+/* Actions dropdown menu */
 .profile-actions-menu {
     position: absolute;
     right: 0;
-    top: 42px;
-    background: #ffffff;
-    border: 1px solid rgba(0,0,0,0.1);
+    top: 44px;
+    background: var(--bg-white);
+    border: 1px solid var(--border-light);
     border-radius: 8px;
-    box-shadow: 0 8px 16px rgba(0,0,0,0.08);
-    padding: 6px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+    padding: 8px;
     min-width: 180px;
     z-index: 1000;
     display: none;
@@ -183,61 +277,53 @@ main.sidebar-collapsed {
 .profile-actions-menu button {
     width: 100%;
     background: transparent;
-    color: #130325;
+    color: var(--text-dark);
     border: none;
     text-align: left;
-    padding: 8px 10px;
+    padding: 10px 12px;
     border-radius: 6px;
     font-size: 0.9rem;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
 }
 
 .profile-actions-menu button:hover {
-    background: #F0F2F5;
+    background: var(--bg-light);
 }
 
-.profile-editor h1,
-.profile-editor h2,
-.profile-editor h3 {
-    color: #130325;
-    text-align: left;
-    margin: 20px 0;
-    font-size: 2rem;
-}
-
-/* Main profile editor container */
+/* Profile editor layout */
 .profile-editor {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 40px;
-    max-width: 1000px;
-    margin: 0 auto 20px auto;
-    padding: 0 20px;
+    gap: 20px;
+    margin-top: 0;
 }
 
-/* Section styling */
+/* Profile sections */
 .personal-info,
 .password-change {
-    background: #ffffff;
-    padding: 25px;
-    border-radius: 8px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    border: 1px solid rgba(0,0,0,0.1);
+    background-color: var(--bg-white);
+    border: 1px solid var(--border-light);
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
 .personal-info h2,
 .password-change h2 {
-    color: #130325;
-    margin-bottom: 20px;
-    font-size: 1.5rem;
-    padding-bottom: 10px;
-    border-bottom: 2px solid #F0F2F5;
+    color: var(--text-dark);
+    margin: 0 0 16px 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    border-bottom: 1px solid var(--border-light);
+    padding-bottom: 12px;
 }
 
-/* Form styling (scoped to profile editor to avoid affecting header search) */
+/* Form elements */
 .profile-editor form {
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: 16px;
 }
 
 .profile-editor form div {
@@ -245,128 +331,158 @@ main.sidebar-collapsed {
     flex-direction: column;
 }
 
-/* Button container should be side by side */
-.profile-editor form .button-container {
-    flex-direction: row !important;
-}
-
-/* Label styling */
+/* Form labels */
 .profile-editor label {
-    margin-bottom: 5px;
-    color: #130325;
+    margin-bottom: 6px;
+    color: var(--text-dark);
     font-weight: 500;
-    font-size: 1rem;
+    font-size: 0.9rem;
 }
 
-/* Input styling */
+/* Form inputs */
 .profile-editor input[type="text"],
 .profile-editor input[type="email"],
 .profile-editor input[type="tel"],
 .profile-editor input[type="password"],
 .profile-editor textarea {
-    padding: 12px;
-    border: 1px solid #ced4da;
-    border-radius: 4px;
-    font-size: 1rem;
-    transition: border-color 0.3s;
-    background: #ffffff;
-    color: #130325;
+    padding: 10px 12px;
+    border: 1.5px solid var(--border-light);
+    border-radius: 8px;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+    background: var(--bg-white);
+    color: var(--text-dark);
+    font-family: inherit;
 }
 
 .profile-editor input:focus,
 .profile-editor textarea:focus {
     outline: none;
-    border-color: #FFD736;
-    box-shadow: 0 0 0 3px rgba(255, 215, 54, 0.3);
+    border-color: var(--accent-yellow);
+    box-shadow: 0 0 0 3px rgba(255, 215, 54, 0.2);
 }
 
-/* Textarea specific styling */
+/* Textarea specific */
 .profile-editor textarea {
     min-height: 80px;
     resize: vertical;
     font-family: inherit;
 }
 
-/* Button styling - Minimized */
-.profile-editor button[type="submit"] {
-    background: #FFD736;
-    color: #130325;
+/* Button container */
+.button-container {
+    display: flex;
+    gap: 12px;
+    margin-top: 8px;
+    flex-direction: row;
+    align-items: center;
+}
+
+/* Form buttons */
+.form-actions button[type="submit"],
+.btn-secondary {
     padding: 8px 16px;
     border: none;
     border-radius: 6px;
-    font-size: 13px;
-    cursor: pointer;
-    transition: background-color 0.3s, transform 0.2s;
-    margin-top: 0;
+    font-size: 0.85rem;
     font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: inherit;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
 }
 
-.profile-editor button[type="submit"]:hover {
-    background: #e6c230;
+.form-actions button[type="submit"] {
+    background: var(--primary-dark);
+    color: var(--bg-white);
+    border: 1px solid var(--primary-dark);
+}
+
+.form-actions button[type="submit"]:hover:not(:disabled) {
+    background: var(--accent-yellow);
+    color: var(--primary-dark);
+    border-color: var(--accent-yellow);
     transform: translateY(-1px);
 }
 
-.profile-editor button[type="submit"]:active {
-    transform: translateY(1px);
+.form-actions button[type="submit"]:active:not(:disabled) {
+    transform: translateY(0);
 }
 
 .btn-secondary {
-    background: #6c757d;
-    color: #fff;
-    padding: 8px 16px;
-    border: none;
-    border-radius: 6px;
-    font-size: 13px;
-    cursor: pointer;
-    transition: background-color 0.3s;
-    font-weight: 600;
+    background: var(--error-red);
+    color: var(--bg-white);
+    border: 1px solid var(--error-red);
 }
 
-.btn-secondary:hover { 
-    background: #5a6268; 
+.btn-secondary:hover {
+    background: #dc2626;
+    border-color: #dc2626;
+    transform: translateY(-1px);
 }
 
-.account-summary { 
-    display: grid; 
-    grid-template-columns: repeat(2, minmax(260px, 1fr));
-    gap: 12px 20px; 
+.btn-secondary:active {
+    transform: translateY(0);
 }
 
-.summary-row { 
-    display: flex; 
-    justify-content: space-between; 
-    gap: 10px; 
-    color: #130325; 
-    padding: 8px 0;
-    border-bottom: 1px solid #F0F2F5;
-    background: #ffffff;
+/* Account summary grid */
+.account-summary {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+}
+
+.summary-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    color: var(--text-dark);
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border-light);
 }
 
 .summary-row:last-child {
     border-bottom: none;
 }
 
-.summary-row strong { 
-    color: #374151; 
+.summary-row strong {
+    color: var(--text-dark);
+    font-weight: 600;
+    font-size: 0.85rem;
 }
 
-.account-actions { 
-    display: flex; 
-    gap: 10px; 
-    margin-top: 15px; 
+.summary-row span {
+    color: var(--text-light);
+    font-size: 0.85rem;
+    text-align: right;
+}
+
+/* Account actions - hidden by default */
+.account-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 16px;
 }
 
 .account-actions button {
-    background: #FFD736;
-    color: #130325;
-    padding: 12px 24px;
+    background: var(--accent-yellow);
+    color: var(--primary-dark);
+    padding: 8px 16px;
     border: none;
-    border-radius: 4px;
-    font-size: 1rem;
+    border-radius: 6px;
+    font-size: 0.85rem;
     cursor: pointer;
-    transition: background-color 0.3s, transform 0.2s;
+    transition: all 0.2s ease;
     font-weight: 600;
     flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
 }
 
 .account-actions button:hover {
@@ -374,120 +490,274 @@ main.sidebar-collapsed {
     transform: translateY(-1px);
 }
 
-.hint { 
-    color: #130325;
-    opacity: 1; 
-    font-size: 0.9rem; 
-    margin-top: 8px; 
-    text-align: center;
-    padding: 15px;
-    background: rgba(19, 3, 37, 0.08);
-    border-radius: 4px;
+.account-actions button:active {
+    transform: translateY(0);
 }
 
+/* Password hint */
+.hint {
+    color: var(--text-light);
+    font-size: 0.9rem;
+    margin-top: 16px;
+    text-align: center;
+    padding: 16px;
+    background: rgba(19, 3, 37, 0.04);
+    border: 1px solid var(--border-light);
+    border-radius: 8px;
+}
 
-/* Success/Error message styling */
-.profile-editor p {
-    padding: 10px;
-    border-radius: 5px;
-    margin: 10px 0;
+/* Success/Error messages */
+.success-message,
+.error-message {
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin: 12px 0;
     text-align: center;
     font-weight: 500;
+    font-size: 0.9rem;
+    border: 1px solid;
 }
 
-/* Success message (would need to be added via PHP class) */
 .success-message {
-    background: #d4edda;
-    color: #155724;
-    border: 1px solid #c3e6cb;
+    background: rgba(16, 185, 129, 0.1);
+    color: var(--success-green);
+    border-color: rgba(16, 185, 129, 0.2);
 }
 
-/* Error message (would need to be added via PHP class) */
 .error-message {
-    background: #f8d7da;
-    color: #721c24;
-    border: 1px solid #f5c6cb;
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--error-red);
+    border-color: rgba(239, 68, 68, 0.2);
 }
 
-/* Page title styling */
-h1 {
-    color: #130325 !important;
+/* Page title */
+.page-title {
+    color: var(--text-dark) !important;
     text-align: left;
     margin: 0 0 16px 0 !important;
-    font-size: 20px !important;
-    font-weight: 700;
+    font-size: 1.35rem !important;
+    font-weight: 600;
     padding: 0 !important;
-    text-shadow: none !important;
+    letter-spacing: -0.3px;
+    line-height: 1.2;
 }
 
 /* Responsive design */
-@media (max-width: 768px) {
-    main {
-        margin-left: 0 !important;
-        padding: 20px 15px 60px 15px !important;
-    }
-    
+@media (max-width: 1024px) {
     .profile-editor {
-        grid-template-columns: 1fr;
-        gap: 20px;
-        margin: 10px;
-        padding: 0 10px;
+        gap: 16px;
     }
-    
+
     .personal-info,
     .password-change {
-        padding: 20px;
+        padding: 18px;
     }
-    
-    h1 {
-        font-size: 18px !important;
-        margin: 0 0 16px 0 !important;
-    }
-    
-    .personal-info h2,
-    .password-change h2 {
-        font-size: 1.3rem;
+}
+
+@media (max-width: 768px) {
+    .profile-editor {
+        grid-template-columns: 1fr;
+        gap: 16px;
     }
 
-    .account-actions {
+    .personal-info,
+    .password-change {
+        padding: 16px;
+    }
+
+    .account-summary {
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
+
+    .summary-row {
         flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
     }
 
-    .account-actions button {
-        flex: none;
+    .summary-row span {
+        text-align: left;
+    }
+
+    .button-container {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .form-actions button[type="submit"],
+    .btn-secondary {
         width: 100%;
+        justify-content: center;
     }
 }
 
 @media (max-width: 480px) {
+    .profile-container {
+        padding: 0 8px;
+    }
+
+    .profile-header {
+        padding: 14px 16px;
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+
+    .profile-avatar {
+        width: 48px;
+        height: 48px;
+    }
+
+    .profile-name {
+        font-size: 1rem;
+    }
+
     .personal-info,
     .password-change {
-        padding: 15px;
+        padding: 14px;
     }
-    
+
+    .profile-editor form {
+        gap: 14px;
+    }
+
+    .form-actions button[type="submit"],
+    .btn-secondary {
+        padding: 10px 16px;
+        font-size: 0.9rem;
+    }
+}
+
+@media (max-width: 360px) {
+    .profile-container {
+        padding: 0 6px;
+    }
+
+    .profile-header {
+        padding: 12px 14px;
+    }
+
+    .personal-info,
+    .password-change {
+        padding: 12px;
+    }
+
     .profile-editor input[type="text"],
     .profile-editor input[type="email"],
     .profile-editor input[type="tel"],
     .profile-editor input[type="password"],
     .profile-editor textarea {
-        padding: 10px;
-    }
-    
-    .profile-editor button[type="submit"],
-    .btn-secondary {
-        padding: 8px 16px;
-        font-size: 12px;
+        padding: 8px 10px;
+        font-size: 0.85rem;
     }
 
-    h1 {
-        font-size: 16px !important;
+    .form-actions button[type="submit"],
+    .btn-secondary {
+        padding: 8px 14px;
+        font-size: 0.8rem;
     }
+}
+
+/* Custom Confirmation Modal - Matching Logout Modal Design */
+.custom-confirm-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+}
+
+.custom-confirm-overlay.show {
+    opacity: 1;
+    visibility: visible;
+}
+
+.custom-confirm-dialog {
+    background: var(--bg-white);
+    border-radius: 12px;
+    padding: 24px;
+    max-width: 400px;
+    width: 90%;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    transform: translateY(20px);
+    transition: transform 0.3s ease;
+}
+
+.custom-confirm-overlay.show .custom-confirm-dialog {
+    transform: translateY(0);
+}
+
+.custom-confirm-header {
+    text-align: center;
+    margin-bottom: 16px;
+}
+
+.custom-confirm-header h3 {
+    color: var(--text-dark);
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 0;
+}
+
+.custom-confirm-body {
+    text-align: center;
+    margin-bottom: 20px;
+    color: var(--text-light);
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+
+.custom-confirm-footer {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+}
+
+.custom-confirm-btn {
+    padding: 8px 20px;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: inherit;
+}
+
+.custom-confirm-btn.cancel {
+    background: var(--error-red);
+    color: var(--bg-white);
+    border: 1px solid var(--error-red);
+}
+
+.custom-confirm-btn.cancel:hover {
+    background: #dc2626;
+    border-color: #dc2626;
+    transform: translateY(-1px);
+}
+
+.custom-confirm-btn.confirm {
+    background: var(--primary-dark);
+    color: var(--bg-white);
+    border: 1px solid var(--primary-dark);
+}
+
+.custom-confirm-btn.confirm:hover {
+    background: var(--accent-yellow);
+    color: var(--primary-dark);
+    border-color: var(--accent-yellow);
+    transform: translateY(-1px);
 }
 </style>
 
 <main>
-<div style="max-width: 1200px; margin: 0 auto; padding: 0 30px 24px 30px;">
-<h1>My Account</h1>
+<div class="profile-container">
+<h1 class="page-title">My Account</h1>
 
 <div class="profile-header">
     <div class="profile-avatar">
@@ -553,9 +823,15 @@ h1 {
                 <label for="address">Address:</label>
                 <textarea id="address" name="address"><?php echo htmlspecialchars($user['address'] ?? ''); ?></textarea>
             </div><br>
-            <div class="button-container" style="display:flex; flex-direction:row; gap:8px; align-items:center;">
-                <button type="submit" name="update_profile">Save Changes</button>
-                <button type="button" id="cancelEditBtn" class="btn-secondary">Cancel</button>
+            <div class="button-container">
+                <button type="submit" name="update_profile">
+                    <i class="fas fa-save"></i>
+                    Save Changes
+                </button>
+                <button type="button" id="cancelEditBtn" class="btn-secondary">
+                    <i class="fas fa-times"></i>
+                    Cancel
+                </button>
             </div>
         </form>
     </div>
@@ -576,9 +852,15 @@ h1 {
                 <label for="confirm_password">Confirm New Password:</label>
                 <input type="password" id="confirm_password" name="confirm_password" required>
             </div>
-            <div class="button-container" style="display:flex; flex-direction:row; gap:8px; align-items:center;">
-                <button type="submit" name="change_password">Update Password</button>
-                <button type="button" id="cancelPwBtn" class="btn-secondary">Cancel</button>
+            <div class="button-container">
+                <button type="submit" name="change_password">
+                    <i class="fas fa-key"></i>
+                    Update Password
+                </button>
+                <button type="button" id="cancelPwBtn" class="btn-secondary">
+                    <i class="fas fa-times"></i>
+                    Cancel
+                </button>
             </div>
         </form>
     </div>
@@ -660,15 +942,25 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     if (cancelEdit && editForm) {
-        cancelEdit.addEventListener('click', function(){ 
-            editForm.style.display = 'none'; 
+        cancelEdit.addEventListener('click', function(e){
+            e.preventDefault();
+            showConfirmModal('Are you sure you want to cancel? Any unsaved changes will be lost.', function(confirmed) {
+                if (confirmed) {
+                    editForm.style.display = 'none';
+                }
+            });
         });
     }
-    
+
     if (cancelPw && pwForm && pwHint) {
-        cancelPw.addEventListener('click', function(){ 
-            pwForm.style.display = 'none'; 
-            pwHint.style.display = 'block'; 
+        cancelPw.addEventListener('click', function(e){
+            e.preventDefault();
+            showConfirmModal('Are you sure you want to cancel password change?', function(confirmed) {
+                if (confirmed) {
+                    pwForm.style.display = 'none';
+                    pwHint.style.display = 'block';
+                }
+            });
         });
     }
 
@@ -743,6 +1035,79 @@ function showProfileNotification(message, type) {
             notification.remove();
         }, 300);
     }, 3000);
+}
+
+// Custom confirmation modal function
+function showConfirmModal(message, callback) {
+    // Remove existing modal if any
+    const existing = document.querySelector('.custom-confirm-overlay');
+    if (existing) {
+        existing.remove();
+    }
+
+    // Create modal overlay
+    const overlay = document.createElement('div');
+    overlay.className = 'custom-confirm-overlay';
+
+    // Create modal dialog
+    const dialog = document.createElement('div');
+    dialog.className = 'custom-confirm-dialog';
+
+    // Create modal header
+    const header = document.createElement('div');
+    header.className = 'custom-confirm-header';
+    const title = document.createElement('h3');
+    title.textContent = 'Confirm Action';
+    header.appendChild(title);
+
+    // Create modal body
+    const body = document.createElement('div');
+    body.className = 'custom-confirm-body';
+    body.textContent = message;
+
+    // Create modal footer
+    const footer = document.createElement('div');
+    footer.className = 'custom-confirm-footer';
+
+    const cancelBtn = document.createElement('button');
+    cancelBtn.className = 'custom-confirm-btn cancel';
+    cancelBtn.textContent = 'Cancel';
+    cancelBtn.onclick = function() {
+        overlay.classList.remove('show');
+        setTimeout(() => overlay.remove(), 300);
+        callback(false);
+    };
+
+    const confirmBtn = document.createElement('button');
+    confirmBtn.className = 'custom-confirm-btn confirm';
+    confirmBtn.textContent = 'Confirm';
+    confirmBtn.onclick = function() {
+        overlay.classList.remove('show');
+        setTimeout(() => overlay.remove(), 300);
+        callback(true);
+    };
+
+    footer.appendChild(cancelBtn);
+    footer.appendChild(confirmBtn);
+
+    // Assemble modal
+    dialog.appendChild(header);
+    dialog.appendChild(body);
+    dialog.appendChild(footer);
+    overlay.appendChild(dialog);
+    document.body.appendChild(overlay);
+
+    // Show modal
+    setTimeout(() => overlay.classList.add('show'), 10);
+
+    // Close on overlay click
+    overlay.addEventListener('click', function(e) {
+        if (e.target === overlay) {
+            overlay.classList.remove('show');
+            setTimeout(() => overlay.remove(), 300);
+            callback(false);
+        }
+    });
 }
 
 // Add CSS animations

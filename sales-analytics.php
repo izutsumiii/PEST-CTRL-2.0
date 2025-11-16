@@ -836,8 +836,9 @@ $periodLabels = [
 
         /* Download Icon Button */
         .download-icon-btn {
-            background: #FFD736 !important;
-            border: none !important;
+            background: #130325 !important;
+            color: #ffffff !important;
+            border: 1px solid #130325 !important;
             border-radius: 8px !important;
             padding: 10px 18px !important;
             height: auto !important;
@@ -849,12 +850,13 @@ $periodLabels = [
             transition: all 0.2s ease !important;
             font-weight: 600 !important;
             font-size: 13px !important;
-            color: #130325 !important;
             box-shadow: 0 1px 2px rgba(0,0,0,0.05) !important;
         }
 
         .download-icon-btn:hover {
-            background: #f5d026 !important;
+            background: #f3f4f6 !important;
+            border-color: #e5e7eb !important;
+            color: #130325 !important;
             transform: translateY(-1px) !important;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
         }
@@ -865,7 +867,7 @@ $periodLabels = [
         }
 
         .download-icon-btn i {
-            color: #130325 !important;
+            color: inherit !important;
             font-size: 14px !important;
         }
 
@@ -1270,7 +1272,7 @@ $periodLabels = [
                     <span class="period-badge ml-3"><?php echo $periodLabels[$selectedPeriod]; ?></span>
                 </h2>
                 <button onclick="showExportModal()" class="download-icon-btn" title="Export Analytics Data">
-                    <i class="fas fa-download"></i> Export Data
+                    <i class="fas fa-file-export"></i> EXPORT
                 </button>
             </div>
             <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
