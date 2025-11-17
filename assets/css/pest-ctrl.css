@@ -1068,8 +1068,8 @@ main h1, .page-title {
     margin-bottom: var(--spacing-md);
 }
 
-@media (max-width: 992px) { body { padding-top: 130px !important; } }
-@media (max-width: 768px) { body { padding-top: 140px !important; } }
+@media (max-width: 992px) { body { padding-top: 120px !important; } }
+@media (max-width: 768px) { body { padding-top: 70px !important; } }
 
 .products-layout .product-card .stock,
 .products-list .product-card .stock {
