@@ -176,7 +176,6 @@ if (isset($_POST['submit_review']) && isLoggedIn()) {
         $reviewMessage = "Error submitting review.";
     }
 }
-
 if (isset($_GET['review_success']) && $_GET['review_success'] == '1') {
     $reviewMessage = "Review submitted successfully!";
 }
@@ -2109,6 +2108,7 @@ main h3 {
 </main>
 
 <script>
+    
 // Image Gallery
 function changeImage(imageSrc, thumbnail) {
     document.getElementById('mainImage').src = imageSrc;
