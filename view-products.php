@@ -170,6 +170,31 @@ safeDelete:
     exit();
 }
 
+// Handle product view
+if (isset($_GET['view'])) {
+    $productId = intval($_GET['view']);
+
+    $stmt = $pdo->prepare("SELECT * FROM products WHERE id = ? AND seller_id = ?");
+    $stmt->execute([$productId, $userId]);
+    $viewProduct = $stmt->fetch();
+
+    if ($viewProduct) {
+        // Get product images
+        $stmt = $pdo->prepare("SELECT * FROM product_images WHERE product_id = ? ORDER BY is_primary DESC, id ASC");
+        $stmt->execute([$productId]);
+        $viewProduct['images'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        // For now, redirect back to products page with a success message
+        // This can be enhanced later to show a detailed view modal
+        $_SESSION['product_message'] = ['type' => 'success', 'text' => 'Viewing product: ' . htmlspecialchars($viewProduct['name'])];
+        header("Location: view-products.php");
+        exit();
+    } else {
+        $_SESSION['product_message'] = ['type' => 'error', 'text' => 'Product not found.'];
+        header("Location: view-products.php");
+        exit();
+    }
+}
 
 // Include header after form processing is complete (to avoid headers already sent)
 require_once 'includes/seller_header.php';
