@@ -22,6 +22,27 @@ require_once __DIR__ . '/maintenance_check.php';
     <link href="assets/css/pest-ctrl.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
+/* Review notification badge */
+.review-badge {
+    background: #dc3545;
+    color: white;
+    border-radius: 10px;
+    padding: 2px 6px;
+    font-size: 10px;
+    font-weight: bold;
+    margin-left: 8px;
+    display: none;
+    min-width: 18px;
+    text-align: center;
+}
+
+.sidebar.collapsed .review-badge {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    margin-left: 0;
+}
+
         * {
             margin: 0;
             padding: 0;
@@ -1033,10 +1054,11 @@ require_once __DIR__ . '/maintenance_check.php';
                     <span class="notification-badge" id="sellerNotificationBadge">0</span>
                 </div>
                 <div class="notification-dropdown" id="sellerNotificationDropdown">
-                    <div class="notification-header" style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
-                        <h6 style="margin:0;">Notifications</h6>
-                        <button type="button" onclick="clearAllSellerNotifications()" style="background:transparent; border:none; color:#dc2626; padding:4px 8px; border-radius:6px; font-weight:600; cursor:pointer; font-size:12px;">Clear All</button>
-                    </div>
+                <div class="notification-header" style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
+    <h6 style="margin:0;">Notifications</h6>
+    <button type="button" onclick="markAllSellerNotificationsAsRead()" style="background:transparent; border:none; color:#3b82f6; padding:4px 8px; border-radius:6px; font-weight:600; cursor:pointer; font-size:12px;">Mark All as Read</button>
+</div>
+                        
                     <div class="notification-list" id="sellerNotificationList">
                         <div class="notification-item empty-state">
                             <span style="color: #1f2937;">Loading notifications...</span>
@@ -1153,6 +1175,15 @@ require_once __DIR__ . '/maintenance_check.php';
                     </a>
                 </div>
 
+                <div class="section-title hide-on-collapse">Reviews</div>
+                <div class="nav-links">
+                    <a href="seller-reviews.php" data-tooltip="Product Reviews" style="position: relative;">
+                        <i class="fas fa-star"></i>
+                        <span class="hide-on-collapse">Product Reviews</span>
+                        <span class="review-badge hide-on-collapse" id="reviewNotificationBadge">0</span>
+                    </a>
+                </div>
+
                 <div class="section-title hide-on-collapse">Catalog</div>
                 <div class="nav-links">
                     <div class="nav-dropdown">
@@ -1210,10 +1241,16 @@ require_once __DIR__ . '/maintenance_check.php';
                 <div class="section-divider">Return/Refund Request</div>
                 <a href="seller-returns.php"><i class="fas fa-undo-alt"></i> View Return/Refund</a>
                 
+                <div class="section-divider">Reviews</div>
+                <a href="seller-reviews.php" style="position: relative;">
+                    <i class="fas fa-star"></i> Product Reviews
+                    <span class="review-badge" id="mobileReviewNotificationBadge" style="margin-left: auto;">0</span>
+                </a>
+
                 <div class="section-divider">Catalog</div>
                 <a href="manage-products.php"><i class="fas fa-plus"></i> Add Product</a>
                 <a href="view-products.php"><i class="fas fa-list"></i> View Products</a>
-                <a href="manage-categories.php"><i class="fas fa-tags"></i> Manage Categories</a>
+                
                 
                 <div class="section-divider">Account</div>
                 <a href="seller-edit-profile.php"><i class="fas fa-user"></i> My Account</a>
@@ -1223,163 +1260,328 @@ require_once __DIR__ . '/maintenance_check.php';
             <?php endif; ?>
         </div>
     </nav>
-    
     <script>
-        // Mobile drawer functionality
-        function toggleSellerMobileDrawer() {
-            const drawer = document.getElementById('sellerMobileDrawer');
-            const overlay = document.getElementById('sellerMobileDrawerOverlay');
-            const isMobile = window.innerWidth <= 768;
-            
-            if (isMobile) {
-                // Mobile: open/close drawer
-                if (drawer && overlay) {
-                    const isOpen = drawer.classList.contains('show');
-                    if (isOpen) {
-                        drawer.classList.remove('show');
-                        overlay.classList.remove('show');
-                        document.body.style.overflow = '';
-                    } else {
-                        drawer.classList.add('show');
-                        overlay.classList.add('show');
-                        document.body.style.overflow = 'hidden';
-                    }
-                }
-            } else {
-                // Desktop: toggle sidebar
-                toggleSellerSidebar();
-            }
-        }
-        
-        // Close drawer when clicking overlay
-        const sellerOverlay = document.getElementById('sellerMobileDrawerOverlay');
-        const sellerDrawer = document.getElementById('sellerMobileDrawer');
-        const sellerCloseBtn = document.getElementById('sellerDrawerClose');
-        
-        if (sellerOverlay) {
-            sellerOverlay.addEventListener('click', function() {
-                if (sellerDrawer) sellerDrawer.classList.remove('show');
-                sellerOverlay.classList.remove('show');
+
+
+// Mobile drawer functionality
+function toggleSellerMobileDrawer() {
+    const drawer = document.getElementById('sellerMobileDrawer');
+    const overlay = document.getElementById('sellerMobileDrawerOverlay');
+    const isMobile = window.innerWidth <= 768;
+    
+    if (isMobile) {
+        // Mobile: open/close drawer
+        if (drawer && overlay) {
+            const isOpen = drawer.classList.contains('show');
+            if (isOpen) {
+                drawer.classList.remove('show');
+                overlay.classList.remove('show');
                 document.body.style.overflow = '';
-            });
-        }
-        
-        if (sellerCloseBtn) {
-            sellerCloseBtn.addEventListener('click', function() {
-                if (sellerDrawer) sellerDrawer.classList.remove('show');
-                if (sellerOverlay) sellerOverlay.classList.remove('show');
-                document.body.style.overflow = '';
-            });
-        }
-        
-        // Close drawer when clicking a link
-        if (sellerDrawer) {
-            const drawerLinks = sellerDrawer.querySelectorAll('.links a');
-            drawerLinks.forEach(link => {
-                link.addEventListener('click', function() {
-                    sellerDrawer.classList.remove('show');
-                    if (sellerOverlay) sellerOverlay.classList.remove('show');
-                    document.body.style.overflow = '';
-                });
-            });
-        }
-        
-        function toggleSellerSidebar() {
-            const sidebar = document.getElementById('sellerSidebar');
-            const main = document.querySelector('main');
-            
-            if (!sidebar) return;
-            
-            sidebar.classList.toggle('collapsed');
-            
-            if (sidebar.classList.contains('collapsed')) {
-                if (main) main.style.marginLeft = '70px';
             } else {
-                if (main) main.style.marginLeft = '240px';
-            }
-            
-            localStorage.setItem('sellerSidebarCollapsed', sidebar.classList.contains('collapsed'));
-        }
-
-        function toggleHeaderDropdown() {
-            const dropdown = document.getElementById('headerDropdown');
-            dropdown.classList.toggle('show');
-        }
-
-        function toggleNavDropdown(event, dropdownId) {
-            event.preventDefault();
-            event.stopPropagation();
-            
-            const dropdown = document.getElementById(dropdownId + '-dropdown');
-            const arrow = document.getElementById(dropdownId + '-arrow');
-            
-            if (dropdown.classList.contains('show')) {
-                dropdown.classList.remove('show');
-                if (arrow) arrow.classList.remove('rotated');
-            } else {
-                document.querySelectorAll('.nav-dropdown-content.show').forEach(d => {
-                    d.classList.remove('show');
-                });
-                document.querySelectorAll('.nav-dropdown-arrow.rotated').forEach(a => {
-                    a.classList.remove('rotated');
-                });
-                
-                dropdown.classList.add('show');
-                if (arrow) arrow.classList.add('rotated');
+                drawer.classList.add('show');
+                overlay.classList.add('show');
+                document.body.style.overflow = 'hidden';
             }
         }
+    } else {
+        // Desktop: toggle sidebar
+        toggleSellerSidebar();
+    }
+}
 
-        document.addEventListener('click', function(event) {
-            const headerUser = document.querySelector('.header-user');
-            const dropdown = document.getElementById('headerDropdown');
-            
-            if (headerUser && !headerUser.contains(event.target)) {
-                dropdown.classList.remove('show');
-            }
+// Close drawer when clicking overlay
+const sellerOverlay = document.getElementById('sellerMobileDrawerOverlay');
+const sellerDrawer = document.getElementById('sellerMobileDrawer');
+const sellerCloseBtn = document.getElementById('sellerDrawerClose');
+
+if (sellerOverlay) {
+    sellerOverlay.addEventListener('click', function() {
+        if (sellerDrawer) sellerDrawer.classList.remove('show');
+        sellerOverlay.classList.remove('show');
+        document.body.style.overflow = '';
+    });
+}
+
+if (sellerCloseBtn) {
+    sellerCloseBtn.addEventListener('click', function() {
+        if (sellerDrawer) sellerDrawer.classList.remove('show');
+        if (sellerOverlay) sellerOverlay.classList.remove('show');
+        document.body.style.overflow = '';
+    });
+}
+
+// Close drawer when clicking a link
+if (sellerDrawer) {
+    const drawerLinks = sellerDrawer.querySelectorAll('.links a');
+    drawerLinks.forEach(link => {
+        link.addEventListener('click', function() {
+            sellerDrawer.classList.remove('show');
+            if (sellerOverlay) sellerOverlay.classList.remove('show');
+            document.body.style.overflow = '';
         });
+    });
+}
 
-        document.addEventListener('DOMContentLoaded', () => {
-            const sidebar = document.getElementById('sellerSidebar');
-            const main = document.querySelector('main');
-            const isCollapsed = localStorage.getItem('sellerSidebarCollapsed') === 'true';
-            
-            if (isCollapsed) {
-                sidebar.classList.add('collapsed');
-                main.style.marginLeft = '70px';
-            }
-            
-            // Load seller notifications on page load
-            loadSellerNotifications();
+function toggleSellerSidebar() {
+    const sidebar = document.getElementById('sellerSidebar');
+    const main = document.querySelector('main');
+    
+    if (!sidebar) return;
+    
+    sidebar.classList.toggle('collapsed');
+    
+    if (sidebar.classList.contains('collapsed')) {
+        if (main) main.style.marginLeft = '70px';
+    } else {
+        if (main) main.style.marginLeft = '240px';
+    }
+    
+    localStorage.setItem('sellerSidebarCollapsed', sidebar.classList.contains('collapsed'));
+}
+
+function toggleHeaderDropdown() {
+    const dropdown = document.getElementById('headerDropdown');
+    dropdown.classList.toggle('show');
+}
+
+function toggleNavDropdown(event, dropdownId) {
+    event.preventDefault();
+    event.stopPropagation();
+    
+    const dropdown = document.getElementById(dropdownId + '-dropdown');
+    const arrow = document.getElementById(dropdownId + '-arrow');
+    
+    if (dropdown.classList.contains('show')) {
+        dropdown.classList.remove('show');
+        if (arrow) arrow.classList.remove('rotated');
+    } else {
+        document.querySelectorAll('.nav-dropdown-content.show').forEach(d => {
+            d.classList.remove('show');
         });
+        document.querySelectorAll('.nav-dropdown-arrow.rotated').forEach(a => {
+            a.classList.remove('rotated');
+        });
+        
+        dropdown.classList.add('show');
+        if (arrow) arrow.classList.add('rotated');
+    }
+}
 
-        // Seller Notification Functions
-        function toggleSellerNotifications() {
+document.addEventListener('click', function(event) {
+    const headerUser = document.querySelector('.header-user');
+    const dropdown = document.getElementById('headerDropdown');
+    
+    if (headerUser && !headerUser.contains(event.target)) {
+        dropdown.classList.remove('show');
+    }
+});
+
+// COMPLETE NOTIFICATION DROPDOWN SYSTEM - START
+
+// Toggle notification dropdown
+function toggleSellerNotifications() {
     const dropdown = document.getElementById('sellerNotificationDropdown');
     const isVisible = dropdown.classList.contains('show');
     
     // Close other dropdowns
-    document.getElementById('headerDropdown').classList.remove('show');
+    const headerDropdown = document.getElementById('headerDropdown');
+    if (headerDropdown) {
+        headerDropdown.classList.remove('show');
+    }
     
     if (isVisible) {
         dropdown.classList.remove('show');
     } else {
         dropdown.classList.add('show');
+        // Load fresh notifications when opening dropdown
         loadSellerNotifications();
     }
 }
+
+// Load seller notifications with proper error handling
+function loadSellerNotifications() {
+    const list = document.getElementById('sellerNotificationList');
+    
+    // Show loading state
+    if (list) {
+        list.innerHTML = '<div class="notification-item empty-state"><span style="color: #130325;">Loading notifications...</span></div>';
+    }
+    
+    fetch('ajax/get-seller-notifications.php', { 
+        credentials: 'same-origin',
+        cache: 'no-cache',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log('Notification data received:', data);
+        
+        if (data.success) {
+            updateSellerNotificationBadge(data.unreadCount || 0);
+            displaySellerNotifications(data.notifications || []);
+        } else {
+            console.error('Failed to load notifications:', data.message);
+            if (list) {
+                list.innerHTML = '<div class="notification-item empty-state"><span style="color: #130325;">Failed to load notifications</span></div>';
+            }
+        }
+    })
+    .catch(error => {
+        console.error('Error loading notifications:', error);
+        if (list) {
+            list.innerHTML = '<div class="notification-item empty-state"><span style="color: #130325;">Error loading notifications</span></div>';
+        }
+    });
+}
+
+// Update notification badge
+function updateSellerNotificationBadge(count) {
+    const badge = document.getElementById('sellerNotificationBadge');
+    if (badge) {
+        if (count > 0) {
+            badge.textContent = count;
+            badge.classList.remove('hidden');
+            badge.style.display = 'flex';
+        } else {
+            badge.textContent = '0';
+            badge.classList.add('hidden');
+            badge.style.display = 'none';
+        }
+    }
+}
+
+// Display notifications in dropdown
+function displaySellerNotifications(notifications) {
+    const list = document.getElementById('sellerNotificationList');
+    
+    if (!list) {
+        console.error('Notification list element not found');
+        return;
+    }
+    
+    const unreadNotifications = Array.isArray(notifications) 
+        ? notifications.filter(n => !n.is_read) 
+        : [];
+    
+    console.log('Displaying notifications:', unreadNotifications.length);
+    
+    if (unreadNotifications.length === 0) {
+        list.innerHTML = '<div class="notification-item empty-state"><span style="color: #130325;">No new notifications</span></div>';
+        return;
+    }
+    
+    const notificationHTML = unreadNotifications.map(notification => {
+        const badgeInfo = getNotificationBadge(notification.title || '', notification.type || 'info');
+        // Direct display without double encoding
+        const safeTitle = notification.title || 'Notification';
+        const safeMessage = notification.message || '';
+        const safeActionUrl = (notification.action_url || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+        const escapedTitle = safeTitle.replace(/'/g, "\\'");
+        const escapedMessage = safeMessage.replace(/'/g, "\\'");
+        
+        return `
+            <div class="notification-item unread" 
+                onclick="handleSellerNotificationClick(event, this, ${notification.id}, '${safeActionUrl}', '${escapedTitle}', '${escapedMessage}')">
+                <span class="notification-status-badge ${badgeInfo.class}">${badgeInfo.text}</span>
+                <div class="notification-content">
+                    <div class="notification-title">${safeTitle}</div>
+                    <div class="notification-message">${safeMessage}</div>
+                    <div class="notification-time">${formatTime(notification.created_at)}</div>
+                </div>
+            </div>
+        `;
+    }).join('');
+    
+    list.innerHTML = notificationHTML;
+}
+
+// Handle notification click
+function handleSellerNotificationClick(event, element, notificationId, actionUrl, title, message) {
+    event.stopPropagation();
+    
+    element.classList.remove('unread');
+    element.style.opacity = '0.6';
+    
+    markSellerNotificationAsRead(notificationId);
+    
+    setTimeout(() => {
+        if (actionUrl && actionUrl !== '' && actionUrl !== 'null' && actionUrl !== 'undefined') {
+            window.location.href = actionUrl;
+        } else {
+            const text = title + ' ' + message;
+            
+            const orderMatch = text.match(/(?:Order\s*#?0*|order_id[=:])\s*(\d{1,10})/i);
+            if (orderMatch && orderMatch[1]) {
+                window.location.href = 'seller-order-details.php?order_id=' + orderMatch[1];
+                return;
+            }
+            
+            const returnMatch = text.match(/(?:return_id[=:]|return\s*request\s*#?)\s*(\d{1,10})/i);
+            if (returnMatch && returnMatch[1]) {
+                window.location.href = 'seller-returns.php?return_id=' + returnMatch[1];
+                return;
+            }
+            
+            window.location.href = 'view-orders.php';
+        }
+    }, 200);
+}
+
+// Mark single notification as read
+function markSellerNotificationAsRead(notificationId) {
+    fetch('ajax/mark-seller-notification-read.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ notification_id: notificationId }),
+        credentials: 'same-origin'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            loadSellerNotifications();
+        }
+    })
+    .catch(error => {
+        console.error('Error marking notification as read:', error);
+    });
+}
+
+// Mark all notifications as read
 function markAllSellerNotificationsAsRead() {
     fetch('ajax/mark-all-seller-notifications-read.php', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-        }
+        },
+        credentials: 'same-origin'
     })
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            // Update badge to 0
             updateSellerNotificationBadge(0);
-            // Reload notifications to show them as read
+            
+            if (typeof updateReviewBadge === 'function') {
+                fetch('ajax/get-review-notification-count.php', { credentials: 'same-origin' })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            updateReviewBadge(data.count);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error updating review badge:', error);
+                    });
+            }
+            
             loadSellerNotifications();
         }
     })
@@ -1388,443 +1590,326 @@ function markAllSellerNotificationsAsRead() {
     });
 }
 
-// Clear All: mark all read then clear dropdown UI immediately
-function clearAllSellerNotifications() {
-    const list = document.getElementById('sellerNotificationList');
-    if (list) {
-        list.innerHTML = '<div class="notification-item empty-state"><span>No notifications</span></div>';
+// Get notification badge info
+function getNotificationBadge(title, type) {
+    const titleLower = title.toLowerCase();
+    
+    if (titleLower.includes('new order') || titleLower.includes('order received')) {
+        return { class: 'notification-status-order', text: 'Order' };
     }
-    const badge = document.getElementById('sellerNotificationBadge');
-    if (badge) { badge.classList.add('hidden'); badge.style.display = 'none'; }
-    // call backend
-    markAllSellerNotificationsAsRead();
+    if (titleLower.includes('return request') || titleLower.includes('return/refund') || titleLower.includes('refund')) {
+        return { class: 'notification-status-return', text: 'Return/Refund' };
+    }
+    if (titleLower.includes('low stock')) {
+        return { class: 'notification-status-lowstock', text: 'Low Stock' };
+    }
+    if (titleLower.includes('processing') || titleLower.includes('order status')) {
+        return { class: 'notification-status-processing', text: 'Processing' };
+    }
+    
+    return { class: 'notification-status-order', text: 'Info' };
 }
 
-// Remove confirmation; provide direct clear-all behavior
-        function loadSellerNotifications() {
-            fetch('ajax/get-seller-notifications.php', { credentials: 'same-origin' })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        updateSellerNotificationBadge(data.unreadCount);
-                        displaySellerNotifications(data.notifications);
-                    }
-                })
-                .catch(error => {
-                    console.error('Error loading notifications:', error);
-                });
-        }
-
-        function updateSellerNotificationBadge(count) {
-            const badge = document.getElementById('sellerNotificationBadge');
-            if (count > 0) {
-                badge.textContent = count;
-                badge.classList.remove('hidden');
-            } else {
-                badge.classList.add('hidden');
-            }
-        }
-
-        function displaySellerNotifications(notifications) {
-            const list = document.getElementById('sellerNotificationList');
-            // Show UNREAD items only in dropdown to keep it clean after Clear All
-            const unread = (Array.isArray(notifications) ? notifications : []).filter(n => !n.is_read);
-            if (unread.length === 0) {
-                list.innerHTML = '<div class="notification-item empty-state"><span>No notifications</span></div>';
-                return;
-            }
-            list.innerHTML = unread.map(notification => {
-                const badgeInfo = getNotificationBadge(notification.title, notification.type);
-                // Properly escape strings for onclick attribute
-                const safeTitle = (notification.title || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
-                const safeMessage = (notification.message || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
-                const safeActionUrl = (notification.action_url || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
-                return `
-                <div class="notification-item ${!notification.is_read ? 'unread' : ''}" 
-                    onclick="handleSellerNotificationClick(event, this, ${notification.id}, '${safeActionUrl}', '${safeTitle}', '${safeMessage}')">
-                    <span class="notification-status-badge ${badgeInfo.class}">${badgeInfo.text}</span>
-                    <div class="notification-content">
-                        <div class="notification-title">${notification.title}</div>
-                        <div class="notification-message">${notification.message}</div>
-                        <div class="notification-time">${formatTime(notification.created_at)}</div>
-                    </div>
-                </div>
-            `;
-            }).join('');
-        }
-        function handleSellerNotificationClick(event, element, notificationId, actionUrl, title, message) {
-    event.preventDefault();
-    console.log('Notification clicked:', { notificationId, actionUrl, title, message });
-    // Optimistically remove item from dropdown
+// Format timestamp
+function formatTime(timestamp) {
     try {
-        if (element && element.classList) {
-            element.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
-            element.style.opacity = '0';
-            element.style.transform = 'translateX(8px)';
-            setTimeout(() => {
-                const parent = element.parentElement;
-                element.remove();
-                // If list empty, show placeholder
-                if (parent && parent.children.length === 0) {
-                    parent.innerHTML = '<div class="notification-item empty-state"><span>No notifications</span></div>';
-                }
-            }, 180);
-        }
-        // Decrement badge
-        const badge = document.getElementById('sellerNotificationBadge');
-        if (badge && !badge.classList.contains('hidden')) {
-            const current = parseInt(badge.textContent || '0', 10) || 0;
-            const next = Math.max(0, current - 1);
-            if (next === 0) {
-                badge.classList.add('hidden');
-                badge.style.display = 'none';
-            } else {
-                badge.textContent = String(next);
-            }
-        }
-    } catch (_) {}
+        const date = new Date(String(timestamp).replace(' ', 'T'));
+        const now = new Date();
+        const diffMs = now - date;
+        const diffMins = Math.floor(diffMs / 60000);
+        const diffHours = Math.floor(diffMs / 3600000);
+        const diffDays = Math.floor(diffMs / 86400000);
+        
+        if (diffMins < 1) return 'Just now';
+        if (diffMins < 60) return `${diffMins} min ago`;
+        if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+        if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+        
+        return date.toLocaleDateString('en-US', { 
+            month: 'short', 
+            day: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit'
+        });
+    } catch (e) {
+        return timestamp;
+    }
+}
 
-    // Mark as read reliably using sendBeacon, fallback to fetch keepalive
-    const payload = JSON.stringify({ notification_id: notificationId });
-    let sent = false;
-    try {
-        const blob = new Blob([payload], { type: 'application/json' });
-        sent = navigator.sendBeacon && navigator.sendBeacon('ajax/mark-seller-notification-read.php', blob);
-    } catch (_) { sent = false; }
-    if (!sent) {
-        fetch('ajax/mark-seller-notification-read.php', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: payload,
-            credentials: 'same-origin',
-            keepalive: true
-        }).catch(() => {});
+// Close dropdown when clicking outside
+document.addEventListener('click', function(event) {
+    const notifications = document.querySelector('.seller-notifications');
+    const dropdown = document.getElementById('sellerNotificationDropdown');
+    
+    if (notifications && dropdown && !notifications.contains(event.target)) {
+        dropdown.classList.remove('show');
     }
+});
 
-    // Redirect after a tiny delay to allow beacon to flush
-    const text = (title||'') + ' ' + (message||'');
-    let productId = null;
-    
-    // Extract product ID from action URL (for product review notifications)
-    if (actionUrl) {
-        const urlProductMatch = actionUrl.match(/[?&]product_id=(\d+)/i);
-        if (urlProductMatch && urlProductMatch[1]) {
-            productId = urlProductMatch[1];
-        }
-    }
-    
-    let href = null;
-    
-    // Priority 0: Product reviews
-    if (productId) {
-        href = 'view-products.php?product_id=' + productId;
-    }
-    // Check if action URL is valid
-    else if (actionUrl && actionUrl !== '' && actionUrl !== 'null' && actionUrl !== 'undefined') {
-        href = actionUrl;
-        // Override view-orders.php to order details when possible
-        if (/view-orders\.php/i.test(href)) {
-            const m = text.match(/Order\s*#?0*(\d{1,10})/i);
-            if (m && m[1]) {
-                href = 'seller-order-details.php?order_id=' + m[1];
+// COMPLETE NOTIFICATION DROPDOWN SYSTEM - END
+
+// Review notification functions
+function loadReviewNotificationCount() {
+    fetch('ajax/get-review-notification-count.php', { credentials: 'same-origin' })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                updateReviewBadge(data.count);
             }
-        }
-    }
-    // Fallback
-    else {
-        const m = text.match(/Order\s*#?0*(\d{1,10})/i);
-        if (m && m[1]) {
-            href = 'seller-order-details.php?order_id=' + m[1];
-        } else if (/low stock/i.test(text)) {
-            href = 'manage-products.php';
+        })
+        .catch(error => {
+            console.error('Error loading review notification count:', error);
+        });
+}
+
+function updateReviewBadge(count) {
+    const desktopBadge = document.getElementById('reviewNotificationBadge');
+    if (desktopBadge) {
+        if (count > 0) {
+            desktopBadge.textContent = count;
+            desktopBadge.style.display = 'inline-block';
         } else {
-            href = 'view-orders.php';
+            desktopBadge.style.display = 'none';
         }
     }
     
-    if (href) {
-        setTimeout(() => { window.location.href = href; }, 120);
+    const mobileBadge = document.getElementById('mobileReviewNotificationBadge');
+    if (mobileBadge) {
+        if (count > 0) {
+            mobileBadge.textContent = count;
+            mobileBadge.style.display = 'inline-block';
+        } else {
+            mobileBadge.style.display = 'none';
+        }
     }
 }
 
-function markSellerNotificationAsRead(notificationId) {
-    fetch('ajax/mark-seller-notification-read.php', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ notification_id: notificationId })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            loadSellerNotifications(); // Reload to update badge
+// DOMContentLoaded - Initialize everything
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize sidebar state
+    const sidebar = document.getElementById('sellerSidebar');
+    const main = document.querySelector('main');
+    const isCollapsed = localStorage.getItem('sellerSidebarCollapsed') === 'true';
+    
+    if (isCollapsed && sidebar) {
+        sidebar.classList.add('collapsed');
+        if (main) main.style.marginLeft = '70px';
+    }
+    
+    // Load notifications immediately
+    loadSellerNotifications();
+    
+    // Load review notification count
+    if (typeof loadReviewNotificationCount === 'function') {
+        loadReviewNotificationCount();
+    }
+    
+    // Refresh counts every 60 seconds
+    setInterval(() => {
+        loadSellerNotifications();
+        if (typeof loadReviewNotificationCount === 'function') {
+            loadReviewNotificationCount();
         }
-    })
-    .catch(error => {
-        console.error('Error marking notification as read:', error);
-    });
-}
-
-
-        function getNotificationIcon(type) {
-            switch(type) {
-                case 'warning': return 'exclamation-triangle';
-                case 'success': return 'check-circle';
-                case 'error': return 'times-circle';
-                default: return 'info-circle';
-            }
-        }
-
-        function getNotificationBadge(title, type) {
-            const titleLower = title.toLowerCase();
+    }, 60000);
+    
+    // Clear review badge when reviews page is visited
+    const reviewLinks = document.querySelectorAll('a[href*="seller-reviews.php"]');
+    reviewLinks.forEach(link => {
+        link.addEventListener('click', function(e) {
+            updateReviewBadge(0);
             
-            if (titleLower.includes('new order') || titleLower.includes('order received')) {
-                return { class: 'notification-status-order', text: 'Order' };
-            }
-            if (titleLower.includes('return request') || titleLower.includes('return/refund') || titleLower.includes('refund')) {
-                return { class: 'notification-status-return', text: 'Return/Refund' };
-            }
-            if (titleLower.includes('low stock')) {
-                return { class: 'notification-status-lowstock', text: 'Low Stocks' };
-            }
-            if (titleLower.includes('processing') || titleLower.includes('order status')) {
-                return { class: 'notification-status-processing', text: 'Processing' };
+            if (navigator.sendBeacon) {
+                const formData = new FormData();
+                navigator.sendBeacon('ajax/clear-review-notifications.php', formData);
             }
             
-            // Default fallback
-            return { class: 'notification-status-order', text: 'Order' };
-        }
-
-        function formatTime(timestamp) {
-            try {
-                const d = new Date(String(timestamp).replace(' ', 'T'));
-                return d.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
-            } catch (e) {
-                return timestamp;
-            }
-        }
-
-        function removeNotificationFromDropdown(button, notificationId) {
-            // Just remove from dropdown view, don't delete from database
-            const notificationItem = button.closest('.notification-item');
-            if (notificationItem) {
-                notificationItem.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
-                notificationItem.style.opacity = '0';
-                notificationItem.style.transform = 'translateX(20px)';
-                setTimeout(() => {
-                    notificationItem.remove();
-                    
-                    // Check if list is now empty
-                    const list = document.getElementById('sellerNotificationList');
-                    if (list && list.children.length === 0) {
-                        list.innerHTML = '<div class="notification-item empty-state"><span>No notifications</span></div>';
-                    }
-                }, 300);
-            }
-        }
-
-        // Close notification dropdown when clicking outside
-        document.addEventListener('click', function(event) {
-            const notifications = document.querySelector('.seller-notifications');
-            const dropdown = document.getElementById('sellerNotificationDropdown');
-            
-            if (notifications && !notifications.contains(event.target)) {
-                dropdown.classList.remove('show');
-            }
+            fetch('ajax/clear-review-notifications.php', {
+                method: 'POST',
+                credentials: 'same-origin',
+                keepalive: true
+            }).catch(error => {
+                console.error('Error clearing review notifications:', error);
+            });
         });
-    </script>
+    });
     
-    <!-- Logout Confirmation Modal -->
-    <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Create logout confirmation modal
-        const logoutModal = document.createElement('div');
-        logoutModal.id = 'logoutConfirmModal';
-        logoutModal.style.cssText = 'display: none; position: fixed; z-index: 10000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center;';
-        
-        const modalContent = document.createElement('div');
-        modalContent.style.cssText = 'background: #ffffff; border-radius: 12px; padding: 0; max-width: 400px; width: 90%; box-shadow: 0 10px 40px rgba(0,0,0,0.2); animation: slideDown 0.3s ease;';
-        
-        const modalHeader = document.createElement('div');
-        modalHeader.style.cssText = 'background: #130325; color: #ffffff; padding: 16px 20px; border-radius: 12px 12px 0 0; display: flex; align-items: center; gap: 10px;';
-        modalHeader.innerHTML = '<i class="fas fa-sign-out-alt" style="font-size: 16px; color: #FFD736;"></i><h3 style="margin: 0; font-size: 14px; font-weight: 700; color:#ffffff !important;">Confirm Logout</h3>';
-        
-        const modalBody = document.createElement('div');
-        modalBody.style.cssText = 'padding: 20px; color: #130325;';
-        modalBody.innerHTML = '<p style="margin: 0; font-size: 13px; line-height: 1.5; color: #130325;">Are you sure you want to logout? You will need to login again to access your seller account.</p>';
-        
-        const modalFooter = document.createElement('div');
-        modalFooter.style.cssText = 'padding: 16px 24px; border-top: 1px solid #e5e7eb; display: flex; gap: 10px; justify-content: flex-end;';
-        
-        const cancelBtn = document.createElement('button');
-        cancelBtn.textContent = 'Cancel';
-        cancelBtn.style.cssText = 'padding: 8px 20px; background: #f3f4f6; color: #130325; border: 1px solid #e5e7eb; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px; transition: all 0.2s ease;';
-        cancelBtn.onmouseover = function() { this.style.background = '#e5e7eb'; };
-        cancelBtn.onmouseout = function() { this.style.background = '#f3f4f6'; };
-        
-        const confirmBtn = document.createElement('button');
-        confirmBtn.textContent = 'Logout';
-        confirmBtn.style.cssText = 'padding: 8px 20px; background: #130325; color: #ffffff; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px; transition: all 0.2s ease;';
-        confirmBtn.onmouseover = function() { this.style.background = '#0a0218'; };
-        confirmBtn.onmouseout = function() { this.style.background = '#130325'; };
-        
-        let logoutUrl = '';
-        
-        cancelBtn.onclick = function() {
+    // Logout confirmation modal
+    const logoutModal = document.createElement('div');
+    logoutModal.id = 'logoutConfirmModal';
+    logoutModal.style.cssText = 'display: none; position: fixed; z-index: 10000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center;';
+    
+    const modalContent = document.createElement('div');
+    modalContent.style.cssText = 'background: #ffffff; border-radius: 12px; padding: 0; max-width: 400px; width: 90%; box-shadow: 0 10px 40px rgba(0,0,0,0.2); animation: slideDown 0.3s ease;';
+    
+    const modalHeader = document.createElement('div');
+    modalHeader.style.cssText = 'background: #130325; color: #ffffff; padding: 16px 20px; border-radius: 12px 12px 0 0; display: flex; align-items: center; gap: 10px;';
+    modalHeader.innerHTML = '<i class="fas fa-sign-out-alt" style="font-size: 16px; color: #FFD736;"></i><h3 style="margin: 0; font-size: 14px; font-weight: 700; color:#ffffff !important;">Confirm Logout</h3>';
+    
+    const modalBody = document.createElement('div');
+    modalBody.style.cssText = 'padding: 20px; color: #130325;';
+    modalBody.innerHTML = '<p style="margin: 0; font-size: 13px; line-height: 1.5; color: #130325;">Are you sure you want to logout? You will need to login again to access your seller account.</p>';
+    
+    const modalFooter = document.createElement('div');
+    modalFooter.style.cssText = 'padding: 16px 24px; border-top: 1px solid #e5e7eb; display: flex; gap: 10px; justify-content: flex-end;';
+    
+    const cancelBtn = document.createElement('button');
+    cancelBtn.textContent = 'Cancel';
+    cancelBtn.style.cssText = 'padding: 8px 20px; background: #f3f4f6; color: #130325; border: 1px solid #e5e7eb; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px; transition: all 0.2s ease;';
+    cancelBtn.onmouseover = function() { this.style.background = '#e5e7eb'; };
+    cancelBtn.onmouseout = function() { this.style.background = '#f3f4f6'; };
+    
+    const confirmBtn = document.createElement('button');
+    confirmBtn.textContent = 'Logout';
+    confirmBtn.style.cssText = 'padding: 8px 20px; background: #130325; color: #ffffff; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px; transition: all 0.2s ease;';
+    confirmBtn.onmouseover = function() { this.style.background = '#0a0218'; };
+    confirmBtn.onmouseout = function() { this.style.background = '#130325'; };
+    
+    let logoutUrl = '';
+    
+    cancelBtn.onclick = function() {
+        logoutModal.style.display = 'none';
+    };
+    
+    confirmBtn.onclick = function() {
+        window.location.href = logoutUrl;
+    };
+    
+    modalFooter.appendChild(cancelBtn);
+    modalFooter.appendChild(confirmBtn);
+    
+    modalContent.appendChild(modalHeader);
+    modalContent.appendChild(modalBody);
+    modalContent.appendChild(modalFooter);
+    logoutModal.appendChild(modalContent);
+    document.body.appendChild(logoutModal);
+    
+    logoutModal.onclick = function(e) {
+        if (e.target === logoutModal) {
             logoutModal.style.display = 'none';
-        };
-        
-        confirmBtn.onclick = function() {
-            window.location.href = logoutUrl;
-        };
-        
-        modalFooter.appendChild(cancelBtn);
-        modalFooter.appendChild(confirmBtn);
-        
-        modalContent.appendChild(modalHeader);
-        modalContent.appendChild(modalBody);
-        modalContent.appendChild(modalFooter);
-        logoutModal.appendChild(modalContent);
-        document.body.appendChild(logoutModal);
-        
-        logoutModal.onclick = function(e) {
-            if (e.target === logoutModal) {
-                logoutModal.style.display = 'none';
-            }
-        };
-        
-        // Intercept logout links
-        document.querySelectorAll('a[href*="logout.php"]').forEach(function(link) {
-            link.addEventListener('click', function(e) {
-                e.preventDefault();
-                logoutUrl = this.getAttribute('href');
-                logoutModal.style.display = 'flex';
-            });
-        });
-        
-        // Add CSS animation
-        if (!document.getElementById('logoutModalStyles')) {
-            const style = document.createElement('style');
-            style.id = 'logoutModalStyles';
-            style.textContent = '@keyframes slideDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }';
-            document.head.appendChild(style);
         }
+    };
+    
+    // Intercept logout links
+    document.querySelectorAll('a[href*="logout.php"]').forEach(function(link) {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            logoutUrl = this.getAttribute('href');
+            logoutModal.style.display = 'flex';
+        });
     });
-    </script>
+    
+    // Add CSS animation for logout modal
+    if (!document.getElementById('logoutModalStyles')) {
+        const style = document.createElement('style');
+        style.id = 'logoutModalStyles';
+        style.textContent = '@keyframes slideDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }';
+        document.head.appendChild(style);
+    }
+    
+    console.log('Notification system initialized');
+});
 
-    <!-- Session Activity Tracking - Auto-logout after 20 minutes of inactivity -->
-    <script>
-    (function() {
-        let lastActivity = Date.now();
-        let activityCheckInterval;
-        let warningShown = false;
-        const TIMEOUT = 20 * 60 * 1000; // 20 minutes in milliseconds
-        const WARNING_TIME = 18 * 60 * 1000; // Show warning at 18 minutes
-        const CHECK_INTERVAL = 30 * 1000; // Check every 30 seconds
+// Session Activity Tracking - Auto-logout after 20 minutes of inactivity
+(function() {
+    let lastActivity = Date.now();
+    let activityCheckInterval;
+    let warningShown = false;
+    const TIMEOUT = 20 * 60 * 1000;
+    const WARNING_TIME = 18 * 60 * 1000;
+    const CHECK_INTERVAL = 30 * 1000;
+    
+    const activityEvents = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
+    activityEvents.forEach(event => {
+        document.addEventListener(event, updateActivity, true);
+    });
+    
+    function updateActivity() {
+        lastActivity = Date.now();
+        warningShown = false;
         
-        // Track user activity
-        const activityEvents = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
-        activityEvents.forEach(event => {
-            document.addEventListener(event, updateActivity, true);
+        if (Math.random() < 0.5) {
+            fetch('ajax/update-session-activity.php', {
+                method: 'GET',
+                credentials: 'same-origin'
+            }).catch(() => {});
+        }
+    }
+    
+    function checkInactivity() {
+        const timeSinceActivity = Date.now() - lastActivity;
+        
+        if (timeSinceActivity >= WARNING_TIME && !warningShown) {
+            warningShown = true;
+            const remainingMinutes = Math.ceil((TIMEOUT - timeSinceActivity) / 60000);
+            if (remainingMinutes > 0) {
+                showInactivityWarning(remainingMinutes);
+            }
+        }
+        
+        if (timeSinceActivity >= TIMEOUT) {
+            window.location.reload();
+        }
+    }
+    
+    function showInactivityWarning(remainingMinutes) {
+        const overlay = document.createElement('div');
+        overlay.id = 'inactivityWarningModal';
+        overlay.style.cssText = 'position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 10001; opacity: 0; transition: opacity 0.2s ease;';
+        
+        const dialog = document.createElement('div');
+        dialog.style.cssText = 'width: 360px; max-width: 90vw; background: #ffffff; border: none; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.2);';
+        
+        const header = document.createElement('div');
+        header.style.cssText = 'padding: 8px 12px; background: #130325; color: #F9F9F9; border-bottom: none; display: flex; align-items: center; justify-content: space-between; border-radius: 12px 12px 0 0;';
+        header.innerHTML = '<div style="font-size: 12px; font-weight: 800; letter-spacing: .3px; color: #F9F9F9;">Session Warning</div><button onclick="closeInactivityWarning()" style="background: transparent; border: none; color: #F9F9F9; font-size: 16px; line-height: 1; cursor: pointer;">×</button>';
+        
+        const body = document.createElement('div');
+        body.style.cssText = 'padding: 12px; color: #130325; font-size: 12px;';
+        body.innerHTML = '<p style="margin: 0; color: #130325; font-size: 12px;">Your session will expire in <strong>' + remainingMinutes + ' minute(s)</strong> due to inactivity. Please interact with the page to stay logged in.</p>';
+        
+        const actions = document.createElement('div');
+        actions.style.cssText = 'display: flex; gap: 8px; justify-content: flex-end; padding: 0 12px 12px 12px;';
+        
+        const okBtn = document.createElement('button');
+        okBtn.textContent = 'OK';
+        okBtn.style.cssText = 'background: linear-gradient(135deg, #FFD736 0%, #FFC107 100%); color: #130325; border: none; border-radius: 8px; padding: 6px 10px; font-weight: 700; font-size: 12px; cursor: pointer;';
+        okBtn.onclick = closeInactivityWarning;
+        
+        actions.appendChild(okBtn);
+        
+        dialog.appendChild(header);
+        dialog.appendChild(body);
+        dialog.appendChild(actions);
+        overlay.appendChild(dialog);
+        document.body.appendChild(overlay);
+        
+        requestAnimationFrame(() => {
+            overlay.style.opacity = '1';
         });
         
-        function updateActivity() {
-            lastActivity = Date.now();
-            warningShown = false;
-            
-            // Ping server to update session activity (every 2 minutes to reduce server load)
-            if (Math.random() < 0.5) { // 50% chance to reduce frequency
-                fetch('ajax/update-session-activity.php', {
-                    method: 'GET',
-                    credentials: 'same-origin'
-                }).catch(() => {
-                    // Ignore errors - server-side check will handle it
-                });
-            }
+        setTimeout(() => {
+            closeInactivityWarning();
+        }, 10000);
+    }
+    
+    function closeInactivityWarning() {
+        const modal = document.getElementById('inactivityWarningModal');
+        if (modal) {
+            modal.style.opacity = '0';
+            setTimeout(() => modal.remove(), 200);
         }
-        
-        function checkInactivity() {
-            const timeSinceActivity = Date.now() - lastActivity;
-            
-            // Show warning at 18 minutes
-            if (timeSinceActivity >= WARNING_TIME && !warningShown) {
-                warningShown = true;
-                const remainingMinutes = Math.ceil((TIMEOUT - timeSinceActivity) / 60000);
-                if (remainingMinutes > 0) {
-                    showInactivityWarning(remainingMinutes);
-                }
-            }
-            
-            // Force logout check at 20 minutes (server will handle actual logout)
-            if (timeSinceActivity >= TIMEOUT) {
-                // Server-side check will redirect, but we can also reload to trigger it
-                window.location.reload();
-            }
-        }
-        
-        function showInactivityWarning(remainingMinutes) {
-            // Create modal matching logout confirmation design
-            const overlay = document.createElement('div');
-            overlay.id = 'inactivityWarningModal';
-            overlay.style.cssText = 'position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 10001; opacity: 0; transition: opacity 0.2s ease;';
-            
-            const dialog = document.createElement('div');
-            dialog.style.cssText = 'width: 360px; max-width: 90vw; background: #ffffff; border: none; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.2);';
-            
-            const header = document.createElement('div');
-            header.style.cssText = 'padding: 8px 12px; background: #130325; color: #F9F9F9; border-bottom: none; display: flex; align-items: center; justify-content: space-between; border-radius: 12px 12px 0 0;';
-            header.innerHTML = '<div style="font-size: 12px; font-weight: 800; letter-spacing: .3px; color: #F9F9F9;">Session Warning</div><button onclick="closeInactivityWarning()" style="background: transparent; border: none; color: #F9F9F9; font-size: 16px; line-height: 1; cursor: pointer;">×</button>';
-            
-            const body = document.createElement('div');
-            body.style.cssText = 'padding: 12px; color: #130325; font-size: 12px;';
-            body.innerHTML = '<p style="margin: 0; color: #130325; font-size: 12px;">Your session will expire in <strong>' + remainingMinutes + ' minute(s)</strong> due to inactivity. Please interact with the page to stay logged in.</p>';
-            
-            const actions = document.createElement('div');
-            actions.style.cssText = 'display: flex; gap: 8px; justify-content: flex-end; padding: 0 12px 12px 12px;';
-            
-            const okBtn = document.createElement('button');
-            okBtn.textContent = 'OK';
-            okBtn.style.cssText = 'background: linear-gradient(135deg, #FFD736 0%, #FFC107 100%); color: #130325; border: none; border-radius: 8px; padding: 6px 10px; font-weight: 700; font-size: 12px; cursor: pointer;';
-            okBtn.onclick = closeInactivityWarning;
-            
-            actions.appendChild(okBtn);
-            
-            dialog.appendChild(header);
-            dialog.appendChild(body);
-            dialog.appendChild(actions);
-            overlay.appendChild(dialog);
-            document.body.appendChild(overlay);
-            
-            // Animate in
-            requestAnimationFrame(() => {
-                overlay.style.opacity = '1';
-            });
-            
-            // Auto-dismiss after 10 seconds
-            setTimeout(() => {
-                closeInactivityWarning();
-            }, 10000);
-        }
-        
-        function closeInactivityWarning() {
-            const modal = document.getElementById('inactivityWarningModal');
-            if (modal) {
-                modal.style.opacity = '0';
-                setTimeout(() => modal.remove(), 200);
-            }
-        }
-        
-        // Make function globally accessible
-        window.closeInactivityWarning = closeInactivityWarning;
-        
-        // Check inactivity every 30 seconds
-        activityCheckInterval = setInterval(checkInactivity, CHECK_INTERVAL);
-        
-        // Initial activity update
-        updateActivity();
-    })();
+    }
+    
+    window.closeInactivityWarning = closeInactivityWarning;
+    
+    activityCheckInterval = setInterval(checkInactivity, CHECK_INTERVAL);
+    
+    updateActivity();
+})();
+
+
     </script>
+    
     
     <!-- Bootstrap JavaScript -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
