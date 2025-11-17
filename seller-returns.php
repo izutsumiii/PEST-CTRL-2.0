@@ -2130,6 +2130,176 @@ body {
         font-size: 0.9rem;
     }
 }
+/* Mobile Table Card Layout */
+@media (max-width: 768px) {
+    .table-responsive {
+        border: none;
+        border-radius: 0;
+    }
+    
+    .table thead {
+        display: none;
+    }
+    
+    .table tbody {
+        display: block;
+    }
+    
+    .table tbody tr {
+        display: block;
+        margin-bottom: 16px;
+        background: var(--bg-white);
+        border: 1px solid rgba(19, 3, 37, 0.08);
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        padding: 12px;
+        position: relative;
+    }
+    
+    .table tbody tr:hover {
+        background-color: var(--bg-white);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+    
+    .table tbody td {
+        display: block;
+        text-align: left;
+        padding: 8px 0;
+        border: none;
+        position: relative;
+        padding-left: 45%;
+        min-height: 30px;
+    }
+    
+    .table tbody td::before {
+        content: attr(data-label);
+        position: absolute;
+        left: 0;
+        width: 40%;
+        padding-right: 10px;
+        font-weight: 700;
+        color: var(--text-dark);
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+    }
+    
+    .table tbody td:first-child {
+        padding-top: 0;
+        border-top: none;
+    }
+    
+    .table tbody td:last-child {
+        padding-bottom: 0;
+        padding-left: 0;
+    }
+    
+    .table tbody td:last-child::before {
+        display: none;
+    }
+    
+    /* Adjust specific columns in mobile */
+    .product-info {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .product-thumb {
+        width: 40px;
+        height: 40px;
+    }
+    
+    .customer-info strong,
+    .product-details strong {
+        font-size: 0.8rem;
+    }
+    
+    .customer-info small,
+    .product-details small {
+        font-size: 0.7rem;
+    }
+    
+    .status-badge {
+        display: inline-block;
+        font-size: 0.65rem;
+        padding: 3px 8px;
+    }
+    
+    .action-buttons-new {
+        margin-top: 8px;
+        padding-top: 12px;
+        border-top: 1px solid rgba(19, 3, 37, 0.08);
+    }
+    
+    .action-icons {
+        justify-content: flex-start;
+    }
+}
+
+/* Mobile Product Image Fix - Vertical Layout */
+@media (max-width: 768px) {
+    .table tbody td[data-label="Product"] {
+        display: block;
+        padding-left: 0 !important;
+    }
+    
+    .table tbody td[data-label="Product"]::before {
+        position: relative;
+        display: block;
+        width: 100%;
+        padding-right: 0;
+        margin-bottom: 8px;
+        left: 0;
+    }
+    
+    .table tbody td[data-label="Product"] .product-info {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+        width: 250%;
+        padding: 12px;
+        background: var(--bg-light);
+        border-radius: 8px;
+        border: 1px solid rgba(19, 3, 37, 0.08);
+        text-align: center;
+    }
+    
+    .table tbody td[data-label="Product"] .product-thumb {
+        width: 120px;
+        height: 120px;
+        object-fit: cover;
+        border-radius: 8px;
+        border: 2px solid rgba(19, 3, 37, 0.1);
+        flex-shrink: 0;
+    }
+    
+    .table tbody td[data-label="Product"] .product-details {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        align-items: center;
+    }
+    
+    .table tbody td[data-label="Product"] .product-details strong {
+        display: block;
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: var(--text-dark);
+        line-height: 1.4;
+        word-break: break-word;
+        text-align: center;
+    }
+    
+    .table tbody td[data-label="Product"] .product-details small {
+        display: block;
+        font-size: 0.75rem;
+        color: var(--text-light);
+        font-weight: 500;
+    }
+}
 </style>
 
 <main class="main-content">
@@ -2235,77 +2405,80 @@ body {
                                     <th>ACTIONS</th>
                                 </tr>
                             </thead>
+
+
                             <tbody>
-                                <?php foreach ($returnRequests as $request): ?>
-                                    <tr data-status="<?php echo htmlspecialchars($request['status']); ?>" 
-                                        data-request-id="<?php echo $request['id']; ?>"
-                                        data-customer="<?php echo htmlspecialchars(strtolower($request['customer_name'] . ' ' . $request['customer_email'])); ?>"
-                                        data-product="<?php echo htmlspecialchars(strtolower($request['product_name'])); ?>">
-                                        <td>
-                                            <strong>#<?php echo $request['id']; ?></strong>
-                                        </td>
-                                        <td>
-                                            <div class="customer-info">
-                                                <strong><?php echo htmlspecialchars($request['customer_name']); ?></strong>
-                                                <small class="d-block"><?php echo htmlspecialchars($request['customer_email']); ?></small>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <div class="product-info">
-                                                <?php if ($request['product_image']): ?>
-                                                    <img src="<?php echo htmlspecialchars($request['product_image']); ?>" 
-                                                         alt="Product" class="product-thumb">
-                                                <?php endif; ?>
-                                                <div class="product-details">
-                                                    <strong><?php echo htmlspecialchars($request['product_name']); ?></strong>
-                                                    <small class="d-block">Qty: <?php echo $request['quantity']; ?></small>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <?php echo date('M d, Y', strtotime($request['order_date'])); ?>
-                                        </td>
-                                        <td>
-                                            <strong>₱<?php echo number_format($request['item_price'] * $request['quantity'], 2); ?></strong>
-                                        </td>
-                                        <td>
-                                            <span class="status-badge status-<?php echo $request['status']; ?>">
-                                                <?php echo ucfirst($request['status']); ?>
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <div class="action-buttons-new">
-                                                <div class="action-icons">
-                                                    <?php if ($request['status'] === 'pending'): ?>
-                                                        <button class="btn-icon btn-success-icon" 
-                                                                onclick="approveReturn(<?php echo $request['id']; ?>)"
-                                                                title="Approve">
-                                                            <i class="fas fa-check"></i>
-                                                        </button>
-                                                        <button class="btn-icon btn-danger-icon" 
-                                                                onclick="rejectReturn(<?php echo $request['id']; ?>)"
-                                                                title="Reject">
-                                                            <i class="fas fa-times"></i>
-                                                        </button>
-                                                    <?php elseif ($request['status'] === 'approved'): ?>
-                                                        <button class="btn-icon btn-success-icon" 
-                                                                onclick="completeRefund(<?php echo $request['id']; ?>)"
-                                                                title="Complete Refund">
-                                                            <i class="fas fa-check"></i>
-                                                        </button>
-                                                    <?php endif; ?>
-                                                    
-                                                    <button class="btn-icon btn-info-icon" 
-                                                            onclick="viewDetails(<?php echo $request['id']; ?>)"
-                                                            title="View Details">
-                                                        <i class="fas fa-eye"></i>
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                <?php endforeach; ?>
-                            </tbody>
+    <?php foreach ($returnRequests as $request): ?>
+        <tr data-status="<?php echo htmlspecialchars($request['status']); ?>" 
+            data-request-id="<?php echo $request['id']; ?>"
+            data-customer="<?php echo htmlspecialchars(strtolower($request['customer_name'] . ' ' . $request['customer_email'])); ?>"
+            data-product="<?php echo htmlspecialchars(strtolower($request['product_name'])); ?>">
+            <td data-label="Order ID">
+                <strong>#<?php echo $request['id']; ?></strong>
+            </td>
+            <td data-label="Customer">
+                <div class="customer-info">
+                    <strong><?php echo htmlspecialchars($request['customer_name']); ?></strong>
+                    <small class="d-block"><?php echo htmlspecialchars($request['customer_email']); ?></small>
+                </div>
+            </td>
+            <td data-label="Product">
+                <div class="product-info">
+                    <?php if ($request['product_image']): ?>
+                        <img src="<?php echo htmlspecialchars($request['product_image']); ?>" 
+                             alt="Product" class="product-thumb">
+                    <?php endif; ?>
+                    <div class="product-details">
+                        <strong><?php echo htmlspecialchars($request['product_name']); ?></strong>
+                        <small class="d-block">Qty: <?php echo $request['quantity']; ?></small>
+                    </div>
+                </div>
+            </td>
+            <td data-label="Date">
+                <?php echo date('M d, Y', strtotime($request['order_date'])); ?>
+            </td>
+            <td data-label="Total">
+                <strong>₱<?php echo number_format($request['item_price'] * $request['quantity'], 2); ?></strong>
+            </td>
+            <td data-label="Status">
+                <span class="status-badge status-<?php echo $request['status']; ?>">
+                    <?php echo ucfirst($request['status']); ?>
+                </span>
+            </td>
+            <td>
+                <div class="action-buttons-new">
+                    <div class="action-icons">
+                        <?php if ($request['status'] === 'pending'): ?>
+                            <button class="btn-icon btn-success-icon" 
+                                    onclick="approveReturn(<?php echo $request['id']; ?>)"
+                                    title="Approve">
+                                <i class="fas fa-check"></i>
+                            </button>
+                            <button class="btn-icon btn-danger-icon" 
+                                    onclick="rejectReturn(<?php echo $request['id']; ?>)"
+                                    title="Reject">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        <?php elseif ($request['status'] === 'approved'): ?>
+                            <button class="btn-icon btn-success-icon" 
+                                    onclick="completeRefund(<?php echo $request['id']; ?>)"
+                                    title="Complete Refund">
+                                <i class="fas fa-check"></i>
+                            </button>
+                        <?php endif; ?>
+                        
+                        <button class="btn-icon btn-info-icon" 
+                                onclick="viewDetails(<?php echo $request['id']; ?>)"
+                                title="View Details">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                </div>
+            </td>
+        </tr>
+    <?php endforeach; ?>
+</tbody>
+                            
                         </table>
                     </div>
         <?php endif; ?>
@@ -3208,4 +3381,5 @@ function exportReturnsToPDF() {
 .error-message i {
     font-size: 0.9rem;
 }
+
 </style>
