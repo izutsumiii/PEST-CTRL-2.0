@@ -1486,6 +1486,151 @@ h1.page-header-title {
         font-size: 0.65rem;
     }
 }
+
+/* Mobile Table Card Layout */
+@media (max-width: 768px) {
+    .table-wrapper {
+        border: none;
+        border-radius: 0;
+    }
+    
+    .orders-table thead {
+        display: none;
+    }
+    
+    .orders-table tbody {
+        display: block;
+    }
+    
+    .orders-table tbody tr {
+        display: block;
+        margin-bottom: 16px;
+        background: var(--bg-white);
+        border: 1px solid rgba(19, 3, 37, 0.08);
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        padding: 12px;
+        position: relative;
+    }
+    
+    .orders-table tbody tr:hover {
+        background-color: var(--bg-white);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+    
+    .orders-table tbody td {
+        display: block;
+        text-align: left;
+        padding: 8px 0;
+        border: none;
+        position: relative;
+        padding-left: 45%;
+        min-height: 30px;
+    }
+    
+    .orders-table tbody td::before {
+        content: attr(data-label);
+        position: absolute;
+        left: 0;
+        width: 40%;
+        padding-right: 10px;
+        font-weight: 700;
+        color: var(--text-dark);
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+    }
+    
+    .orders-table tbody td:first-child {
+        padding-top: 0;
+        border-top: none;
+    }
+    
+    .orders-table tbody td:last-child {
+        padding-bottom: 0;
+        padding-left: 0;
+        margin-top: 12px;
+        padding-top: 12px;
+        border-top: 1px solid rgba(19, 3, 37, 0.08);
+    }
+    
+    .orders-table tbody td:last-child::before {
+        display: none;
+    }
+    
+    /* Adjust specific mobile elements */
+    .customer-info {
+        gap: 4px;
+    }
+    
+    .customer-name {
+        font-size: 0.85rem;
+    }
+    
+    .customer-email {
+        font-size: 0.75rem;
+    }
+    
+    .product-list {
+        font-size: 0.8rem;
+    }
+    
+    .product-item {
+        padding: 4px 0;
+        font-size: 0.75rem;
+    }
+    
+    .total-amount {
+        font-size: 0.9rem;
+    }
+    
+    .order-status {
+        font-size: 0.75rem;
+        padding: 6px 12px;
+    }
+    
+    .order-date {
+        font-size: 0.75rem;
+    }
+    
+    /* ENLARGED ACTION BUTTONS FOR MOBILE */
+    .action-buttons {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+        width: 100%;
+    }
+    
+    .action-btn {
+        width: 100%;
+        min-width: 100%;
+        justify-content: center;
+        padding: 8px 11px;
+        font-size: 0.9rem;
+        font-weight: 700;
+        border-width: 2px;
+    }
+    
+    .action-btn i {
+        font-size: 1rem;
+    }
+    
+    .action-btn span {
+        font-size: 0.9rem;
+    }
+    
+    .grace-period-timer {
+        width: 100%;
+        margin-bottom: 10px;
+        padding: 10px 12px;
+        font-size: 0.85rem;
+    }
+    
+    /* Make forms full width */
+    .action-buttons form {
+        width: 100%;
+    }
+}
 </style>
 
 <main>
@@ -1570,53 +1715,55 @@ h1.page-header-title {
                 data-total="<?php echo (float)$order['total_amount']; ?>" 
                 data-status="<?php echo strtolower($order['status']); ?>" 
                 data-date="<?php echo strtotime($order['created_at']); ?>">
-                            <td>
-                                <a href="seller-order-details.php?order_id=<?php echo (int)$order['order_id']; ?>" class="order-id">#<?php echo str_pad($order['order_id'], 6, '0', STR_PAD_LEFT); ?></a>
-                            </td>
-                            <td>
-                                <div class="customer-info">
-                                    <div class="customer-name"><?php echo htmlspecialchars($order['customer_name']); ?></div>
-                                    <div class="customer-email"><?php echo htmlspecialchars($order['customer_email']); ?></div>
-                                </div>
-                            </td>
-                            <td>
-                                <ul class="product-list">
-                        <?php foreach ($order['items'] as $item): ?>
-                                        <li class="product-item">
-                                <strong><?php echo htmlspecialchars($item['product_name']); ?></strong>
-                                            (x<?php echo (int)$item['quantity']; ?>) - ₱<?php echo number_format((float)$item['item_price'], 2); ?>
-                            </li>
-                        <?php endforeach; ?>
-                    </ul>
-                </td>
-                            <td>
-                                <span class="total-amount">₱<?php echo number_format((float)$order['total_amount'], 2); ?></span>
-                            </td>
-                            <td>
-                                <div class="status-container">
-                                    <span class="order-status <?php echo $statusClass; ?>">
-                                        <?php echo ucfirst($order['status']); ?>
-                                    </span>
-                                    <?php if ($order['status'] === 'pending' && !$withinGracePeriod): ?>
-                                        <span class="ready-indicator" title="Ready to process">
-                                            <i class="fas fa-circle"></i>
-                                        </span>
-                                    <?php endif; ?>
-                                </div>
-                            </td>
-                            <td>
-                                <div class="order-date">
-                                    <?php echo date('M j, Y', strtotime($order['created_at'])); ?><br>
-                                    <?php echo date('g:i A', strtotime($order['created_at'])); ?>
-                                </div>
-                </td>
-                            <td class="actions-cell">
-                                
+                <td data-label="Order ID">
+    <a href="seller-order-details.php?order_id=<?php echo (int)$order['order_id']; ?>" class="order-id">#<?php echo str_pad($order['order_id'], 6, '0', STR_PAD_LEFT); ?></a>
+</td>
+<td data-label="Customer">
+    <div class="customer-info">
+        <div class="customer-name"><?php echo htmlspecialchars($order['customer_name']); ?></div>
+        <div class="customer-email"><?php echo htmlspecialchars($order['customer_email']); ?></div>
+    </div>
+</td>
+<td data-label="Products">
+    <ul class="product-list">
+        <?php foreach ($order['items'] as $item): ?>
+            <li class="product-item">
+                <strong><?php echo htmlspecialchars($item['product_name']); ?></strong>
+                (x<?php echo (int)$item['quantity']; ?>) - ₱<?php echo number_format((float)$item['item_price'], 2); ?>
+            </li>
+        <?php endforeach; ?>
+    </ul>
+</td>
+<td data-label="Total">
+    <span class="total-amount">₱<?php echo number_format((float)$order['total_amount'], 2); ?></span>
+</td>
+<td data-label="Status">
+    <div class="status-container">
+        <span class="order-status <?php echo $statusClass; ?>">
+            <?php echo ucfirst($order['status']); ?>
+        </span>
+        <?php if ($order['status'] === 'pending' && !$withinGracePeriod): ?>
+            <span class="ready-indicator" title="Ready to process">
+                <i class="fas fa-circle"></i>
+            </span>
+        <?php endif; ?>
+    </div>
+</td>
+
+
+<td data-label="Date">
+    <div class="order-date">
+        <?php echo date('M j, Y', strtotime($order['created_at'])); ?><br>
+        <?php echo date('g:i A', strtotime($order['created_at'])); ?>
+    </div>
+</td>
+<td data-label="Actions">
     <?php if ($order['status'] === 'pending'): ?>
         <?php if ($withinGracePeriod): ?>
                                         <div class="grace-period-timer" id="timer-<?php echo $order['order_id']; ?>">
                                             🔒 <?php echo $remainingTime['minutes']; ?>m <?php echo str_pad($remainingTime['seconds'], 2, '0', STR_PAD_LEFT); ?>s
             </div>
+           
             <script>
                                             (function() {
                                                 let remaining = <?php echo $remainingTime['total_seconds']; ?>;
@@ -1634,6 +1781,7 @@ h1.page-header-title {
                                                 }, 1000);
                                             })();
             </script>
+            
         <?php else: ?>
                                         <div class="action-buttons">
                                             <a href="seller-order-details.php?order_id=<?php echo $order['order_id']; ?>" class="action-btn btn-view">
