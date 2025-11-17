@@ -170,31 +170,6 @@ safeDelete:
     exit();
 }
 
-// Handle product view
-if (isset($_GET['view'])) {
-    $productId = intval($_GET['view']);
-
-    $stmt = $pdo->prepare("SELECT * FROM products WHERE id = ? AND seller_id = ?");
-    $stmt->execute([$productId, $userId]);
-    $viewProduct = $stmt->fetch();
-
-    if ($viewProduct) {
-        // Get product images
-        $stmt = $pdo->prepare("SELECT * FROM product_images WHERE product_id = ? ORDER BY is_primary DESC, sort_order ASC");
-        $stmt->execute([$productId]);
-        $viewProduct['images'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-        // For now, redirect back to products page with a success message
-        // This can be enhanced later to show a detailed view modal
-        $_SESSION['product_message'] = ['type' => 'success', 'text' => 'Viewing product: ' . htmlspecialchars($viewProduct['name'])];
-        header("Location: view-products.php");
-        exit();
-    } else {
-        $_SESSION['product_message'] = ['type' => 'error', 'text' => 'Product not found.'];
-        header("Location: view-products.php");
-        exit();
-    }
-}
 
 // Include header after form processing is complete (to avoid headers already sent)
 require_once 'includes/seller_header.php';
@@ -523,7 +498,7 @@ h1 {
 }
 
 main.sidebar-collapsed h1 {
-    margin-left: -40px !important;
+    margin-left: 20px !important;
 }
 
 /* Container - Adjusted for sidebar */
@@ -864,7 +839,7 @@ main.sidebar-collapsed .products-table-container {
 
 .table-actions .action-btn.delete-btn {
     width: 100px;
-    padding: 6px 12px;
+    padding: 6px 6px;
 }
 
 .action-btn {
@@ -1367,6 +1342,24 @@ main.sidebar-collapsed .products-table-container {
     align-items: flex-start;
     flex: 1;
     border-radius: 4px;
+    overflow: hidden;
+}
+
+.product-info-section .product-title {
+    font-size: 20px;
+    font-weight: 900;
+    color: #130325;
+    margin-bottom: 12px;
+    line-height: 1.3;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    text-shadow: none !important;
+    word-wrap: break-word;
+    word-break: break-word;
+    overflow-wrap: break-word;
+    max-width: 100%;
+    white-space: normal;
+    overflow: visible;
 }
 .product-details {
     flex: 1;
@@ -1376,10 +1369,16 @@ main.sidebar-collapsed .products-table-container {
     font-weight: 900;
     color: #130325;
     margin-bottom: 12px;
-    line-height: 1.2;
+    line-height: 1.3;
     text-transform: uppercase;
     letter-spacing: 0.5px;
     text-shadow: none !important;
+    word-wrap: break-word;
+    word-break: break-word;
+    overflow-wrap: break-word;
+    max-width: 100%;
+    white-space: normal;
+    overflow: visible;
 }
 .product-price-section {
     background: rgba(255, 215, 54, 0.1);
@@ -1826,6 +1825,109 @@ main.sidebar-collapsed .products-table-container {
         align-items: flex-start;
     }
 }
+
+/* Mobile Table Responsiveness - Card Layout */
+@media (max-width: 768px) {
+    .table-wrapper {
+        overflow-x: visible;
+    }
+    
+    .products-table {
+        min-width: auto;
+        border: 0;
+    }
+    
+    .products-table thead {
+        display: none;
+    }
+    
+    .products-table tbody tr {
+        display: block;
+        margin-bottom: 16px;
+        border: 1px solid var(--border-light);
+        border-radius: 8px;
+        background: var(--bg-white);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        padding: 12px;
+    }
+    
+    .products-table tbody tr:hover {
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+    
+    .products-table td {
+        display: block;
+        text-align: left;
+        padding: 8px 0;
+        border: none;
+        position: relative;
+        padding-left: 45%;
+    }
+    
+    .products-table td::before {
+        content: attr(data-label);
+        position: absolute;
+        left: 0;
+        width: 40%;
+        padding-right: 10px;
+        font-weight: 700;
+        color: var(--primary-dark);
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    /* Special handling for image column */
+    .products-table td:nth-child(2) {
+        text-align: center;
+        padding-left: 0;
+        padding-top: 12px;
+        padding-bottom: 12px;
+    }
+    
+    .products-table td:nth-child(2)::before {
+        display: none;
+    }
+    
+    .products-table td:nth-child(2) .product-image {
+        width: 110px;
+        height: 110px;
+        margin: 0 auto;
+    }
+    
+    /* Actions column full width */
+    .products-table td:nth-child(8) {
+        padding-left: 0;
+        padding-top: 12px;
+    }
+    
+    .products-table td:nth-child(8)::before {
+        position: static;
+        display: block;
+        width: 100%;
+        margin-bottom: 8px;
+    }
+    
+    .table-actions {
+        width: 100%;
+    }
+    
+    .table-actions-row {
+        justify-content: center;
+        width: 100%;
+    }
+    
+    .action-btn {
+        width: 32px;
+        height: 32px;
+        font-size: 13px;
+    }
+    
+    .table-actions .action-btn.delete-btn {
+        width: 50%;
+        justify-content: center;
+    }
+}
 </style>
 
 <main>
@@ -1917,31 +2019,31 @@ main.sidebar-collapsed .products-table-container {
                                 data-stock="<?php echo (int)$product['stock_quantity']; ?>"
                                 data-status="<?php echo htmlspecialchars($product['status'] ?? 'inactive'); ?>"
                                 data-date="<?php echo isset($product['created_at']) ? strtotime($product['created_at']) : 0; ?>">
-                                <td>
-                                    <a href="#" class="product-id-link" onclick="openProductModal(<?php echo $product['id']; ?>); return false;" title="View Product Details">
-                                        #<?php echo $product['id']; ?>
-                                    </a>
-                                </td>
-                                <td>
-                                    <img src="<?php echo htmlspecialchars($product['image_url']); ?>" 
-                                         alt="<?php echo htmlspecialchars($product['name']); ?>" 
-                                         class="product-image"
-                                         onerror="this.src='assets/uploads/tempo_image.jpg'">
-                                </td>
-                                <td><?php echo htmlspecialchars($product['name']); ?></td>
-                                <td><?php echo htmlspecialchars($product['category_name'] ?? 'No Category'); ?></td>
-                                <td>₱<?php echo number_format($product['price'], 2); ?></td>
-                                <td>
-                                    <span class="stock-badge-table">
-                                        <?php echo (int)$product['stock_quantity']; ?>
-                                    </span>
-                                </td>
-                                <td>
-                                    <span class="status-badge-table <?php echo htmlspecialchars($product['status'] ?? 'inactive'); ?>">
-                                        <?php echo ucfirst($product['status'] ?? 'inactive'); ?>
-                                    </span>
-                                </td>
-                                <td>
+                                <td data-label="ID">
+    <a href="#" class="product-id-link" onclick="openProductModal(<?php echo $product['id']; ?>); return false;" title="View Product Details">
+        #<?php echo $product['id']; ?>
+    </a>
+</td>
+<td data-label="Image">
+    <img src="<?php echo htmlspecialchars($product['image_url']); ?>" 
+         alt="<?php echo htmlspecialchars($product['name']); ?>" 
+         class="product-image"
+         onerror="this.src='assets/uploads/tempo_image.jpg'">
+</td>
+<td data-label="Name"><?php echo htmlspecialchars($product['name']); ?></td>
+<td data-label="Category"><?php echo html_entity_decode(htmlspecialchars($product['category_name'] ?? 'No Category'), ENT_QUOTES, 'UTF-8'); ?></td>
+<td data-label="Price">₱<?php echo number_format($product['price'], 2); ?></td>
+<td data-label="Stock">
+    <span class="stock-badge-table">
+        <?php echo (int)$product['stock_quantity']; ?>
+    </span>
+</td>
+<td data-label="Status">
+    <span class="status-badge-table <?php echo htmlspecialchars($product['status'] ?? 'inactive'); ?>">
+        <?php echo ucfirst($product['status'] ?? 'inactive'); ?>
+    </span>
+</td>
+<td data-label="Actions">
                                     <div class="table-actions">
                                         <div class="table-actions-row">
                                             <a href="?view=<?php echo $product['id']; ?>" class="action-btn view-btn" title="View Product">
@@ -1966,7 +2068,7 @@ main.sidebar-collapsed .products-table-container {
                                                title="Delete Product"
                                                data-action="delete"
                                                data-product-name="<?php echo htmlspecialchars($product['name']); ?>">
-                                                <i class="fas fa-trash"></i> CANCEL
+                                                <i class="fas fa-trash"></i> 
                                             </a>
                                         <?php endif; ?>
                                     </div>
@@ -2116,7 +2218,16 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
     }
-
+// Handle view button clicks
+document.querySelectorAll('a.view-btn').forEach(function(link){
+    link.addEventListener('click', function(e){
+        e.preventDefault();
+        const productId = link.href.split('view=')[1];
+        if (productId) {
+            openProductModal(parseInt(productId));
+        }
+    });
+});
     document.querySelectorAll('a.product-toggle').forEach(function(link){
         link.addEventListener('click', function(e){
             e.preventDefault();
@@ -2279,6 +2390,28 @@ function openProductModal(productId) {
             modalBody.innerHTML = '<div class="product-loading"><i class="fas fa-exclamation-triangle"></i><p>Error loading product details. Please try again.</p></div>';
         });
 }
+// Helper function to escape HTML
+// Helper function to escape HTML
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// Helper function to escape HTML but preserve & symbol
+function escapeHtmlPreserveAmpersand(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML.replace(/&amp;/g, '&');
+}
+// Helper function to decode HTML entities
+function decodeHtml(html) {
+    const txt = document.createElement('textarea');
+    txt.innerHTML = html;
+    return txt.value;
+}
 
 function displayProductDetails(product) {
     const modalBody = document.querySelector('#productViewModal .product-modal-body');
@@ -2325,10 +2458,10 @@ function displayProductDetails(product) {
             </div>
             
             <div class="product-info-section">
-                <div class="product-details">
-                    <h1 class="product-title">${escapeHtml(product.name)}</h1>
-                    
-                    <div class="product-price-section">
+    <div class="product-details">
+        <h1 class="product-title">${escapeHtml(decodeHtml(product.name))}</h1>
+        
+        <div class="product-price-section">
                         <div class="product-price-left">
                             <div class="product-price-label">Price:</div>
                             <div class="product-price-amount">₱${parseFloat(product.price || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
@@ -2367,7 +2500,7 @@ function displayProductDetails(product) {
         <div class="product-details-section">
             <div class="preview-product-category">
                 <h3>Product Category</h3>
-                <p class="product-category-text">${escapeHtml(product.category_name || 'No category assigned')}</p>
+               <p class="product-category-text">${escapeHtml(decodeHtml(product.category_name || 'No category assigned'))}</p>
             </div>
             <div class="preview-product-description">
                 <h3>Product Description</h3>
@@ -2511,13 +2644,6 @@ document.addEventListener('keydown', function(e) {
     }
 });
 
-// Helper function to escape HTML
-function escapeHtml(text) {
-    if (!text) return '';
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-}
 
 // Reply to review functions
 let currentReviewId = null;
@@ -2732,6 +2858,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
+
 </script>
 
 <!-- Product View Modal -->
