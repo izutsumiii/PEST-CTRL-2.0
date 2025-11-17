@@ -1,35 +1,62 @@
 <?php
-require_once '../config/database.php';
-require_once '../includes/functions.php';
-require_once '../includes/seller_notification_functions.php';
+// ajax/get-seller-notifications.php
+// This file fetches seller notifications and returns them as JSON
+
+session_start();
+header('Content-Type: application/json');
 
 // Check if user is logged in and is a seller
-if (!isLoggedIn() || !isSeller()) {
-    http_response_code(401);
-    echo json_encode(['success' => false, 'message' => 'Unauthorized']);
-    exit();
+if (!isset($_SESSION['user_id']) || $_SESSION['user_type'] !== 'seller') {
+    echo json_encode([
+        'success' => false,
+        'message' => 'Unauthorized access',
+        'notifications' => [],
+        'unreadCount' => 0
+    ]);
+    exit;
 }
 
-$sellerId = $_SESSION['user_id'];
-
 try {
+    require_once __DIR__ . '/../config/database.php';
+    require_once __DIR__ . '/../includes/seller_notification_functions.php';
+    
+    $sellerId = $_SESSION['user_id'];
+    
+    // Get notifications (limit to 20 most recent for dropdown)
+    $notifications = getSellerNotifications($sellerId, 20);
+    
     // Get unread count
     $unreadCount = getSellerUnreadCount($sellerId);
     
-    // Get recent notifications
-    $notifications = getSellerNotifications($sellerId, 10);
+    // Format notifications for JSON response
+    $formattedNotifications = [];
+    foreach ($notifications as $notification) {
+        $formattedNotifications[] = [
+            'id' => (int)$notification['id'],
+            'title' => htmlspecialchars($notification['title'] ?? 'Notification'),
+            'message' => htmlspecialchars($notification['message'] ?? ''),
+            'type' => htmlspecialchars($notification['type'] ?? 'info'),
+            'action_url' => htmlspecialchars($notification['action_url'] ?? ''),
+            'is_read' => (bool)$notification['is_read'],
+            'created_at' => $notification['created_at']
+        ];
+    }
     
     echo json_encode([
         'success' => true,
-        'unreadCount' => $unreadCount,
-        'notifications' => $notifications
+        'notifications' => $formattedNotifications,
+        'unreadCount' => (int)$unreadCount,
+        'timestamp' => time()
     ]);
     
 } catch (Exception $e) {
-    http_response_code(500);
+    error_log('Error fetching seller notifications: ' . $e->getMessage());
+    
     echo json_encode([
         'success' => false,
-        'message' => 'Error loading notifications: ' . $e->getMessage()
+        'message' => 'Error fetching notifications',
+        'notifications' => [],
+        'unreadCount' => 0,
+        'error' => $e->getMessage()
     ]);
 }
-?>
