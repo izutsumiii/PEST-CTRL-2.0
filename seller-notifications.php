@@ -871,7 +871,7 @@ function updateRelativeTimes() {
         }
     });
 }
-
+ 
 // Update relative times on page load
 document.addEventListener('DOMContentLoaded', function() {
     updateRelativeTimes();
