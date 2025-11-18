@@ -366,7 +366,7 @@ require_once 'includes/header.php';
         </div>
     <?php endif; ?>
 
-<?php if (!$showOtpForm): ?>
+<?php if (!$showOtpForm && !$showSuccessPage): ?>
 <!-- Registration Form -->
 <form method="POST" action="" id="registerForm">
     <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">
@@ -1105,6 +1105,43 @@ require_once 'includes/header.php';
     </div>
 </div>
 
+<?php elseif ($showSuccessPage): ?>
+<!-- Registration Success Page -->
+<div id="registration-success" class="registration-success-container">
+    <div class="success-content">
+        <div class="success-icon-wrapper-large">
+            <i class="fas fa-check-circle"></i>
+        </div>
+        <h2>Registration Successful!</h2>
+        <div class="success-message-box">
+            <p class="success-greeting">
+                Welcome to PEST-CTRL, <strong><?php echo htmlspecialchars($_SESSION['registered_user']['first_name'] . ' ' . $_SESSION['registered_user']['last_name']); ?></strong>!
+            </p>
+            <p class="success-details">
+                Your account has been successfully created and verified. You can now log in to access all features.
+            </p>
+            <div class="success-info">
+                <div class="info-item">
+                    <i class="fas fa-user"></i>
+                    <span><strong>Username:</strong> <?php echo htmlspecialchars($_SESSION['registered_user']['username']); ?></span>
+                </div>
+                <div class="info-item">
+                    <i class="fas fa-envelope"></i>
+                    <span><strong>Email:</strong> <?php echo htmlspecialchars($_SESSION['registered_user']['email']); ?></span>
+                </div>
+            </div>
+        </div>
+        <button type="button" class="success-login-btn" onclick="redirectToLogin()">
+            <i class="fas fa-sign-in-alt"></i>
+            <span>Go to Login</span>
+        </button>
+        <p class="success-note">
+            <i class="fas fa-info-circle"></i>
+            You will be redirected to the login page automatically in <span id="countdown">5</span> seconds.
+        </p>
+    </div>
+</div>
+
 <?php else: ?>
 <!-- OTP Verification Form -->
 <div id="otpverify" class="otp-container">
@@ -1158,42 +1195,6 @@ require_once 'includes/header.php';
             <input type="hidden" name="resend_otp" value="1">
         </form>
     </form>
-</div>
-<?php elseif ($showSuccessPage): ?>
-<!-- Registration Success Page -->
-<div id="registration-success" class="registration-success-container">
-    <div class="success-content">
-        <div class="success-icon-wrapper-large">
-            <i class="fas fa-check-circle"></i>
-        </div>
-        <h2>Registration Successful!</h2>
-        <div class="success-message-box">
-            <p class="success-greeting">
-                Welcome to PEST-CTRL, <strong><?php echo htmlspecialchars($_SESSION['registered_user']['first_name'] . ' ' . $_SESSION['registered_user']['last_name']); ?></strong>!
-            </p>
-            <p class="success-details">
-                Your account has been successfully created and verified. You can now log in to access all features.
-            </p>
-            <div class="success-info">
-                <div class="info-item">
-                    <i class="fas fa-user"></i>
-                    <span><strong>Username:</strong> <?php echo htmlspecialchars($_SESSION['registered_user']['username']); ?></span>
-                </div>
-                <div class="info-item">
-                    <i class="fas fa-envelope"></i>
-                    <span><strong>Email:</strong> <?php echo htmlspecialchars($_SESSION['registered_user']['email']); ?></span>
-                </div>
-            </div>
-        </div>
-        <button type="button" class="success-login-btn" onclick="redirectToLogin()">
-            <i class="fas fa-sign-in-alt"></i>
-            <span>Go to Login</span>
-        </button>
-        <p class="success-note">
-            <i class="fas fa-info-circle"></i>
-            You will be redirected to the login page automatically in <span id="countdown">5</span> seconds.
-        </p>
-    </div>
 </div>
 <?php endif; ?>
 
