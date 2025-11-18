@@ -215,7 +215,19 @@ body {
     top: 100px;
     max-height: calc(100vh - 120px);
     overflow-y: auto;
-    overflow-x: hidden;
+    overflow-x: visible;
+    z-index: 1000;
+    isolation: isolate;
+}
+
+/* Fix for select dropdowns - allow them to render outside filters container */
+.filters .filter-group {
+    isolation: isolate;
+}
+
+.filters select {
+    position: relative;
+    z-index: 1001;
 }
 
 /* Custom Scrollbar for Filters */
@@ -516,6 +528,9 @@ body {
     margin-bottom: 12px;
     padding-bottom: 8px;
     border-bottom: 1px solid rgba(19, 3, 37, 0.1);
+    position: relative;
+    z-index: 1;
+    overflow: visible;
 }
 
 .filter-group:last-child {
@@ -538,6 +553,16 @@ body {
     background: var(--bg-white);
     color: var(--text-dark);
     font-size: 12px;
+    position: relative;
+    z-index: 1001;
+    cursor: pointer;
+}
+
+/* Ensure select dropdown options are visible */
+.filter-group select option {
+    background: var(--bg-white);
+    color: var(--text-dark);
+    padding: 8px;
 }
 
 .filter-group select:focus,
@@ -1888,6 +1913,178 @@ document.getElementById('filterModal')?.addEventListener('click', function(e) {
     if (e.target === this) {
         closeFilterModal();
     }
+});
+
+// ========== DEBUGGER FOR FILTER DROPDOWN ==========
+console.log('🔍 [FILTER DEBUG] Starting filter dropdown debugger...');
+
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🔍 [FILTER DEBUG] DOM Content Loaded');
+    
+    // Find all select elements in filters
+    const filtersSidebar = document.querySelector('.filters');
+    const allSelects = document.querySelectorAll('.filters select, .filter-group select');
+    
+    console.log('🔍 [FILTER DEBUG] Filters sidebar found:', filtersSidebar ? 'YES' : 'NO');
+    console.log('🔍 [FILTER DEBUG] Number of select elements found:', allSelects.length);
+    
+    if (filtersSidebar) {
+        const computedStyle = window.getComputedStyle(filtersSidebar);
+        console.log('🔍 [FILTER DEBUG] Filters sidebar styles:', {
+            overflowX: computedStyle.overflowX,
+            overflowY: computedStyle.overflowY,
+            zIndex: computedStyle.zIndex,
+            position: computedStyle.position,
+            width: computedStyle.width,
+            height: computedStyle.height
+        });
+    }
+    
+    // Debug each select element
+    allSelects.forEach((select, index) => {
+        console.log(`🔍 [FILTER DEBUG] Select #${index + 1}:`, {
+            id: select.id,
+            name: select.name,
+            className: select.className,
+            parentElement: select.parentElement?.className,
+            visible: select.offsetWidth > 0 && select.offsetHeight > 0,
+            computedStyles: {
+                zIndex: window.getComputedStyle(select).zIndex,
+                position: window.getComputedStyle(select).position,
+                overflow: window.getComputedStyle(select).overflow,
+                display: window.getComputedStyle(select).display,
+                visibility: window.getComputedStyle(select).visibility,
+                pointerEvents: window.getComputedStyle(select).pointerEvents
+            }
+        });
+        
+        // Add click event listener
+        select.addEventListener('click', function(e) {
+            console.log(`🔍 [FILTER DEBUG] Select #${index + 1} CLICKED!`, {
+                target: e.target,
+                currentTarget: e.currentTarget,
+                bubbles: e.bubbles,
+                cancelable: e.cancelable,
+                defaultPrevented: e.defaultPrevented,
+                timeStamp: e.timeStamp
+            });
+            
+            const rect = select.getBoundingClientRect();
+            console.log(`🔍 [FILTER DEBUG] Select position:`, {
+                top: rect.top,
+                left: rect.left,
+                width: rect.width,
+                height: rect.height,
+                visible: rect.width > 0 && rect.height > 0
+            });
+            
+            // Check for overlaying elements
+            const elementAtPoint = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
+            console.log(`🔍 [FILTER DEBUG] Element at center point:`, elementAtPoint);
+            
+            // Check parent overflow
+            let parent = select.parentElement;
+            let level = 0;
+            while (parent && level < 5) {
+                const parentStyle = window.getComputedStyle(parent);
+                console.log(`🔍 [FILTER DEBUG] Parent level ${level} (${parent.className}):`, {
+                    overflowX: parentStyle.overflowX,
+                    overflowY: parentStyle.overflowY,
+                    zIndex: parentStyle.zIndex,
+                    position: parentStyle.position
+                });
+                parent = parent.parentElement;
+                level++;
+            }
+        });
+        
+        // Add focus event listener
+        select.addEventListener('focus', function(e) {
+            console.log(`🔍 [FILTER DEBUG] Select #${index + 1} FOCUSED!`);
+            
+            // FIX: Temporarily remove overflow from parent when select is focused
+            const filtersContainer = select.closest('.filters');
+            if (filtersContainer) {
+                filtersContainer.style.overflow = 'visible';
+                console.log('🔍 [FILTER DEBUG] Removed overflow from filters container on focus');
+            }
+        });
+        
+        select.addEventListener('blur', function() {
+            const filtersContainer = select.closest('.filters');
+            if (filtersContainer) {
+                filtersContainer.style.overflow = '';
+                filtersContainer.style.overflowY = 'auto';
+                filtersContainer.style.overflowX = 'visible';
+                console.log('🔍 [FILTER DEBUG] Restored overflow on filters container on blur');
+            }
+        });
+        
+        // Add mousedown event listener
+        select.addEventListener('mousedown', function(e) {
+            console.log(`🔍 [FILTER DEBUG] Select #${index + 1} MOUSEDOWN!`, {
+                button: e.button,
+                clientX: e.clientX,
+                clientY: e.clientY
+            });
+            
+            // FIX: Remove overflow before dropdown opens
+            const filtersContainer = select.closest('.filters');
+            if (filtersContainer) {
+                filtersContainer.style.overflow = 'visible';
+                console.log('🔍 [FILTER DEBUG] Removed overflow on mousedown');
+            }
+        });
+        
+        // Check if select is actually clickable
+        select.addEventListener('mouseenter', function() {
+            console.log(`🔍 [FILTER DEBUG] Select #${index + 1} MOUSE ENTER`);
+        });
+    });
+    
+    // Check for any elements that might be overlaying the filters
+    const filtersRect = filtersSidebar?.getBoundingClientRect();
+    if (filtersRect) {
+        console.log('🔍 [FILTER DEBUG] Filters sidebar bounding rect:', filtersRect);
+        
+        // Check elements at different points
+        const checkPoints = [
+            { x: filtersRect.left + 10, y: filtersRect.top + 10, label: 'Top-left' },
+            { x: filtersRect.left + filtersRect.width / 2, y: filtersRect.top + filtersRect.height / 2, label: 'Center' },
+            { x: filtersRect.right - 10, y: filtersRect.bottom - 10, label: 'Bottom-right' }
+        ];
+        
+        checkPoints.forEach(point => {
+            const element = document.elementFromPoint(point.x, point.y);
+            console.log(`🔍 [FILTER DEBUG] Element at ${point.label}:`, {
+                tag: element?.tagName,
+                className: element?.className,
+                id: element?.id,
+                zIndex: element ? window.getComputedStyle(element).zIndex : 'N/A'
+            });
+        });
+    }
+    
+    // Monitor for any style changes
+    if (filtersSidebar) {
+        const observer = new MutationObserver(function(mutations) {
+            mutations.forEach(function(mutation) {
+                if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
+                    console.log('🔍 [FILTER DEBUG] Filters sidebar style changed:', filtersSidebar.style.cssText);
+                }
+            });
+        });
+        
+        observer.observe(filtersSidebar, {
+            attributes: true,
+            attributeFilter: ['style', 'class']
+        });
+        
+        console.log('🔍 [FILTER DEBUG] MutationObserver attached to filters sidebar');
+    }
+    
+    console.log('🔍 [FILTER DEBUG] Debugger setup complete!');
+    console.log('🔍 [FILTER DEBUG] Try clicking on a filter dropdown and check the console for logs.');
 });
 </script>
 

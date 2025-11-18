@@ -1021,6 +1021,19 @@ require_once '../includes/header.php';
 
         <div class="checkout-form">
             <h2>Billing & Shipping Information</h2>
+            
+            <div class="address-management-header">
+                <a href="../edit-profile.php" class="add-address-btn" target="_blank">
+                    <i class="fas fa-plus-circle"></i>
+                    <span>Add New Address</span>
+                </a>
+                <?php if (!empty($userAddresses)): ?>
+                <a href="../edit-profile.php" class="manage-addresses-btn" target="_blank">
+                    <i class="fas fa-edit"></i>
+                    <span>Manage Addresses</span>
+                </a>
+                <?php endif; ?>
+            </div>
 
             <form method="POST" action="" id="ms-checkout-form">
                 <?php if (!empty($userAddresses)): ?>
@@ -1039,9 +1052,6 @@ require_once '../includes/header.php';
                             </option>
                         <?php endforeach; ?>
                     </select>
-                    <a href="../edit-profile.php" style="margin-top: 8px; display: inline-block; color: var(--primary-dark); font-size: 13px; text-decoration: none;">
-                        <i class="fas fa-plus"></i> Manage Addresses
-                    </a>
                 </div>
                 <?php endif; ?>
 
@@ -1117,6 +1127,29 @@ require_once '../includes/header.php';
 </div>
 
 <!-- Remove Discount Confirmation Modal -->
+<!-- Remove Item Confirmation Modal - Matching Logout Modal -->
+<div id="removeItemModal" class="modal-overlay" style="display: none;" onclick="if(event.target === this) closeRemoveItemModal()">
+    <div class="modal-dialog" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <div class="modal-title">Remove Item</div>
+            <button class="modal-close" aria-label="Close" onclick="closeRemoveItemModal()">×</button>
+        </div>
+        <div class="modal-body">
+            <p style="margin: 0; color: #130325; font-size: 12px; line-height: 1.5; font-weight: 500;">
+                Are you sure you want to remove this item from your checkout? This action cannot be undone.
+            </p>
+        </div>
+        <div class="modal-actions">
+            <button type="button" class="btn-outline" onclick="closeRemoveItemModal()">
+                <i class="fas fa-times"></i> Cancel
+            </button>
+            <button type="button" class="btn-primary-y" onclick="confirmRemoveItem()">
+                <i class="fas fa-check"></i> Remove
+            </button>
+        </div>
+    </div>
+</div>
+
 <div id="removeDiscountModal" class="modal-overlay" style="display: none;">
     <div class="modal-dialog" onclick="event.stopPropagation()">
         <div class="modal-header">
@@ -1710,6 +1743,57 @@ h1.page-title {
 .form-group input[readonly]:focus, .form-group textarea[readonly]:focus { 
     border-color: var(--border-light); 
     box-shadow: none; 
+}
+
+/* Address Management Header */
+.address-management-header {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid rgba(19, 3, 37, 0.1);
+}
+
+.add-address-btn,
+.manage-addresses-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    background: var(--primary-dark);
+    color: white;
+    text-decoration: none;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    border: 1.5px solid var(--primary-dark);
+}
+
+.add-address-btn:hover,
+.manage-addresses-btn:hover {
+    background: #0a0118;
+    border-color: #0a0118;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(19, 3, 37, 0.2);
+    color: white;
+}
+
+.add-address-btn i,
+.manage-addresses-btn i {
+    font-size: 13px;
+}
+
+.manage-addresses-btn {
+    background: rgba(19, 3, 37, 0.05);
+    color: var(--primary-dark);
+    border-color: rgba(19, 3, 37, 0.2);
+}
+
+.manage-addresses-btn:hover {
+    background: rgba(19, 3, 37, 0.1);
+    border-color: var(--primary-dark);
+    color: var(--primary-dark);
 }
 
 .form-group select {
@@ -2391,6 +2475,7 @@ document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
         closeDiscountErrorModal();
         closeRemoveDiscountModal();
+        closeRemoveItemModal();
     }
 });
 
@@ -2405,13 +2490,58 @@ document.addEventListener('click', function(e) {
     if (e.target === removeDiscountModal) {
         closeRemoveDiscountModal();
     }
+    
+    // Close remove item modal when clicking outside
+    const removeItemModal = document.getElementById('removeItemModal');
+    if (removeItemModal && e.target === removeItemModal) {
+        closeRemoveItemModal();
+    }
+});
+
+// Close modals with Escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeRemoveItemModal();
+        closeRemoveDiscountModal();
+    }
 });
 
 // Item selection and removal functions
+let pendingRemoveProductId = null;
+let pendingRemoveSellerId = null;
+
 function removeItem(productId, sellerId) {
-    if (!confirm('Are you sure you want to remove this item from checkout?')) {
+    pendingRemoveProductId = productId;
+    pendingRemoveSellerId = sellerId;
+    openRemoveItemModal();
+}
+
+function openRemoveItemModal() {
+    const modal = document.getElementById('removeItemModal');
+    if (modal) {
+        modal.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+    }
+}
+
+function closeRemoveItemModal() {
+    const modal = document.getElementById('removeItemModal');
+    if (modal) {
+        modal.style.display = 'none';
+        document.body.style.overflow = '';
+    }
+    pendingRemoveProductId = null;
+    pendingRemoveSellerId = null;
+}
+
+function confirmRemoveItem() {
+    if (!pendingRemoveProductId || !pendingRemoveSellerId) {
         return;
     }
+    
+    const productId = pendingRemoveProductId;
+    const sellerId = pendingRemoveSellerId;
+    closeRemoveItemModal();
     
     // Remove from cart via AJAX
     fetch('../ajax/remove-from-cart.php', {

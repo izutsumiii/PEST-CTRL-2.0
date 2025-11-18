@@ -256,6 +256,21 @@ main {
     gap: 6px !important;
 }
 
+.product-card .rating .star-filled {
+    color: var(--accent-yellow) !important;
+    font-size: 1.1rem !important;
+}
+
+.product-card .rating .star-half {
+    color: var(--accent-yellow) !important;
+    font-size: 1.1rem !important;
+}
+
+.product-card .rating .star-empty {
+    color: #d1d5db !important;
+    font-size: 1.1rem !important;
+}
+
 .product-card .rating-text {
     color: #212529 !important;
     font-size: 0.9rem !important;
@@ -459,11 +474,11 @@ main {
                   $hasHalfStar = ($rating - $fullStars) >= 0.5;
                   for ($i = 1; $i <= 5; $i++) {
                       if ($i <= $fullStars) {
-                          echo '★';
+                          echo '<span class="star-filled">★</span>';
                       } elseif ($i == $fullStars + 1 && $hasHalfStar) {
-                          echo '☆';
+                          echo '<span class="star-half">☆</span>';
                       } else {
-                          echo '☆';
+                          echo '<span class="star-empty">☆</span>';
                       }
                   }
                 ?>

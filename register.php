@@ -18,6 +18,13 @@ if (session_status() == PHP_SESSION_NONE) {
     session_start();
 }
 
+// Handle clearing success session (must be before any output)
+if (isset($_GET['clear_success']) && $_GET['clear_success'] == '1') {
+    unset($_SESSION['registration_success']);
+    unset($_SESSION['registered_user']);
+    exit();
+}
+
 // Check if user is logged in BEFORE any output
 if (isLoggedIn()) {
     header("Location: index.php");
@@ -129,10 +136,23 @@ if (isset($_POST['verify_otp'])) {
                 // OTP is correct, proceed with registration
                 $userData = $_SESSION['temp_user_data'];
                 
+                // Ensure users table has AUTO_INCREMENT (fix if missing)
+                if (function_exists('ensureAutoIncrementPrimary')) {
+                    ensureAutoIncrementPrimary('users');
+                } else {
+                    // Manual fix if function doesn't exist
+                    try {
+                        $pdo->exec("ALTER TABLE `users` MODIFY `id` INT(11) NOT NULL AUTO_INCREMENT");
+                    } catch (PDOException $e) {
+                        // Ignore if already has AUTO_INCREMENT
+                    }
+                }
+                
                 // Hash password
                 $hashedPassword = password_hash($userData['password'], PASSWORD_DEFAULT);
                 
                 // Insert new user (email is already verified via OTP)
+                // Note: Do NOT include 'id' in the INSERT - let AUTO_INCREMENT handle it
                 $stmt = $pdo->prepare("INSERT INTO users (username, email, password, first_name, last_name, user_type, email_verified, agreed_to_terms, agreed_to_privacy)
                                        VALUES (?, ?, ?, ?, ?, ?, 1, 1, 1)");
                 $result = $stmt->execute([
@@ -144,15 +164,33 @@ if (isset($_POST['verify_otp'])) {
                     $userData['user_type']
                 ]);
                 
+                // Verify the insert was successful and got a proper ID
                 if ($result) {
-                    // Clear session data
+                    $newUserId = $pdo->lastInsertId();
+                    if ($newUserId == 0) {
+                        // If ID is still 0, there's a database issue
+                        error_log("Warning: New user created with ID 0. AUTO_INCREMENT may not be set on users table.");
+                    }
+                }
+                
+                if ($result) {
+                    // Store success message and user info for confirmation page
+                    $_SESSION['registration_success'] = true;
+                    $_SESSION['registered_user'] = [
+                        'first_name' => $userData['first_name'],
+                        'last_name' => $userData['last_name'],
+                        'email' => $userData['email'],
+                        'username' => $userData['username']
+                    ];
+                    
+                    // Clear OTP session data but keep success flag
                     unset($_SESSION['registration_otp']);
                     unset($_SESSION['temp_user_data']);
                     unset($_SESSION['otp_email']);
                     unset($_SESSION['otp_timestamp']);
                     
-                    $_SESSION['success'] = "Registration successful! Welcome to PEST-CTRL. Your account has been created and verified.";
-                    header("Location: login.php");
+                    // Reload page to show success message
+                    header("Location: register.php");
                     exit();
                 } else {
                     $error = "Error creating account. Please try again.";
@@ -287,8 +325,11 @@ if (isset($_POST['register'])) {
     }
 }
 
-// Check if we should show OTP form
-$showOtpForm = isset($_SESSION['temp_user_data']) && isset($_SESSION['registration_otp']);
+// Check if we should show success page (check this first)
+$showSuccessPage = isset($_SESSION['registration_success']) && $_SESSION['registration_success'] === true;
+
+// Check if we should show OTP form (only if not showing success)
+$showOtpForm = !$showSuccessPage && isset($_SESSION['temp_user_data']) && isset($_SESSION['registration_otp']);
 
 // NOW include the header - AFTER all processing is complete
 require_once 'includes/header.php';
@@ -296,19 +337,32 @@ require_once 'includes/header.php';
 
 <div class="register-container">
     <div class="register-header">
-        <h1><i class="fas fa-user-plus"></i> Create Account</h1>
-        <div class="subtitle">Join PEST-CTRL today - Professional Pest Control Solutions</div>
+        <div class="header-icon-wrapper">
+            <i class="fas fa-user-plus"></i>
+        </div>
+        <h1>Create Account</h1>
+        <div class="subtitle">
+            <i class="fas fa-bug"></i>
+            <span>Join PEST-CTRL today - Professional Pest Control Solutions</span>
+        </div>
     </div>
 
     <?php if (isset($error)): ?>
         <div class="error-message">
-            <?php echo $error; ?>
+            <i class="fas fa-exclamation-circle"></i>
+            <div class="message-content"><?php echo $error; ?></div>
         </div>
     <?php endif; ?>
 
     <?php if (isset($success)): ?>
         <div class="success-message">
-            <?php echo $success; ?>
+            <div class="success-icon-wrapper">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <div class="message-content">
+                <h3>Registration Submitted!</h3>
+                <p><?php echo $success; ?></p>
+            </div>
         </div>
     <?php endif; ?>
 
@@ -1054,32 +1108,141 @@ require_once 'includes/header.php';
 <?php else: ?>
 <!-- OTP Verification Form -->
 <div id="otpverify" class="otp-container">
-    <h2><i class="fas fa-envelope-open-text"></i> Email Verification</h2>
-    <p>We've sent a 6-digit OTP code to <strong><?php echo htmlspecialchars($_SESSION['otp_email']); ?></strong></p>
-    <p>Please enter the code below to verify your email address and complete your PEST-CTRL registration:</p>
+    <div class="otp-header">
+        <div class="otp-icon-wrapper">
+            <i class="fas fa-envelope-open-text"></i>
+        </div>
+        <h2>Email Verification</h2>
+        <p class="otp-subtitle">We've sent a 6-digit verification code to</p>
+        <div class="email-display">
+            <i class="fas fa-envelope"></i>
+            <strong><?php echo htmlspecialchars($_SESSION['otp_email']); ?></strong>
+        </div>
+        <p class="otp-instruction">Please enter the code below to verify your email and complete your registration</p>
+    </div>
     
-    <form method="POST" action="">
+    <form method="POST" action="" class="otp-form">
         <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">
         
-        <div class="form-group">
-            <label for="otp_inp">Enter OTP:</label>
-            <input type="text" id="otp_inp" name="otp" maxlength="6" pattern="[0-9]{6}" required>
+        <div class="otp-input-wrapper">
+            <label for="otp_inp">Verification Code</label>
+            <div class="otp-input-container">
+                <input type="text" id="otp_inp" name="otp" maxlength="6" pattern="[0-9]{6}" required autocomplete="off" placeholder="000000">
+                <div class="otp-input-underline"></div>
+            </div>
+            <small class="otp-hint">
+                <i class="fas fa-info-circle"></i>
+                Enter the 6-digit code sent to your email
+            </small>
         </div>
         
-        <button type="submit" name="verify_otp" id="otp_btn">
-            <i class="fas fa-check-circle"></i> Verify OTP
+        <button type="submit" name="verify_otp" id="otp_btn" class="otp-verify-btn">
+            <i class="fas fa-check-circle"></i>
+            <span>Verify & Complete Registration</span>
         </button>
-        <div class="button-group">
-            <button type="submit" name="resend_otp" id="resend_otp">
-                <i class="fas fa-redo"></i> Resend OTP
+        
+        <div class="otp-actions">
+            <button type="button" id="resend_otp" class="otp-resend-btn" onclick="confirmResendOTP()">
+                <i class="fas fa-redo"></i>
+                <span>Resend</span>
             </button>
-            <button type="button" id="cancel_otp" onclick="cancelRegistration()">
+            <button type="button" id="cancel_otp" class="otp-cancel-btn" onclick="confirmCancelRegistration()">
+                <i class="fas fa-times"></i>
+                <span>Cancel</span>
+            </button>
+        </div>
+        
+        <!-- Hidden form for resend OTP -->
+        <form method="POST" action="" id="resendOtpForm" style="display: none;">
+            <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">
+            <input type="hidden" name="resend_otp" value="1">
+        </form>
+    </form>
+</div>
+<?php elseif ($showSuccessPage): ?>
+<!-- Registration Success Page -->
+<div id="registration-success" class="registration-success-container">
+    <div class="success-content">
+        <div class="success-icon-wrapper-large">
+            <i class="fas fa-check-circle"></i>
+        </div>
+        <h2>Registration Successful!</h2>
+        <div class="success-message-box">
+            <p class="success-greeting">
+                Welcome to PEST-CTRL, <strong><?php echo htmlspecialchars($_SESSION['registered_user']['first_name'] . ' ' . $_SESSION['registered_user']['last_name']); ?></strong>!
+            </p>
+            <p class="success-details">
+                Your account has been successfully created and verified. You can now log in to access all features.
+            </p>
+            <div class="success-info">
+                <div class="info-item">
+                    <i class="fas fa-user"></i>
+                    <span><strong>Username:</strong> <?php echo htmlspecialchars($_SESSION['registered_user']['username']); ?></span>
+                </div>
+                <div class="info-item">
+                    <i class="fas fa-envelope"></i>
+                    <span><strong>Email:</strong> <?php echo htmlspecialchars($_SESSION['registered_user']['email']); ?></span>
+                </div>
+            </div>
+        </div>
+        <button type="button" class="success-login-btn" onclick="redirectToLogin()">
+            <i class="fas fa-sign-in-alt"></i>
+            <span>Go to Login</span>
+        </button>
+        <p class="success-note">
+            <i class="fas fa-info-circle"></i>
+            You will be redirected to the login page automatically in <span id="countdown">5</span> seconds.
+        </p>
+    </div>
+</div>
+<?php endif; ?>
+
+    <?php if (!$showSuccessPage): ?>
+    <p class="login-link">Already have an account? <a href="login.php">Login here</a></p>
+    <?php endif; ?>
+
+<!-- OTP Confirmation Modals -->
+<div id="resendOtpModal" class="otp-confirm-modal">
+    <div class="otp-confirm-content">
+        <div class="otp-confirm-header">
+            <i class="fas fa-redo"></i>
+            <h3>Resend Verification Code?</h3>
+        </div>
+        <div class="otp-confirm-body">
+            <p>Are you sure you want to resend the OTP code?</p>
+            <p class="otp-confirm-note">A new 6-digit code will be sent to your email address.</p>
+        </div>
+        <div class="otp-confirm-actions">
+            <button type="button" class="otp-confirm-btn otp-confirm-yes" onclick="submitResendOTP()">
+                <i class="fas fa-check"></i> Yes, Resend
+            </button>
+            <button type="button" class="otp-confirm-btn otp-confirm-no" onclick="closeResendModal()">
                 <i class="fas fa-times"></i> Cancel
             </button>
         </div>
-    </form>
+    </div>
 </div>
-<?php endif; ?>
+
+<div id="cancelOtpModal" class="otp-confirm-modal">
+    <div class="otp-confirm-content">
+        <div class="otp-confirm-header">
+            <i class="fas fa-exclamation-triangle"></i>
+            <h3>Cancel Registration?</h3>
+        </div>
+        <div class="otp-confirm-body">
+            <p>Are you sure you want to cancel the registration process?</p>
+            <p class="otp-confirm-warning">You will need to fill out the registration form again.</p>
+        </div>
+        <div class="otp-confirm-actions">
+            <button type="button" class="otp-confirm-btn otp-confirm-yes" onclick="submitCancelRegistration()">
+                <i class="fas fa-check"></i> Yes, Cancel
+            </button>
+            <button type="button" class="otp-confirm-btn otp-confirm-no" onclick="closeCancelModal()">
+                <i class="fas fa-times"></i> No, Continue
+            </button>
+        </div>
+    </div>
+</div>
 
     <p class="login-link">Already have an account? <a href="login.php">Login here</a></p>
 </div>
@@ -1150,21 +1313,50 @@ body {
 
 .register-header {
     text-align: center;
-    margin-bottom: 16px;
+    margin-bottom: 24px;
+    padding-bottom: 20px;
+    border-bottom: 2px solid rgba(19, 3, 37, 0.08);
+}
+
+.header-icon-wrapper {
+    width: 64px;
+    height: 64px;
+    margin: 0 auto 16px;
+    background: linear-gradient(135deg, var(--primary-dark) 0%, #0a0118 100%);
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(19, 3, 37, 0.15);
+}
+
+.header-icon-wrapper i {
+    font-size: 28px;
+    color: var(--bg-white);
 }
 
 .register-header h1 {
     margin: 0;
-    font-size: 1.35rem;
-    font-weight: 600;
+    font-size: 1.75rem;
+    font-weight: 700;
     color: var(--text-dark);
-    margin-bottom: 6px;
-    letter-spacing: -0.3px;
+    margin-bottom: 10px;
+    letter-spacing: -0.5px;
 }
 
 .register-header .subtitle {
-    font-size: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-size: 13px;
     color: var(--text-light);
+    font-weight: 500;
+}
+
+.register-header .subtitle i {
+    color: var(--accent-yellow);
+    font-size: 14px;
 }
 
 .form-group {
@@ -1226,12 +1418,507 @@ body {
 .otp-container {
     max-width: 420px;
     margin: 20px auto;
-    padding: 25px;
-    border: 1px solid var(--border-secondary);
-    border-radius: 15px;
-    background: linear-gradient(135deg, var(--primary-dark) 0%, rgba(19, 3, 37, 0.95) 100%);
-    color: var(--primary-light);
-    box-shadow: 0 10px 40px var(--shadow-dark);
+    padding: 20px;
+    border: 1px solid var(--border-light);
+    border-radius: 12px;
+    background: var(--bg-white);
+    color: var(--text-dark);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.otp-header {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.otp-icon-wrapper {
+    width: 48px;
+    height: 48px;
+    margin: 0 auto 12px;
+    background: linear-gradient(135deg, var(--primary-dark) 0%, #0a0118 100%);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 8px rgba(19, 3, 37, 0.15);
+}
+
+.otp-icon-wrapper i {
+    font-size: 20px;
+    color: var(--bg-white);
+}
+
+.otp-header h2 {
+    margin: 0 0 8px 0;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-dark);
+}
+
+.otp-subtitle {
+    font-size: 11px;
+    color: var(--text-light);
+    margin: 0 0 8px 0;
+}
+
+.email-display {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(19, 3, 37, 0.05);
+    padding: 6px 12px;
+    border-radius: 6px;
+    margin: 8px 0;
+    font-size: 11px;
+}
+
+.email-display i {
+    color: var(--primary-dark);
+    font-size: 12px;
+}
+
+.email-display strong {
+    color: var(--text-dark);
+    font-weight: 600;
+}
+
+.otp-instruction {
+    font-size: 11px;
+    color: var(--text-light);
+    margin: 8px 0 0 0;
+    line-height: 1.4;
+}
+
+.otp-form {
+    margin-top: 16px;
+}
+
+.otp-input-wrapper {
+    margin-bottom: 16px;
+}
+
+.otp-input-wrapper label {
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-dark);
+    margin-bottom: 6px;
+}
+
+.otp-input-container {
+    position: relative;
+    margin-bottom: 6px;
+}
+
+.otp-input-container input {
+    width: 100%;
+    text-align: center;
+    font-size: 20px;
+    letter-spacing: 4px;
+    padding: 10px;
+    border: 2px solid var(--border-light);
+    border-radius: 8px;
+    background: var(--bg-white);
+    color: var(--text-dark);
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+
+.otp-input-container input:focus {
+    outline: none;
+    border-color: var(--primary-dark);
+    box-shadow: 0 0 0 3px rgba(19, 3, 37, 0.1);
+}
+
+.otp-input-underline {
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 2px;
+    background: var(--primary-dark);
+    transition: width 0.3s ease;
+}
+
+.otp-input-container input:focus + .otp-input-underline {
+    width: 80%;
+}
+
+.otp-hint {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 10px;
+    color: var(--text-light);
+    margin-top: 4px;
+}
+
+.otp-hint i {
+    font-size: 10px;
+}
+
+.otp-verify-btn {
+    width: 100%;
+    padding: 10px 16px;
+    background: var(--primary-dark);
+    color: var(--bg-white);
+    border: 1.5px solid var(--primary-dark);
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin-bottom: 12px;
+}
+
+.otp-verify-btn:hover {
+    background: #0a0118;
+    border-color: #0a0118;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(19, 3, 37, 0.15);
+}
+
+.otp-verify-btn i {
+    font-size: 14px;
+}
+
+.otp-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    align-items: center;
+}
+
+.otp-resend-btn,
+.otp-cancel-btn {
+    width: 75px;
+    padding: 5px 8px;
+    border: 1.5px solid;
+    border-radius: 6px;
+    font-size: 10px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    white-space: nowrap;
+    flex: 0 0 auto;
+}
+
+.otp-resend-btn {
+    background: var(--bg-light);
+    color: var(--text-dark);
+    border-color: var(--border-light);
+}
+
+.otp-resend-btn:hover {
+    background: var(--border-light);
+    border-color: var(--text-light);
+}
+
+.otp-cancel-btn {
+    background: var(--bg-white);
+    color: #dc3545;
+    border-color: #dc3545;
+}
+
+.otp-cancel-btn:hover {
+    background: #dc3545;
+    color: white;
+}
+
+.otp-resend-btn i,
+.otp-cancel-btn i {
+    font-size: 10px;
+}
+
+.otp-resend-btn span,
+.otp-cancel-btn span {
+    font-size: 10px;
+}
+
+/* Registration Success Page Styles */
+.registration-success-container {
+    max-width: 500px;
+    margin: 30px auto;
+    padding: 30px;
+    background: var(--bg-white);
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.success-content {
+    text-align: center;
+}
+
+.success-icon-wrapper-large {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto 20px;
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 16px rgba(40, 167, 69, 0.3);
+    animation: scaleIn 0.5s ease;
+}
+
+@keyframes scaleIn {
+    from {
+        transform: scale(0);
+        opacity: 0;
+    }
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.success-icon-wrapper-large i {
+    font-size: 40px;
+    color: white;
+}
+
+.success-content h2 {
+    margin: 0 0 20px 0;
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--text-dark);
+}
+
+.success-message-box {
+    background: rgba(40, 167, 69, 0.05);
+    border: 2px solid rgba(40, 167, 69, 0.2);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 24px;
+    text-align: left;
+}
+
+.success-greeting {
+    font-size: 16px;
+    color: var(--text-dark);
+    margin: 0 0 12px 0;
+    line-height: 1.6;
+}
+
+.success-greeting strong {
+    color: var(--primary-dark);
+}
+
+.success-details {
+    font-size: 13px;
+    color: var(--text-light);
+    margin: 0 0 16px 0;
+    line-height: 1.6;
+}
+
+.success-info {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid rgba(40, 167, 69, 0.2);
+}
+
+.info-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 12px;
+    color: var(--text-dark);
+}
+
+.info-item i {
+    color: var(--primary-dark);
+    font-size: 14px;
+    width: 18px;
+}
+
+.info-item strong {
+    color: var(--text-dark);
+    margin-right: 4px;
+}
+
+.success-login-btn {
+    width: 100%;
+    padding: 12px 20px;
+    background: var(--primary-dark);
+    color: var(--bg-white);
+    border: 1.5px solid var(--primary-dark);
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.success-login-btn:hover {
+    background: #0a0118;
+    border-color: #0a0118;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(19, 3, 37, 0.2);
+}
+
+.success-login-btn i {
+    font-size: 16px;
+}
+
+.success-note {
+    font-size: 11px;
+    color: var(--text-light);
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.success-note i {
+    font-size: 12px;
+    color: var(--text-light);
+}
+
+.success-note #countdown {
+    font-weight: 700;
+    color: var(--primary-dark);
+}
+
+/* OTP Confirmation Modal Styles */
+.otp-confirm-modal {
+    display: none;
+    position: fixed;
+    z-index: 10000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(2px);
+    animation: fadeIn 0.3s ease;
+}
+
+.otp-confirm-modal.show {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.otp-confirm-content {
+    background: var(--bg-white);
+    border-radius: 12px;
+    width: 90%;
+    max-width: 400px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    animation: slideUp 0.3s ease;
+    overflow: hidden;
+}
+
+.otp-confirm-header {
+    background: linear-gradient(135deg, var(--primary-dark) 0%, #0a0118 100%);
+    color: var(--bg-white);
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.otp-confirm-header i {
+    font-size: 20px;
+}
+
+.otp-confirm-header h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.otp-confirm-body {
+    padding: 20px;
+}
+
+.otp-confirm-body p {
+    margin: 0 0 10px 0;
+    font-size: 13px;
+    color: var(--text-dark);
+    line-height: 1.5;
+}
+
+.otp-confirm-body p:last-child {
+    margin-bottom: 0;
+}
+
+.otp-confirm-note {
+    color: var(--text-light);
+    font-size: 12px;
+    font-style: italic;
+}
+
+.otp-confirm-warning {
+    color: #dc3545;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.otp-confirm-actions {
+    display: flex;
+    gap: 10px;
+    padding: 16px 20px;
+    border-top: 1px solid var(--border-light);
+    background: var(--bg-light);
+}
+
+.otp-confirm-btn {
+    flex: 1;
+    padding: 10px 16px;
+    border: 1.5px solid;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.otp-confirm-yes {
+    background: var(--primary-dark);
+    color: var(--bg-white);
+    border-color: var(--primary-dark);
+}
+
+.otp-confirm-yes:hover {
+    background: #0a0118;
+    border-color: #0a0118;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(19, 3, 37, 0.15);
+}
+
+.otp-confirm-no {
+    background: var(--bg-white);
+    color: var(--text-dark);
+    border-color: var(--border-light);
+}
+
+.otp-confirm-no:hover {
+    background: var(--bg-light);
+    border-color: var(--text-light);
 }
 
 .password-input-container {
@@ -1418,33 +2105,95 @@ body {
 }
 
 .success-message {
-    background: rgba(40, 167, 69, 0.2);
-    border: 1px solid rgba(40, 167, 69, 0.5);
-    color: #28a745;
-    padding: 12px;
-    border-radius: 5px;
-    margin-bottom: 20px;
-    text-align: center;
+    background: linear-gradient(135deg, rgba(40, 167, 69, 0.1) 0%, rgba(40, 167, 69, 0.05) 100%);
+    border: 2px solid rgba(40, 167, 69, 0.3);
+    border-left: 4px solid #28a745;
+    color: #155724;
+    padding: 20px;
+    border-radius: 12px;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    box-shadow: 0 2px 8px rgba(40, 167, 69, 0.1);
+    animation: slideInSuccess 0.4s ease;
+}
+
+@keyframes slideInSuccess {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.success-icon-wrapper {
+    width: 48px;
+    height: 48px;
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+}
+
+.success-icon-wrapper i {
+    font-size: 24px;
+    color: white;
+}
+
+.success-message .message-content {
+    flex: 1;
+}
+
+.success-message .message-content h3 {
+    margin: 0 0 8px 0;
+    font-size: 16px;
+    font-weight: 700;
+    color: #155724;
+}
+
+.success-message .message-content p {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.6;
+    color: #155724;
+    opacity: 0.9;
 }
 
 .error-message {
-    background: rgba(220, 53, 69, 0.2);
-    border: 1px solid rgba(220, 53, 69, 0.5);
-    color: #dc3545;
-    padding: 12px;
-    border-radius: 5px;
-    margin-bottom: 20px;
-    text-align: center;
+    background: linear-gradient(135deg, rgba(220, 53, 69, 0.1) 0%, rgba(220, 53, 69, 0.05) 100%);
+    border: 2px solid rgba(220, 53, 69, 0.3);
+    border-left: 4px solid #dc3545;
+    color: #721c24;
+    padding: 16px 20px;
+    border-radius: 12px;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    box-shadow: 0 2px 8px rgba(220, 53, 69, 0.1);
 }
 
-#otp_inp {
-    text-align: center;
-    font-size: 18px;
-    letter-spacing: 2px;
-    width: 150px;
-    margin: 0 auto 15px auto;
-    display: block;
+.error-message i {
+    font-size: 20px;
+    color: #dc3545;
+    flex-shrink: 0;
+    margin-top: 2px;
 }
+
+.error-message .message-content {
+    flex: 1;
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+/* OTP input styles moved to .otp-input-container above */
 
 .button-group {
     display: flex;
@@ -1453,43 +2202,7 @@ body {
     margin-top: 10px;
 }
 
-#resend_otp {
-    background-color: #6c757d;
-    color: white;
-    border: none;
-    padding: 8px 16px;
-    border-radius: 4px;
-    cursor: pointer;
-    flex: 1;
-    max-width: 120px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 5px;
-}
-
-#resend_otp:hover {
-    background-color: #545b62;
-}
-
-#cancel_otp {
-    background-color: #dc3545;
-    color: white;
-    border: none;
-    padding: 8px 16px;
-    border-radius: 4px;
-    cursor: pointer;
-    flex: 1;
-    max-width: 120px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 5px;
-}
-
-#cancel_otp:hover {
-    background-color: #c82333;
-}
+/* Removed duplicate styles - using .otp-resend-btn and .otp-cancel-btn classes instead */
 
 /* Main form buttons */
 button[type="submit"] {
@@ -2055,12 +2768,87 @@ function checkAgreements() {
     }
 }
 
-// Cancel registration function
-function cancelRegistration() {
-    if (confirm('Are you sure you want to cancel registration? You will need to fill out the form again.')) {
-        window.location.href = 'register.php';
+// OTP Confirmation Modal Functions
+function confirmResendOTP() {
+    const modal = document.getElementById('resendOtpModal');
+    if (modal) {
+        modal.classList.add('show');
+        document.body.style.overflow = 'hidden';
     }
 }
+
+function closeResendModal() {
+    const modal = document.getElementById('resendOtpModal');
+    if (modal) {
+        modal.classList.remove('show');
+        document.body.style.overflow = '';
+    }
+}
+
+function submitResendOTP() {
+    const form = document.getElementById('resendOtpForm');
+    if (form) {
+        closeResendModal();
+        form.submit();
+    }
+}
+
+function confirmCancelRegistration() {
+    const modal = document.getElementById('cancelOtpModal');
+    if (modal) {
+        modal.classList.add('show');
+        document.body.style.overflow = 'hidden';
+    }
+}
+
+function closeCancelModal() {
+    const modal = document.getElementById('cancelOtpModal');
+    if (modal) {
+        modal.classList.remove('show');
+        document.body.style.overflow = '';
+    }
+}
+
+function submitCancelRegistration() {
+    closeCancelModal();
+    window.location.href = 'register.php';
+}
+
+// Cancel registration function (legacy - keeping for compatibility)
+function cancelRegistration() {
+    confirmCancelRegistration();
+}
+
+// Redirect to login page
+function redirectToLogin() {
+    // Clear success session flag
+    fetch('register.php?clear_success=1', { method: 'GET' })
+        .then(() => {
+            window.location.href = 'login_customer.php';
+        })
+        .catch(() => {
+            // If fetch fails, just redirect
+            window.location.href = 'login_customer.php';
+        });
+}
+
+// Auto-redirect countdown
+<?php if ($showSuccessPage): ?>
+document.addEventListener('DOMContentLoaded', function() {
+    let countdown = 5;
+    const countdownElement = document.getElementById('countdown');
+    const countdownInterval = setInterval(function() {
+        countdown--;
+        if (countdownElement) {
+            countdownElement.textContent = countdown;
+        }
+        if (countdown <= 0) {
+            clearInterval(countdownInterval);
+            redirectToLogin();
+        }
+    }, 1000);
+});
+<?php endif; ?>
 
 // Modal Functions for Terms & Privacy Policy
 function openTermsModal() {
@@ -2203,12 +2991,20 @@ document.addEventListener('DOMContentLoaded', function() {
     window.addEventListener('click', function(event) {
         const termsModal = document.getElementById('termsModal');
         const privacyModal = document.getElementById('privacyModal');
+        const resendOtpModal = document.getElementById('resendOtpModal');
+        const cancelOtpModal = document.getElementById('cancelOtpModal');
         
         if (event.target === termsModal) {
             closeTermsModal();
         }
         if (event.target === privacyModal) {
             closePrivacyModal();
+        }
+        if (event.target === resendOtpModal) {
+            closeResendModal();
+        }
+        if (event.target === cancelOtpModal) {
+            closeCancelModal();
         }
     });
     
@@ -2217,6 +3013,8 @@ document.addEventListener('DOMContentLoaded', function() {
         if (event.key === 'Escape') {
             closeTermsModal();
             closePrivacyModal();
+            closeResendModal();
+            closeCancelModal();
         }
     });
 });
